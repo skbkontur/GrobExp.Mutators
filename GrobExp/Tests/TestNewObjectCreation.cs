@@ -1,0 +1,120 @@
+﻿using System;
+using System.Linq.Expressions;
+
+using GrobExp;
+
+using NUnit.Framework;
+
+namespace Tests
+{
+    [TestFixture]
+    public class TestNewObjectCreation
+    {
+        [Test]
+        public void TestNew()
+        {
+            Expression<Func<int, string>> exp = length => new string('z', length);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual("zzz", f(3));
+        }
+
+        [Test]
+        public void TestMemberInit1()
+        {
+            Expression<Func<int, string, TestClassA>> exp = (i, s) => new TestClassA { S = s, Y = i, B = new TestClassB{S = "qxx"}};
+            var f = LambdaCompiler.Compile(exp);
+            var a = f(10, "zzz");
+            Assert.AreEqual(10, a.Y);
+            Assert.AreEqual("zzz", a.S);
+            Assert.IsNotNull(a.B);
+            Assert.AreEqual("qxx", a.B.S);
+        }
+
+        [Test]
+        public void TestMemberInit2()
+        {
+            Expression<Func<int?, string, TestStructA>> exp = (i, s) => new TestStructA { S = s, X = i, B = new TestStructB{S = "qxx"} };
+            var f = LambdaCompiler.Compile(exp);
+            var a = f(10, "zzz");
+            Assert.AreEqual(10, a.X);
+            Assert.AreEqual("zzz", a.S);
+            Assert.AreEqual("qxx", a.B.S);
+        }
+
+        [Test]
+        public void TestNewArrayInit1()
+        {
+            Expression<Func<int?, int?, int?, int?[]>> exp = (a, b, c) => new[] { a, b, c };
+            var f = LambdaCompiler.Compile(exp);
+            var arr = f(1, null, 2);
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(3, arr.Length);
+            Assert.AreEqual(1, arr[0]);
+            Assert.AreEqual(null, arr[1]);
+            Assert.AreEqual(2, arr[2]);
+        }
+
+        [Test]
+        public void TestNewArrayInit2()
+        {
+            Expression<Func<string, string, string, string[]>> exp = (a, b, c) => new[] { a, b, c };
+            var f = LambdaCompiler.Compile(exp);
+            var arr = f("zzz", null, "qxx");
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(3, arr.Length);
+            Assert.AreEqual("zzz", arr[0]);
+            Assert.AreEqual(null, arr[1]);
+            Assert.AreEqual("qxx", arr[2]);
+        }
+
+        [Test]
+        public void TestNewArrayInit3()
+        {
+            Expression<Func<long, long, long, long[]>> exp = (a, b, c) => new[] { a, b, c };
+            var f = LambdaCompiler.Compile(exp);
+            var arr = f(1, long.MaxValue, long.MinValue);
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(3, arr.Length);
+            Assert.AreEqual(1, arr[0]);
+            Assert.AreEqual(long.MaxValue, arr[1]);
+            Assert.AreEqual(long.MinValue, arr[2]);
+        }
+
+        [Test]
+        public void TestNewArrayBounds1()
+        {
+            Expression<Func<int, int?[]>> exp = i => new int?[i];
+            var f = LambdaCompiler.Compile(exp);
+            var arr = f(1);
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(1, arr.Length);
+            Assert.AreEqual(null, arr[0]);
+        }
+
+
+        public struct TestStructA
+        {
+            public string S { get; set; }
+            public TestStructB B { get; set; }
+            public int? X { get; set; }
+            public int Y { get; set; }
+        }
+
+        public struct TestStructB
+        {
+            public string S { get; set; }
+        }
+
+        private class TestClassA
+        {
+            public string S { get; set; }
+            public TestClassB B { get; set; }
+            public int Y;
+        }
+
+        private class TestClassB
+        {
+            public string S { get; set; }
+        }
+    }
+}

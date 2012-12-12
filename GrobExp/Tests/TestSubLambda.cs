@@ -99,7 +99,7 @@ namespace Tests
             Expression<Func<TestStructA, bool>> exp = Expression.Lambda<Func<TestStructA, bool>>(any, parameterA);
             var f = LambdaCompiler.Compile(exp);
             aaa.Y = 1;
-            Assert.IsTrue(f(new TestStructA { ArrayB = new[] { new TestStructB { Y = 1 }, } }));
+            Assert.IsFalse(f(new TestStructA { ArrayB = new[] { new TestStructB { Y = 1 }, } }));
         }
 
         [Test]

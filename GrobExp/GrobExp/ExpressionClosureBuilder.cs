@@ -22,9 +22,8 @@ namespace GrobExp
         public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters)
         {
             Visit(lambda);
-            Action initializer = BuildInitializer();
             Type result = typeBuilder.CreateType();
-            initializer();
+            BuildInitializer(result)();
             constants = this.constants.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
             parameters = this.parameters.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
             return result;
@@ -76,39 +75,44 @@ namespace GrobExp
             return base.VisitParameter(node);
         }
 
-        private Action BuildInitializer()
+        private Action BuildInitializer(Type type)
         {
-            var method = typeBuilder.DefineMethod("Initialize", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] {typeof(object[])});
+            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] { typeof(object[]) }, module, true);
+            //typeBuilder.DefineMethod("Initialize", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] {typeof(object[])});
             var il = new GrobIL(method.GetILGenerator(), false, typeof(void), new[] {typeof(object[])});
             var consts = new object[hashtable.Count];
             int index = 0;
             foreach(DictionaryEntry entry in hashtable)
             {
                 var pair = (KeyValuePair<Type, object>)entry.Key;
-                var type = pair.Key;
+                var constType = pair.Key;
                 consts[index] = pair.Value;
                 il.Ldnull();
                 il.Ldarg(0);
                 il.Ldc_I4(index++);
                 il.Ldelem(typeof(object));
-                var field = (FieldInfo)entry.Value;
-                if (type.IsValueType)
+                string name = ((FieldInfo)entry.Value).Name;
+                var field = type.GetField(name, BindingFlags.Public | BindingFlags.Static);
+                if(field == null)
+                    throw new MissingFieldException(type.Name, name);
+                if (constType.IsValueType)
                 {
-                    il.Unbox_Any(type);
-                    if(field.FieldType != type)
+                    il.Unbox_Any(constType);
+                    if(field.FieldType != constType)
                     {
-                        var constructor = field.FieldType.GetConstructor(new[] {type});
+                        var constructor = field.FieldType.GetConstructor(new[] {constType});
                         if(constructor == null)
-                            throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(type) + "'");
+                            throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
                         il.Newobj(constructor);
                     }
                 }
-                else if(field.FieldType != type)
-                    throw new InvalidOperationException("Attempt to assign a value of type '" + Format(type) + "' to field of type '" + Format(field.FieldType) + "'");
+                else if(field.FieldType != constType)
+                    throw new InvalidOperationException("Attempt to assign a value of type '" + Format(constType) + "' to field of type '" + Format(field.FieldType) + "'");
                 il.Stfld(field);
             }
             il.Ret();
-            return () => typeBuilder.GetMethod("Initialize").Invoke(null, new[] {consts});
+            var action = (Action<object[]>)method.CreateDelegate(typeof(Action<object[]>));
+            return () => action(consts);
         }
 
         private static Type GetFieldType(Type type)

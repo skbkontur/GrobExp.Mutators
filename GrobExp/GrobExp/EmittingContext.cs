@@ -1,11 +1,134 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace GrobExp
 {
     internal class EmittingContext
     {
+        public bool EmitNullChecking(Type type, GrobIL.Label objIsNullLabel)
+        {
+            if(!type.IsValueType)
+            {
+                Il.Dup(); // stack: [obj, obj]
+                Il.Brfalse(objIsNullLabel); // if(obj == null) goto returnDefaultValue; stack: [obj]
+                return true;
+            }
+            if(type.IsNullable())
+            {
+                Il.Dup();
+                Type memberType;
+                EmitMemberAccess(type, type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), false, out memberType);
+                Il.Brfalse(objIsNullLabel);
+                return true;
+            }
+            return false;
+        }
+
+        public void EmitMemberAccess(Type type, MemberInfo member, bool returnByRef, out Type memberType)
+        {
+            switch(member.MemberType)
+            {
+            case MemberTypes.Property:
+                var property = (PropertyInfo)member;
+                var getter = property.GetGetMethod();
+                if(getter == null)
+                    throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_get");
+                Il.Call(getter, type);
+                Type propertyType = property.PropertyType;
+                if(returnByRef && propertyType.IsValueType)
+                {
+                    using(var temp = DeclareLocal(propertyType))
+                    {
+                        Il.Stloc(temp);
+                        Il.Ldloca(temp);
+                        memberType = propertyType.MakeByRefType();
+                    }
+                }
+                else
+                    memberType = propertyType;
+                break;
+            case MemberTypes.Field:
+                var field = (FieldInfo)member;
+                if(returnByRef && field.FieldType.IsValueType)
+                {
+                    Il.Ldflda(field);
+                    memberType = field.FieldType.MakeByRefType();
+                }
+                else
+                {
+                    Il.Ldfld(field);
+                    memberType = field.FieldType;
+                }
+                break;
+            default:
+                throw new InvalidOperationException(); // todo exception
+            }
+        }
+
+        public void EmitMemberAssign(Type type, MemberInfo member)
+        {
+            switch(member.MemberType)
+            {
+            case MemberTypes.Property:
+                var setter = ((PropertyInfo)member).GetSetMethod();
+                if(setter == null)
+                    throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_set");
+                Il.Call(setter, type);
+                break;
+            case MemberTypes.Field:
+                Il.Stfld((FieldInfo)member);
+                break;
+            }
+        }
+
+        public void EmitLoadArguments(params Expression[] arguments)
+        {
+            foreach(var argument in arguments)
+            {
+                Type argumentType;
+                EmitLoadArgument(argument, true, out argumentType);
+            }
+        }
+
+        public void EmitLoadArgument(Expression argument, bool convertToBool, out Type argumentType)
+        {
+            var argumentIsNullLabel = CanReturn ? Il.DefineLabel("argumentIsNull") : null;
+            bool labelUsed = ExpressionEmittersCollection.Emit(argument, this, argumentIsNullLabel, out argumentType);
+            if(convertToBool && argument.Type == typeof(bool) && argumentType == typeof(bool?))
+            {
+                ConvertFromNullableBoolToBool();
+                argumentType = typeof(bool);
+            }
+            if(labelUsed)
+                EmitReturnDefaultValue(argument.Type, argumentIsNullLabel, Il.DefineLabel("argumentIsNotNull"));
+        }
+
+        public void EmitLoadDefaultValue(Type type)
+        {
+            if(!type.IsValueType)
+                Il.Ldnull();
+            else
+            {
+                using(var temp = DeclareLocal(type))
+                {
+                    Il.Ldloca(temp);
+                    Il.Initobj(type);
+                    Il.Ldloc(temp);
+                }
+            }
+        }
+
+        public void EmitReturnDefaultValue(Type type, GrobIL.Label valueIsNullLabel, GrobIL.Label valueIsNotNullLabel)
+        {
+            Il.Br(valueIsNotNullLabel);
+            Il.MarkLabel(valueIsNullLabel);
+            Il.Pop();
+            EmitLoadDefaultValue(type);
+            Il.MarkLabel(valueIsNotNullLabel);
+        }
+
         public LocalHolder DeclareLocal(Type type)
         {
             Queue<GrobIL.Local> queue;
@@ -22,6 +145,16 @@ namespace GrobExp
         public void FreeLocal(Type type, GrobIL.Local local)
         {
             locals[type].Enqueue(local);
+        }
+
+        public void ConvertFromNullableBoolToBool()
+        {
+            using(var temp = DeclareLocal(typeof(bool?)))
+            {
+                Il.Stloc(temp);
+                Il.Ldloca(temp);
+                Il.Ldfld(nullableBoolValueField);
+            }
         }
 
         public CompilerOptions Options { get; set; }
@@ -64,5 +197,8 @@ namespace GrobExp
         private readonly Dictionary<LabelTarget, GrobIL.Label> labels = new Dictionary<LabelTarget, GrobIL.Label>();
 
         private readonly Dictionary<Type, Queue<GrobIL.Local>> locals = new Dictionary<Type, Queue<GrobIL.Local>>();
+
+        private static readonly FieldInfo nullableBoolValueField = typeof(bool?).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo nullableBoolHasValueField = typeof(bool?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
     }
 }

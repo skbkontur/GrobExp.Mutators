@@ -11,19 +11,17 @@ namespace GrobExp
         public ExpressionClosureResolver(LambdaExpression lambda)
         {
             this.lambda = lambda;
-            closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters);
-            closureParameter = parameters.Count == 0 ? null : Expression.Parameter(closureType);
+            closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters, out closureCreator);
+            closureParameter = Expression.Parameter(closureType);
         }
 
-        public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter)
+        public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter, out Func<Closure> closureCreator)
         {
             var body = ((LambdaExpression)Visit(lambda)).Body;
             closureParameter = this.closureParameter;
             closureType = this.closureType;
-            if (closureParameter == null)
-                return Expression.Lambda(body, lambda.Parameters);
-            Expression createClosure = Expression.Assign(this.closureParameter, Expression.New(closureType));
-            return Expression.Lambda(Expression.Block(body.Type, new[] {this.closureParameter}, createClosure, body), lambda.Parameters);
+            closureCreator = this.closureCreator;
+            return Expression.Lambda(body, new[] {closureParameter}.Concat(lambda.Parameters));
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)
@@ -58,8 +56,8 @@ namespace GrobExp
             FieldInfo field;
             return constants.TryGetValue(node, out field)
                        ? (field.FieldType == node.Type
-                              ? Expression.MakeMemberAccess(null, field)
-                              : Expression.MakeMemberAccess(Expression.MakeMemberAccess(null, field), field.FieldType.GetField("Value", BindingFlags.Public | BindingFlags.Instance)))
+                              ? Expression.MakeMemberAccess(closureParameter, field)
+                              : Expression.MakeMemberAccess(Expression.MakeMemberAccess(closureParameter, field), field.FieldType.GetField("Value", BindingFlags.Public | BindingFlags.Instance)))
                        : base.VisitConstant(node);
         }
 
@@ -78,6 +76,7 @@ namespace GrobExp
         private readonly LambdaExpression lambda;
         private readonly ParameterExpression closureParameter;
         private readonly Type closureType;
+        private readonly Func<Closure> closureCreator;
         private readonly Dictionary<ConstantExpression, FieldInfo> constants;
         private readonly Dictionary<ParameterExpression, FieldInfo> parameters;
     }

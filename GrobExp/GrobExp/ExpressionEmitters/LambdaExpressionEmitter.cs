@@ -35,7 +35,7 @@ namespace GrobExp.ExpressionEmitters
                 context.CompiledLambdas.Add(compiledLambda);
 
                 var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, node.Body.Type, parameterTypes);
-                var pointer = dynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
                 il.Ldc_IntPtr(pointer);
                 var types = new[] {closureType, typeof(IntPtr)};
                 il.Newobj(subLambdaInvoker.GetConstructor(types));
@@ -45,32 +45,5 @@ namespace GrobExp.ExpressionEmitters
             }
             return false;
         }
-
-        private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
-        {
-            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, typeof(LambdaExpressionEmitter).Module, true);
-            var il = new GroboIL(method);
-            il.Ldarg(0); // stack: [dynamicMethod]
-            MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
-            if(getMethodDescriptorMethod == null)
-                throw new MissingMethodException(typeof(DynamicMethod).Name, "GetMethodDescriptor");
-            il.Call(getMethodDescriptorMethod); // stack: [dynamicMethod.GetMethodDescriptor()]
-            var runtimeMethodHandle = il.DeclareLocal(typeof(RuntimeMethodHandle));
-            il.Stloc(runtimeMethodHandle); // runtimeMethodHandle = dynamicMethod.GetMethodDescriptor(); stack: []
-            il.Ldloc(runtimeMethodHandle); // stack: [runtimeMethodHandle]
-            MethodInfo prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] {typeof(RuntimeMethodHandle)});
-            if(prepareMethodMethod == null)
-                throw new MissingMethodException(typeof(RuntimeHelpers).Name, "PrepareMethod");
-            il.Call(prepareMethodMethod); // RuntimeHelpers.PrepareMethod(runtimeMethodHandle)
-            MethodInfo getFunctionPointerMethod = typeof(RuntimeMethodHandle).GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public);
-            if(getFunctionPointerMethod == null)
-                throw new MissingMethodException(typeof(RuntimeMethodHandle).Name, "GetFunctionPointer");
-            il.Ldloca(runtimeMethodHandle); // stack: [&runtimeMethodHandle]
-            il.Call(getFunctionPointerMethod); // stack: [runtimeMethodHandle.GetFunctionPointer()]
-            il.Ret(); // return runtimeMethodHandle.GetFunctionPointer()
-            return (Func<DynamicMethod, IntPtr>)method.CreateDelegate(typeof(Func<DynamicMethod, IntPtr>));
-        }
-
-        private static readonly Func<DynamicMethod, IntPtr> dynamicMethodPointerExtractor = EmitDynamicMethodPointerExtractor();
     }
 }

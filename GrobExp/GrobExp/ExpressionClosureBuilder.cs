@@ -21,13 +21,13 @@ namespace GrobExp
             typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
         }
 
-        public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters)
+        public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out Func<Closure> closureCreator)
         {
             Visit(lambda);
             if(hasSubLambdas)
-                typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.InitOnly);
+                typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.InitOnly);
             Type result = typeBuilder.CreateType();
-            BuildInitializer(result)();
+            closureCreator = BuildClosureCreator(result);
             constants = this.constants.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
             parameters = this.parameters.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
             return result;
@@ -64,7 +64,7 @@ namespace GrobExp
             var field = (FieldInfo)hashtable[key];
             if(field == null)
             {
-                field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.InitOnly);
+                field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public | FieldAttributes.InitOnly);
                 hashtable[key] = field;
             }
             if(!constants.ContainsKey(node))
@@ -83,23 +83,24 @@ namespace GrobExp
             return base.VisitParameter(node);
         }
 
-        private Action BuildInitializer(Type type)
+        private Func<Closure> BuildClosureCreator(Type type)
         {
-            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, LambdaCompiler.Module, true);
+            var method = new DynamicMethod("Create_" + type.Name, type, new[] {typeof(object[])}, LambdaCompiler.Module, true);
             var il = new GroboIL(method);
             var consts = new object[hashtable.Count];
             int index = 0;
+            il.Newobj(type.GetConstructor(Type.EmptyTypes));
             foreach(DictionaryEntry entry in hashtable)
             {
                 var pair = (KeyValuePair<Type, object>)entry.Key;
                 var constType = pair.Key;
                 consts[index] = pair.Value;
-                il.Ldnull();
+                il.Dup();
                 il.Ldarg(0);
                 il.Ldc_I4(index++);
                 il.Ldelem(typeof(object));
                 string name = ((FieldInfo)entry.Value).Name;
-                var field = type.GetField(name, BindingFlags.Public | BindingFlags.Static);
+                var field = type.GetField(name, BindingFlags.Public | BindingFlags.Instance);
                 if(field == null)
                     throw new MissingFieldException(type.Name, name);
                 if(constType.IsValueType)
@@ -118,8 +119,8 @@ namespace GrobExp
                 il.Stfld(field);
             }
             il.Ret();
-            var action = (Action<object[]>)method.CreateDelegate(typeof(Action<object[]>));
-            return () => action(consts);
+            var func = (Func<object[], Closure>)method.CreateDelegate(typeof(Func<object[], Closure>));
+            return () => func(consts);
         }
 
         private static Type GetFieldType(Type type)

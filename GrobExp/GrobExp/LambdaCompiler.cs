@@ -8,6 +8,8 @@ using System.Text;
 
 using GrEmit;
 
+using GrobExp.ExpressionEmitters;
+
 namespace GrobExp
 {
     public static class LambdaCompiler
@@ -17,13 +19,12 @@ namespace GrobExp
             var compiledLambdas = new List<CompiledLambda>();
             ParameterExpression closureParameter;
             Type closureType;
-            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter);
+            Func<Closure> closureCreator;
+            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter, out closureCreator);
             var result = Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas);
+            var closure = closureCreator();
             if(compiledLambdas.Count > 0)
-            {
-                var delegatesFoister = BuildDelegatesFoister(closureType);
-                delegatesFoister(compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray());
-            }
+                closure.delegates = compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray();
             var ilCode = new StringBuilder(result.ILCode);
             for(int i = 0; i < compiledLambdas.Count; ++i)
             {
@@ -34,7 +35,11 @@ namespace GrobExp
                 ilCode.AppendLine("delegates[" + i + "]");
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
-            return result.Delegate as TDelegate;
+            Type returnType = lambda.Body.Type;
+            Type[] parameterTypes = lambda.Parameters.Select(parameter => parameter.Type).ToArray();
+            var lambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, returnType, parameterTypes);
+            Delegate @delegate = CreateLambdaInvoker(lambdaInvoker, closureType, Extensions.GetDelegateType(parameterTypes, returnType), closure, DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)result.Method));
+            return @delegate as TDelegate;
         }
 
         public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
@@ -91,15 +96,18 @@ namespace GrobExp
                 };
         }
 
-        private static Action<Delegate[]> BuildDelegatesFoister(Type type)
+        private static Delegate CreateLambdaInvoker(Type lambdaInvokerType, Type closureType, Type resultType, Closure closure, IntPtr pointer)
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(Delegate[])}, Module, true);
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(Delegate), new[] {typeof(Closure), typeof(IntPtr)}, Module, true);
             var il = new GroboIL(method);
-            il.Ldnull();
+            var types = new[] {closureType, typeof(IntPtr)};
             il.Ldarg(0);
-            il.Stfld(type.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
+            il.Ldarg(1);
+            il.Newobj(lambdaInvokerType.GetConstructor(types));
+            il.Ldftn(lambdaInvokerType.GetMethod("Invoke"));
+            il.Newobj(resultType.GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
             il.Ret();
-            return (Action<Delegate[]>)method.CreateDelegate(typeof(Action<Delegate[]>));
+            return ((Func<Closure, IntPtr, Delegate>)method.CreateDelegate(typeof(Func<Closure, IntPtr, Delegate>)))(closure, pointer);
         }
 
         private enum ResultType

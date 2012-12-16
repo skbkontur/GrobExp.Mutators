@@ -29,8 +29,12 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="GrEmit">
+      <HintPath>..\..\Assemblies\GrEmit.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,7 +46,6 @@
   <ItemGroup>
     <Compile Include="Closure.cs" />
     <Compile Include="CompiledLambda.cs" />
-    <Compile Include="DelegateWrapper.cs" />
     <Compile Include="EmittingContext.cs" />
     <Compile Include="ExpressionClosureBuilder.cs" />
     <Compile Include="ExpressionClosureResolver.cs" />
@@ -58,6 +61,7 @@
     <Compile Include="ExpressionEmitters\ConstantExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ConvertExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\DefaultExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\DynamicMethodInvokerBuilder.cs" />
     <Compile Include="ExpressionEmitters\EqualityExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ExpressionEmitter.cs" />
     <Compile Include="ExpressionEmittersCollection.cs" />
@@ -73,6 +77,7 @@
     <Compile Include="ExpressionEmitters\NotExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ParameterExpressionEmitter.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="Formatter.cs" />
     <Compile Include="GrobIL.cs" />
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ExpressionEmitters\IExpressionEmitter.cs" />

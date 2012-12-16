@@ -2,15 +2,17 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class NewArrayBoundsExpressionEmitter : ExpressionEmitter<NewArrayExpression>
     {
-        protected override bool Emit(NewArrayExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             var il = context.Il;
 
-            GrobIL.Label lengthIsNullLabel = context.CanReturn ? il.DefineLabel("lengthIsNull") : null;
+            GroboIL.Label lengthIsNullLabel = context.CanReturn ? il.DefineLabel("lengthIsNull") : null;
             Type lengthType;
             var labelUsed = ExpressionEmittersCollection.Emit(node.Expressions.Single(), context, lengthIsNullLabel, out lengthType);
             if(!lengthType.IsPrimitive)

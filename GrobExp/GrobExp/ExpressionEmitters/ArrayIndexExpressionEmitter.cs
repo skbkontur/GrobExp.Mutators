@@ -1,14 +1,16 @@
 using System;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class ArrayIndexExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             var result = false;
-            GrobIL il = context.Il;
+            GroboIL il = context.Il;
             Type arrayType;
             result |= ExpressionEmittersCollection.Emit(node.Left, context, returnDefaultValueLabel, true, extend, out arrayType); // stack: [array]
             if(!arrayType.IsArray)
@@ -19,7 +21,7 @@ namespace GrobExp.ExpressionEmitters
                 il.Dup(); // stack: [array, array]
                 il.Brfalse(returnDefaultValueLabel); // if(array == null) goto returnDefaultValue; stack: [array]
             }
-            GrobIL.Label indexIsNullLabel = context.CanReturn ? il.DefineLabel("indexIsNull") : null;
+            GroboIL.Label indexIsNullLabel = context.CanReturn ? il.DefineLabel("indexIsNull") : null;
             Type indexType;
             bool labelUsed = ExpressionEmittersCollection.Emit(node.Right, context, indexIsNullLabel, out indexType); // stack: [array, index]
             if(!indexType.IsPrimitive)

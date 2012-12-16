@@ -2,17 +2,19 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class NewExpressionEmitter : ExpressionEmitter<NewExpression>
     {
-        protected override bool Emit(NewExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(NewExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             context.EmitLoadArguments(node.Arguments.ToArray());
             // note ich: баг решарпера
             // ReSharper disable ConditionIsAlwaysTrueOrFalse
             // ReSharper disable HeuristicUnreachableCode
-            GrobIL il = context.Il;
+            GroboIL il = context.Il;
             if(node.Constructor != null)
                 il.Newobj(node.Constructor);
             else

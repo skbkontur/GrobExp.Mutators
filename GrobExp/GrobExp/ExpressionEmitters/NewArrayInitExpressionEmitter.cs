@@ -1,11 +1,13 @@
 using System;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class NewArrayInitExpressionEmitter : ExpressionEmitter<NewArrayExpression>
     {
-        protected override bool Emit(NewArrayExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             var il = context.Il;
             Type elementType = node.Type.GetElementType();

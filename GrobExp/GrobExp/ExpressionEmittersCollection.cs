@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 using GrobExp.ExpressionEmitters;
 
 namespace GrobExp
 {
     internal static class ExpressionEmittersCollection
     {
-        public static bool Emit(Expression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, out Type resultType)
+        public static bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, out Type resultType)
         {
             return Emit(node, context, returnDefaultValueLabel, false, false, out resultType);
         }
@@ -18,7 +20,7 @@ namespace GrobExp
             Emit(node, context, null, false, false, out resultType);
         }
 
-        public static bool Emit(Expression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        public static bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             IExpressionEmitter emitter;
             if(!expressionEmitters.TryGetValue(node.NodeType, out emitter))

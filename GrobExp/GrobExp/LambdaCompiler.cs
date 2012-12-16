@@ -6,78 +6,24 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 
+using GrEmit;
+
 namespace GrobExp
 {
     public static class LambdaCompiler
     {
-        public static Func<TResult> Compile<TResult>(Expression<Func<TResult>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var func = (Func<Delegate[], TResult>)Compile(lambda, options, out delegates);
-            return () => func(delegates);
-        }
-
-        public static Action Compile(Expression<Action> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var action = (Action<Delegate[]>)Compile(lambda, options, out delegates);
-            return () => action(delegates);
-        }
-
-        public static Func<T, TResult> Compile<T, TResult>(Expression<Func<T, TResult>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var func = (Func<Delegate[], T, TResult>)Compile(lambda, options, out delegates);
-            return arg => func(delegates, arg);
-        }
-
-        public static Action<T> Compile<T>(Expression<Action<T>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var action = (Action<Delegate[], T>)Compile(lambda, options, out delegates);
-            return arg => action(delegates, arg);
-        }
-
-        public static Func<T1, T2, TResult> Compile<T1, T2, TResult>(Expression<Func<T1, T2, TResult>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var func = (Func<Delegate[], T1, T2, TResult>)Compile(lambda, options, out delegates);
-            return (arg1, arg2) => func(delegates, arg1, arg2);
-        }
-
-        public static Action<T1, T2> Compile<T1, T2>(Expression<Action<T1, T2>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var action = (Action<Delegate[], T1, T2>)Compile(lambda, options, out delegates);
-            return (arg1, arg2) => action(delegates, arg1, arg2);
-        }
-
-        public static Func<T1, T2, T3, TResult> Compile<T1, T2, T3, TResult>(Expression<Func<T1, T2, T3, TResult>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var func = (Func<Delegate[], T1, T2, T3, TResult>)Compile(lambda, options, out delegates);
-            return (arg1, arg2, arg3) => func(delegates, arg1, arg2, arg3);
-        }
-
-        public static Action<T1, T2, T3> Compile<T1, T2, T3>(Expression<Action<T1, T2, T3>> lambda, CompilerOptions options = CompilerOptions.All)
-        {
-            Delegate[] delegates;
-            var action = (Action<Delegate[], T1, T2, T3>)Compile(lambda, options, out delegates);
-            return (arg1, arg2, arg3) => action(delegates, arg1, arg2, arg3);
-        }
-
-        internal static CompiledLambda Compile(LambdaExpression lambda, CompilerOptions options, List<CompiledLambda> compiledLambdas)
-        {
-            return Compile(lambda, lambda.Parameters[0], options, compiledLambdas);
-        }
-
-        private static Delegate Compile(LambdaExpression lambda, CompilerOptions options, out Delegate[] delegates)
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
         {
             var compiledLambdas = new List<CompiledLambda>();
             ParameterExpression closureParameter;
-            lambda = new ExpressionClosureResolver(lambda).Resolve(out closureParameter);
-            var result = Compile(lambda, closureParameter, options, compiledLambdas);
-            delegates = compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray();
+            Type closureType;
+            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter);
+            var result = Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas);
+            if(compiledLambdas.Count > 0)
+            {
+                var delegatesFoister = BuildDelegatesFoister(closureType);
+                delegatesFoister(compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray());
+            }
             var ilCode = new StringBuilder(result.ILCode);
             for(int i = 0; i < compiledLambdas.Count; ++i)
             {
@@ -88,21 +34,25 @@ namespace GrobExp
                 ilCode.AppendLine("delegates[" + i + "]");
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
-            return result.Delegate;
+            return result.Delegate as TDelegate;
         }
 
-        private static CompiledLambda Compile(LambdaExpression lambda, ParameterExpression closureParameter, CompilerOptions options, List<CompiledLambda> compiledLambdas)
+        public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        public static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+
+        internal static CompiledLambda Compile(LambdaExpression lambda, Type closureType, ParameterExpression closureParameter, CompilerOptions options, List<CompiledLambda> compiledLambdas)
         {
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.Body.Type;
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), returnType, parameterTypes, module, true);
-            var il = new GrobIL(method.GetILGenerator(), false, returnType, parameterTypes);
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+            var il = new GroboIL(method);
 
             var context = new EmittingContext
                 {
                     Options = options,
                     Parameters = parameters,
+                    ClosureType = closureType,
                     ClosureParameter = closureParameter,
                     CompiledLambdas = compiledLambdas,
                     Il = il
@@ -136,15 +86,25 @@ namespace GrobExp
             return new CompiledLambda
                 {
                     Delegate = method.CreateDelegate(Extensions.GetDelegateType(parameterTypes, returnType)),
+                    Method = method,
                     ILCode = il.GetILCode()
                 };
         }
 
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
-        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+        private static Action<Delegate[]> BuildDelegatesFoister(Type type)
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(Delegate[])}, Module, true);
+            var il = new GroboIL(method);
+            il.Ldnull();
+            il.Ldarg(0);
+            il.Stfld(type.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
+            il.Ret();
+            return (Action<Delegate[]>)method.CreateDelegate(typeof(Action<Delegate[]>));
+        }
 
         private enum ResultType
         {
+            Void,
             Value,
             ByRefAll,
             ByRefValueTypesOnly,

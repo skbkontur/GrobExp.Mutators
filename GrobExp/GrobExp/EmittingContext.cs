@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit;
+
 namespace GrobExp
 {
     internal class EmittingContext
     {
-        public bool EmitNullChecking(Type type, GrobIL.Label objIsNullLabel)
+        public bool EmitNullChecking(Type type, GroboIL.Label objIsNullLabel)
         {
             if(!type.IsValueType)
             {
@@ -120,7 +122,7 @@ namespace GrobExp
             }
         }
 
-        public void EmitReturnDefaultValue(Type type, GrobIL.Label valueIsNullLabel, GrobIL.Label valueIsNotNullLabel)
+        public void EmitReturnDefaultValue(Type type, GroboIL.Label valueIsNullLabel, GroboIL.Label valueIsNotNullLabel)
         {
             Il.Br(valueIsNotNullLabel);
             Il.MarkLabel(valueIsNullLabel);
@@ -131,10 +133,10 @@ namespace GrobExp
 
         public LocalHolder DeclareLocal(Type type)
         {
-            Queue<GrobIL.Local> queue;
+            Queue<GroboIL.Local> queue;
             if(!locals.TryGetValue(type, out queue))
             {
-                queue = new Queue<GrobIL.Local>();
+                queue = new Queue<GroboIL.Local>();
                 locals.Add(type, queue);
             }
             if(queue.Count == 0)
@@ -142,7 +144,7 @@ namespace GrobExp
             return new LocalHolder(this, type, queue.Dequeue());
         }
 
-        public void FreeLocal(Type type, GrobIL.Local local)
+        public void FreeLocal(Type type, GroboIL.Local local)
         {
             locals[type].Enqueue(local);
         }
@@ -159,18 +161,19 @@ namespace GrobExp
 
         public CompilerOptions Options { get; set; }
         public ParameterExpression[] Parameters { get; set; }
+        public Type ClosureType { get; set; }
         public ParameterExpression ClosureParameter { get; set; }
         public List<CompiledLambda> CompiledLambdas { get; set; }
-        public GrobIL Il { get; set; }
+        public GroboIL Il { get; set; }
         public Dictionary<ParameterExpression, LocalHolder> VariablesToLocals { get { return variablesToLocals; } }
-        public Dictionary<LabelTarget, GrobIL.Label> Labels { get { return labels; } }
+        public Dictionary<LabelTarget, GroboIL.Label> Labels { get { return labels; } }
         public Stack<ParameterExpression> Variables { get { return variables; } }
 
         public bool CanReturn { get { return Options.HasFlag(CompilerOptions.CheckNullReferences) || Options.HasFlag(CompilerOptions.CheckArrayIndexes); } }
 
         public class LocalHolder : IDisposable
         {
-            public LocalHolder(EmittingContext owner, Type type, GrobIL.Local local)
+            public LocalHolder(EmittingContext owner, Type type, GroboIL.Local local)
             {
                 this.owner = owner;
                 this.type = type;
@@ -182,21 +185,21 @@ namespace GrobExp
                 owner.FreeLocal(type, local);
             }
 
-            public static implicit operator GrobIL.Local(LocalHolder holder)
+            public static implicit operator GroboIL.Local(LocalHolder holder)
             {
                 return holder.local;
             }
 
             private readonly EmittingContext owner;
             private readonly Type type;
-            private readonly GrobIL.Local local;
+            private readonly GroboIL.Local local;
         }
 
         private readonly Dictionary<ParameterExpression, LocalHolder> variablesToLocals = new Dictionary<ParameterExpression, LocalHolder>();
         private readonly Stack<ParameterExpression> variables = new Stack<ParameterExpression>();
-        private readonly Dictionary<LabelTarget, GrobIL.Label> labels = new Dictionary<LabelTarget, GrobIL.Label>();
+        private readonly Dictionary<LabelTarget, GroboIL.Label> labels = new Dictionary<LabelTarget, GroboIL.Label>();
 
-        private readonly Dictionary<Type, Queue<GrobIL.Local>> locals = new Dictionary<Type, Queue<GrobIL.Local>>();
+        private readonly Dictionary<Type, Queue<GroboIL.Local>> locals = new Dictionary<Type, Queue<GroboIL.Local>>();
 
         private static readonly FieldInfo nullableBoolValueField = typeof(bool?).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
         private static readonly FieldInfo nullableBoolHasValueField = typeof(bool?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);

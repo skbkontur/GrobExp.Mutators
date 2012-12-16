@@ -12,17 +12,18 @@ namespace GrobExp
         {
             this.lambda = lambda;
             closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters);
-            closureParameter = Expression.Parameter(closureType);
+            closureParameter = parameters.Count == 0 ? null : Expression.Parameter(closureType);
         }
 
-        public LambdaExpression Resolve(out ParameterExpression closureParameter)
+        public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter)
         {
             var body = ((LambdaExpression)Visit(lambda)).Body;
-            var delegatesParameter = Expression.Parameter(typeof(Delegate[]));
-            Expression createClosure = Expression.Assign(this.closureParameter, Expression.New(closureType));
-            Expression initClosure = Expression.Assign(Expression.MakeMemberAccess(this.closureParameter, Closure.DelegatesField), delegatesParameter);
             closureParameter = this.closureParameter;
-            return Expression.Lambda(Expression.Block(body.Type, new[] {this.closureParameter}, createClosure, initClosure, body), new[] {delegatesParameter}.Concat(lambda.Parameters));
+            closureType = this.closureType;
+            if (closureParameter == null)
+                return Expression.Lambda(body, lambda.Parameters);
+            Expression createClosure = Expression.Assign(this.closureParameter, Expression.New(closureType));
+            return Expression.Lambda(Expression.Block(body.Type, new[] {this.closureParameter}, createClosure, body), lambda.Parameters);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)

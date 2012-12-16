@@ -1,11 +1,13 @@
 using System;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class ArrayLengthExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             var il = context.Il;
             Type arrayType;

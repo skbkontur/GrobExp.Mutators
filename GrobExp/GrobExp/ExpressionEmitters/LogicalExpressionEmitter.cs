@@ -2,13 +2,15 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class LogicalExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
-            GrobIL il = context.Il;
+            GroboIL il = context.Il;
             if(node.Method != null)
                 throw new NotSupportedException("Custom operator '" + node.NodeType + "' is not supported");
             Expression left = node.Left;

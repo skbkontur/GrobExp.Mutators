@@ -62,14 +62,15 @@ namespace Tests
         [Test, Ignore]
         public void CompileAndSave()
         {
-            Expression<Func<TestStructA, IEnumerable<TestStructB>>> exp = a => a.ArrayB.Where(b => b.S == a.S);
+            /*Expression<Func<TestStructA, IEnumerable<TestStructB>>> exp = a => a.ArrayB.Where(b => b.S == a.S);
             Expression where = exp.Body;
             ParameterExpression temp = Expression.Variable(typeof(IEnumerable<TestStructB>));
             Expression assignTemp = Expression.Assign(temp, where);
             Expression assignS = Expression.Assign(Expression.MakeMemberAccess(exp.Parameters[0], typeof(TestStructA).GetProperty("S", BindingFlags.Public | BindingFlags.Instance)), Expression.Constant("zzz"));
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestStructB)), temp);
-            var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);
-            CompileAndSave(exp2);
+            var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);*/
+            Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[0].X;
+            CompileAndSave(exp);
         }
 
         [Test]
@@ -168,6 +169,50 @@ namespace Tests
             Assert.IsTrue(f(new TestClassA { ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
         }
 
+        [Test]
+        public void TestSubLambda5()
+        {
+            Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == a.S && b.C.ArrayD.All(d => d.S == b.S && d.ArrayE.Any(e => e.S == a.S && e.S == b.S && e.S == d.S)));
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(new TestClassA
+                {
+                    S = "zzz",
+                    ArrayB = new[]
+                        {
+                            new TestClassB
+                                {
+                                    S = "zzz",
+                                    C = new TestClassC
+                                        {
+                                            ArrayD = new[]
+                                                {
+                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } },
+                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } }
+                                                }
+                                        }
+                                },
+                        }
+                }));
+            Assert.IsFalse(f(new TestClassA
+                {
+                    S = "zzz",
+                    ArrayB = new[]
+                        {
+                            new TestClassB
+                                {
+                                    S = "zzz",
+                                    C = new TestClassC
+                                        {
+                                            ArrayD = new[]
+                                                {
+                                                    new TestClassD { S = "qxx", ArrayE = new[] { new TestClassE { S = "zzz" }, } },
+                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } }
+                                                }
+                                        }
+                                },
+                        }
+                }));
+        }
 
         private struct TestStructA
         {
@@ -239,7 +284,7 @@ namespace Tests
 
             public int? X { get; set; }
 
-            public readonly string S;
+            public string S;
         }
 
         private class TestClassE

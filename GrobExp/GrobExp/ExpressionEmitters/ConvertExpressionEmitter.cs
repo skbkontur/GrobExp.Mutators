@@ -2,11 +2,13 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class ConvertExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, false, extend, out resultType); // stack: [obj]
             if(resultType != node.Type && !(context.Options.HasFlag(CompilerOptions.UseTernaryLogic) && resultType == typeof(bool?) && node.Type == typeof(bool)))

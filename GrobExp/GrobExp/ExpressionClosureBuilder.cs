@@ -8,6 +8,8 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using GrEmit;
+
 namespace GrobExp
 {
     public class ExpressionClosureBuilder : ExpressionVisitor
@@ -16,12 +18,14 @@ namespace GrobExp
         {
             this.lambda = lambda;
             string name = "Closure_" + (uint)Interlocked.Increment(ref closureId);
-            typeBuilder = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
+            typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
         }
 
         public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters)
         {
             Visit(lambda);
+            if(hasSubLambdas)
+                typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.Static | FieldAttributes.InitOnly);
             Type result = typeBuilder.CreateType();
             BuildInitializer(result)();
             constants = this.constants.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
@@ -29,8 +33,12 @@ namespace GrobExp
             return result;
         }
 
+        private bool hasSubLambdas;
+
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
+            if(node != lambda)
+                hasSubLambdas = true;
             localParameters.Push(new HashSet<ParameterExpression>(node.Parameters));
             var res = base.VisitLambda(node);
             localParameters.Pop();
@@ -77,9 +85,8 @@ namespace GrobExp
 
         private Action BuildInitializer(Type type)
         {
-            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] { typeof(object[]) }, module, true);
-            //typeBuilder.DefineMethod("Initialize", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] {typeof(object[])});
-            var il = new GrobIL(method.GetILGenerator(), false, typeof(void), new[] {typeof(object[])});
+            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, LambdaCompiler.Module, true);
+            var il = new GroboIL(method);
             var consts = new object[hashtable.Count];
             int index = 0;
             foreach(DictionaryEntry entry in hashtable)
@@ -95,7 +102,7 @@ namespace GrobExp
                 var field = type.GetField(name, BindingFlags.Public | BindingFlags.Static);
                 if(field == null)
                     throw new MissingFieldException(type.Name, name);
-                if (constType.IsValueType)
+                if(constType.IsValueType)
                 {
                     il.Unbox_Any(constType);
                     if(field.FieldType != constType)
@@ -145,8 +152,5 @@ namespace GrobExp
         private readonly Dictionary<ParameterExpression, FieldInfo> parameters = new Dictionary<ParameterExpression, FieldInfo>();
 
         private readonly TypeBuilder typeBuilder;
-
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
-        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
     }
 }

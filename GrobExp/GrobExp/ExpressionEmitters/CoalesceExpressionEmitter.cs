@@ -2,11 +2,13 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class CoalesceExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             if(node.Conversion != null)
                 throw new NotSupportedException("Coalesce with conversion is not supported");
@@ -14,8 +16,8 @@ namespace GrobExp.ExpressionEmitters
             // ReSharper disable HeuristicUnreachableCode
             var left = node.Left;
             var right = node.Right;
-            GrobIL il = context.Il;
-            GrobIL.Label valueIsNullLabel = context.CanReturn ? il.DefineLabel("valueIsNull") : null;
+            GroboIL il = context.Il;
+            GroboIL.Label valueIsNullLabel = context.CanReturn ? il.DefineLabel("valueIsNull") : null;
             Type leftType;
             bool labelUsed = ExpressionEmittersCollection.Emit(left, context, valueIsNullLabel, out leftType);
             if(left.Type.IsValueType)

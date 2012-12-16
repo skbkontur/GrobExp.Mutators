@@ -1,14 +1,16 @@
 using System;
 using System.Linq.Expressions;
 
+using GrEmit;
+
 namespace GrobExp.ExpressionEmitters
 {
     internal class MemberInitExpressionEmitter : ExpressionEmitter<MemberInitExpression>
     {
-        protected override bool Emit(MemberInitExpression node, EmittingContext context, GrobIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(MemberInitExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
         {
             ExpressionEmittersCollection.Emit(node.NewExpression, context, out resultType); // stack: [new obj(args)]
-            GrobIL il = context.Il;
+            GroboIL il = context.Il;
             if(!node.Type.IsValueType)
             {
                 foreach(MemberAssignment assignment in node.Bindings)

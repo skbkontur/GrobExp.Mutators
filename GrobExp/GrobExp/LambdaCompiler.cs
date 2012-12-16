@@ -22,9 +22,6 @@ namespace GrobExp
             Func<Closure> closureCreator;
             var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter, out closureCreator);
             var result = Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas);
-            var closure = closureCreator();
-            if(compiledLambdas.Count > 0)
-                closure.delegates = compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray();
             var ilCode = new StringBuilder(result.ILCode);
             for(int i = 0; i < compiledLambdas.Count; ++i)
             {
@@ -35,6 +32,11 @@ namespace GrobExp
                 ilCode.AppendLine("delegates[" + i + "]");
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
+            if (closureParameter == null)
+                return result.Delegate as TDelegate;
+            var closure = closureCreator();
+            if(compiledLambdas.Count > 0)
+                closure.delegates = compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray();
             Type returnType = lambda.Body.Type;
             Type[] parameterTypes = lambda.Parameters.Select(parameter => parameter.Type).ToArray();
             var lambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, returnType, parameterTypes);

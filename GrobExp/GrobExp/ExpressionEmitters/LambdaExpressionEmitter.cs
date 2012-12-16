@@ -20,12 +20,13 @@ namespace GrobExp.ExpressionEmitters
             bool needClosure = context.ClosureParameter != null;
             if(!needClosure)
             {
-                var compiledLambda = LambdaCompiler.Compile(node, context.ClosureType, null, context.Options, context.CompiledLambdas);
+                /*var compiledLambda = LambdaCompiler.Compile(node, context.ClosureType, null, context.Options, context.CompiledLambdas);
                 context.CompiledLambdas.Add(compiledLambda);
                 il.Ldnull();
-                il.Ldfld(context.ClosureType.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
+                il.Ldfld(Closure.DelegatesField);
                 il.Ldc_I4(context.CompiledLambdas.Count - 1);
-                il.Ldelem(typeof(Delegate));
+                il.Ldelem(typeof(Delegate));*/
+                throw new NotSupportedException();
             }
             else
             {

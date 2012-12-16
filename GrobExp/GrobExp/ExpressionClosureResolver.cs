@@ -11,8 +11,9 @@ namespace GrobExp
         public ExpressionClosureResolver(LambdaExpression lambda)
         {
             this.lambda = lambda;
-            closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters, out closureCreator);
-            closureParameter = Expression.Parameter(closureType);
+            bool hasSubLambdas;
+            closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters, out closureCreator, out hasSubLambdas);
+            closureParameter = parameters.Count > 0 || constants.Count > 0  || hasSubLambdas? Expression.Parameter(closureType) : null;
         }
 
         public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter, out Func<Closure> closureCreator)
@@ -21,7 +22,7 @@ namespace GrobExp
             closureParameter = this.closureParameter;
             closureType = this.closureType;
             closureCreator = this.closureCreator;
-            return Expression.Lambda(body, new[] {closureParameter}.Concat(lambda.Parameters));
+            return Expression.Lambda(body, closureParameter == null ? lambda.Parameters : new[] {closureParameter}.Concat(lambda.Parameters));
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)

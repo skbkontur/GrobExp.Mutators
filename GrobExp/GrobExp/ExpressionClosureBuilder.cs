@@ -21,15 +21,14 @@ namespace GrobExp
             typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
         }
 
-        public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out Func<Closure> closureCreator)
+        public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out Func<Closure> closureCreator, out bool hasSubLambdas)
         {
             Visit(lambda);
-            if(hasSubLambdas)
-                typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.InitOnly);
             Type result = typeBuilder.CreateType();
             closureCreator = BuildClosureCreator(result);
             constants = this.constants.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
             parameters = this.parameters.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
+            hasSubLambdas = this.hasSubLambdas;
             return result;
         }
 

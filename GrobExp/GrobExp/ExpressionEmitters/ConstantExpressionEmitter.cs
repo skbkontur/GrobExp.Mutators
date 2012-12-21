@@ -7,7 +7,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class ConstantExpressionEmitter : ExpressionEmitter<ConstantExpression>
     {
-        protected override bool Emit(ConstantExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(ConstantExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(node.Value == null)
                 context.EmitLoadDefaultValue(node.Type);

@@ -8,9 +8,9 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class ConvertExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, false, extend, out resultType); // stack: [obj]
+            var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, ResultType.Value, extend, out resultType); // stack: [obj]
             if(resultType != node.Type && !(context.Options.HasFlag(CompilerOptions.UseTernaryLogic) && resultType == typeof(bool?) && node.Type == typeof(bool)))
             {
                 if(node.Method != null)
@@ -32,7 +32,7 @@ namespace GrobExp.ExpressionEmitters
                     il.Castclass(to);
                 else
                 {
-                    if(from != typeof(object))
+                    if(from != typeof(object) && !(from == typeof(Enum) && to.IsEnum))
                         throw new InvalidCastException("Cannot cast an object of type '" + from + "' to type '" + to + "'");
                     il.Unbox_Any(to);
                 }
@@ -41,7 +41,7 @@ namespace GrobExp.ExpressionEmitters
             {
                 if(!to.IsValueType)
                 {
-                    if(to != typeof(object))
+                    if(to != typeof(object) && !(to == typeof(Enum) && from.IsEnum))
                         throw new InvalidCastException("Cannot cast an object of type '" + from + "' to type '" + to + "'");
                     il.Box(from);
                 }
@@ -81,9 +81,9 @@ namespace GrobExp.ExpressionEmitters
                             il.Newobj(to.GetConstructor(new[] {toArgument}));
                         }
                     }
-                    else if(to.IsEnum)
+                    else if(to.IsEnum || to == typeof(Enum))
                         EmitConvert(context, from, typeof(int));
-                    else if(from.IsEnum)
+                    else if(from.IsEnum || from == typeof(Enum))
                         EmitConvert(context, typeof(int), to);
                     else
                         throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");

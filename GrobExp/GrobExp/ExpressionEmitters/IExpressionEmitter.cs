@@ -7,6 +7,6 @@ namespace GrobExp.ExpressionEmitters
 {
     internal interface IExpressionEmitter
     {
-        bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType);
+        bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType);
     }
 }

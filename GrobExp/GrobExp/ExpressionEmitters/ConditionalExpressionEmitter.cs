@@ -7,7 +7,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class ConditionalExpressionEmitter : ExpressionEmitter<ConditionalExpression>
     {
-        protected override bool Emit(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var result = false;
             GroboIL il = context.Il;
@@ -18,7 +18,13 @@ namespace GrobExp.ExpressionEmitters
                 context.ConvertFromNullableBoolToBool();
             var ifFalseLabel = il.DefineLabel("ifFalse");
             il.Brfalse(ifFalseLabel);
-            result |= ExpressionEmittersCollection.Emit(node.IfTrue, context, returnDefaultValueLabel, returnByRef, extend, out resultType);
+            Type ifTrueType;
+            result |= ExpressionEmittersCollection.Emit(node.IfTrue, context, returnDefaultValueLabel, whatReturn, extend, out ifTrueType);
+            if (node.Type == typeof(void) && ifTrueType != typeof(void))
+            {
+                using (var temp = context.DeclareLocal(ifTrueType))
+                    il.Stloc(temp);
+            }
             var doneLabel = il.DefineLabel("done");
             il.Br(doneLabel);
             if(testIsNullLabelUsed)
@@ -27,8 +33,15 @@ namespace GrobExp.ExpressionEmitters
                 il.Pop();
             }
             il.MarkLabel(ifFalseLabel);
-            result |= ExpressionEmittersCollection.Emit(node.IfFalse, context, returnDefaultValueLabel, returnByRef, extend, out resultType);
+            Type ifFalseType;
+            result |= ExpressionEmittersCollection.Emit(node.IfFalse, context, returnDefaultValueLabel, whatReturn, extend, out ifFalseType);
+            if (node.Type == typeof(void) && ifFalseType != typeof(void))
+            {
+                using (var temp = context.DeclareLocal(ifFalseType))
+                    il.Stloc(temp);
+            }
             il.MarkLabel(doneLabel);
+            resultType = node.Type;
             return result;
         }
     }

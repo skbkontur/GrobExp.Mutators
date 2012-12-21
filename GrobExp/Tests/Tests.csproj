@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestIndex.cs" />
     <Compile Include="ParameterReplacer.cs" />
     <Compile Include="TestCheckArrayIndex.cs" />
     <Compile Include="TestCheckNullReference.cs" />

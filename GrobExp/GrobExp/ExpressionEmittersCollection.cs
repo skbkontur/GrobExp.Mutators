@@ -12,20 +12,20 @@ namespace GrobExp
     {
         public static bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, out Type resultType)
         {
-            return Emit(node, context, returnDefaultValueLabel, false, false, out resultType);
+            return Emit(node, context, returnDefaultValueLabel, ResultType.Value, false, out resultType);
         }
 
         public static void Emit(Expression node, EmittingContext context, out Type resultType)
         {
-            Emit(node, context, null, false, false, out resultType);
+            Emit(node, context, null, ResultType.Value, false, out resultType);
         }
 
-        public static bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        public static bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             IExpressionEmitter emitter;
             if(!expressionEmitters.TryGetValue(node.NodeType, out emitter))
                 throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-            return emitter.Emit(node, context, returnDefaultValueLabel, returnByRef, extend, out resultType);
+            return emitter.Emit(node, context, returnDefaultValueLabel, whatReturn, extend, out resultType);
         }
 
         private static readonly Dictionary<ExpressionType, IExpressionEmitter> expressionEmitters = new Dictionary<ExpressionType, IExpressionEmitter>
@@ -35,6 +35,7 @@ namespace GrobExp
                 {ExpressionType.Convert, new ConvertExpressionEmitter()},
                 {ExpressionType.Constant, new ConstantExpressionEmitter()},
                 {ExpressionType.ArrayIndex, new ArrayIndexExpressionEmitter()},
+                {ExpressionType.Index, new IndexExpressionEmitter()},
                 {ExpressionType.ArrayLength, new ArrayLengthExpressionEmitter()},
                 {ExpressionType.Call, new CallExpressionEmitter()},
                 {ExpressionType.Block, new BlockExpressionEmitter()},

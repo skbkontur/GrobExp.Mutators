@@ -7,7 +7,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class MemberInitExpressionEmitter : ExpressionEmitter<MemberInitExpression>
     {
-        protected override bool Emit(MemberInitExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(MemberInitExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             ExpressionEmittersCollection.Emit(node.NewExpression, context, out resultType); // stack: [new obj(args)]
             GroboIL il = context.Il;

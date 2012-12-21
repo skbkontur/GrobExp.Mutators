@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Threading;
 
 using GrobExp;
 
@@ -12,13 +16,122 @@ namespace Tests
     public class Test // todo растащить на куски
     {
         [Test]
-        public void TestConditional()
+        public void TestConstsAreFreedAfterGarbageCollecting()
+        {
+            var weakRef = DoTestConstsAreFreedAfterGarbageCollecting();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            Assert.IsFalse(weakRef.IsAlive);
+        }
+
+        private static WeakReference DoTestConstsAreFreedAfterGarbageCollecting()
+        {
+            var a = new TestClassA { S = "qxx" };
+            var result = new WeakReference(a);
+            Expression<Func<TestClassA, string>> path = o => o.S;
+            var exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Equal(path.Body, Expression.MakeMemberAccess(Expression.Constant(a), typeof(TestClassA).GetProperty("S"))), path.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(new TestClassA {S = "qxx"}));
+            Assert.IsFalse(f(new TestClassA {S = "qzz"}));
+            return result;
+        }
+
+        [Test]
+        public void TestMultiThread()
+        {
+            ParameterExpression list = Expression.Variable(typeof(List<string>));
+            Expression listCreate = Expression.Assign(list, Expression.New(typeof(List<string>)));
+            Expression<Func<TestClassA, TestClassB[]>> pathToArray = a => a.ArrayB;
+            Expression<Func<TestClassB, string>> pathToS = b => b.S;
+            Expression addToList = Expression.Call(list, typeof(List<string>).GetMethod("Add", new[] {typeof(string)}), pathToS.Body);
+            MethodCallExpression forEach = Expression.Call(forEachMethod.MakeGenericMethod(new[] {typeof(TestClassB)}), pathToArray.Body, Expression.Lambda<Action<TestClassB>>(addToList, pathToS.Parameters));
+            var body = Expression.Block(typeof(List<string>), new[] {list}, listCreate, forEach, list);
+            var exp = Expression.Lambda<Func<TestClassA, List<string>>>(body, pathToArray.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            wasBug = false;
+            var thread = new Thread(Run);
+            thread.Start(f);
+            Run(f);
+            Assert.IsFalse(wasBug);
+        }
+
+        [Test, Ignore]
+        public void TestPopInt32()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(string), new[] {typeof(TestClassA)}, typeof(Test).Module, true);
+            var il = method.GetILGenerator(); //new GroboIL(method);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Dup);
+            il.EmitCall(OpCodes.Call, typeof(TestClassA).GetProperty("E", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), null);
+            var temp = il.DeclareLocal(typeof(long));
+            il.Emit(OpCodes.Stloc, temp);
+            //il.Pop();
+            il.EmitCall(OpCodes.Call, typeof(TestClassA).GetProperty("S", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), null);
+            il.Emit(OpCodes.Ret);
+            var func = (Func<TestClassA, string>)method.CreateDelegate(typeof(Func<TestClassA, string>));
+            Assert.AreEqual("zzz", func(new TestClassA {S = "zzz"}));
+        }
+
+        [Test]
+        public void TestConvertToEnum()
+        {
+            Expression<Func<TestEnum, Enum>> exp = x => (Enum)x;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(TestEnum.Two, f(TestEnum.Two));
+        }
+
+        [Test]
+        public void TestConvertFromEnum()
+        {
+            Expression<Func<Enum, TestEnum>> exp = x => (TestEnum)x;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(TestEnum.Two, f(TestEnum.Two));
+        }
+
+        [Test]
+        public void TestConditional1()
         {
             Expression<Func<TestClassA, int>> exp = a => a.Bool ? 1 : -1;
             var f = LambdaCompiler.Compile(exp);
             Assert.AreEqual(1, f(new TestClassA {Bool = true}));
             Assert.AreEqual(-1, f(null));
             Assert.AreEqual(-1, f(new TestClassA()));
+        }
+
+        [Test]
+        public void TestConditional2()
+        {
+            Expression<Func<TestClassA, string>> path = a => a.B.S;
+            Expression<Func<TestClassA, bool>> condition = a => a.S == "zzz";
+            Expression assign = Expression.Assign(path.Body, Expression.Constant("qxx"));
+            Expression test = new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body);
+            Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(Expression.IfThenElse(test, assign, Expression.Default(typeof(void))), path.Parameters);
+            var action = LambdaCompiler.Compile(exp);
+            var o = new TestClassA {S = "zzz"};
+            action(o);
+            Assert.IsNotNull(o.B);
+            Assert.AreEqual(o.B.S, "qxx");
+        }
+
+        [Test]
+        public void TestConditional3()
+        {
+            Expression<Func<TestClassA, string>> path = a => a.B.S;
+            Expression<Func<TestClassA, string>> path2 = a => a.S;
+            Expression<Func<TestClassA, bool>> condition = a => a.S == "zzz";
+            Expression assign1 = Expression.Assign(path.Body, Expression.Constant("qxx"));
+            Expression assign2 = Expression.Assign(path.Body, Expression.Constant("qzz"));
+            Expression test = new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body);
+            Expression assign3 = Expression.Assign(new ParameterReplacer(path2.Parameters[0], path.Parameters[0]).Visit(path2.Body), Expression.Block(typeof(string), Expression.IfThenElse(test, assign1, assign2), path.Body));
+            //Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(Expression.IfThenElse(test, assign1, assign2), path.Parameters);
+            Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(assign3, path.Parameters);
+            var action = LambdaCompiler.Compile(exp);
+            var o = new TestClassA {S = "zzz"};
+            action(o);
+            Assert.IsNotNull(o.B);
+            Assert.AreEqual(o.B.S, "qxx");
+            Assert.AreEqual(o.S, "qxx");
         }
 
         [Test]
@@ -174,6 +287,19 @@ namespace Tests
             public string S { get; set; }
         }
 
+        private void Run(object param)
+        {
+            var f = (Func<TestClassA, List<string>>)param;
+            for(int i = 0; i < 1000000; ++i)
+            {
+                string s = Guid.NewGuid().ToString();
+                var a = new TestClassA {ArrayB = new[] {new TestClassB {S = s}}};
+                var list = f(a);
+                if(list.Count == 0 || list[0] != s)
+                    wasBug = true;
+            }
+        }
+
         private int zzz(bool qxx)
         {
             return qxx ? 1 : 0;
@@ -198,6 +324,10 @@ namespace Tests
             return a.Y;
         }
 
+        private volatile bool wasBug;
+
+        private static readonly MethodInfo forEachMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(ints => Array.ForEach(ints, null))).Body).Method.GetGenericMethodDefinition();
+
         private class TestClassA
         {
             public int F(bool b)
@@ -210,12 +340,18 @@ namespace Tests
             public TestClassB B { get; set; }
             public TestClassB[] ArrayB { get; set; }
             public int[] IntArray { get; set; }
+            public TestEnum E { get; set; }
             public int? X;
             public Guid Guid = Guid.Empty;
             public Guid? NullableGuid;
             public bool? NullableBool;
             public int Y;
             public bool Bool;
+
+            ~TestClassA()
+            {
+                S = null;
+            }
         }
 
         private class TestClassB
@@ -261,6 +397,13 @@ namespace Tests
         {
             public string S { get; set; }
             public int X { get; set; }
+        }
+
+        private enum TestEnum
+        {
+            Zero = 0,
+            One = 1,
+            Two = 2
         }
     }
 }

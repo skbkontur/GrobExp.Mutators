@@ -7,11 +7,11 @@ namespace GrobExp.ExpressionEmitters
 {
     internal abstract class ExpressionEmitter<TExpression> : IExpressionEmitter where TExpression : Expression
     {
-        public bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        public bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            return Emit((TExpression)node, context, returnDefaultValueLabel, returnByRef, extend, out resultType);
+            return Emit((TExpression)node, context, returnDefaultValueLabel, whatReturn, extend, out resultType);
         }
 
-        protected abstract bool Emit(TExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType);
+        protected abstract bool Emit(TExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType);
     }
 }

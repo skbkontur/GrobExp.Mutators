@@ -10,7 +10,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class CallExpressionEmitter : ExpressionEmitter<MethodCallExpression>
     {
-        protected override bool Emit(MethodCallExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(MethodCallExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var result = false;
             GroboIL il = context.Il;
@@ -36,7 +36,7 @@ namespace GrobExp.ExpressionEmitters
             if(obj != null)
             {
                 Type actualType;
-                result |= ExpressionEmittersCollection.Emit(obj, context, returnDefaultValueLabel, true, extend, out actualType); // stack: [obj]
+                result |= ExpressionEmittersCollection.Emit(obj, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out actualType); // stack: [obj]
                 if(actualType.IsValueType)
                 {
                     using(var temp = context.DeclareLocal(actualType))

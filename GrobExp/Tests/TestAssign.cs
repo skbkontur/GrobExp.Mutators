@@ -87,6 +87,55 @@ namespace Tests
             Assert.AreEqual("qxx", o.B.C.S);
         }
 
+        [Test]
+        public void TestAssignArrayWithExtend1()
+        {
+            Expression<Func<TestClassA, string>> path1 = a => a.ArrayB[1].S;
+            Expression body = Expression.Assign(path1.Body, Expression.Constant("zzz"));
+            Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path1.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            var o = new TestClassA{ArrayB = new[] {new TestClassB{S = "qxx"}, }};
+            Assert.AreEqual("zzz", f(o));
+            Assert.IsNotNull(o.ArrayB);
+            Assert.AreEqual(2, o.ArrayB.Length);
+            Assert.AreEqual("zzz", o.ArrayB[1].S);
+            Assert.AreEqual("qxx", o.ArrayB[0].S);
+        }
+
+        [Test]
+        public void TestAssignArrayWithExtend2()
+        {
+            Expression<Func<TestClassA, string>> path1 = a => a.ArrayB[1].C.ArrayD[2].ArrayE[3].S;
+            Expression body = Expression.Assign(path1.Body, Expression.Constant("zzz"));
+            Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path1.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            var o = new TestClassA();
+            Assert.AreEqual("zzz", f(o));
+            Assert.IsNotNull(o.ArrayB);
+            Assert.AreEqual(2, o.ArrayB.Length);
+            Assert.IsNotNull(o.ArrayB[1].C);
+            Assert.IsNotNull(o.ArrayB[1].C.ArrayD);
+            Assert.AreEqual(3, o.ArrayB[1].C.ArrayD.Length);
+            Assert.IsNotNull(o.ArrayB[1].C.ArrayD[2].ArrayE);
+            Assert.AreEqual(4, o.ArrayB[1].C.ArrayD[2].ArrayE.Length);
+            Assert.AreEqual("zzz", o.ArrayB[1].C.ArrayD[2].ArrayE[3].S);
+        }
+
+        [Test]
+        public void TestAssignArrayWithExtend3()
+        {
+            Expression<Func<TestClassA, int[]>> path1 = a => a.IntArray;
+            Expression body = Expression.Assign(Expression.ArrayAccess(path1.Body, Expression.Constant(1)), Expression.Constant(-123));
+            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(body, path1.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            var o = new TestClassA { IntArray = new[]{12} };
+            Assert.AreEqual(-123, f(o));
+            Assert.IsNotNull(o.IntArray);
+            Assert.AreEqual(2, o.IntArray.Length);
+            Assert.AreEqual(12, o.IntArray[0]);
+            Assert.AreEqual(-123, o.IntArray[1]);
+        }
+
         private struct TestStructA
         {
             public string S { get; set; }

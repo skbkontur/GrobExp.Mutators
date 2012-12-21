@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -8,7 +9,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class AssignExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var il = context.Il;
             var left = node.Left;
@@ -45,18 +46,31 @@ namespace GrobExp.ExpressionEmitters
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)left;
-                    bool closureAssign = memberExpression.Expression == context.ClosureParameter;
-                    var leftIsNullLabel = !closureAssign && context.CanReturn ? il.DefineLabel("leftIsNull") : null;
-                    bool leftIsNullLabelUsed = false;
                     if(memberExpression.Expression == null) // static member
                     {
                         if(memberExpression.Member is FieldInfo)
                             il.Ldnull();
+                        var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
+                        Type rightType;
+                        var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
+                        if(right.Type == typeof(bool) && rightType == typeof(bool?))
+                            context.ConvertFromNullableBoolToBool();
+                        if(rightIsNullLabelUsed && context.CanReturn)
+                            context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
+                        using(var temp = context.DeclareLocal(right.Type))
+                        {
+                            il.Stloc(temp);
+                            il.Ldloc(temp);
+                            context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
+                            il.Ldloc(temp);
+                        }
                     }
                     else
                     {
+                        bool closureAssign = memberExpression.Expression == context.ClosureParameter;
+                        var leftIsNullLabel = !closureAssign && context.CanReturn ? il.DefineLabel("leftIsNull") : null;
                         Type type;
-                        leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(memberExpression.Expression, context, leftIsNullLabel, true, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out type);
+                        bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(memberExpression.Expression, context, leftIsNullLabel, ResultType.ByRefValueTypesOnly, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out type);
                         if(type.IsValueType)
                         {
                             using(var temp = context.DeclareLocal(type))
@@ -64,103 +78,222 @@ namespace GrobExp.ExpressionEmitters
                                 il.Stloc(temp);
                                 il.Ldloca(temp);
                             }
+                            type = type.MakeByRefType();
                         }
                         if(!closureAssign && context.Options.HasFlag(CompilerOptions.CheckNullReferences))
                             leftIsNullLabelUsed |= context.EmitNullChecking(memberExpression.Expression.Type, leftIsNullLabel);
-                    }
-                    using(var temp = context.DeclareLocal(right.Type))
-                    {
-                        var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                        Type rightType;
-                        var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                        if(right.Type == typeof(bool) && rightType == typeof(bool?))
-                            context.ConvertFromNullableBoolToBool();
-                        if(rightIsNullLabelUsed && context.CanReturn)
-                            context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                        il.Stloc(temp);
-                        il.Ldloc(temp);
-                        context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
-                        il.Ldloc(temp);
-                    }
-                    if(leftIsNullLabelUsed)
-                    {
-                        var doneLabel = il.DefineLabel("done");
-                        il.Br(doneLabel);
-                        il.MarkLabel(leftIsNullLabel);
-                        il.Pop();
-                        var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                        Type rightType;
-                        var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                        if(right.Type == typeof(bool) && rightType == typeof(bool?))
-                            context.ConvertFromNullableBoolToBool();
-                        if(rightIsNullLabelUsed && context.CanReturn)
-                            context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                        il.MarkLabel(doneLabel);
+                        if(leftIsNullLabelUsed)
+                            context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
+                        using(var temp = context.DeclareLocal(type))
+                        {
+                            il.Stloc(temp);
+                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
+                            Type rightType;
+                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
+                            if (right.Type == typeof(bool) && rightType == typeof(bool?))
+                                context.ConvertFromNullableBoolToBool();
+                            if (rightIsNullLabelUsed && context.CanReturn)
+                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
+                            using (var value = context.DeclareLocal(right.Type))
+                            {
+                                il.Stloc(value);
+                                il.Ldloc(temp);
+                                if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                                {
+                                    il.Ldloc(value);
+                                    context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
+                                }
+                                else
+                                {
+                                    var returnValueLabel = il.DefineLabel("returnValue");
+                                    il.Brfalse(returnValueLabel);
+                                    il.Ldloc(temp);
+                                    il.Ldloc(value);
+                                    context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
+                                    il.MarkLabel(returnValueLabel);
+                                }
+                                il.Ldloc(value);
+                            }
+                        }
                     }
                     resultType = right.Type;
                     break;
                 }
-                /*case ExpressionType.ArrayIndex:
+            case ExpressionType.Index:
                 {
-                    var binaryExpression = (BinaryExpression)node.Left;
-                    var arrayIsNullLabel = context.CanReturn ? il.DefineLabel("arrayIsNull") : null;
-                    Type type;
-                    bool arrayIsNullLabelUsed = Build(binaryExpression.Left, context, arrayIsNullLabel, true, context.Options.HasFlag(GroboCompilerOptions.ExtendAssigns), out type);
-                    if (context.Options.HasFlag(GroboCompilerOptions.CheckNullReferences))
+                    var indexExpression = (IndexExpression)left;
+                    if (indexExpression.Object != null && indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1)
                     {
-                        arrayIsNullLabelUsed = true;
-                        EmitNullChecking(type, context, arrayIsNullLabel);
-                    }
-
-                    GroboIL.Label indexIsNullLabel = context.CanReturn ? il.DefineLabel("indexIsNull") : null;
-                    bool labelUsed = Build(node.Right, context, indexIsNullLabel, false, false); // stack: [array, index]
-                    if (labelUsed && context.CanReturn)
-                    {
-                        var indexIsNotNullLabel = il.DefineLabel("indexIsNotNull");
-                        il.Br(indexIsNotNullLabel);
-                        il.MarkLabel(indexIsNullLabel);
-                        il.Pop();
-                        il.Ldc_I4(0);
-                        il.MarkLabel(indexIsNotNullLabel);
-                    }
-                    if(context.Options.HasFlag(GroboCompilerOptions.ExtendAssigns))
-                    {
-                        // stack: [array, index]
-                        using(var index = context.DeclareLocal(typeof(int)))
+                        left = Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single());
+                        var binaryExpression = (BinaryExpression)left;
+                        var leftIsNullLabel = context.CanReturn ? il.DefineLabel("leftIsNull") : null;
+                        Type elementType;
+                        bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(binaryExpression, context, leftIsNullLabel, ResultType.ByRefAll, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out elementType);
+                        if (context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                            leftIsNullLabelUsed |= context.EmitNullChecking(elementType, leftIsNullLabel);
+                        if (leftIsNullLabelUsed)
+                            context.EmitReturnDefaultValue(elementType, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
+                        using (var temp = context.DeclareLocal(elementType))
                         {
-                            il.Dup(); // stack: [array, index, index]
-                            il.Stloc(index); // index = index; stack: [array, index]
-                            il.Ldc_I4(0); // stack: [array, index, 0]
-                            il.Blt(typeof(int), arrayIsNullLabel); // stack: [array]
-                            il.Dup(); // stack: [array, array]
-                            il.Ldlen(); // stack: [array, array.Length]
-                            il.Ldloc(index); // stack: [array, array.Length, index]
-                            var assignLabel = il.DefineLabel("assign");
-                            il.Bgt(typeof(int), assignLabel);
-                            il.Pop();
+                            il.Stloc(temp);
+                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
+                            Type rightType;
+                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
+                            if (right.Type == typeof(bool) && rightType == typeof(bool?))
+                                context.ConvertFromNullableBoolToBool();
+                            if (rightIsNullLabelUsed && context.CanReturn)
+                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
+                            using (var value = context.DeclareLocal(right.Type))
+                            {
+                                il.Stloc(value);
+                                il.Ldloc(temp);
+                                if (!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                                {
+                                    il.Ldloc(value);
+                                    if (binaryExpression.Type.IsStruct())
+                                        context.Il.Stobj(binaryExpression.Type);
+                                    else
+                                        context.Il.Stind(binaryExpression.Type);
+                                }
+                                else
+                                {
+                                    var returnValueLabel = il.DefineLabel("returnValue");
+                                    il.Brfalse(returnValueLabel);
+                                    il.Ldloc(temp);
+                                    il.Ldloc(value);
+                                    if (binaryExpression.Type.IsStruct())
+                                        context.Il.Stobj(binaryExpression.Type);
+                                    else
+                                        context.Il.Stind(binaryExpression.Type);
+                                    il.MarkLabel(returnValueLabel);
+                                }
+                                il.Ldloc(value);
+                            }
                         }
                     }
-                    else if (context.Options.HasFlag(GroboCompilerOptions.CheckArrayIndexes))
+                    else
                     {
-                        using (var index = context.DeclareLocal(typeof(int)))
+                        if(indexExpression.Object == null)
                         {
-                            il.Stloc(index); // index = index; stack: [array]
-                            il.Dup(); // stack: [array, array]
-                            il.Ldlen(); // stack: [array, array.Length]
-                            il.Ldloc(index); // stack: [array, array.Length, index]
-                            il.Ble(typeof(int), returnDefaultValueLabel); // if(array.Length <= index) goto returnDefaultValue; stack: [array]
-                            il.Ldloc(index); // stack: [array, index]
-                            il.Ldc_I4(0); // stack: [array, index, 0]
-                            il.Blt(typeof(int), returnDefaultValueLabel); // if(index < 0) goto returnDefaultValue; stack: [array]     .
-                            il.Ldloc(index); // stack: [array, index]
+                            if(indexExpression.Indexer == null)
+                                throw new InvalidOperationException("Either Object or Indexer should not be null");
+                            context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
+                            Type rightType;
+                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
+                            if (right.Type == typeof(bool) && rightType == typeof(bool?))
+                                context.ConvertFromNullableBoolToBool();
+                            if (rightIsNullLabelUsed && context.CanReturn)
+                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
+                            using (var value = context.DeclareLocal(right.Type))
+                            {
+                                il.Stloc(value);
+                                il.Ldloc(value);
+                                MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                                if(setter == null)
+                                    throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
+                                il.Call(setter, indexExpression.Object == null ? null : indexExpression.Object.Type);
+                                il.Ldloc(value);
+                            }
+                        }
+                        else
+                        {
+                            var leftIsNullLabel = context.CanReturn ? il.DefineLabel("leftIsNull") : null;
+                            Type type;
+                            bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(indexExpression.Object, context, leftIsNullLabel, ResultType.ByRefValueTypesOnly, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out type);
+                            if (type.IsValueType)
+                            {
+                                using (var temp = context.DeclareLocal(type))
+                                {
+                                    il.Stloc(temp);
+                                    il.Ldloca(temp);
+                                }
+                                type = type.MakeByRefType();
+                            }
+                            if (context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                                leftIsNullLabelUsed |= context.EmitNullChecking(indexExpression.Object.Type, leftIsNullLabel);
+                            if (leftIsNullLabelUsed)
+                                context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
+                            using (var temp = context.DeclareLocal(type))
+                            {
+                                il.Stloc(temp);
+                                var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
+                                Type rightType;
+                                var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
+                                if (right.Type == typeof(bool) && rightType == typeof(bool?))
+                                    context.ConvertFromNullableBoolToBool();
+                                if (rightIsNullLabelUsed && context.CanReturn)
+                                    context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
+                                using (var value = context.DeclareLocal(right.Type))
+                                {
+                                    il.Stloc(value);
+                                    il.Ldloc(temp);
+                                    if (!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                                    {
+                                        il.Ldloc(value);
+                                        EmitIndexAssign(indexExpression, context);
+                                    }
+                                    else
+                                    {
+                                        var returnValueLabel = il.DefineLabel("returnValue");
+                                        il.Brfalse(returnValueLabel);
+                                        il.Ldloc(temp);
+                                        il.Ldloc(value);
+                                        EmitIndexAssign(indexExpression, context);
+                                        il.MarkLabel(returnValueLabel);
+                                    }
+                                    il.Ldloc(value);
+                                }
+                            }
                         }
                     }
+                    resultType = right.Type;
                     break;
-                    }*/
+                }
             default:
                 throw new InvalidOperationException("Unable to assign to an expression with node type '" + left.NodeType + "'");
             }
             return false;
+        }
+
+        private static void EmitIndexAssign(IndexExpression node, EmittingContext context)
+        {
+            if (node.Indexer != null)
+            {
+                context.EmitLoadArguments(node.Arguments.ToArray());
+                MethodInfo setter = node.Indexer.GetSetMethod(true);
+                if (setter == null)
+                    throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "set_" + node.Indexer.Name);
+                context.Il.Call(setter);
+            }
+            else
+            {
+                Type arrayType = node.Object.Type;
+                if (!arrayType.IsArray)
+                    throw new InvalidOperationException("An array expected");
+                int rank = arrayType.GetArrayRank();
+                if (rank != node.Arguments.Count)
+                    throw new InvalidOperationException("Incorrect number of indeces '" + node.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                Type indexType = node.Arguments.First().Type;
+                if (indexType != typeof(int) && indexType != typeof(long))
+                    throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                context.Il.Ldc_I4(node.Arguments.Count);
+                context.Il.Newarr(indexType);
+                for (int i = 0; i < node.Arguments.Count; ++i)
+                {
+                    context.Il.Dup();
+                    context.Il.Ldc_I4(i);
+                    Type argumentType;
+                    context.EmitLoadArgument(node.Arguments[i], false, out argumentType);
+                    if (argumentType != indexType)
+                        throw new InvalidOperationException("Expected '" + indexType + "' but was '" + argumentType + "'");
+                    context.Il.Stelem(indexType);
+                }
+                MethodInfo setValueMethod = arrayType.GetMethod("SetValue", new[] { arrayType.GetElementType(), indexType.MakeArrayType() });
+                if (setValueMethod == null)
+                    throw new MissingMethodException(arrayType.ToString(), "SetValue");
+                context.Il.Call(setValueMethod);
+            }
         }
     }
 }

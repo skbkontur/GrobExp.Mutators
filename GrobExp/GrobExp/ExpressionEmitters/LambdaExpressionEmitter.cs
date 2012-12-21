@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,7 +12,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class LambdaExpressionEmitter : ExpressionEmitter<LambdaExpression>
     {
-        protected override bool Emit(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
             resultType = Extensions.GetDelegateType(parameterTypes, node.ReturnType);
@@ -30,7 +31,8 @@ namespace GrobExp.ExpressionEmitters
             }
             else
             {
-                var compiledLambda = LambdaCompiler.Compile(Expression.Lambda(node.Body, new[] {context.ClosureParameter}.Concat(node.Parameters)), context.ClosureType, context.ClosureParameter, context.Options, context.CompiledLambdas);
+                var parameters = new[] {context.ClosureParameter}.Concat(node.Parameters).ToArray();
+                var compiledLambda = LambdaCompiler.Compile(Expression.Lambda(Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), node.ReturnType), node.Body, parameters), context.ClosureType, context.ClosureParameter, context.Options, context.CompiledLambdas);
                 Type closureType;
                 ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
                 context.CompiledLambdas.Add(compiledLambda);

@@ -8,19 +8,19 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class MemberAccessExpressionEmitter : ExpressionEmitter<MemberExpression>
     {
-        protected override bool Emit(MemberExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(MemberExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             bool result = false;
             Type type = node.Expression == null ? null : node.Expression.Type;
             GroboIL il = context.Il;
             if(node.Expression == null)
             {
-                if(node.Member is FieldInfo)
+                if(node.Member.MemberType == MemberTypes.Field)
                     il.Ldnull();
             }
             else
             {
-                result |= ExpressionEmittersCollection.Emit(node.Expression, context, returnDefaultValueLabel, true, extend, out type); // stack: [obj]
+                result |= ExpressionEmittersCollection.Emit(node.Expression, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out type); // stack: [obj]
                 if(type.IsValueType)
                 {
                     using(var temp = context.DeclareLocal(type))
@@ -35,21 +35,27 @@ namespace GrobExp.ExpressionEmitters
             extend &= CanAssign(node.Member);
             Type memberType = GetMemberType(node.Member);
             ConstructorInfo constructor = memberType.GetConstructor(Type.EmptyTypes);
-            extend &= memberType.IsClass && constructor != null;
+            extend &= (memberType.IsClass && constructor != null) || memberType.IsArray;
             if(!extend)
-                context.EmitMemberAccess(type, node.Member, returnByRef, out resultType); // stack: [obj.member]
+                context.EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
             else
             {
                 if(node.Expression == null)
                 {
-                    context.EmitMemberAccess(type, node.Member, returnByRef, out resultType); // stack: [obj.member]
+                    context.EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
                     var memberIsNotNullLabel = il.DefineLabel("memberIsNotNull");
                     il.Dup();
                     il.Brtrue(memberIsNotNullLabel);
                     il.Pop();
                     if(node.Member is FieldInfo)
                         il.Ldnull();
-                    il.Newobj(constructor);
+                    if(!memberType.IsArray)
+                        il.Newobj(constructor);
+                    else
+                    {
+                        il.Ldc_I4(0);
+                        il.Newarr(memberType.GetElementType());
+                    }
                     using(var newobj = context.DeclareLocal(memberType))
                     {
                         il.Stloc(newobj);
@@ -65,13 +71,19 @@ namespace GrobExp.ExpressionEmitters
                     {
                         il.Stloc(temp);
                         il.Ldloc(temp);
-                        context.EmitMemberAccess(type, node.Member, returnByRef, out resultType); // stack: [obj.member]
+                        context.EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
                         var memberIsNotNullLabel = il.DefineLabel("memberIsNotNull");
                         il.Dup();
                         il.Brtrue(memberIsNotNullLabel);
                         il.Pop();
                         il.Ldloc(temp);
-                        il.Newobj(constructor);
+                        if(!memberType.IsArray)
+                            il.Newobj(constructor);
+                        else
+                        {
+                            il.Ldc_I4(0);
+                            il.Newarr(memberType.GetElementType());
+                        }
                         using(var newobj = context.DeclareLocal(memberType))
                         {
                             il.Stloc(newobj);

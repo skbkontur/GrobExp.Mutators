@@ -19,10 +19,9 @@ namespace GrobExp
             var compiledLambdas = new List<CompiledLambda>();
             ParameterExpression closureParameter;
             Type closureType;
-            Func<Closure> closureCreator;
-            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter, out closureCreator);
-            var result = Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas);
-            var ilCode = new StringBuilder(result.ILCode);
+            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter);
+            var compiledLambda = Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas);
+            var ilCode = new StringBuilder(compiledLambda.ILCode);
             for(int i = 0; i < compiledLambdas.Count; ++i)
             {
                 ilCode.AppendLine();
@@ -32,16 +31,18 @@ namespace GrobExp
                 ilCode.AppendLine("delegates[" + i + "]");
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
-            if (closureParameter == null)
-                return result.Delegate as TDelegate;
-            var closure = closureCreator();
-            if(compiledLambdas.Count > 0)
-                closure.delegates = compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray();
-            Type returnType = lambda.Body.Type;
-            Type[] parameterTypes = lambda.Parameters.Select(parameter => parameter.Type).ToArray();
-            var lambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, returnType, parameterTypes);
-            Delegate @delegate = CreateLambdaInvoker(lambdaInvoker, closureType, Extensions.GetDelegateType(parameterTypes, returnType), closure, DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)result.Method));
-            return @delegate as TDelegate;
+            Delegate result;
+            if(closureParameter == null)
+                result = compiledLambda.Delegate;
+            else
+            {
+                BuildDelegatesFoister(closureType)(compiledLambdas.Concat(new[] {compiledLambda}).Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
+                Type returnType = lambda.Body.Type;
+                Type[] parameterTypes = lambda.Parameters.Select(parameter => parameter.Type).ToArray();
+                var lambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, returnType, parameterTypes, true);
+                result = CreateLambdaInvoker(lambdaInvoker, Extensions.GetDelegateType(parameterTypes, returnType), DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method));
+            }
+            return (TDelegate)(object)result;
         }
 
         public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
@@ -51,7 +52,7 @@ namespace GrobExp
         {
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
-            Type returnType = lambda.Body.Type;
+            Type returnType = lambda.ReturnType;
             var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
             var il = new GroboIL(method);
 
@@ -67,8 +68,13 @@ namespace GrobExp
             var returnDefaultValueLabel = il.DefineLabel("returnDefaultValue");
             Type resultType;
             bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, out resultType);
-            if(lambda.Body.Type == typeof(bool) && resultType == typeof(bool?))
+            if(returnType == typeof(bool) && resultType == typeof(bool?))
                 context.ConvertFromNullableBoolToBool();
+            if(returnType == typeof(void) && resultType != typeof(void))
+            {
+                using(var temp = context.DeclareLocal(resultType))
+                    il.Stloc(temp);
+            }
             il.Ret();
             if(labelUsed && context.CanReturn)
             {
@@ -98,26 +104,28 @@ namespace GrobExp
                 };
         }
 
-        private static Delegate CreateLambdaInvoker(Type lambdaInvokerType, Type closureType, Type resultType, Closure closure, IntPtr pointer)
+        private static Action<Delegate[]> BuildDelegatesFoister(Type type)
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(Delegate), new[] {typeof(Closure), typeof(IntPtr)}, Module, true);
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(Delegate[])}, Module, true);
             var il = new GroboIL(method);
-            var types = new[] {closureType, typeof(IntPtr)};
+            il.Ldnull();
             il.Ldarg(0);
-            il.Ldarg(1);
+            il.Stfld(type.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
+            il.Ret();
+            return (Action<Delegate[]>)method.CreateDelegate(typeof(Action<Delegate[]>));
+        }
+
+        private static Delegate CreateLambdaInvoker(Type lambdaInvokerType, Type resultType, IntPtr pointer)
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(Delegate), Type.EmptyTypes, Module, true);
+            var il = new GroboIL(method);
+            var types = new[] {typeof(IntPtr)};
+            il.Ldc_IntPtr(pointer);
             il.Newobj(lambdaInvokerType.GetConstructor(types));
             il.Ldftn(lambdaInvokerType.GetMethod("Invoke"));
             il.Newobj(resultType.GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
             il.Ret();
-            return ((Func<Closure, IntPtr, Delegate>)method.CreateDelegate(typeof(Func<Closure, IntPtr, Delegate>)))(closure, pointer);
-        }
-
-        private enum ResultType
-        {
-            Void,
-            Value,
-            ByRefAll,
-            ByRefValueTypesOnly,
+            return ((Func<Delegate>)method.CreateDelegate(typeof(Func<Delegate>)))();
         }
     }
 }

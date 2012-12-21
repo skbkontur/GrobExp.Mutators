@@ -7,7 +7,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class BlockExpressionEmitter : ExpressionEmitter<BlockExpression>
     {
-        protected override bool Emit(BlockExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, bool returnByRef, bool extend, out Type resultType)
+        protected override bool Emit(BlockExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             foreach(var variable in node.Variables)
             {

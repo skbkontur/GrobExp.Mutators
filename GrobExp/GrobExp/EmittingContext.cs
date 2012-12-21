@@ -21,51 +21,77 @@ namespace GrobExp
             {
                 Il.Dup();
                 Type memberType;
-                EmitMemberAccess(type, type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), false, out memberType);
+                EmitMemberAccess(type, type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), ResultType.Value, out memberType);
                 Il.Brfalse(objIsNullLabel);
                 return true;
             }
             return false;
         }
 
-        public void EmitMemberAccess(Type type, MemberInfo member, bool returnByRef, out Type memberType)
+        public void EmitMemberAccess(Type type, MemberInfo member, ResultType whatReturn, out Type memberType)
         {
             switch(member.MemberType)
             {
             case MemberTypes.Property:
                 var property = (PropertyInfo)member;
-                var getter = property.GetGetMethod();
+                var getter = property.GetGetMethod(true);
                 if(getter == null)
                     throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_get");
                 Il.Call(getter, type);
                 Type propertyType = property.PropertyType;
-                if(returnByRef && propertyType.IsValueType)
+                switch(whatReturn)
                 {
-                    using(var temp = DeclareLocal(propertyType))
-                    {
-                        Il.Stloc(temp);
-                        Il.Ldloca(temp);
-                        memberType = propertyType.MakeByRefType();
-                    }
-                }
-                else
+                case ResultType.Value:
                     memberType = propertyType;
+                    break;
+                case ResultType.ByRefValueTypesOnly:
+                    if(propertyType.IsValueType)
+                    {
+                        using(var temp = DeclareLocal(propertyType))
+                        {
+                            Il.Stloc(temp);
+                            Il.Ldloca(temp);
+                            memberType = propertyType.MakeByRefType();
+                        }
+                    }
+                    else memberType = propertyType;
+                    break;
+                case ResultType.ByRefAll:
+                    throw new InvalidOperationException("It's wierd to load a property by ref for a reference type");
+                default:
+                    throw new NotSupportedException("Result type '" + whatReturn + "' is not supported");
+                }
                 break;
             case MemberTypes.Field:
                 var field = (FieldInfo)member;
-                if(returnByRef && field.FieldType.IsValueType)
+                switch(whatReturn)
                 {
-                    Il.Ldflda(field);
-                    memberType = field.FieldType.MakeByRefType();
-                }
-                else
-                {
+                case ResultType.Value:
                     Il.Ldfld(field);
                     memberType = field.FieldType;
+                    break;
+                case ResultType.ByRefAll:
+                    Il.Ldflda(field);
+                    memberType = field.FieldType.MakeByRefType();
+                    break;
+                case ResultType.ByRefValueTypesOnly:
+                    if(field.FieldType.IsValueType)
+                    {
+                        Il.Ldflda(field);
+                        memberType = field.FieldType.MakeByRefType();
+                    }
+                    else
+                    {
+                        Il.Ldfld(field);
+                        memberType = field.FieldType;
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException("Return type '" + whatReturn + "' is not supported");
                 }
                 break;
             default:
-                throw new InvalidOperationException(); // todo exception
+                throw new NotSupportedException("Member type '" + member.MemberType + "' is not supported");
             }
         }
 

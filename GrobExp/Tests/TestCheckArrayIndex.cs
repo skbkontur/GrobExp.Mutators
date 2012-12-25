@@ -12,7 +12,7 @@ namespace Tests
     {
 
         [Test]
-        public void Test5()
+        public void Test1()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].X;
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
@@ -25,7 +25,7 @@ namespace Tests
         }
 
         [Test]
-        public void Test5x()
+        public void Test2()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[1].X;
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
@@ -39,6 +39,19 @@ namespace Tests
             Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), null, } } } } }), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), new TestClassD(), } } } } }), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), new TestClassD { X = 1 }, } } } } }), Is.EqualTo(1));
+        }
+
+        [Test]
+        public void Test3()
+        {
+            Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[o.B.Y].X;
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.That(compiledExp(null), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA { ArrayB = new TestClassB[] { null } }), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB() } }), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { X = 1 } } }), Is.EqualTo(1));
+            Assert.That(compiledExp(new TestClassA { B = new TestClassB{Y = 1}, ArrayB = new[] { new TestClassB { X = 1 } } }), Is.EqualTo(null));
         }
 
         [Test]

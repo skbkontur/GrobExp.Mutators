@@ -15,22 +15,142 @@ namespace Tests
     [TestFixture]
     public class Test // todo растащить на куски
     {
-        [Test]
-        public void TestConstsAreFreedAfterGarbageCollecting()
+        private static int?[] CreateNullableIntArray(TestClassA a)
         {
-            var weakRef = DoTestConstsAreFreedAfterGarbageCollecting();
+            return new int?[a.Z];
+        }
+
+        private static void Qzz1(TestClassA a)
+        {
+            a.StructA.S = "zzz";
+        }
+
+        private static void Qzz2(TestClassA a, TestStructA aa)
+        {
+            a.StructAArray[1] = aa;
+        }
+
+        private static unsafe void Qzz3(TestClassA a, int x)
+        {
+            fixed(int *p = &a.IntArray[0])
+            {
+                *(p + 1) = x;
+            }
+        }
+
+        private static string GetString()
+        {
+            int j = 0;
+            for(int i = 0; i < 100000; ++i)
+            {
+                var o = new TestClassA { ArrayB = new TestClassB[100] };
+                j += i * o.ArrayB.Length;
+            }
+            return j.ToString();
+        }
+
+        private static readonly MethodInfo getStringMethod = ((MethodCallExpression)((Expression<Func<string>>)(() => GetString())).Body).Method;
+
+        [Test, Ignore]
+        public void TestPinning1()
+        {
+            Expression<Func<TestClassA, bool>> path = a => a.StructAArray[0].S == GetString();
+            Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), Expression.Assign(((BinaryExpression)path.Body).Left, Expression.Call(getStringMethod)), path.Body), path.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            var collectingThread = new Thread(Collect);
+            collectingThread.Start();
+            for (int i = 0; i < 10; ++i)
+            {
+                var generatingTrashThread = new Thread(GenerateTrash);
+                generatingTrashThread.Start();
+            }
+            for(int i = 0; i < 100000; ++i)
+            {
+                var o = new TestClassA { ArrayB = new TestClassB[100], IntArray = new int[100] };
+                Assert.IsTrue(f(o));
+            }
+        }
+
+        [Test, Ignore]
+        public void TestPinning2()
+        {
+            Expression<Func<TestClassA, bool>> path = a => a.StringArray[1] == GetString();
+            var arrayIndex = (BinaryExpression)((BinaryExpression)path.Body).Left;
+            Expression arrayAccess = Expression.ArrayAccess(arrayIndex.Left, arrayIndex.Right);
+            Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), Expression.Assign(arrayAccess, Expression.Call(getStringMethod)), path.Body), path.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            var collectingThread = new Thread(Collect);
+            collectingThread.Start();
+            for (int i = 0; i < 10; ++i)
+            {
+                var generatingTrashThread = new Thread(GenerateTrash);
+                generatingTrashThread.Start();
+            }
+            for(int i = 0; i < 100000; ++i)
+            {
+                var o = new TestClassA { ArrayB = new TestClassB[100], IntArray = new int[100], StringArray = new string[100] };
+                Assert.IsTrue(f(o));
+            }
+        }
+
+        private void GenerateTrash()
+        {
+            for(;;)
+            {
+                var list = new List<TestClassA>();
+                for (int i = 0; i < 1000; ++i )
+                    list.Add(new TestClassA { ArrayB = new TestClassB[100], IntArray = new int[100] });
+            }
+        }
+
+        private void Collect()
+        {
+            for(;;)
+            {
+                GC.Collect();
+                Thread.Sleep(100);
+            }
+        }
+
+        [Test]
+        public void TestConstsAreFreedAfterGarbageCollecting1()
+        {
+            var weakRef = DoTestConstsAreFreedAfterGarbageCollecting1();
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
             Assert.IsFalse(weakRef.IsAlive);
         }
 
-        private static WeakReference DoTestConstsAreFreedAfterGarbageCollecting()
+        [Test]
+        public void TestConstsAreFreedAfterGarbageCollecting2()
+        {
+            var weakRef = DoTestConstsAreFreedAfterGarbageCollecting2();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            Assert.IsFalse(weakRef.IsAlive);
+        }
+
+        private static WeakReference DoTestConstsAreFreedAfterGarbageCollecting1()
         {
             var a = new TestClassA { S = "qxx" };
             var result = new WeakReference(a);
             Expression<Func<TestClassA, string>> path = o => o.S;
             var exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Equal(path.Body, Expression.MakeMemberAccess(Expression.Constant(a), typeof(TestClassA).GetProperty("S"))), path.Parameters);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(new TestClassA {S = "qxx"}));
+            Assert.IsFalse(f(new TestClassA {S = "qzz"}));
+            return result;
+        }
+
+        private static WeakReference DoTestConstsAreFreedAfterGarbageCollecting2()
+        {
+            var a = new TestClassA { S = "qxx" };
+            var result = new WeakReference(a);
+            var aa = new TestStructA {A = a};
+            Expression<Func<TestClassA, string>> path = o => o.S;
+            var exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Equal(path.Body, Expression.MakeMemberAccess(Expression.MakeMemberAccess(Expression.Constant(aa), typeof(TestStructA).GetProperty("A")), typeof(TestClassA).GetProperty("S"))), path.Parameters);
             var f = LambdaCompiler.Compile(exp);
             Assert.IsTrue(f(new TestClassA {S = "qxx"}));
             Assert.IsFalse(f(new TestClassA {S = "qzz"}));
@@ -71,6 +191,14 @@ namespace Tests
             il.Emit(OpCodes.Ret);
             var func = (Func<TestClassA, string>)method.CreateDelegate(typeof(Func<TestClassA, string>));
             Assert.AreEqual("zzz", func(new TestClassA {S = "zzz"}));
+        }
+
+        [Test]
+        public void TestDefault()
+        {
+            Expression<Func<long>> exp = Expression.Lambda<Func<long>>(Expression.Default(typeof(long)));
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f());
         }
 
         [Test]
@@ -276,10 +404,11 @@ namespace Tests
 
         public struct TestStructA
         {
-            public string S { get; set; }
+            public string S;
             public TestStructB[] ArrayB { get; set; }
             public int? X { get; set; }
             public int Y { get; set; }
+            public TestClassA A { get; set; }
         }
 
         public struct TestStructB
@@ -328,7 +457,7 @@ namespace Tests
 
         private static readonly MethodInfo forEachMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(ints => Array.ForEach(ints, null))).Body).Method.GetGenericMethodDefinition();
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -347,6 +476,11 @@ namespace Tests
             public bool? NullableBool;
             public int Y;
             public bool Bool;
+            public long Z;
+
+            public TestStructA StructA;
+            public TestStructA[] StructAArray { get; set; }
+            public string[] StringArray { get; set; }
 
             ~TestClassA()
             {
@@ -354,7 +488,7 @@ namespace Tests
             }
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -373,7 +507,7 @@ namespace Tests
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -382,7 +516,7 @@ namespace Tests
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -393,13 +527,13 @@ namespace Tests
             public readonly string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private enum TestEnum
+        public enum TestEnum
         {
             Zero = 0,
             One = 1,

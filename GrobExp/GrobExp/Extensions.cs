@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace GrobExp
 {
-    public static class Extensions
+    internal static class Extensions
     {
         public static bool IsNullable(this Type type)
         {

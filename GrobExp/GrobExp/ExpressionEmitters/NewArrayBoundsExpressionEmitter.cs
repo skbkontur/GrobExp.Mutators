@@ -15,7 +15,7 @@ namespace GrobExp.ExpressionEmitters
             GroboIL.Label lengthIsNullLabel = context.CanReturn ? il.DefineLabel("lengthIsNull") : null;
             Type lengthType;
             var labelUsed = ExpressionEmittersCollection.Emit(node.Expressions.Single(), context, lengthIsNullLabel, out lengthType);
-            if(!lengthType.IsPrimitive)
+            if(lengthType != typeof(int))
                 throw new InvalidOperationException("Cannot create an array with length of type '" + lengthType + "'");
             if(labelUsed && context.CanReturn)
             {

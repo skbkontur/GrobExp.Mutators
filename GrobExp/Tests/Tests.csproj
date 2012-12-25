@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="GrEmit">
@@ -46,10 +48,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestBlock.cs" />
+    <Compile Include="TestConstant.cs" />
     <Compile Include="TestIndex.cs" />
     <Compile Include="ParameterReplacer.cs" />
     <Compile Include="TestCheckArrayIndex.cs" />
     <Compile Include="TestCheckNullReference.cs" />
+    <Compile Include="TestLabels.cs" />
     <Compile Include="TestLogical.cs" />
     <Compile Include="TestPerformance.cs" />
     <Compile Include="TestSubLambda.cs" />

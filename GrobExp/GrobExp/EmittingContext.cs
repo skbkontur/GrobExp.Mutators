@@ -28,6 +28,100 @@ namespace GrobExp
             return false;
         }
 
+        public bool EmitMemberAccess(MemberExpression node, GroboIL.Label returnDefaultValueLabel, bool checkNullReferences, bool extend, ResultType whatReturn, out Type resultType, out LocalHolder owner)
+        {
+            bool result = false;
+            owner = null;
+            Type type = node.Expression == null ? null : node.Expression.Type;
+            Type ownerType;
+            GroboIL il = Il;
+            if(node.Expression == null)
+            {
+                ownerType = null;
+                if(node.Member.MemberType == MemberTypes.Field)
+                    il.Ldnull();
+            }
+            else
+            {
+                result |= ExpressionEmittersCollection.Emit(node.Expression, this, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out type); // stack: [obj]
+                if(!type.IsValueType)
+                    ownerType = type;
+                else
+                {
+                    ownerType = type.MakeByRefType();
+                    using(var temp = DeclareLocal(type))
+                    {
+                        il.Stloc(temp);
+                        il.Ldloca(temp);
+                    }
+                }
+                if(checkNullReferences && node.Expression != ClosureParameter)
+                    result |= EmitNullChecking(node.Expression.Type, returnDefaultValueLabel);
+            }
+            extend &= CanAssign(node.Member);
+            Type memberType = GetMemberType(node.Member);
+            ConstructorInfo constructor = memberType.GetConstructor(Type.EmptyTypes);
+            extend &= (memberType.IsClass && constructor != null) || memberType.IsArray;
+            if(!extend)
+                EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
+            else
+            {
+                if(node.Expression == null)
+                {
+                    EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
+                    var memberIsNotNullLabel = il.DefineLabel("memberIsNotNull");
+                    il.Dup();
+                    il.Brtrue(memberIsNotNullLabel);
+                    il.Pop();
+                    if(node.Member is FieldInfo)
+                        il.Ldnull();
+                    if(!memberType.IsArray)
+                        il.Newobj(constructor);
+                    else
+                    {
+                        il.Ldc_I4(0);
+                        il.Newarr(memberType.GetElementType());
+                    }
+                    using(var newobj = DeclareLocal(memberType))
+                    {
+                        il.Stloc(newobj);
+                        il.Ldloc(newobj);
+                        EmitMemberAssign(type, node.Member);
+                        il.Ldloc(newobj);
+                    }
+                    il.MarkLabel(memberIsNotNullLabel);
+                }
+                else
+                {
+                    owner = DeclareLocal(ownerType);
+                    il.Stloc(owner);
+                    il.Ldloc(owner);
+                    EmitMemberAccess(type, node.Member, whatReturn, out resultType); // stack: [obj.member]
+                    var memberIsNotNullLabel = il.DefineLabel("memberIsNotNull");
+                    il.Dup();
+                    il.Brtrue(memberIsNotNullLabel);
+                    il.Pop();
+                    il.Ldloc(owner);
+                    if(!memberType.IsArray)
+                        il.Newobj(constructor);
+                    else
+                    {
+                        il.Ldc_I4(0);
+                        il.Newarr(memberType.GetElementType());
+                    }
+                    using(var newobj = DeclareLocal(memberType))
+                    {
+                        il.Stloc(newobj);
+                        il.Ldloc(newobj);
+                        EmitMemberAssign(type, node.Member);
+                        il.Ldloc(newobj);
+                    }
+                    il.MarkLabel(memberIsNotNullLabel);
+                }
+            }
+            return result;
+        }
+
         public void EmitMemberAccess(Type type, MemberInfo member, ResultType whatReturn, out Type memberType)
         {
             switch(member.MemberType)
@@ -45,7 +139,9 @@ namespace GrobExp
                     memberType = propertyType;
                     break;
                 case ResultType.ByRefValueTypesOnly:
-                    if(propertyType.IsValueType)
+                    if(!propertyType.IsValueType)
+                        memberType = propertyType;
+                    else
                     {
                         using(var temp = DeclareLocal(propertyType))
                         {
@@ -54,7 +150,6 @@ namespace GrobExp
                             memberType = propertyType.MakeByRefType();
                         }
                     }
-                    else memberType = propertyType;
                     break;
                 case ResultType.ByRefAll:
                     throw new InvalidOperationException("It's wierd to load a property by ref for a reference type");
@@ -100,7 +195,7 @@ namespace GrobExp
             switch(member.MemberType)
             {
             case MemberTypes.Property:
-                var setter = ((PropertyInfo)member).GetSetMethod();
+                var setter = ((PropertyInfo)member).GetSetMethod(true);
                 if(setter == null)
                     throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_set");
                 Il.Call(setter, type);
@@ -155,6 +250,74 @@ namespace GrobExp
             Il.Pop();
             EmitLoadDefaultValue(type);
             Il.MarkLabel(valueIsNotNullLabel);
+        }
+
+        public void EmitConvert(Type from, Type to)
+        {
+            if(from == to) return;
+            if(!from.IsValueType)
+            {
+                if(!to.IsValueType)
+                    Il.Castclass(to);
+                else
+                {
+                    if(from != typeof(object) && !(from == typeof(Enum) && to.IsEnum))
+                        throw new InvalidCastException("Cannot cast an object of type '" + from + "' to type '" + to + "'");
+                    Il.Unbox_Any(to);
+                }
+            }
+            else
+            {
+                if(!to.IsValueType)
+                {
+                    if(to != typeof(object) && !(to == typeof(Enum) && from.IsEnum))
+                        throw new InvalidCastException("Cannot cast an object of type '" + from + "' to type '" + to + "'");
+                    Il.Box(from);
+                }
+                else
+                {
+                    if(to.IsNullable())
+                    {
+                        var toArgument = to.GetGenericArguments()[0];
+                        if(from.IsNullable())
+                        {
+                            var fromArgument = from.GetGenericArguments()[0];
+                            using(var temp = DeclareLocal(from))
+                            {
+                                Il.Stloc(temp);
+                                Il.Ldloca(temp);
+                                FieldInfo hasValueField = from.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
+                                Il.Ldfld(hasValueField);
+                                var valueIsNullLabel = Il.DefineLabel("valueIsNull");
+                                Il.Brfalse(valueIsNullLabel);
+                                Il.Ldloca(temp);
+                                FieldInfo valueField = from.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
+                                Il.Ldfld(valueField);
+                                if(toArgument != fromArgument)
+                                    EmitConvert(fromArgument, toArgument);
+                                Il.Newobj(to.GetConstructor(new[] {toArgument}));
+                                var doneLabel = Il.DefineLabel("done");
+                                Il.Br(doneLabel);
+                                Il.MarkLabel(valueIsNullLabel);
+                                EmitLoadDefaultValue(to);
+                                Il.MarkLabel(doneLabel);
+                            }
+                        }
+                        else
+                        {
+                            if(toArgument != from)
+                                EmitConvert(from, toArgument);
+                            Il.Newobj(to.GetConstructor(new[] {toArgument}));
+                        }
+                    }
+                    else if(to.IsEnum || to == typeof(Enum))
+                        EmitConvert(from, typeof(int));
+                    else if(from.IsEnum || from == typeof(Enum))
+                        EmitConvert(typeof(int), to);
+                    else
+                        throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
+                }
+            }
         }
 
         public LocalHolder DeclareLocal(Type type)
@@ -219,6 +382,24 @@ namespace GrobExp
             private readonly EmittingContext owner;
             private readonly Type type;
             private readonly GroboIL.Local local;
+        }
+
+        private static bool CanAssign(MemberInfo member)
+        {
+            return member.MemberType == MemberTypes.Field || (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).CanWrite);
+        }
+
+        private static Type GetMemberType(MemberInfo member)
+        {
+            switch(member.MemberType)
+            {
+            case MemberTypes.Field:
+                return ((FieldInfo)member).FieldType;
+            case MemberTypes.Property:
+                return ((PropertyInfo)member).PropertyType;
+            default:
+                throw new NotSupportedException("Member " + member + " is not supported");
+            }
         }
 
         private readonly Dictionary<ParameterExpression, LocalHolder> variablesToLocals = new Dictionary<ParameterExpression, LocalHolder>();

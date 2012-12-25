@@ -13,7 +13,7 @@ namespace GrobExp.ExpressionEmitters
             Type arrayType;
             var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, out arrayType);
             if(!arrayType.IsArray)
-                throw new InvalidOperationException("Unable to perform array index operator to type '" + arrayType + "'");
+                throw new InvalidOperationException("Expected an array but was '" + arrayType + "'");
             if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
             {
                 result = true;

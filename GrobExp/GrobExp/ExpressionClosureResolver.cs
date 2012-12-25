@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace GrobExp
 {
-    public class ExpressionClosureResolver : ExpressionVisitor
+    internal class ExpressionClosureResolver : ExpressionVisitor
     {
         public ExpressionClosureResolver(LambdaExpression lambda)
         {

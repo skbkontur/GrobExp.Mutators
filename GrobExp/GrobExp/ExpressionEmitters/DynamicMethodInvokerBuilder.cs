@@ -10,7 +10,7 @@ using GrEmit;
 
 namespace GrobExp.ExpressionEmitters
 {
-    public static class DynamicMethodInvokerBuilder
+    internal static class DynamicMethodInvokerBuilder
     {
         public static Type BuildDynamicMethodInvoker(Type closureType, Type resultType, Type[] parameterTypes, bool buildFinalizer = false)
         {

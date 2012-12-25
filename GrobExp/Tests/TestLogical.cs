@@ -148,6 +148,89 @@ namespace Tests
             Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = -1 }, B = new TestClassB { X = -1 } }));
         }
 
+        [Test]
+        public void TestLogical11()
+        {
+            Expression<Func<TestClassA, bool?>> exp = o => o.B.Y > 0 && o.A.X > 0;
+            Func<TestClassA, bool?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(false, compiledExp(null));
+            Assert.AreEqual(false, compiledExp(new TestClassA()));
+            Assert.AreEqual(false, compiledExp(new TestClassA { B = new TestClassB() }));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB { Y = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { B = new TestClassB { Y = -1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 }, B = new TestClassB { Y = 1 } }));
+        }
+
+        [Test]
+        public void TestLogical12()
+        {
+            Expression<Func<TestClassA, bool?>> exp = o => o.B.Y > 0 || o.A.X > 0;
+            Func<TestClassA, bool?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.IsNull(compiledExp(null));
+            Assert.IsNull(compiledExp(new TestClassA()));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB() }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { B = new TestClassB { Y = 1 } }));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB { Y = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 }, B = new TestClassB { Y = 1 } }));
+        }
+
+        [Test]
+        public void TestLogical13()
+        {
+            Expression<Func<TestClassA, bool?>> exp = o => o.A.X > 0 && o.B.Y > 0;
+            Func<TestClassA, bool?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(false, compiledExp(null));
+            Assert.AreEqual(false, compiledExp(new TestClassA()));
+            Assert.AreEqual(false, compiledExp(new TestClassA { B = new TestClassB() }));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB { Y = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { B = new TestClassB { Y = -1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 }, B = new TestClassB { Y = 1 } }));
+        }
+
+        [Test]
+        public void TestLogical14()
+        {
+            Expression<Func<TestClassA, bool?>> exp = o => o.A.X > 0 || o.B.Y > 0;
+            Func<TestClassA, bool?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.IsNull(compiledExp(null));
+            Assert.IsNull(compiledExp(new TestClassA()));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB() }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { B = new TestClassB { Y = 1 } }));
+            Assert.IsNull(compiledExp(new TestClassA { B = new TestClassB { Y = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { A = new TestClassA { X = -1 } }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { A = new TestClassA { X = 1 }, B = new TestClassB { Y = 1 } }));
+        }
+
+        [Test]
+        public void TestLogical15()
+        {
+            Expression<Func<TestClassA, bool?>> exp = o => !(o.B.Y > 0);
+            Func<TestClassA, bool?> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(true, compiledExp(null));
+            Assert.AreEqual(true, compiledExp(new TestClassA()));
+            Assert.AreEqual(true, compiledExp(new TestClassA { B = new TestClassB() }));
+            Assert.AreEqual(true, compiledExp(new TestClassA { B = new TestClassB { Y = -1 } }));
+            Assert.AreEqual(false, compiledExp(new TestClassA { B = new TestClassB { Y = 1 } }));
+        }
+
+        [Test]
+        public void TestLogical16()
+        {
+            Expression<Func<TestClassA, string>> exp = o => ((bool?)(o.X > 0)).ToString();
+            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(null, compiledExp(null));
+            Assert.AreEqual(null, compiledExp(new TestClassA()));
+            Assert.AreEqual("False", compiledExp(new TestClassA { X = -2 }));
+            Assert.AreEqual("True", compiledExp(new TestClassA { X = 1 }));
+        }
+
         public struct TestStructA
         {
             public string S { get; set; }

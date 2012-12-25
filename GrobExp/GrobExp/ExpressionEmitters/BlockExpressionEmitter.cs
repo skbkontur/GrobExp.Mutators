@@ -49,7 +49,7 @@ namespace GrobExp.ExpressionEmitters
                 context.ConvertFromNullableBoolToBool();
             else if(node.Type == typeof(void) && resultType != typeof(void))
             {
-                // eat results of all expressions except the last one
+                // eat result of the last expression if the result of block is void
                 if(resultType.IsStruct())
                 {
                     using(var temp = context.DeclareLocal(resultType))

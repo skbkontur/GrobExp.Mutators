@@ -11,6 +11,59 @@ namespace Tests
     public class TestConvert
     {
         [Test]
+        public void TestFromDecimal()
+        {
+            unchecked
+            {
+                Assert.AreEqual(13, ConvertFromDecimal(d => (sbyte)d, 13.123m));
+                Assert.AreEqual(13, ConvertFromDecimal(d => (byte)d, 13.123m));
+                Assert.AreEqual(1000, ConvertFromDecimal(d => (short)d, 1000.382456m));
+                Assert.AreEqual(1000, ConvertFromDecimal(d => (ushort)d, 1000.382456m));
+                Assert.AreEqual(1000000000, ConvertFromDecimal(d => (int)d, 1000000000.73465m));
+                Assert.AreEqual(1000000000, ConvertFromDecimal(d => (uint)d, 1000000000.73465m));
+                Assert.AreEqual(12345678912345678, ConvertFromDecimal(d => (long)d, 12345678912345678.73465m));
+                Assert.AreEqual(12345678912345678, ConvertFromDecimal(d => (ulong)d, 12345678912345678.73465m));
+                Assert.AreEqual((float)3.1415926, ConvertFromDecimal(d => (float)d, 3.1415926m));
+                Assert.AreEqual(3.1415926, ConvertFromDecimal(d => (double)d, 3.1415926m));
+                Assert.AreEqual(3.1415926m, ConvertFromDecimal(d => d, 3.1415926m));
+            }
+        }
+
+        [Test]
+        public void TestToDecimal()
+        {
+            unchecked
+            {
+                Assert.AreEqual(-13m, ConvertToDecimal<sbyte>(x => (decimal)x, -13));
+                Assert.AreEqual(13m, ConvertToDecimal<sbyte>(x => (decimal)x, 13));
+                Assert.AreEqual(-13m, ConvertToDecimal<short>(x => (decimal)x, -13));
+                Assert.AreEqual(13m, ConvertToDecimal<short>(x => (decimal)x, 13));
+                Assert.AreEqual(-13m, ConvertToDecimal(x => (decimal)x, -13));
+                Assert.AreEqual(13m, ConvertToDecimal(x => (decimal)x, 13));
+                Assert.AreEqual(250m, ConvertToDecimal<byte>(x => (decimal)x, 250));
+                Assert.AreEqual(54321m, ConvertToDecimal<ushort>(x => (decimal)x, 54321));
+                Assert.AreEqual(3000000000m, ConvertToDecimal(x => (decimal)x, 3000000000));
+                Assert.AreEqual(10000000000000000000m, ConvertToDecimal(x => (decimal)x, 10000000000000000000));
+                Assert.AreEqual(1000000000000000000m, ConvertToDecimal(x => (decimal)x, 1000000000000000000));
+                Assert.AreEqual(-13m, ConvertToDecimal<long>(x => (decimal)x, -13));
+                Assert.AreEqual((decimal)3.1415926f, ConvertToDecimal(x => (decimal)x, 3.1415926f));
+                Assert.AreEqual((decimal)3.1415926, ConvertToDecimal(x => (decimal)x, 3.1415926));
+
+                Assert.AreEqual(13, ConvertFromDecimal(d => (sbyte)d, 13.123m));
+                Assert.AreEqual(13, ConvertFromDecimal(d => (byte)d, 13.123m));
+                Assert.AreEqual(1000, ConvertFromDecimal(d => (short)d, 1000.382456m));
+                Assert.AreEqual(1000, ConvertFromDecimal(d => (ushort)d, 1000.382456m));
+                Assert.AreEqual(1000000000, ConvertFromDecimal(d => (int)d, 1000000000.73465m));
+                Assert.AreEqual(1000000000, ConvertFromDecimal(d => (uint)d, 1000000000.73465m));
+                Assert.AreEqual(12345678912345678, ConvertFromDecimal(d => (long)d, 12345678912345678.73465m));
+                Assert.AreEqual(12345678912345678, ConvertFromDecimal(d => (ulong)d, 12345678912345678.73465m));
+                Assert.AreEqual((float)3.1415926, ConvertFromDecimal(d => (float)d, 3.1415926m));
+                Assert.AreEqual(3.1415926, ConvertFromDecimal(d => (double)d, 3.1415926m));
+                Assert.AreEqual(3.1415926m, ConvertFromDecimal(d => d, 3.1415926m));
+            }
+        }
+
+        [Test]
         public void TestInt8Negative()
         {
             const sbyte x = -13;
@@ -249,6 +302,18 @@ namespace Tests
                 Assert.AreEqual((float)3.1415926, Convert<double, float>(3.1415926));
                 Assert.AreEqual(3.1415926, Convert<double, double>(3.1415926));
             }
+        }
+
+        private T ConvertFromDecimal<T>(Expression<Func<decimal, T>> exp, decimal value)
+        {
+            var f = LambdaCompiler.Compile(exp);
+            return f(value);
+        }
+
+        private decimal ConvertToDecimal<T>(Expression<Func<T, decimal>> exp, T value)
+        {
+            var f = LambdaCompiler.Compile(exp);
+            return f(value);
         }
 
         private TOut Convert<TIn, TOut>(TIn value)

@@ -12,7 +12,7 @@ using GrEmit;
 
 namespace GrobExp
 {
-    public class ExpressionClosureBuilder : ExpressionVisitor
+    internal class ExpressionClosureBuilder : ExpressionVisitor
     {
         public ExpressionClosureBuilder(LambdaExpression lambda)
         {

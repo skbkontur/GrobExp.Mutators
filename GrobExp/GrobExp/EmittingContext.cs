@@ -315,7 +315,21 @@ namespace GrobExp
                     else if(from.IsEnum || from == typeof(Enum))
                         EmitConvert(typeof(int), to);
                     else
-                        throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
+                    {
+                        var fromTypeCode = Type.GetTypeCode(from);
+                        var toTypeCode = Type.GetTypeCode(to);
+                        switch(fromTypeCode)
+                        {
+                        case TypeCode.DBNull:
+                        case TypeCode.DateTime:
+                        case TypeCode.Decimal:
+                        case TypeCode.Empty:
+                        case TypeCode.Object:
+                        case TypeCode.String:
+                            throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
+                        }
+                        EmitConvertValue(Il, fromTypeCode, toTypeCode);
+                    }
                 }
             }
         }
@@ -382,6 +396,66 @@ namespace GrobExp
             private readonly EmittingContext owner;
             private readonly Type type;
             private readonly GroboIL.Local local;
+        }
+
+        private static void EmitConvertValue(GroboIL il, TypeCode fromTypeCode, TypeCode toTypeCode)
+        {
+            if(toTypeCode == fromTypeCode)
+                return;
+            switch(toTypeCode)
+            {
+            case TypeCode.SByte:
+                il.Conv_I1();
+                break;
+            case TypeCode.Byte:
+            case TypeCode.Boolean:
+                il.Conv_U1();
+                break;
+            case TypeCode.Int16:
+                il.Conv_I2();
+                break;
+            case TypeCode.UInt16:
+                il.Conv_U2();
+                break;
+            case TypeCode.Int32:
+                if(fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
+                    il.Conv_I4();
+                break;
+            case TypeCode.UInt32:
+                if(fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
+                    il.Conv_U4();
+                break;
+            case TypeCode.Int64:
+                if(fromTypeCode != TypeCode.UInt64)
+                {
+                    if(fromTypeCode == TypeCode.Byte || fromTypeCode == TypeCode.UInt16 || fromTypeCode == TypeCode.Char || fromTypeCode == TypeCode.UInt32)
+                        il.Conv_U8();
+                    else
+                        il.Conv_I8();
+                }
+                break;
+            case TypeCode.UInt64:
+                if(fromTypeCode != TypeCode.Int64 /* && fromTypeCode != TypeCode.DateTime*/)
+                {
+                    if(fromTypeCode == TypeCode.SByte || fromTypeCode == TypeCode.Int16 || fromTypeCode == TypeCode.Int32)
+                        il.Conv_I8();
+                    else
+                        il.Conv_U8();
+                }
+                break;
+            case TypeCode.Single:
+                if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
+                    il.Conv_R_Un();
+                il.Conv_R4();
+                break;
+            case TypeCode.Double:
+                if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
+                    il.Conv_R_Un();
+                il.Conv_R8();
+                break;
+            default:
+                throw new NotSupportedException("Type with type code '" + toTypeCode + "' is not supported");
+            }
         }
 
         private static bool CanAssign(MemberInfo member)

@@ -28,11 +28,20 @@ namespace GrobExp.ExpressionEmitters
                     case ExpressionType.Add:
                         il.Add();
                         break;
+                    case ExpressionType.AddChecked:
+                        il.Add_Ovf(type);
+                        break;
                     case ExpressionType.Subtract:
                         il.Sub();
                         break;
+                    case ExpressionType.SubtractChecked:
+                        il.Sub_Ovf(type);
+                        break;
                     case ExpressionType.Multiply:
                         il.Mul();
+                        break;
+                    case ExpressionType.MultiplyChecked:
+                        il.Mul_Ovf(type);
                         break;
                     case ExpressionType.Divide:
                         il.Div(type);
@@ -71,11 +80,20 @@ namespace GrobExp.ExpressionEmitters
                         case ExpressionType.Add:
                             il.Add();
                             break;
+                        case ExpressionType.AddChecked:
+                            il.Add_Ovf(argument);
+                            break;
                         case ExpressionType.Subtract:
                             il.Sub();
                             break;
+                        case ExpressionType.SubtractChecked:
+                            il.Sub_Ovf(argument);
+                            break;
                         case ExpressionType.Multiply:
                             il.Mul();
+                            break;
+                        case ExpressionType.MultiplyChecked:
+                            il.Mul_Ovf(argument);
                             break;
                         case ExpressionType.Divide:
                             il.Div(argument);

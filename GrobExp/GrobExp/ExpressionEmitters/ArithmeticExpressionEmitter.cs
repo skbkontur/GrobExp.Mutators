@@ -18,106 +18,95 @@ namespace GrobExp.ExpressionEmitters
                 il.Call(node.Method);
             else
             {
-                var type = left.Type;
-                if(type != right.Type)
-                    throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' on objects of different types '" + left.Type + "' and '" + right.Type + "'");
-                if(!type.IsNullable())
-                {
-                    switch(node.NodeType)
-                    {
-                    case ExpressionType.Add:
-                        il.Add();
-                        break;
-                    case ExpressionType.AddChecked:
-                        il.Add_Ovf(type);
-                        break;
-                    case ExpressionType.Subtract:
-                        il.Sub();
-                        break;
-                    case ExpressionType.SubtractChecked:
-                        il.Sub_Ovf(type);
-                        break;
-                    case ExpressionType.Multiply:
-                        il.Mul();
-                        break;
-                    case ExpressionType.MultiplyChecked:
-                        il.Mul_Ovf(type);
-                        break;
-                    case ExpressionType.Divide:
-                        il.Div(type);
-                        break;
-                    case ExpressionType.Modulo:
-                        il.Rem(type);
-                        break;
-                    default:
-                        throw new InvalidOperationException();
-                    }
-                }
+                if(!left.Type.IsNullable() && !right.Type.IsNullable())
+                    EmitOp(il, node.NodeType, node.Type);
                 else
                 {
-                    using(var localLeft = context.DeclareLocal(type))
-                    using(var localRight = context.DeclareLocal(type))
+                    using(var localLeft = context.DeclareLocal(left.Type))
+                    using (var localRight = context.DeclareLocal(right.Type))
                     {
                         il.Stloc(localRight);
                         il.Stloc(localLeft);
-                        FieldInfo hasValueField = type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
-                        il.Ldloca(localLeft);
-                        il.Ldfld(hasValueField);
-                        il.Ldloca(localRight);
-                        il.Ldfld(hasValueField);
-                        il.And();
                         var returnNullLabel = il.DefineLabel("returnNull");
-                        il.Brfalse(returnNullLabel);
-                        FieldInfo valueField = type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-                        il.Ldloca(localLeft);
-                        il.Ldfld(valueField);
-                        il.Ldloca(localRight);
-                        il.Ldfld(valueField);
-
-                        Type argument = type.GetGenericArguments()[0];
-                        switch(node.NodeType)
+                        if(left.Type.IsNullable())
                         {
-                        case ExpressionType.Add:
-                            il.Add();
-                            break;
-                        case ExpressionType.AddChecked:
-                            il.Add_Ovf(argument);
-                            break;
-                        case ExpressionType.Subtract:
-                            il.Sub();
-                            break;
-                        case ExpressionType.SubtractChecked:
-                            il.Sub_Ovf(argument);
-                            break;
-                        case ExpressionType.Multiply:
-                            il.Mul();
-                            break;
-                        case ExpressionType.MultiplyChecked:
-                            il.Mul_Ovf(argument);
-                            break;
-                        case ExpressionType.Divide:
-                            il.Div(argument);
-                            break;
-                        case ExpressionType.Modulo:
-                            il.Rem(argument);
-                            break;
-                        default:
-                            throw new InvalidOperationException();
+                            il.Ldloca(localLeft);
+                            il.Ldfld(left.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Brfalse(returnNullLabel);
                         }
-                        il.Newobj(type.GetConstructor(new[] {argument}));
+                        if(right.Type.IsNullable())
+                        {
+                            il.Ldloca(localRight);
+                            il.Ldfld(right.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Brfalse(returnNullLabel);
+                        }
+                        if(!left.Type.IsNullable())
+                            il.Ldloc(localLeft);
+                        else
+                        {
+                            il.Ldloca(localLeft);
+                            il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        }
+                        if(!right.Type.IsNullable())
+                            il.Ldloc(localRight);
+                        else
+                        {
+                            il.Ldloca(localRight);
+                            il.Ldfld(right.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        }
+                        Type argument = node.Type.GetGenericArguments()[0];
+                        EmitOp(il, node.NodeType, argument);
+                        il.Newobj(node.Type.GetConstructor(new[] { argument }));
 
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
                         il.MarkLabel(returnNullLabel);
-                        il.Ldloca(localLeft);
-                        il.Initobj(type);
-                        il.Ldloc(localLeft);
+                        context.EmitLoadDefaultValue(node.Type);
                         il.MarkLabel(doneLabel);
                     }
                 }
             }
             resultType = node.Type;
             return false;
+        }
+
+        private static void EmitOp(GroboIL il, ExpressionType nodeType, Type type)
+        {
+            switch(nodeType)
+            {
+            case ExpressionType.Add:
+                il.Add();
+                break;
+            case ExpressionType.AddChecked:
+                il.Add_Ovf(type);
+                break;
+            case ExpressionType.Subtract:
+                il.Sub();
+                break;
+            case ExpressionType.SubtractChecked:
+                il.Sub_Ovf(type);
+                break;
+            case ExpressionType.Multiply:
+                il.Mul();
+                break;
+            case ExpressionType.MultiplyChecked:
+                il.Mul_Ovf(type);
+                break;
+            case ExpressionType.Divide:
+                il.Div(type);
+                break;
+            case ExpressionType.Modulo:
+                il.Rem(type);
+                break;
+            case ExpressionType.LeftShift:
+                il.Shl();
+                break;
+            case ExpressionType.RightShift:
+                il.Shr(type);
+                break;
+            default:
+                throw new InvalidOperationException();
+            }
         }
     }
 }

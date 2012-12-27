@@ -56,6 +56,8 @@ namespace GrobExp
                 {ExpressionType.MultiplyChecked, new ArithmeticExpressionEmitter()},
                 {ExpressionType.Divide, new ArithmeticExpressionEmitter()},
                 {ExpressionType.Modulo, new ArithmeticExpressionEmitter()},
+                {ExpressionType.LeftShift, new ArithmeticExpressionEmitter()},
+                {ExpressionType.RightShift, new ArithmeticExpressionEmitter()},
                 {ExpressionType.OrElse, new LogicalExpressionEmitter()},
                 {ExpressionType.AndAlso, new LogicalExpressionEmitter()},
                 {ExpressionType.Not, new NotExpressionEmitter()},

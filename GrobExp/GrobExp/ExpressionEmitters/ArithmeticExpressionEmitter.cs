@@ -104,6 +104,15 @@ namespace GrobExp.ExpressionEmitters
             case ExpressionType.RightShift:
                 il.Shr(type);
                 break;
+            case ExpressionType.And:
+                il.And();
+                break;
+            case ExpressionType.Or:
+                il.Or();
+                break;
+            case ExpressionType.ExclusiveOr:
+                il.Xor();
+                break;
             default:
                 throw new InvalidOperationException();
             }

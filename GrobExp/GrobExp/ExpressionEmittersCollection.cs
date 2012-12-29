@@ -72,6 +72,9 @@ namespace GrobExp
                 {ExpressionType.Lambda, new LambdaExpressionEmitter()},
                 {ExpressionType.Label, new LabelExpressionEmitter()},
                 {ExpressionType.Goto, new GotoExpressionEmitter()},
+                {ExpressionType.UnaryPlus, new UnaryPlusMinusExpressionEmitter()},
+                {ExpressionType.Negate, new UnaryPlusMinusExpressionEmitter()},
+                {ExpressionType.NegateChecked, new UnaryPlusMinusExpressionEmitter()},
             };
     }
 }

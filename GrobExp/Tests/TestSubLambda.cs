@@ -69,7 +69,9 @@ namespace Tests
             Expression assignS = Expression.Assign(Expression.MakeMemberAccess(exp.Parameters[0], typeof(TestStructA).GetProperty("S", BindingFlags.Public | BindingFlags.Instance)), Expression.Constant("zzz"));
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestStructB)), temp);
             var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);*/
-            Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[0].X;
+            //Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[0].X;
+            ParameterExpression parameter = Expression.Parameter(typeof(long));
+            Expression<Func<long, long>> exp = Expression.Lambda<Func<long, long>>(Expression.NegateChecked(parameter), parameter);
             CompileAndSave(exp);
         }
 

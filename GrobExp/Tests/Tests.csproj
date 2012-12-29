@@ -51,6 +51,7 @@
     <Compile Include="TestBlock.cs" />
     <Compile Include="TestConstant.cs" />
     <Compile Include="TestConvert.cs" />
+    <Compile Include="TestCustomOperators.cs" />
     <Compile Include="TestIndex.cs" />
     <Compile Include="ParameterReplacer.cs" />
     <Compile Include="TestCheckArrayIndex.cs" />

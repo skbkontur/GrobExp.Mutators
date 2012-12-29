@@ -11,7 +11,7 @@ namespace Tests
     public class TestCustomOperators
     {
         [Test]
-        public void TestAdd()
+        public void TestAdd1()
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a + b;
             var f = LambdaCompiler.Compile(exp);
@@ -24,7 +24,20 @@ namespace Tests
         }
 
         [Test]
-        public void TestSubtract()
+        public void TestAdd2()
+        {
+            Expression<Func<decimal?, decimal?, decimal?>> exp = (a, b) => a + b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(3, f(1, 2));
+            Assert.AreEqual(1, f(-1, 2));
+            Assert.IsNull(f(null, 2));
+            Assert.IsNull(f(1, null));
+            Assert.IsNull(f(null, null));
+        }
+
+        [Test]
+        public void TestSubtract1()
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a - b;
             var f = LambdaCompiler.Compile(exp);
@@ -37,7 +50,20 @@ namespace Tests
         }
 
         [Test]
-        public void TestMultiply()
+        public void TestSubtract2()
+        {
+            Expression<Func<decimal?, decimal?, decimal?>> exp = (a, b) => a - b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(-1, f(1, 2));
+            Assert.AreEqual(1, f(-1, -2));
+            Assert.IsNull(f(null, 2));
+            Assert.IsNull(f(1, null));
+            Assert.IsNull(f(null, null));
+        }
+
+        [Test]
+        public void TestMultiply1()
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a * b;
             var f = LambdaCompiler.Compile(exp);
@@ -50,7 +76,21 @@ namespace Tests
         }
 
         [Test]
-        public void TestDivide()
+        public void TestMultiply2()
+        {
+            Expression<Func<decimal?, decimal?, decimal?>> exp = (a, b) => a * b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(2, f(1, 2));
+            Assert.AreEqual(6, f(-2, -3));
+            Assert.AreEqual(-20, f(-2, 10));
+            Assert.IsNull(f(null, 2));
+            Assert.IsNull(f(1, null));
+            Assert.IsNull(f(null, null));
+        }
+
+        [Test]
+        public void TestDivide1()
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a / b;
             var f = LambdaCompiler.Compile(exp);
@@ -58,7 +98,20 @@ namespace Tests
         }
 
         [Test]
-        public void TestUnaryPlus()
+        public void TestDivide2()
+        {
+            Expression<Func<decimal?, decimal?, decimal?>> exp = (a, b) => a / b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0.5m, f(1, 2));
+            Assert.AreEqual(2.5m, f(5, 2));
+            Assert.AreEqual(-1.5m, f(-3, 2));
+            Assert.IsNull(f(null, 2));
+            Assert.IsNull(f(1, null));
+            Assert.IsNull(f(null, null));
+        }
+
+        [Test]
+        public void TestUnaryPlus1()
         {
             Expression<Func<Fraction, Fraction>> exp = a => +a;
             var f = LambdaCompiler.Compile(exp);
@@ -66,7 +119,19 @@ namespace Tests
         }
 
         [Test]
-        public void TestUnaryMinus()
+        public void TestUnaryPlus2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.UnaryPlus(parameter, typeof(decimal).GetMethod("op_UnaryPlus")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0));
+            Assert.AreEqual(1, f(1));
+            Assert.AreEqual(-1, f(-1));
+            Assert.IsNull(f(null));
+        }
+
+        [Test]
+        public void TestUnaryMinus1()
         {
             Expression<Func<Fraction, Fraction>> exp = a => -a;
             var f = LambdaCompiler.Compile(exp);
@@ -78,7 +143,18 @@ namespace Tests
         }
 
         [Test]
-        public void TestEqual()
+        public void TestUnaryMinus2()
+        {
+            Expression<Func<decimal?, decimal?>> exp = x => -x;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0));
+            Assert.AreEqual(-1, f(1));
+            Assert.AreEqual(1, f(-1));
+            Assert.IsNull(f(null));
+        }
+
+        [Test]
+        public void TestEqual1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a == b;
             var f = LambdaCompiler.Compile(exp);
@@ -87,7 +163,19 @@ namespace Tests
         }
 
         [Test]
-        public void TestNotEqual()
+        public void TestEqual2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a == b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(1, 1));
+            Assert.IsFalse(f(1, 2));
+            Assert.IsFalse(f(1, null));
+            Assert.IsFalse(f(null, 1));
+            Assert.IsTrue(f(null, null));
+        }
+
+        [Test]
+        public void TestNotEqual1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a != b;
             var f = LambdaCompiler.Compile(exp);
@@ -96,7 +184,19 @@ namespace Tests
         }
 
         [Test]
-        public void TestGreaterThan()
+        public void TestNotEqual2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a != b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsFalse(f(1, 1));
+            Assert.IsTrue(f(1, 2));
+            Assert.IsTrue(f(1, null));
+            Assert.IsTrue(f(null, 1));
+            Assert.IsFalse(f(null, null));
+        }
+
+        [Test]
+        public void TestGreaterThan1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a > b;
             var f = LambdaCompiler.Compile(exp);
@@ -106,7 +206,19 @@ namespace Tests
         }
 
         [Test]
-        public void TestLessThan()
+        public void TestGreaterThan2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a > b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(3, 1));
+            Assert.IsFalse(f(-3, -1));
+            Assert.IsFalse(f(1, null));
+            Assert.IsFalse(f(null, 1));
+            Assert.IsFalse(f(null, null));
+        }
+
+        [Test]
+        public void TestLessThan1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a < b;
             var f = LambdaCompiler.Compile(exp);
@@ -116,7 +228,19 @@ namespace Tests
         }
 
         [Test]
-        public void TestGreaterThanOrEqual()
+        public void TestLessThan2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a < b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsFalse(f(3, 1));
+            Assert.IsTrue(f(-3, -1));
+            Assert.IsFalse(f(1, null));
+            Assert.IsFalse(f(null, 1));
+            Assert.IsFalse(f(null, null));
+        }
+
+        [Test]
+        public void TestGreaterThanOrEqual1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a >= b;
             var f = LambdaCompiler.Compile(exp);
@@ -126,7 +250,33 @@ namespace Tests
         }
 
         [Test]
-        public void TestLessThanOrEqual()
+        public void TestLessThanOrEqual2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a <= b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsFalse(f(3, 1));
+            Assert.IsTrue(f(-3, -1));
+            Assert.IsTrue(f(-1, -1));
+            Assert.IsFalse(f(1, null));
+            Assert.IsFalse(f(null, 1));
+            Assert.IsFalse(f(null, null));
+        }
+
+        [Test]
+        public void TestGreaterThanOrEqual2()
+        {
+            Expression<Func<decimal?, decimal?, bool>> exp = (a, b) => a >= b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(3, 1));
+            Assert.IsFalse(f(-3, -1));
+            Assert.IsTrue(f(-1, -1));
+            Assert.IsFalse(f(1, null));
+            Assert.IsFalse(f(null, 1));
+            Assert.IsFalse(f(null, null));
+        }
+
+        [Test]
+        public void TestLessThanOrEqual1()
         {
             Expression<Func<Fraction, Fraction, bool>> exp = (a, b) => a <= b;
             var f = LambdaCompiler.Compile(exp);
@@ -134,6 +284,7 @@ namespace Tests
             Assert.IsFalse(f(new Fraction(1, 2), new Fraction(1, 3)));
             Assert.IsTrue(f(new Fraction(1, 3), new Fraction(1, 2)));
         }
+
 
         private class Fraction
         {

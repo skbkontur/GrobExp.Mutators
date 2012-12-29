@@ -16,7 +16,51 @@ namespace GrobExp.ExpressionEmitters
             GroboIL il = context.Il;
             if(node.Method != null)
             {
-                il.Call(node.Method);
+                if(!left.Type.IsNullable() && !right.Type.IsNullable())
+                    il.Call(node.Method);
+                else
+                {
+                    using(var localLeft = context.DeclareLocal(left.Type))
+                    using(var localRight = context.DeclareLocal(right.Type))
+                    {
+                        il.Stloc(localRight);
+                        il.Stloc(localLeft);
+                        var returnNullLabel = il.DefineLabel("returnNull");
+                        if(left.Type.IsNullable())
+                        {
+                            il.Ldloca(localLeft);
+                            il.Ldfld(left.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Brfalse(returnNullLabel);
+                        }
+                        if(right.Type.IsNullable())
+                        {
+                            il.Ldloca(localRight);
+                            il.Ldfld(right.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Brfalse(returnNullLabel);
+                        }
+                        if(!left.Type.IsNullable())
+                            il.Ldloc(localLeft);
+                        else
+                        {
+                            il.Ldloca(localLeft);
+                            il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        }
+                        if(!right.Type.IsNullable())
+                            il.Ldloc(localRight);
+                        else
+                        {
+                            il.Ldloca(localRight);
+                            il.Ldfld(right.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        }
+                        il.Call(node.Method);
+
+                        var doneLabel = il.DefineLabel("done");
+                        il.Br(doneLabel);
+                        il.MarkLabel(returnNullLabel);
+                        context.EmitLoadDefaultValue(node.Type);
+                        il.MarkLabel(doneLabel);
+                    }
+                }
                 resultType = node.Method.ReturnType;
             }
             else

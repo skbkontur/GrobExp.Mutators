@@ -13,48 +13,22 @@ namespace GrobExp.ExpressionEmitters
             Type operandType;
             var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, whatReturn, extend, out operandType);
             GroboIL il = context.Il;
-            switch(node.NodeType)
+            if(!operandType.IsNullable())
             {
-            case ExpressionType.UnaryPlus:
-                if(node.Method != null)
-                    il.Call(node.Method);
-                break;
-            case ExpressionType.Negate:
                 if(node.Method != null)
                     il.Call(node.Method);
                 else
                 {
-                    if(!operandType.IsNullable())
+                    if(operandType.IsStruct())
+                        throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' to a struct '" + operandType + "'");
+                    switch(node.NodeType)
+                    {
+                    case ExpressionType.UnaryPlus:
+                        break;
+                    case ExpressionType.Negate:
                         il.Neg();
-                    else
-                    {
-                        using(var temp = context.DeclareLocal(operandType))
-                        {
-                            il.Stloc(temp);
-                            il.Ldloca(temp);
-                            il.Ldfld(operandType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
-                            var returnNullLabel = il.DefineLabel("returnLabel");
-                            il.Brfalse(returnNullLabel);
-                            il.Ldloca(temp);
-                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
-                            il.Neg();
-                            il.Newobj(operandType.GetConstructor(new[] {operandType.GetGenericArguments()[0]}));
-                            var doneLabel = il.DefineLabel("done");
-                            il.Br(doneLabel);
-                            il.MarkLabel(returnNullLabel);
-                            context.EmitLoadDefaultValue(operandType);
-                            il.MarkLabel(doneLabel);
-                        }
-                    }
-                }
-                break;
-            case ExpressionType.NegateChecked:
-                if(node.Method != null)
-                    il.Call(node.Method);
-                else
-                {
-                    if(!operandType.IsNullable())
-                    {
+                        break;
+                    case ExpressionType.NegateChecked:
                         using(var temp = context.DeclareLocal(operandType))
                         {
                             il.Stloc(temp);
@@ -63,34 +37,59 @@ namespace GrobExp.ExpressionEmitters
                             il.Ldloc(temp);
                             il.Sub_Ovf(operandType);
                         }
+                        break;
+                    default:
+                        throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");
+                    }
+                }
+            }
+            else
+            {
+                using(var temp = context.DeclareLocal(operandType))
+                {
+                    il.Stloc(temp);
+                    il.Ldloca(temp);
+                    il.Ldfld(operandType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
+                    var returnNullLabel = il.DefineLabel("returnLabel");
+                    il.Brfalse(returnNullLabel);
+                    Type argumentType = operandType.GetGenericArguments()[0];
+                    if (node.Method != null)
+                    {
+                        il.Ldloca(temp);
+                        il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                        il.Call(node.Method);
                     }
                     else
                     {
-                        using(var temp = context.DeclareLocal(operandType))
+                        switch (node.NodeType)
                         {
-                            il.Stloc(temp);
+                        case ExpressionType.UnaryPlus:
                             il.Ldloca(temp);
-                            il.Ldfld(operandType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
-                            var returnNullLabel = il.DefineLabel("returnLabel");
-                            il.Brfalse(returnNullLabel);
-                            var argumentType = operandType.GetGenericArguments()[0];
+                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            break;
+                        case ExpressionType.Negate:
+                            il.Ldloca(temp);
+                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            il.Neg();
+                            break;
+                        case ExpressionType.NegateChecked:
                             il.Ldc_I4(0);
                             context.EmitConvert(typeof(int), argumentType);
                             il.Ldloca(temp);
                             il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
                             il.Sub_Ovf(argumentType);
-                            il.Newobj(operandType.GetConstructor(new[] {argumentType}));
-                            var doneLabel = il.DefineLabel("done");
-                            il.Br(doneLabel);
-                            il.MarkLabel(returnNullLabel);
-                            context.EmitLoadDefaultValue(operandType);
-                            il.MarkLabel(doneLabel);
+                            break;
+                        default:
+                            throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");
                         }
                     }
+                    il.Newobj(operandType.GetConstructor(new[] {argumentType}));
+                    var doneLabel = il.DefineLabel("done");
+                    il.Br(doneLabel);
+                    il.MarkLabel(returnNullLabel);
+                    context.EmitLoadDefaultValue(operandType);
+                    il.MarkLabel(doneLabel);
                 }
-                break;
-            default:
-                throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");
             }
             resultType = node.Type;
             return result;

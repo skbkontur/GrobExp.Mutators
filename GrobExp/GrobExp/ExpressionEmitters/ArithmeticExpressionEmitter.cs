@@ -14,56 +14,64 @@ namespace GrobExp.ExpressionEmitters
             Expression right = node.Right;
             context.EmitLoadArguments(left, right);
             GroboIL il = context.Il;
-            if(node.Method != null)
-                il.Call(node.Method);
-            else
+
+            if(!left.Type.IsNullable() && !right.Type.IsNullable())
             {
-                if(!left.Type.IsNullable() && !right.Type.IsNullable())
-                    EmitOp(il, node.NodeType, node.Type);
+                if(node.Method != null)
+                    il.Call(node.Method);
                 else
                 {
-                    using(var localLeft = context.DeclareLocal(left.Type))
-                    using (var localRight = context.DeclareLocal(right.Type))
+                    if(left.Type.IsStruct() || right.Type.IsStruct())
+                        throw new InvalidOperationException("Cannot compare structs");
+                    EmitOp(il, node.NodeType, node.Type);
+                }
+            }
+            else
+            {
+                using(var localLeft = context.DeclareLocal(left.Type))
+                using(var localRight = context.DeclareLocal(right.Type))
+                {
+                    il.Stloc(localRight);
+                    il.Stloc(localLeft);
+                    var returnNullLabel = il.DefineLabel("returnNull");
+                    if(left.Type.IsNullable())
                     {
-                        il.Stloc(localRight);
-                        il.Stloc(localLeft);
-                        var returnNullLabel = il.DefineLabel("returnNull");
-                        if(left.Type.IsNullable())
-                        {
-                            il.Ldloca(localLeft);
-                            il.Ldfld(left.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
-                            il.Brfalse(returnNullLabel);
-                        }
-                        if(right.Type.IsNullable())
-                        {
-                            il.Ldloca(localRight);
-                            il.Ldfld(right.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
-                            il.Brfalse(returnNullLabel);
-                        }
-                        if(!left.Type.IsNullable())
-                            il.Ldloc(localLeft);
-                        else
-                        {
-                            il.Ldloca(localLeft);
-                            il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
-                        }
-                        if(!right.Type.IsNullable())
-                            il.Ldloc(localRight);
-                        else
-                        {
-                            il.Ldloca(localRight);
-                            il.Ldfld(right.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
-                        }
-                        Type argument = node.Type.GetGenericArguments()[0];
-                        EmitOp(il, node.NodeType, argument);
-                        il.Newobj(node.Type.GetConstructor(new[] { argument }));
-
-                        var doneLabel = il.DefineLabel("done");
-                        il.Br(doneLabel);
-                        il.MarkLabel(returnNullLabel);
-                        context.EmitLoadDefaultValue(node.Type);
-                        il.MarkLabel(doneLabel);
+                        il.Ldloca(localLeft);
+                        il.Ldfld(left.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        il.Brfalse(returnNullLabel);
                     }
+                    if(right.Type.IsNullable())
+                    {
+                        il.Ldloca(localRight);
+                        il.Ldfld(right.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        il.Brfalse(returnNullLabel);
+                    }
+                    if(!left.Type.IsNullable())
+                        il.Ldloc(localLeft);
+                    else
+                    {
+                        il.Ldloca(localLeft);
+                        il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                    }
+                    if(!right.Type.IsNullable())
+                        il.Ldloc(localRight);
+                    else
+                    {
+                        il.Ldloca(localRight);
+                        il.Ldfld(right.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                    }
+                    Type argument = node.Type.GetGenericArguments()[0];
+                    if(node.Method != null)
+                        il.Call(node.Method);
+                    else
+                        EmitOp(il, node.NodeType, argument);
+                    il.Newobj(node.Type.GetConstructor(new[] {argument}));
+
+                    var doneLabel = il.DefineLabel("done");
+                    il.Br(doneLabel);
+                    il.MarkLabel(returnNullLabel);
+                    context.EmitLoadDefaultValue(node.Type);
+                    il.MarkLabel(doneLabel);
                 }
             }
             resultType = node.Type;

@@ -49,6 +49,7 @@ namespace GrobExp.ExpressionEmitters
                         case ExpressionType.MultiplyAssignChecked:
                         case ExpressionType.DivideAssign:
                         case ExpressionType.ModuloAssign:
+                        case ExpressionType.PowerAssign:
                         case ExpressionType.AndAssign:
                         case ExpressionType.OrAssign:
                         case ExpressionType.ExclusiveOrAssign:
@@ -102,6 +103,7 @@ namespace GrobExp.ExpressionEmitters
                             case ExpressionType.MultiplyAssignChecked:
                             case ExpressionType.DivideAssign:
                             case ExpressionType.ModuloAssign:
+                            case ExpressionType.PowerAssign:
                             case ExpressionType.AndAssign:
                             case ExpressionType.OrAssign:
                             case ExpressionType.ExclusiveOrAssign:
@@ -174,6 +176,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -215,6 +218,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -288,6 +292,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -328,6 +333,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -403,6 +409,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -441,6 +448,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
                                     case ExpressionType.ModuloAssign:
+                                    case ExpressionType.PowerAssign:
                                     case ExpressionType.AndAssign:
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
@@ -494,6 +502,8 @@ namespace GrobExp.ExpressionEmitters
                 return ExpressionType.Divide;
             case ExpressionType.ModuloAssign:
                 return ExpressionType.Modulo;
+            case ExpressionType.PowerAssign:
+                return ExpressionType.Power;
             case ExpressionType.AndAssign:
                 return ExpressionType.And;
             case ExpressionType.OrAssign:

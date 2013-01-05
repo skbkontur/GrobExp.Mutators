@@ -83,6 +83,12 @@
     <Compile Include="AssignTests\ExclusiveOrAssign\TestParameter.cs" />
     <Compile Include="AssignTests\ExclusiveOrAssign\TestSimpleArray.cs" />
     <Compile Include="AssignTests\ExclusiveOrAssign\TestStaticMember.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\ModuloAssign\TestStaticMember.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestComplexProperty.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestInstanceMember.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestMultiDimensionalArray.cs" />

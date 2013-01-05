@@ -47,6 +47,7 @@ namespace GrobExp
                 {ExpressionType.MultiplyAssign, new AssignExpressionEmitter()},
                 {ExpressionType.MultiplyAssignChecked, new AssignExpressionEmitter()},
                 {ExpressionType.DivideAssign, new AssignExpressionEmitter()},
+                {ExpressionType.ModuloAssign, new AssignExpressionEmitter()},
                 {ExpressionType.AndAssign, new AssignExpressionEmitter()},
                 {ExpressionType.OrAssign, new AssignExpressionEmitter()},
                 {ExpressionType.ExclusiveOrAssign, new AssignExpressionEmitter()},

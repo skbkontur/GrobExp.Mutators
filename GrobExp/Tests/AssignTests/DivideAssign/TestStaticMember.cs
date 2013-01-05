@@ -83,7 +83,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<uint, uint>> exp = Expression.Lambda<Func<uint, uint>>(Expression.DivideAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetField("UIntField")), b), b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            TestClassA.UIntField = 0;
+            TestClassA.UIntField = 1;
             Assert.AreEqual(0, f(2));
             Assert.AreEqual(0, TestClassA.UIntField);
             TestClassA.UIntField = 5;

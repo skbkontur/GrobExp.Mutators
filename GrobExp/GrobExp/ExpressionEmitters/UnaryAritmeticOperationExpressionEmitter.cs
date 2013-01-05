@@ -6,7 +6,7 @@ using GrEmit;
 
 namespace GrobExp.ExpressionEmitters
 {
-    internal class UnaryPlusMinusExpressionEmitter : ExpressionEmitter<UnaryExpression>
+    internal class UnaryAritmeticOperationExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
         protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
@@ -38,6 +38,18 @@ namespace GrobExp.ExpressionEmitters
                             il.Sub_Ovf(operandType);
                         }
                         break;
+                    case ExpressionType.Increment:
+                        il.Ldc_I4(1);
+                        if(operandType != typeof(int))
+                            context.EmitConvert(typeof(int), operandType);
+                        il.Add();
+                        break;
+                    case ExpressionType.Decrement:
+                        il.Ldc_I4(1);
+                        if(operandType != typeof(int))
+                            context.EmitConvert(typeof(int), operandType);
+                        il.Sub();
+                        break;
                     default:
                         throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");
                     }
@@ -53,7 +65,7 @@ namespace GrobExp.ExpressionEmitters
                     var returnNullLabel = il.DefineLabel("returnLabel");
                     il.Brfalse(returnNullLabel);
                     Type argumentType = operandType.GetGenericArguments()[0];
-                    if (node.Method != null)
+                    if(node.Method != null)
                     {
                         il.Ldloca(temp);
                         il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
@@ -61,7 +73,7 @@ namespace GrobExp.ExpressionEmitters
                     }
                     else
                     {
-                        switch (node.NodeType)
+                        switch(node.NodeType)
                         {
                         case ExpressionType.UnaryPlus:
                             il.Ldloca(temp);
@@ -78,6 +90,22 @@ namespace GrobExp.ExpressionEmitters
                             il.Ldloca(temp);
                             il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
                             il.Sub_Ovf(argumentType);
+                            break;
+                        case ExpressionType.Increment:
+                            il.Ldloca(temp);
+                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            il.Ldc_I4(1);
+                            if(argumentType != typeof(int))
+                                context.EmitConvert(typeof(int), argumentType);
+                            il.Add();
+                            break;
+                        case ExpressionType.Decrement:
+                            il.Ldloca(temp);
+                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            il.Ldc_I4(1);
+                            if(argumentType != typeof(int))
+                                context.EmitConvert(typeof(int), argumentType);
+                            il.Sub();
                             break;
                         default:
                             throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");

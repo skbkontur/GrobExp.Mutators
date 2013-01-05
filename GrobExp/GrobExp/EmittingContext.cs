@@ -252,6 +252,71 @@ namespace GrobExp
             Il.MarkLabel(valueIsNotNullLabel);
         }
 
+        public void EmitArithmeticOperation(ExpressionType nodeType, Type resultType, Type leftType, Type rightType, MethodInfo method)
+        {
+            if(!leftType.IsNullable() && !rightType.IsNullable())
+            {
+                if(method != null)
+                    Il.Call(method);
+                else
+                {
+                    if(leftType.IsStruct())
+                        throw new InvalidOperationException("Unable to perfrom operation '" + nodeType + "' to a struct of type '" + leftType + "'");
+                    if(rightType.IsStruct())
+                        throw new InvalidOperationException("Unable to perfrom operation '" + nodeType + "' to a struct of type '" + rightType + "'");
+                    EmitOp(Il, nodeType, resultType);
+                }
+            }
+            else
+            {
+                using(var localLeft = DeclareLocal(leftType))
+                using(var localRight = DeclareLocal(rightType))
+                {
+                    Il.Stloc(localRight);
+                    Il.Stloc(localLeft);
+                    var returnNullLabel = Il.DefineLabel("returnNull");
+                    if(leftType.IsNullable())
+                    {
+                        Il.Ldloca(localLeft);
+                        Il.Ldfld(leftType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        Il.Brfalse(returnNullLabel);
+                    }
+                    if(rightType.IsNullable())
+                    {
+                        Il.Ldloca(localRight);
+                        Il.Ldfld(rightType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        Il.Brfalse(returnNullLabel);
+                    }
+                    if(!leftType.IsNullable())
+                        Il.Ldloc(localLeft);
+                    else
+                    {
+                        Il.Ldloca(localLeft);
+                        Il.Ldfld(leftType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                    }
+                    if(!rightType.IsNullable())
+                        Il.Ldloc(localRight);
+                    else
+                    {
+                        Il.Ldloca(localRight);
+                        Il.Ldfld(rightType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                    }
+                    Type argumentType = resultType.GetGenericArguments()[0];
+                    if(method != null)
+                        Il.Call(method);
+                    else
+                        EmitOp(Il, nodeType, argumentType);
+                    Il.Newobj(resultType.GetConstructor(new[] {argumentType}));
+
+                    var doneLabel = Il.DefineLabel("done");
+                    Il.Br(doneLabel);
+                    Il.MarkLabel(returnNullLabel);
+                    EmitLoadDefaultValue(resultType);
+                    Il.MarkLabel(doneLabel);
+                }
+            }
+        }
+
         public void EmitConvert(Type from, Type to)
         {
             if(from == to) return;
@@ -396,6 +461,54 @@ namespace GrobExp
             private readonly EmittingContext owner;
             private readonly Type type;
             private readonly GroboIL.Local local;
+        }
+
+        private static void EmitOp(GroboIL il, ExpressionType nodeType, Type type)
+        {
+            switch(nodeType)
+            {
+            case ExpressionType.Add:
+                il.Add();
+                break;
+            case ExpressionType.AddChecked:
+                il.Add_Ovf(type);
+                break;
+            case ExpressionType.Subtract:
+                il.Sub();
+                break;
+            case ExpressionType.SubtractChecked:
+                il.Sub_Ovf(type);
+                break;
+            case ExpressionType.Multiply:
+                il.Mul();
+                break;
+            case ExpressionType.MultiplyChecked:
+                il.Mul_Ovf(type);
+                break;
+            case ExpressionType.Divide:
+                il.Div(type);
+                break;
+            case ExpressionType.Modulo:
+                il.Rem(type);
+                break;
+            case ExpressionType.LeftShift:
+                il.Shl();
+                break;
+            case ExpressionType.RightShift:
+                il.Shr(type);
+                break;
+            case ExpressionType.And:
+                il.And();
+                break;
+            case ExpressionType.Or:
+                il.Or();
+                break;
+            case ExpressionType.ExclusiveOr:
+                il.Xor();
+                break;
+            default:
+                throw new NotSupportedException("Node type '" + nodeType + "' is not supported");
+            }
         }
 
         private static void EmitConvertValue(GroboIL il, TypeCode fromTypeCode, TypeCode toTypeCode)

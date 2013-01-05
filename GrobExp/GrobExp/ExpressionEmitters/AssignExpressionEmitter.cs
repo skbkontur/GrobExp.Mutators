@@ -14,24 +14,15 @@ namespace GrobExp.ExpressionEmitters
             var il = context.Il;
             var left = node.Left;
             var right = node.Right;
+            bool result = false;
             if(left.Type != right.Type)
                 throw new InvalidOperationException("Unable to put object of type '" + right.Type + "' into object of type '" + left.Type + "'");
             switch(left.NodeType)
             {
             case ExpressionType.Parameter:
                 {
-                    var parameter = (ParameterExpression)left;
-                    int index = Array.IndexOf(context.Parameters, parameter);
-                    if(index >= 0)
-                        il.Ldarga(index); // stack: [&parameter]
-                    else
-                    {
-                        EmittingContext.LocalHolder variable;
-                        if(context.VariablesToLocals.TryGetValue(parameter, out variable))
-                            il.Ldloca(variable); // stack: [&variable]
-                        else
-                            throw new InvalidOperationException("Unknown parameter " + parameter);
-                    }
+                    Type parameterType;
+                    ExpressionEmittersCollection.Emit(left, context, null, ResultType.ByRefAll, false, out parameterType);
                     var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
                     Type valueType;
                     bool labelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out valueType); // stack: [address, value]
@@ -39,8 +30,40 @@ namespace GrobExp.ExpressionEmitters
                         context.ConvertFromNullableBoolToBool();
                     if(labelUsed && context.CanReturn)
                         context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                    il.Stind(left.Type); // *address = value
-                    ExpressionEmittersCollection.Emit(parameter, context, out resultType);
+                    using(var value = context.DeclareLocal(right.Type))
+                    {
+                        il.Stloc(value);
+
+                        switch(node.NodeType)
+                        {
+                        case ExpressionType.Assign:
+                            il.Ldloc(value);
+                            il.Stind(left.Type); // *address = value
+                            il.Ldloc(value);
+                            break;
+                        case ExpressionType.AddAssign:
+                        case ExpressionType.AddAssignChecked:
+                        case ExpressionType.SubtractAssign:
+                        case ExpressionType.SubtractAssignChecked:
+                        case ExpressionType.MultiplyAssign:
+                        case ExpressionType.MultiplyAssignChecked:
+                        case ExpressionType.DivideAssign:
+                            il.Dup(); // stack: [&parameter, &parameter]
+                            il.Ldind(left.Type); // stack: [&parameter, parameter]
+                            il.Ldloc(value); // stack: [&parameter, parameter, value]
+                            context.EmitArithmeticOperation(GetOp(node.NodeType), left.Type, left.Type, right.Type, node.Method); // stack: [&parameter, result]
+                            using(var temp = context.DeclareLocal(left.Type))
+                            {
+                                il.Stloc(temp);
+                                il.Ldloc(temp);
+                                il.Stind(left.Type);
+                                il.Ldloc(temp);
+                            }
+                            break;
+                        default:
+                            throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                        }
+                    }
                     break;
                 }
             case ExpressionType.MemberAccess:
@@ -57,12 +80,40 @@ namespace GrobExp.ExpressionEmitters
                             context.ConvertFromNullableBoolToBool();
                         if(rightIsNullLabelUsed && context.CanReturn)
                             context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                        using(var temp = context.DeclareLocal(right.Type))
+                        using(var value = context.DeclareLocal(right.Type))
                         {
-                            il.Stloc(temp);
-                            il.Ldloc(temp);
-                            context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
-                            il.Ldloc(temp);
+                            il.Stloc(value);
+                            switch(node.NodeType)
+                            {
+                            case ExpressionType.Assign:
+                                il.Ldloc(value);
+                                context.EmitMemberAssign(null, memberExpression.Member);
+                                il.Ldloc(value);
+                                break;
+                            case ExpressionType.AddAssign:
+                            case ExpressionType.AddAssignChecked:
+                            case ExpressionType.SubtractAssign:
+                            case ExpressionType.SubtractAssignChecked:
+                            case ExpressionType.MultiplyAssign:
+                            case ExpressionType.MultiplyAssignChecked:
+                            case ExpressionType.DivideAssign:
+                                if (memberExpression.Member is FieldInfo)
+                                    il.Dup(); // stack: [owner, owner]
+                                Type memberType;
+                                context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
+                                il.Ldloc(value);
+                                context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
+                                using(var temp = context.DeclareLocal(left.Type))
+                                {
+                                    il.Stloc(temp);
+                                    il.Ldloc(temp);
+                                    context.EmitMemberAssign(null, memberExpression.Member);
+                                    il.Ldloc(temp);
+                                }
+                                break;
+                            default:
+                                throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                            }
                         }
                     }
                     else
@@ -84,9 +135,9 @@ namespace GrobExp.ExpressionEmitters
                             leftIsNullLabelUsed |= context.EmitNullChecking(memberExpression.Expression.Type, leftIsNullLabel);
                         if(leftIsNullLabelUsed)
                             context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var temp = context.DeclareLocal(type))
+                        using(var owner = context.DeclareLocal(type))
                         {
-                            il.Stloc(temp);
+                            il.Stloc(owner);
                             var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
                             Type rightType;
                             var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
@@ -97,26 +148,83 @@ namespace GrobExp.ExpressionEmitters
                             using(var value = context.DeclareLocal(right.Type))
                             {
                                 il.Stloc(value);
-                                il.Ldloc(temp);
+                                il.Ldloc(owner);
                                 if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
                                 {
-                                    il.Ldloc(value);
-                                    context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        il.Ldloc(value);
+                                        context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [owner, owner]
+                                        Type memberType;
+                                        context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(left.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            il.Ldloc(temp);
+                                            context.EmitMemberAssign(null, memberExpression.Member);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
                                 }
                                 else
                                 {
-                                    var returnValueLabel = il.DefineLabel("returnValue");
-                                    il.Brfalse(returnValueLabel);
-                                    il.Ldloc(temp);
-                                    il.Ldloc(value);
-                                    context.EmitMemberAssign(memberExpression.Expression == null ? null : memberExpression.Expression.Type, memberExpression.Member);
-                                    il.MarkLabel(returnValueLabel);
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        var returnValueLabel = il.DefineLabel("returnValue");
+                                        il.Brfalse(returnValueLabel);
+                                        il.Ldloc(owner);
+                                        il.Ldloc(value);
+                                        context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
+                                        il.MarkLabel(returnValueLabel);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [owner, owner]
+                                        il.Brfalse(returnDefaultValueLabel);
+                                        result = true;
+                                        il.Dup(); // stack: [owner, owner]
+                                        Type memberType;
+                                        context.EmitMemberAccess(memberExpression.Expression.Type, memberExpression.Member, ResultType.Value, out memberType);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(left.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            il.Ldloc(temp);
+                                            context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
                                 }
-                                il.Ldloc(value);
                             }
                         }
                     }
-                    resultType = right.Type;
                     break;
                 }
             case ExpressionType.Index:
@@ -133,9 +241,9 @@ namespace GrobExp.ExpressionEmitters
                             leftIsNullLabelUsed |= context.EmitNullChecking(elementType, leftIsNullLabel);
                         if(leftIsNullLabelUsed)
                             context.EmitReturnDefaultValue(elementType, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var temp = context.DeclareLocal(elementType))
+                        using(var itemAddress = context.DeclareLocal(elementType))
                         {
-                            il.Stloc(temp);
+                            il.Stloc(itemAddress);
                             var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
                             Type rightType;
                             var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
@@ -146,28 +254,78 @@ namespace GrobExp.ExpressionEmitters
                             using(var value = context.DeclareLocal(right.Type))
                             {
                                 il.Stloc(value);
-                                il.Ldloc(temp);
+                                il.Ldloc(itemAddress);
                                 if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
                                 {
-                                    il.Ldloc(value);
-                                    if(binaryExpression.Type.IsStruct())
-                                        context.Il.Stobj(binaryExpression.Type);
-                                    else
-                                        context.Il.Stind(binaryExpression.Type);
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        il.Ldloc(value);
+                                        il.Stind(binaryExpression.Type);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [owner, owner]
+                                        il.Ldind(binaryExpression.Type);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), binaryExpression.Type, binaryExpression.Type, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(binaryExpression.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            il.Ldloc(temp);
+                                            il.Stind(binaryExpression.Type);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
                                 }
                                 else
                                 {
-                                    var returnValueLabel = il.DefineLabel("returnValue");
-                                    il.Brfalse(returnValueLabel);
-                                    il.Ldloc(temp);
-                                    il.Ldloc(value);
-                                    if(binaryExpression.Type.IsStruct())
-                                        context.Il.Stobj(binaryExpression.Type);
-                                    else
-                                        context.Il.Stind(binaryExpression.Type);
-                                    il.MarkLabel(returnValueLabel);
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        var returnValueLabel = il.DefineLabel("returnValue");
+                                        il.Brfalse(returnValueLabel);
+                                        il.Ldloc(itemAddress);
+                                        il.Ldloc(value);
+                                        il.Stind(binaryExpression.Type);
+                                        il.MarkLabel(returnValueLabel);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [itemAddress, itemAddress]
+                                        il.Brfalse(returnDefaultValueLabel);
+                                        result = true;
+                                        il.Dup(); // stack: [itemAddress, itemAddress]
+                                        il.Ldind(binaryExpression.Type);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), binaryExpression.Type, binaryExpression.Type, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(binaryExpression.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            il.Ldloc(temp);
+                                            il.Stind(binaryExpression.Type);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
                                 }
-                                il.Ldloc(value);
                             }
                         }
                     }
@@ -191,9 +349,9 @@ namespace GrobExp.ExpressionEmitters
                             leftIsNullLabelUsed |= context.EmitNullChecking(indexExpression.Object.Type, leftIsNullLabel);
                         if(leftIsNullLabelUsed)
                             context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var temp = context.DeclareLocal(type))
+                        using(var owner = context.DeclareLocal(type))
                         {
-                            il.Stloc(temp);
+                            il.Stloc(owner);
                             var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
                             Type rightType;
                             var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
@@ -204,28 +362,107 @@ namespace GrobExp.ExpressionEmitters
                             using(var value = context.DeclareLocal(right.Type))
                             {
                                 il.Stloc(value);
-                                il.Ldloc(temp);
+                                il.Ldloc(owner);
                                 if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                                    EmitIndexAssign(indexExpression, context, value);
+                                {
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        EmitIndexAssign(indexExpression, context, value);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [owner, owner]
+                                        EmitIndexAccess(indexExpression, context);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), indexExpression.Type, indexExpression.Type, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(indexExpression.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            EmitIndexAssign(indexExpression, context, temp);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
+                                }
                                 else
                                 {
-                                    var returnValueLabel = il.DefineLabel("returnValue");
-                                    il.Brfalse(returnValueLabel);
-                                    il.Ldloc(temp);
-                                    EmitIndexAssign(indexExpression, context, value);
-                                    il.MarkLabel(returnValueLabel);
+                                    switch(node.NodeType)
+                                    {
+                                    case ExpressionType.Assign:
+                                        var returnValueLabel = il.DefineLabel("returnValue");
+                                        il.Brfalse(returnValueLabel);
+                                        il.Ldloc(owner);
+                                        EmitIndexAssign(indexExpression, context, value);
+                                        il.MarkLabel(returnValueLabel);
+                                        il.Ldloc(value);
+                                        break;
+                                    case ExpressionType.AddAssign:
+                                    case ExpressionType.AddAssignChecked:
+                                    case ExpressionType.SubtractAssign:
+                                    case ExpressionType.SubtractAssignChecked:
+                                    case ExpressionType.MultiplyAssign:
+                                    case ExpressionType.MultiplyAssignChecked:
+                                    case ExpressionType.DivideAssign:
+                                        il.Dup(); // stack: [itemAddress, itemAddress]
+                                        il.Brfalse(returnDefaultValueLabel);
+                                        result = true;
+                                        il.Dup(); // stack: [itemAddress, itemAddress]
+                                        EmitIndexAccess(indexExpression, context);
+                                        il.Ldloc(value);
+                                        context.EmitArithmeticOperation(GetOp(node.NodeType), indexExpression.Type, indexExpression.Type, right.Type, node.Method);
+                                        using(var temp = context.DeclareLocal(indexExpression.Type))
+                                        {
+                                            il.Stloc(temp);
+                                            EmitIndexAssign(indexExpression, context, temp);
+                                            il.Ldloc(temp);
+                                        }
+                                        break;
+                                    default:
+                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
+                                    }
                                 }
-                                il.Ldloc(value);
                             }
                         }
                     }
-                    resultType = right.Type;
                     break;
                 }
             default:
                 throw new InvalidOperationException("Unable to assign to an expression with node type '" + left.NodeType + "'");
             }
-            return false;
+            resultType = right.Type;
+            return result;
+        }
+
+        private static ExpressionType GetOp(ExpressionType nodeType)
+        {
+            switch(nodeType)
+            {
+            case ExpressionType.AddAssign:
+                return ExpressionType.Add;
+            case ExpressionType.AddAssignChecked:
+                return ExpressionType.AddChecked;
+            case ExpressionType.SubtractAssign:
+                return ExpressionType.Subtract;
+            case ExpressionType.SubtractAssignChecked:
+                return ExpressionType.SubtractChecked;
+            case ExpressionType.MultiplyAssign:
+                return ExpressionType.Multiply;
+            case ExpressionType.MultiplyAssignChecked:
+                return ExpressionType.MultiplyChecked;
+            case ExpressionType.DivideAssign:
+                return ExpressionType.Divide;
+            default:
+                throw new NotSupportedException("Unable to extract operation type from node type '" + nodeType + "'");
+            }
         }
 
         private static void EmitIndexAssign(IndexExpression node, EmittingContext context, EmittingContext.LocalHolder value)
@@ -256,6 +493,35 @@ namespace GrobExp.ExpressionEmitters
                 if(setMethod == null)
                     throw new MissingMethodException(arrayType.ToString(), "Set");
                 context.Il.Call(setMethod);
+            }
+        }
+
+        private static void EmitIndexAccess(IndexExpression node, EmittingContext context)
+        {
+            if(node.Indexer != null)
+            {
+                context.EmitLoadArguments(node.Arguments.ToArray());
+                MethodInfo getter = node.Indexer.GetGetMethod(true);
+                if(getter == null)
+                    throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "get_" + node.Indexer.Name);
+                context.Il.Call(getter);
+            }
+            else
+            {
+                Type arrayType = node.Object.Type;
+                if(!arrayType.IsArray)
+                    throw new InvalidOperationException("An array expected");
+                int rank = arrayType.GetArrayRank();
+                if(rank != node.Arguments.Count)
+                    throw new InvalidOperationException("Incorrect number of indeces '" + node.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                Type indexType = node.Arguments.First().Type;
+                if(indexType != typeof(int))
+                    throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                context.EmitLoadArguments(node.Arguments.ToArray());
+                MethodInfo getMethod = arrayType.GetMethod("Get");
+                if(getMethod == null)
+                    throw new MissingMethodException(arrayType.ToString(), "Get");
+                context.Il.Call(getMethod);
             }
         }
     }

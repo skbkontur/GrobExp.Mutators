@@ -70,8 +70,11 @@ namespace Tests
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestStructB)), temp);
             var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);*/
             //Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[0].X;
-            ParameterExpression parameter = Expression.Parameter(typeof(long));
-            Expression<Func<long, long>> exp = Expression.Lambda<Func<long, long>>(Expression.NegateChecked(parameter), parameter);
+//            ParameterExpression a = Expression.Parameter(typeof(double?));
+//            ParameterExpression b = Expression.Parameter(typeof(double?));
+//            var exp = Expression.Lambda<Func<double?, double?, double?>>(Expression.Power(a, b), a, b);
+            ParameterExpression parameter = Expression.Parameter(typeof(int?));
+            var exp = Expression.Lambda<Func<int?, int?>>(Expression.Increment(parameter), parameter);
             CompileAndSave(exp);
         }
 

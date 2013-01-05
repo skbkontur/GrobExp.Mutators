@@ -48,6 +48,41 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArithmeticTests\TestBitwiseOperations.cs" />
+    <Compile Include="ArithmeticTests\TestDecrement.cs" />
+    <Compile Include="ArithmeticTests\TestIncrement.cs" />
+    <Compile Include="ArithmeticTests\TestShifts.cs" />
+    <Compile Include="ArithmeticTests\TestModulo.cs" />
+    <Compile Include="ArithmeticTests\TestDivide.cs" />
+    <Compile Include="ArithmeticTests\TestMultiply.cs" />
+    <Compile Include="ArithmeticTests\TestSubtract.cs" />
+    <Compile Include="ArithmeticTests\TestAdd.cs" />
+    <Compile Include="ArithmeticTests\TestUnaryPlusMinus.cs" />
+    <Compile Include="AssignTests\AddAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\AddAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\AddAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\AddAssign\TestStaticMember.cs" />
+    <Compile Include="AssignTests\AddAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\AddAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\Assign\TestAssignArray.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\DivideAssign\TestStaticMember.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\MultiplyAssign\TestStaticMember.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\SubtractAssign\TestStaticMember.cs" />
     <Compile Include="TestBlock.cs" />
     <Compile Include="TestConstant.cs" />
     <Compile Include="TestConvert.cs" />
@@ -61,11 +96,11 @@
     <Compile Include="TestPerformance.cs" />
     <Compile Include="TestSubLambda.cs" />
     <Compile Include="TestComparison.cs" />
-    <Compile Include="TestArithmetic.cs" />
+    <Compile Include="ArithmeticTests\TestArithmetic.cs" />
     <Compile Include="TestNewObjectCreation.cs" />
     <Compile Include="TestNotEqual.cs" />
     <Compile Include="TestEqual.cs" />
-    <Compile Include="TestAssign.cs" />
+    <Compile Include="AssignTests\Assign\TestAssign.cs" />
     <Compile Include="TestArrayLength.cs" />
     <Compile Include="Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -77,6 +112,7 @@
       <Name>GrobExp</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

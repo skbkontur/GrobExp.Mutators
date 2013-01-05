@@ -64,6 +64,12 @@
     <Compile Include="AssignTests\AddAssign\TestStaticMember.cs" />
     <Compile Include="AssignTests\AddAssign\TestInstanceMember.cs" />
     <Compile Include="AssignTests\AddAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\AndAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\AndAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\AndAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\AndAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\AndAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\AndAssign\TestStaticMember.cs" />
     <Compile Include="AssignTests\Assign\TestAssignArray.cs" />
     <Compile Include="AssignTests\DivideAssign\TestComplexProperty.cs" />
     <Compile Include="AssignTests\DivideAssign\TestInstanceMember.cs" />

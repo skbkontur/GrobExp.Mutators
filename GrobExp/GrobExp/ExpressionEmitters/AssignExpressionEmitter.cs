@@ -48,6 +48,9 @@ namespace GrobExp.ExpressionEmitters
                         case ExpressionType.MultiplyAssign:
                         case ExpressionType.MultiplyAssignChecked:
                         case ExpressionType.DivideAssign:
+                        case ExpressionType.AndAssign:
+                        case ExpressionType.OrAssign:
+                        case ExpressionType.ExclusiveOrAssign:
                             il.Dup(); // stack: [&parameter, &parameter]
                             il.Ldind(left.Type); // stack: [&parameter, parameter]
                             il.Ldloc(value); // stack: [&parameter, parameter, value]
@@ -97,6 +100,9 @@ namespace GrobExp.ExpressionEmitters
                             case ExpressionType.MultiplyAssign:
                             case ExpressionType.MultiplyAssignChecked:
                             case ExpressionType.DivideAssign:
+                            case ExpressionType.AndAssign:
+                            case ExpressionType.OrAssign:
+                            case ExpressionType.ExclusiveOrAssign:
                                 if (memberExpression.Member is FieldInfo)
                                     il.Dup(); // stack: [owner, owner]
                                 Type memberType;
@@ -165,6 +171,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         Type memberType;
                                         context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
@@ -202,6 +211,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -271,6 +283,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         il.Ldind(binaryExpression.Type);
                                         il.Ldloc(value);
@@ -307,6 +322,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [itemAddress, itemAddress]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -378,6 +396,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         EmitIndexAccess(indexExpression, context);
                                         il.Ldloc(value);
@@ -412,6 +433,9 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.MultiplyAssign:
                                     case ExpressionType.MultiplyAssignChecked:
                                     case ExpressionType.DivideAssign:
+                                    case ExpressionType.AndAssign:
+                                    case ExpressionType.OrAssign:
+                                    case ExpressionType.ExclusiveOrAssign:
                                         il.Dup(); // stack: [itemAddress, itemAddress]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -460,6 +484,12 @@ namespace GrobExp.ExpressionEmitters
                 return ExpressionType.MultiplyChecked;
             case ExpressionType.DivideAssign:
                 return ExpressionType.Divide;
+            case ExpressionType.AndAssign:
+                return ExpressionType.And;
+            case ExpressionType.OrAssign:
+                return ExpressionType.Or;
+            case ExpressionType.ExclusiveOrAssign:
+                return ExpressionType.ExclusiveOr;
             default:
                 throw new NotSupportedException("Unable to extract operation type from node type '" + nodeType + "'");
             }

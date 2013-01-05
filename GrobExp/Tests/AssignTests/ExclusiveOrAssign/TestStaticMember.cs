@@ -5,7 +5,7 @@ using GrobExp;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.OrAssign
+namespace Tests.AssignTests.ExclusiveOrAssign
 {
     [TestFixture]
     public class TestStaticMember
@@ -20,34 +20,34 @@ namespace Tests.AssignTests.OrAssign
         public void TestIntProp()
         {
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
-            Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(Expression.OrAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("IntProp")), b), b);
+            Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(Expression.ExclusiveOrAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("IntProp")), b), b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             TestClassA.IntProp = 0;
             Assert.AreEqual(123, f(123));
             Assert.AreEqual(123, TestClassA.IntProp);
             TestClassA.IntProp = 5;
-            Assert.AreEqual(7, f(3));
-            Assert.AreEqual(7, TestClassA.IntProp);
+            Assert.AreEqual(6, f(3));
+            Assert.AreEqual(6, TestClassA.IntProp);
             TestClassA.IntProp = 17235476;
-            Assert.AreEqual(17235476 | 73172563, f(73172563));
-            Assert.AreEqual(17235476 | 73172563, TestClassA.IntProp);
+            Assert.AreEqual(17235476 ^ 73172563, f(73172563));
+            Assert.AreEqual(17235476 ^ 73172563, TestClassA.IntProp);
         }
 
         [Test]
         public void TestNullable()
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
-            Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.OrAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetField("NullableIntField")), b), b);
+            Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.ExclusiveOrAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetField("NullableIntField")), b), b);
             var f = LambdaCompiler.Compile(exp);
             TestClassA.NullableIntField = 0;
             Assert.AreEqual(123, f(123));
             Assert.AreEqual(123, TestClassA.NullableIntField);
             TestClassA.NullableIntField = 5;
-            Assert.AreEqual(7, f(3));
-            Assert.AreEqual(7, TestClassA.NullableIntField);
+            Assert.AreEqual(6, f(3));
+            Assert.AreEqual(6, TestClassA.NullableIntField);
             TestClassA.NullableIntField = 17235476;
-            Assert.AreEqual(17235476 | 73172563, f(73172563));
-            Assert.AreEqual(17235476 | 73172563, TestClassA.NullableIntField);
+            Assert.AreEqual(17235476 ^ 73172563, f(73172563));
+            Assert.AreEqual(17235476 ^ 73172563, TestClassA.NullableIntField);
             TestClassA.NullableIntField = null;
             Assert.IsNull(f(2));
             Assert.IsNull(TestClassA.NullableIntField);

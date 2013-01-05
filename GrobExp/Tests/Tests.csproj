@@ -77,6 +77,12 @@
     <Compile Include="AssignTests\DivideAssign\TestParameter.cs" />
     <Compile Include="AssignTests\DivideAssign\TestSimpleArray.cs" />
     <Compile Include="AssignTests\DivideAssign\TestStaticMember.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestComplexProperty.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestInstanceMember.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestMultiDimensionalArray.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestParameter.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestSimpleArray.cs" />
+    <Compile Include="AssignTests\ExclusiveOrAssign\TestStaticMember.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestComplexProperty.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestInstanceMember.cs" />
     <Compile Include="AssignTests\MultiplyAssign\TestMultiDimensionalArray.cs" />

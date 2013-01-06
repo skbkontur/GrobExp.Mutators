@@ -52,6 +52,7 @@ namespace GrobExp.ExpressionEmitters
                         case ExpressionType.OrAssign:
                         case ExpressionType.ExclusiveOrAssign:
                         case ExpressionType.LeftShiftAssign:
+                        case ExpressionType.RightShiftAssign:
                             il.Dup(); // stack: [&parameter, &parameter]
                             il.Ldind(left.Type); // stack: [&parameter, parameter]
                             il.Ldloc(value); // stack: [&parameter, parameter, value]
@@ -107,6 +108,7 @@ namespace GrobExp.ExpressionEmitters
                             case ExpressionType.OrAssign:
                             case ExpressionType.ExclusiveOrAssign:
                             case ExpressionType.LeftShiftAssign:
+                            case ExpressionType.RightShiftAssign:
                                 if (memberExpression.Member is FieldInfo)
                                     il.Dup(); // stack: [owner, owner]
                                 Type memberType;
@@ -181,6 +183,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         Type memberType;
                                         context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
@@ -224,6 +227,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -299,6 +303,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         il.Ldind(binaryExpression.Type);
                                         il.Ldloc(value);
@@ -341,6 +346,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [itemAddress, itemAddress]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -418,6 +424,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [owner, owner]
                                         EmitIndexAccess(indexExpression, context);
                                         il.Ldloc(value);
@@ -458,6 +465,7 @@ namespace GrobExp.ExpressionEmitters
                                     case ExpressionType.OrAssign:
                                     case ExpressionType.ExclusiveOrAssign:
                                     case ExpressionType.LeftShiftAssign:
+                                    case ExpressionType.RightShiftAssign:
                                         il.Dup(); // stack: [itemAddress, itemAddress]
                                         il.Brfalse(returnDefaultValueLabel);
                                         result = true;
@@ -518,6 +526,8 @@ namespace GrobExp.ExpressionEmitters
                 return ExpressionType.ExclusiveOr;
             case ExpressionType.LeftShiftAssign:
                 return ExpressionType.LeftShift;
+            case ExpressionType.RightShiftAssign:
+                return ExpressionType.RightShift;
             default:
                 throw new NotSupportedException("Unable to extract operation type from node type '" + nodeType + "'");
             }

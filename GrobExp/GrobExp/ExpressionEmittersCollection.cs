@@ -53,6 +53,7 @@ namespace GrobExp
                 {ExpressionType.OrAssign, new AssignExpressionEmitter()},
                 {ExpressionType.ExclusiveOrAssign, new AssignExpressionEmitter()},
                 {ExpressionType.LeftShiftAssign, new AssignExpressionEmitter()},
+                {ExpressionType.RightShiftAssign, new AssignExpressionEmitter()},
                 {ExpressionType.New, new NewExpressionEmitter()},
                 {ExpressionType.Conditional, new ConditionalExpressionEmitter()},
                 {ExpressionType.Equal, new EqualityExpressionEmitter()},

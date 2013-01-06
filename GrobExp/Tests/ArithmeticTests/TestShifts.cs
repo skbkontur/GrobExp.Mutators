@@ -54,6 +54,49 @@ namespace Tests.ArithmeticTests
         }
 
         [Test]
+        public void TestLeftShift4()
+        {
+            Expression<Func<uint, int, uint>> exp = (a, b) => a << b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(0, f(0, 10));
+            Assert.AreEqual(1024, f(1, 10));
+            Assert.AreEqual(2468, f(1234, 1));
+            Assert.AreEqual(16, f(1, 100));
+            Assert.AreEqual(2147483648, f(1, 31));
+        }
+
+        [Test]
+        public void TestLeftShift5()
+        {
+            Expression<Func<uint?, int, uint?>> exp = (a, b) => a << b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(0, f(0, 10));
+            Assert.AreEqual(1024, f(1, 10));
+            Assert.AreEqual(2468, f(1234, 1));
+            Assert.AreEqual(16, f(1, 100));
+            Assert.AreEqual(2147483648, f(1, 31));
+            Assert.IsNull(f(null, 1));
+        }
+
+        [Test]
+        public void TestLeftShift6()
+        {
+            Expression<Func<uint?, int?, uint?>> exp = (a, b) => a << b;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(0, f(0, 0));
+            Assert.AreEqual(0, f(0, 10));
+            Assert.AreEqual(1024, f(1, 10));
+            Assert.AreEqual(2468, f(1234, 1));
+            Assert.AreEqual(16, f(1, 100));
+            Assert.AreEqual(2147483648, f(1, 31));
+            Assert.IsNull(f(null, 1));
+            Assert.IsNull(f(123, null));
+            Assert.IsNull(f(null, null));
+        }
+
+        [Test]
         public void TestRightShift1()
         {
             Expression<Func<int, int, int>> exp = (a, b) => a >> b;

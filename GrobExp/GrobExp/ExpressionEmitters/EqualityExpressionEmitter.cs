@@ -12,15 +12,17 @@ namespace GrobExp.ExpressionEmitters
         {
             Expression left = node.Left;
             Expression right = node.Right;
-            context.EmitLoadArguments(left, right);
+            Type leftType, rightType;
+            context.EmitLoadArgument(left, false, out leftType);
+            context.EmitLoadArgument(right, false, out rightType);
             GroboIL il = context.Il;
-            if(!left.Type.IsNullable() && !right.Type.IsNullable())
+            if(!leftType.IsNullable() && !rightType.IsNullable())
             {
                 if(node.Method != null)
                     il.Call(node.Method);
                 else
                 {
-                    if(left.Type.IsStruct() || right.Type.IsStruct())
+                    if(leftType.IsStruct() || rightType.IsStruct())
                         throw new InvalidOperationException("Cannot compare structs");
                     il.Ceq();
                     if(node.NodeType == ExpressionType.NotEqual)
@@ -32,9 +34,9 @@ namespace GrobExp.ExpressionEmitters
             }
             else
             {
-                var type = left.Type;
-                if(type != right.Type)
-                    throw new InvalidOperationException("Cannot compare objects of different types '" + left.Type + "' and '" + right.Type + "'");
+                var type = leftType;
+                if(type != rightType)
+                    throw new InvalidOperationException("Cannot compare objects of different types '" + leftType + "' and '" + rightType + "'");
                 using(var localLeft = context.DeclareLocal(type))
                 using(var localRight = context.DeclareLocal(type))
                 {

@@ -11,8 +11,10 @@ namespace GrobExp.ExpressionEmitters
         {
             Expression left = node.Left;
             Expression right = node.Right;
-            context.EmitLoadArguments(left, right);
-            context.EmitArithmeticOperation(node.NodeType, node.Type, left.Type, right.Type, node.Method);
+            Type leftType, rightType;
+            context.EmitLoadArgument(left, false, out leftType);
+            context.EmitLoadArgument(right, false, out rightType);
+            context.EmitArithmeticOperation(node.NodeType, node.Type, leftType, rightType, node.Method);
             resultType = node.Type;
             return false;
         }

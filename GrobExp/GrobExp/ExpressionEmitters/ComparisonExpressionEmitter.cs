@@ -12,45 +12,47 @@ namespace GrobExp.ExpressionEmitters
         {
             Expression left = node.Left;
             Expression right = node.Right;
-            context.EmitLoadArguments(left, right);
+            Type leftType, rightType;
+            context.EmitLoadArgument(left, false, out leftType);
+            context.EmitLoadArgument(right, false, out rightType);
             GroboIL il = context.Il;
             if(node.Method != null)
             {
-                if(!left.Type.IsNullable() && !right.Type.IsNullable())
+                if (!leftType.IsNullable() && !rightType.IsNullable())
                     il.Call(node.Method);
                 else
                 {
-                    using(var localLeft = context.DeclareLocal(left.Type))
-                    using(var localRight = context.DeclareLocal(right.Type))
+                    using(var localLeft = context.DeclareLocal(leftType))
+                    using(var localRight = context.DeclareLocal(rightType))
                     {
                         il.Stloc(localRight);
                         il.Stloc(localLeft);
                         var returnNullLabel = il.DefineLabel("returnNull");
-                        if(left.Type.IsNullable())
+                        if(leftType.IsNullable())
                         {
                             il.Ldloca(localLeft);
-                            il.Ldfld(left.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Ldfld(leftType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
                             il.Brfalse(returnNullLabel);
                         }
-                        if(right.Type.IsNullable())
+                        if(rightType.IsNullable())
                         {
                             il.Ldloca(localRight);
-                            il.Ldfld(right.Type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Ldfld(rightType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
                             il.Brfalse(returnNullLabel);
                         }
-                        if(!left.Type.IsNullable())
+                        if(!leftType.IsNullable())
                             il.Ldloc(localLeft);
                         else
                         {
                             il.Ldloca(localLeft);
-                            il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Ldfld(leftType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
                         }
-                        if(!right.Type.IsNullable())
+                        if(!rightType.IsNullable())
                             il.Ldloc(localRight);
                         else
                         {
                             il.Ldloca(localRight);
-                            il.Ldfld(right.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                            il.Ldfld(rightType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
                         }
                         il.Call(node.Method);
 
@@ -65,9 +67,9 @@ namespace GrobExp.ExpressionEmitters
             }
             else
             {
-                var type = left.Type;
-                if(type != right.Type)
-                    throw new InvalidOperationException("Cannot compare objects of different types '" + left.Type + "' and '" + right.Type + "'");
+                var type = leftType;
+                if(type != rightType)
+                    throw new InvalidOperationException("Cannot compare objects of different types '" + leftType + "' and '" + rightType + "'");
                 if(!type.IsNullable())
                 {
                     switch(node.NodeType)

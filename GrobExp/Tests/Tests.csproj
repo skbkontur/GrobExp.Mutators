@@ -51,6 +51,7 @@
     <Compile Include="ArithmeticTests\TestBitwiseOperations.cs" />
     <Compile Include="ArithmeticTests\TestDecrement.cs" />
     <Compile Include="ArithmeticTests\TestIncrement.cs" />
+    <Compile Include="ArithmeticTests\TestIsTrueFalse.cs" />
     <Compile Include="ArithmeticTests\TestShifts.cs" />
     <Compile Include="ArithmeticTests\TestModulo.cs" />
     <Compile Include="ArithmeticTests\TestDivide.cs" />

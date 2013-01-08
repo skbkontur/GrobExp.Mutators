@@ -77,8 +77,6 @@ namespace GrobExp.ExpressionEmitters
                     var memberExpression = (MemberExpression)left;
                     if(memberExpression.Expression == null) // static member
                     {
-                        if(memberExpression.Member is FieldInfo)
-                            il.Ldnull();
                         var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
                         Type rightType;
                         var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
@@ -110,8 +108,6 @@ namespace GrobExp.ExpressionEmitters
                             case ExpressionType.ExclusiveOrAssign:
                             case ExpressionType.LeftShiftAssign:
                             case ExpressionType.RightShiftAssign:
-                                if (memberExpression.Member is FieldInfo)
-                                    il.Dup(); // stack: [owner, owner]
                                 Type memberType;
                                 context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
                                 il.Ldloc(value);
@@ -144,8 +140,6 @@ namespace GrobExp.ExpressionEmitters
                             }
                             type = type.MakeByRefType();
                         }
-                        if(!closureAssign && context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                            leftIsNullLabelUsed |= context.EmitNullChecking(memberExpression.Expression.Type, leftIsNullLabel);
                         if(leftIsNullLabelUsed)
                             context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
                         using(var owner = context.DeclareLocal(type))
@@ -264,8 +258,6 @@ namespace GrobExp.ExpressionEmitters
                         var leftIsNullLabel = context.CanReturn ? il.DefineLabel("leftIsNull") : null;
                         Type elementType;
                         bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(binaryExpression, context, leftIsNullLabel, ResultType.ByRefAll, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out elementType);
-                        if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                            leftIsNullLabelUsed |= context.EmitNullChecking(elementType, leftIsNullLabel);
                         if(leftIsNullLabelUsed)
                             context.EmitReturnDefaultValue(elementType, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
                         using(var itemAddress = context.DeclareLocal(elementType))

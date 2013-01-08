@@ -108,11 +108,6 @@ namespace GrobExp.ExpressionEmitters
                         var memberExpression = (MemberExpression)node.Left;
                         if(memberExpression.Expression != null)
                             il.Ldloc(arrayOwner);
-                        else
-                        {
-                            if(memberExpression.Member.MemberType == MemberTypes.Field)
-                                il.Ldnull();
-                        }
                         il.Ldloc(array);
                         switch(memberExpression.Member.MemberType)
                         {

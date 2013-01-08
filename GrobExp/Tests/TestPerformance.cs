@@ -182,8 +182,6 @@ namespace Tests
             var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var doNothingMethod = typeBuilder.DefineMethod("DoNothingImpl", MethodAttributes.Public, typeof(void), Type.EmptyTypes);
             var il = new GroboIL(doNothingMethod);
-            il.Ldnull();
-            il.Ldnull();
             il.Ldfld(xField);
             il.Ldc_I4(1);
             il.Add();
@@ -254,8 +252,6 @@ namespace Tests
         {
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Type.EmptyTypes, LambdaCompiler.Module, true);
             var il = new GroboIL(dynamicMethod);
-            il.Ldnull();
-            il.Ldnull();
             il.Ldfld(xField);
             il.Ldc_I4(1);
             il.Add();

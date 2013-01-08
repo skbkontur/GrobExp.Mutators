@@ -124,13 +124,11 @@ namespace GrobExp.ExpressionEmitters
             {
                 if(!field.FieldType.IsValueType)
                 {
-                    il.Ldnull();
-                    il.Ldnull();
+                    il.Ldnull(field.FieldType);
                     il.Stfld(field);
                 }
                 else
                 {
-                    il.Ldnull();
                     il.Ldflda(field);
                     il.Initobj(field.FieldType);
                 }

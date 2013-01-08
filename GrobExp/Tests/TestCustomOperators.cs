@@ -15,12 +15,12 @@ namespace Tests
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a + b;
             var f = LambdaCompiler.Compile(exp);
-            Assert.That(new Fraction(5, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(5, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
             ParameterExpression parameterA = Expression.Parameter(typeof(Fraction));
             ParameterExpression parameterB = Expression.Parameter(typeof(Fraction));
             Expression<Func<Fraction, Fraction, Fraction>> exp2 = Expression.Lambda<Func<Fraction, Fraction, Fraction>>(Expression.AddChecked(parameterA, parameterB, ((BinaryExpression)exp.Body).Method), parameterA, parameterB);
             f = LambdaCompiler.Compile(exp2);
-            Assert.That(new Fraction(5, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(5, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
         }
 
         [Test]
@@ -41,12 +41,12 @@ namespace Tests
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a - b;
             var f = LambdaCompiler.Compile(exp);
-            Assert.That(new Fraction(1, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(1, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
             ParameterExpression parameterA = Expression.Parameter(typeof(Fraction));
             ParameterExpression parameterB = Expression.Parameter(typeof(Fraction));
             Expression<Func<Fraction, Fraction, Fraction>> exp2 = Expression.Lambda<Func<Fraction, Fraction, Fraction>>(Expression.SubtractChecked(parameterA, parameterB, ((BinaryExpression)exp.Body).Method), parameterA, parameterB);
             f = LambdaCompiler.Compile(exp2);
-            Assert.That(new Fraction(1, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(1, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
         }
 
         [Test]
@@ -67,12 +67,12 @@ namespace Tests
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a * b;
             var f = LambdaCompiler.Compile(exp);
-            Assert.That(new Fraction(1, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(1, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
             ParameterExpression parameterA = Expression.Parameter(typeof(Fraction));
             ParameterExpression parameterB = Expression.Parameter(typeof(Fraction));
             Expression<Func<Fraction, Fraction, Fraction>> exp2 = Expression.Lambda<Func<Fraction, Fraction, Fraction>>(Expression.MultiplyChecked(parameterA, parameterB, ((BinaryExpression)exp.Body).Method), parameterA, parameterB);
             f = LambdaCompiler.Compile(exp2);
-            Assert.That(new Fraction(1, 6) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(1, 6), f(new Fraction(1, 2), new Fraction(1, 3)));
         }
 
         [Test]
@@ -94,7 +94,7 @@ namespace Tests
         {
             Expression<Func<Fraction, Fraction, Fraction>> exp = (a, b) => a / b;
             var f = LambdaCompiler.Compile(exp);
-            Assert.That(new Fraction(3, 2) == f(new Fraction(1, 2), new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(3, 2), f(new Fraction(1, 2), new Fraction(1, 3)));
         }
 
         [Test]
@@ -111,11 +111,203 @@ namespace Tests
         }
 
         [Test]
+        public void TestIncrement1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Increment(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(-1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.Increment(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(-1, 1)));
+        }
+
+        [Test]
+        public void TestIncrement2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Increment(parameter, typeof(decimal).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(1m, f(0m));
+            Assert.AreEqual(0m, f(-1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.Increment(parameter, typeof(decimal).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(0m, f(0m));
+            Assert.AreEqual(-1m, f(-1m));
+        }
+
+        [Test]
+        public void TestDecrement1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Decrement(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.Decrement(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(-1, 1)));
+        }
+
+        [Test]
+        public void TestDecrement2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Decrement(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(-1m, f(0m));
+            Assert.AreEqual(0m, f(1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.Decrement(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(0m, f(0m));
+            Assert.AreEqual(-1m, f(-1m));
+        }
+
+        [Test]
+        public void TestPreIncrementAssign1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.PreIncrementAssign(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(-1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.PreIncrementAssign(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(-1, 1)));
+        }
+
+        [Test]
+        public void TestPreIncrementAssign2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.PreIncrementAssign(parameter, typeof(decimal).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(1m, f(0m));
+            Assert.AreEqual(0m, f(-1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.PreIncrementAssign(parameter, typeof(decimal).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(1m, f(0m));
+            Assert.AreEqual(0m, f(-1m));
+        }
+
+        [Test]
+        public void TestPostIncrementAssign1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.PostIncrementAssign(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(-1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.PostIncrementAssign(parameter, typeof(Fraction).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(-1, 1)));
+        }
+
+        [Test]
+        public void TestPostIncrementAssign2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.PostIncrementAssign(parameter, typeof(decimal).GetMethod("op_Increment")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(0m, f(0m));
+            Assert.AreEqual(-1m, f(-1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.PostIncrementAssign(parameter, typeof(decimal).GetMethod("op_Increment")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(1m, f(0m));
+            Assert.AreEqual(0m, f(-1m));
+        }
+
+        [Test]
+        public void TestPreDecrementAssign1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.PreDecrementAssign(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.PreDecrementAssign(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(1, 1)));
+        }
+
+        [Test]
+        public void TestPreDecrementAssign2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.PreDecrementAssign(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(-1m, f(0m));
+            Assert.AreEqual(0m, f(1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.PreDecrementAssign(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(-1m, f(0m));
+            Assert.AreEqual(0m, f(1m));
+        }
+
+        [Test]
+        public void TestPostDecrementAssign1()
+        {
+            var parameter = Expression.Parameter(typeof(Fraction));
+            Expression<Func<Fraction, Fraction>> exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.PostDecrementAssign(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(1, 1), f(new Fraction(1, 1)));
+            exp = Expression.Lambda<Func<Fraction, Fraction>>(Expression.Block(typeof(Fraction), Expression.PostDecrementAssign(parameter, typeof(Fraction).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(new Fraction(-1, 1), f(new Fraction(0, 1)));
+            Assert.AreEqual(new Fraction(0, 1), f(new Fraction(1, 1)));
+        }
+
+        [Test]
+        public void TestPostDecrementAssign2()
+        {
+            var parameter = Expression.Parameter(typeof(decimal?));
+            Expression<Func<decimal?, decimal?>> exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.PostDecrementAssign(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(0m, f(0m));
+            Assert.AreEqual(1m, f(1m));
+            exp = Expression.Lambda<Func<decimal?, decimal?>>(Expression.Block(typeof(decimal?), Expression.PostDecrementAssign(parameter, typeof(decimal).GetMethod("op_Decrement")), parameter), parameter);
+            f = LambdaCompiler.Compile(exp);
+            Assert.IsNull(f(null));
+            Assert.AreEqual(-1m, f(0m));
+            Assert.AreEqual(0m, f(1m));
+        }
+
+        [Test]
         public void TestUnaryPlus1()
         {
             Expression<Func<Fraction, Fraction>> exp = a => +a;
             var f = LambdaCompiler.Compile(exp);
-            Assert.That(new Fraction(1, 3) == f(new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(1, 3), f(new Fraction(1, 3)));
         }
 
         [Test]
@@ -139,7 +331,7 @@ namespace Tests
             ParameterExpression parameter = Expression.Parameter(typeof(Fraction));
             Expression<Func<Fraction, Fraction>> exp2 = Expression.Lambda<Func<Fraction, Fraction>>(Expression.NegateChecked(parameter, ((UnaryExpression)exp.Body).Method), parameter);
             f = LambdaCompiler.Compile(exp2);
-            Assert.That(new Fraction(-1, 3) == f(new Fraction(1, 3)));
+            Assert.AreEqual(new Fraction(-1, 3), f(new Fraction(1, 3)));
         }
 
         [Test]
@@ -285,7 +477,6 @@ namespace Tests
             Assert.IsTrue(f(new Fraction(1, 3), new Fraction(1, 2)));
         }
 
-
         private class Fraction
         {
             public Fraction(int num, int den)
@@ -293,6 +484,39 @@ namespace Tests
                 Num = num;
                 Den = den;
                 Normalize();
+            }
+
+            public bool Equals(Fraction other)
+            {
+                if(ReferenceEquals(null, other)) return false;
+                if(ReferenceEquals(this, other)) return true;
+                return other.Num == Num && other.Den == Den;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if(ReferenceEquals(null, obj)) return false;
+                if(ReferenceEquals(this, obj)) return true;
+                if(obj.GetType() != typeof(Fraction)) return false;
+                return Equals((Fraction)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (Num * 397) ^ Den;
+                }
+            }
+
+            public static Fraction operator ++(Fraction fraction)
+            {
+                return fraction + new Fraction(1, 1);
+            }
+
+            public static Fraction operator --(Fraction fraction)
+            {
+                return fraction - new Fraction(1, 1);
             }
 
             public static Fraction operator +(Fraction fraction)

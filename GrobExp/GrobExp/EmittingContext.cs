@@ -36,11 +36,7 @@ namespace GrobExp
             Type ownerType;
             GroboIL il = Il;
             if(node.Expression == null)
-            {
                 ownerType = null;
-                if(node.Member.MemberType == MemberTypes.Field)
-                    il.Ldnull();
-            }
             else
             {
                 result |= ExpressionEmittersCollection.Emit(node.Expression, this, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out type); // stack: [obj]
@@ -73,8 +69,6 @@ namespace GrobExp
                     il.Dup();
                     il.Brtrue(memberIsNotNullLabel);
                     il.Pop();
-                    if(node.Member is FieldInfo)
-                        il.Ldnull();
                     if(!memberType.IsArray)
                         il.Newobj(constructor);
                     else
@@ -231,7 +225,7 @@ namespace GrobExp
         public void EmitLoadDefaultValue(Type type)
         {
             if(!type.IsValueType)
-                Il.Ldnull();
+                Il.Ldnull(type);
             else
             {
                 using(var temp = DeclareLocal(type))

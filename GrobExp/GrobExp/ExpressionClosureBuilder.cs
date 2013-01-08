@@ -92,7 +92,6 @@ namespace GrobExp
                 var pair = (KeyValuePair<Type, object>)entry.Key;
                 var constType = pair.Key;
                 consts[index] = pair.Value;
-                il.Ldnull();
                 il.Ldarg(0);
                 il.Ldc_I4(index++);
                 il.Ldelem(typeof(object));

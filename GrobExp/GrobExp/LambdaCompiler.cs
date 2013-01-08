@@ -83,7 +83,7 @@ namespace GrobExp
                 if(returnType != typeof(void))
                 {
                     if(!returnType.IsValueType)
-                        il.Ldnull();
+                        il.Ldnull(returnType);
                     else
                     {
                         using(var defaultValue = context.DeclareLocal(returnType))
@@ -108,7 +108,6 @@ namespace GrobExp
         {
             var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(Delegate[])}, Module, true);
             var il = new GroboIL(method);
-            il.Ldnull();
             il.Ldarg(0);
             il.Stfld(type.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
             il.Ret();

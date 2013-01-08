@@ -88,14 +88,12 @@ namespace GrobExp.ExpressionEmitters
                             break;
                         case ExpressionType.Increment:
                             il.Ldc_I4(1);
-                            if(operandType != typeof(int))
-                                context.EmitConvert(typeof(int), operandType);
+                            context.EmitConvert(typeof(int), operandType);
                             il.Add();
                             break;
                         case ExpressionType.Decrement:
                             il.Ldc_I4(1);
-                            if(operandType != typeof(int))
-                                context.EmitConvert(typeof(int), operandType);
+                            context.EmitConvert(typeof(int), operandType);
                             il.Sub();
                             break;
                         case ExpressionType.OnesComplement:
@@ -146,16 +144,14 @@ namespace GrobExp.ExpressionEmitters
                                 il.Ldloca(temp);
                                 il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
                                 il.Ldc_I4(1);
-                                if(argumentType != typeof(int))
-                                    context.EmitConvert(typeof(int), argumentType);
+                                context.EmitConvert(typeof(int), argumentType);
                                 il.Add();
                                 break;
                             case ExpressionType.Decrement:
                                 il.Ldloca(temp);
                                 il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
                                 il.Ldc_I4(1);
-                                if(argumentType != typeof(int))
-                                    context.EmitConvert(typeof(int), argumentType);
+                                context.EmitConvert(typeof(int), argumentType);
                                 il.Sub();
                                 break;
                             case ExpressionType.OnesComplement:

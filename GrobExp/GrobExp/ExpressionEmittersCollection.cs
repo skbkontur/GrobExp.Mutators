@@ -95,6 +95,10 @@ namespace GrobExp
                 {ExpressionType.OnesComplement, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.IsTrue, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.IsFalse, new UnaryAritmeticOperationExpressionEmitter()},
+                {ExpressionType.PreIncrementAssign, new UnaryAssignExpressionEmitter()},
+                {ExpressionType.PreDecrementAssign, new UnaryAssignExpressionEmitter()},
+                {ExpressionType.PostIncrementAssign, new UnaryAssignExpressionEmitter()},
+                {ExpressionType.PostDecrementAssign, new UnaryAssignExpressionEmitter()},
             };
     }
 }

@@ -15,15 +15,21 @@ namespace GrobExp.ExpressionEmitters
             GroboIL il = context.Il;
             if(node.NodeType == ExpressionType.IsTrue || node.NodeType == ExpressionType.IsFalse)
             {
-                if(operandType == typeof(bool))
+                if(!operandType.IsNullable())
                 {
-                    if(node.NodeType == ExpressionType.IsFalse)
+                    if(node.Method != null)
+                        il.Call(node.Method);
+                    else if(operandType == typeof(bool))
                     {
-                        il.Ldc_I4(1);
-                        il.Xor();
+                        if(node.NodeType == ExpressionType.IsFalse)
+                        {
+                            il.Ldc_I4(1);
+                            il.Xor();
+                        }
                     }
+                    else throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' to a type '" + operandType + "'");
                 }
-                else if(operandType == typeof(bool?))
+                else
                 {
                     using(var temp = context.DeclareLocal(operandType))
                     {
@@ -34,11 +40,17 @@ namespace GrobExp.ExpressionEmitters
                         il.Brfalse(returnFalseLabel);
                         il.Ldloca(temp);
                         il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
-                        if(node.NodeType == ExpressionType.IsFalse)
+                        if(node.Method != null)
+                            il.Call(node.Method);
+                        else if(operandType == typeof(bool?))
                         {
-                            il.Ldc_I4(1);
-                            il.Xor();
+                            if(node.NodeType == ExpressionType.IsFalse)
+                            {
+                                il.Ldc_I4(1);
+                                il.Xor();
+                            }
                         }
+                        else throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' to a type '" + operandType + "'");
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
                         il.MarkLabel(returnFalseLabel);
@@ -46,7 +58,6 @@ namespace GrobExp.ExpressionEmitters
                         il.MarkLabel(doneLabel);
                     }
                 }
-                else throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' to a type '" + operandType + "'");
             }
             else
             {
@@ -86,6 +97,9 @@ namespace GrobExp.ExpressionEmitters
                             if(operandType != typeof(int))
                                 context.EmitConvert(typeof(int), operandType);
                             il.Sub();
+                            break;
+                        case ExpressionType.OnesComplement:
+                            il.Not();
                             break;
                         default:
                             throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");
@@ -143,6 +157,11 @@ namespace GrobExp.ExpressionEmitters
                                 if(argumentType != typeof(int))
                                     context.EmitConvert(typeof(int), argumentType);
                                 il.Sub();
+                                break;
+                            case ExpressionType.OnesComplement:
+                                il.Ldloca(temp);
+                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                il.Not();
                                 break;
                             default:
                                 throw new InvalidOperationException("Node type '" + node.NodeType + "' invalid at this point");

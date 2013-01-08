@@ -92,6 +92,7 @@ namespace GrobExp
                 {ExpressionType.NegateChecked, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.Increment, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.Decrement, new UnaryAritmeticOperationExpressionEmitter()},
+                {ExpressionType.OnesComplement, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.IsTrue, new UnaryAritmeticOperationExpressionEmitter()},
                 {ExpressionType.IsFalse, new UnaryAritmeticOperationExpressionEmitter()},
             };

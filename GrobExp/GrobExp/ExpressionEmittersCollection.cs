@@ -100,6 +100,7 @@ namespace GrobExp
                 {ExpressionType.PostIncrementAssign, new UnaryAssignExpressionEmitter()},
                 {ExpressionType.PostDecrementAssign, new UnaryAssignExpressionEmitter()},
                 {ExpressionType.TypeIs, new TypeIsExpressionEmitter()},
+                {ExpressionType.TypeEqual, new TypeEqualExpressionEmitter()},
             };
     }
 }

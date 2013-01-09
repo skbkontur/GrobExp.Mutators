@@ -60,6 +60,7 @@
     <Compile Include="ExpressionEmitters\ConditionalExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ConstantExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ConvertExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\TypeAsExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\TypeEqualExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\DefaultExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\DynamicMethodInvokerBuilder.cs" />

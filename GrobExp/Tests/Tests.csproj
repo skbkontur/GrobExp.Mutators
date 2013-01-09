@@ -150,7 +150,7 @@
     <Compile Include="AssignTests\SubtractAssign\TestParameter.cs" />
     <Compile Include="AssignTests\SubtractAssign\TestSimpleArray.cs" />
     <Compile Include="AssignTests\SubtractAssign\TestStaticMember.cs" />
-    <Compile Include="Copy of TestTypeIs.cs" />
+    <Compile Include="TestTypeAs.cs" />
     <Compile Include="TestTypeEqual.cs" />
     <Compile Include="TestBlock.cs" />
     <Compile Include="TestConstant.cs" />

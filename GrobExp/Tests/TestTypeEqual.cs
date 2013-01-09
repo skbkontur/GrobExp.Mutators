@@ -66,6 +66,32 @@ namespace Tests
             Assert.IsFalse(f(5.5));
         }
 
+
+        [Test]
+        public void Test7()
+        {
+            var parameter = Expression.Parameter(typeof(object));
+            var exp = Expression.Lambda<Func<object, bool>>(Expression.TypeEqual(parameter, typeof(TestEnum)), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(TestEnum.One));
+            Assert.IsFalse(f(5.5));
+        }
+
+        [Test]
+        public void Test8()
+        {
+            var parameter = Expression.Parameter(typeof(TestEnum));
+            var exp = Expression.Lambda<Func<TestEnum, bool>>(Expression.TypeEqual(parameter, typeof(Enum)), parameter);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsFalse(f(TestEnum.One));
+        }
+
+        private enum TestEnum
+        {
+            One,
+            Two
+        }
+
         private class TestClassA
         {
             

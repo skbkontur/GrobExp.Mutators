@@ -75,11 +75,8 @@ namespace Tests
 //            var exp = Expression.Lambda<Func<double?, double?, double?>>(Expression.Power(a, b), a, b);
 //            ParameterExpression parameter = Expression.Parameter(typeof(int?));
 //            var exp = Expression.Lambda<Func<int?, int?>>(Expression.Increment(parameter), parameter);
-            int x = 5;
-            var y = x as int?;
-            Console.Write(y);
-            var parameter = Expression.Parameter(typeof(int));
-            var exp = Expression.Lambda<Func<int, int?>>(Expression.TypeAs(parameter, typeof(int?)), parameter);
+            var parameter = Expression.Parameter(typeof(object));
+            var exp = Expression.Lambda<Func<object, int?>>(Expression.Unbox(parameter, typeof(int?)), parameter);
             CompileAndSave(exp);
         }
 

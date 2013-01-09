@@ -82,6 +82,7 @@
     <Compile Include="ExpressionEmitters\TypeIsExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnaryAritmeticOperationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnaryAssignExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\UnboxExpressionEmitter.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ExpressionEmitters\IExpressionEmitter.cs" />

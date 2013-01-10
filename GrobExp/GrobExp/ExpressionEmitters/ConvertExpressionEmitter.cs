@@ -15,7 +15,19 @@ namespace GrobExp.ExpressionEmitters
                 if(node.Method != null)
                     context.Il.Call(node.Method);
                 else
-                    context.EmitConvert(node.Operand.Type, node.Type); // stack: [(type)obj]
+                {
+                    switch(node.NodeType)
+                    {
+                    case ExpressionType.Convert:
+                        context.EmitConvert(node.Operand.Type, node.Type); // stack: [(type)obj]
+                        break;
+                    case ExpressionType.ConvertChecked:
+                        context.EmitConvert(node.Operand.Type, node.Type, true); // stack: [(type)obj]
+                        break;
+                    default:
+                        throw new InvalidOperationException("Node type '" + node.NodeType + "' is not valid at this point");
+                    }
+                }
                 resultType = node.Type;
             }
             return result;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using GrobExp;
 
@@ -78,6 +79,36 @@ namespace Tests
             var parameter = Expression.Parameter(typeof(object));
             var exp = Expression.Lambda<Func<object, int?>>(Expression.Unbox(parameter, typeof(int?)), parameter);
             CompileAndSave(exp);
+        }
+
+        [Test, Ignore]
+        public void TestDebugInfo()
+        {
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), System.Reflection.Emit.AssemblyBuilderAccess.RunAndSave);
+
+            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var type = mod.DefineType("baz", TypeAttributes.Public);
+            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static);
+
+            var sdi = Expression.SymbolDocument("TestDebug.txt");
+
+            var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+
+
+            var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+            var block = Expression.Block(di, exp);
+
+            var gen = DebugInfoGenerator.CreatePdbGenerator();
+
+            LambdaExpression lambda = Expression.Lambda(block, new ParameterExpression[0]);
+            lambda.CompileToMethod(meth, gen);
+
+            var newtype = type.CreateType();
+            asm.Save("tmp.dll");
+            newtype.GetMethod("go").Invoke(null, new object[0]);
+            //meth.Invoke(null, new object[0]);
+            //lambda.DynamicInvoke(new object[0]);
+            Console.WriteLine(" ");
         }
 
         [Test]

@@ -33,6 +33,7 @@ namespace GrobExp
                 {ExpressionType.Parameter, new ParameterExpressionEmitter()},
                 {ExpressionType.MemberAccess, new MemberAccessExpressionEmitter()},
                 {ExpressionType.Convert, new ConvertExpressionEmitter()},
+                {ExpressionType.ConvertChecked, new ConvertExpressionEmitter()},
                 {ExpressionType.Constant, new ConstantExpressionEmitter()},
                 {ExpressionType.ArrayIndex, new ArrayIndexExpressionEmitter()},
                 {ExpressionType.Index, new IndexExpressionEmitter()},

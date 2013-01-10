@@ -311,7 +311,7 @@ namespace GrobExp
             }
         }
 
-        public void EmitConvert(Type from, Type to)
+        public void EmitConvert(Type from, Type to, bool check = false)
         {
             if(from == to) return;
             if(!from.IsValueType)
@@ -353,7 +353,7 @@ namespace GrobExp
                                 FieldInfo valueField = from.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
                                 Il.Ldfld(valueField);
                                 if(toArgument != fromArgument)
-                                    EmitConvert(fromArgument, toArgument);
+                                    EmitConvert(fromArgument, toArgument, check);
                                 Il.Newobj(to.GetConstructor(new[] {toArgument}));
                                 var doneLabel = Il.DefineLabel("done");
                                 Il.Br(doneLabel);
@@ -365,29 +365,20 @@ namespace GrobExp
                         else
                         {
                             if(toArgument != from)
-                                EmitConvert(from, toArgument);
+                                EmitConvert(from, toArgument, check);
                             Il.Newobj(to.GetConstructor(new[] {toArgument}));
                         }
                     }
                     else if(to.IsEnum || to == typeof(Enum))
-                        EmitConvert(from, typeof(int));
+                        EmitConvert(from, typeof(int), check);
                     else if(from.IsEnum || from == typeof(Enum))
-                        EmitConvert(typeof(int), to);
+                        EmitConvert(typeof(int), to, check);
                     else
                     {
-                        var fromTypeCode = Type.GetTypeCode(from);
-                        var toTypeCode = Type.GetTypeCode(to);
-                        switch(fromTypeCode)
-                        {
-                        case TypeCode.DBNull:
-                        case TypeCode.DateTime:
-                        case TypeCode.Decimal:
-                        case TypeCode.Empty:
-                        case TypeCode.Object:
-                        case TypeCode.String:
-                            throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
-                        }
-                        EmitConvertValue(Il, fromTypeCode, toTypeCode);
+                        if(!check)
+                            EmitConvertValue(Il, from, to);
+                        else
+                            EmitConvertValueChecked(Il, from, to);
                     }
                 }
             }
@@ -505,8 +496,20 @@ namespace GrobExp
             }
         }
 
-        private static void EmitConvertValue(GroboIL il, TypeCode fromTypeCode, TypeCode toTypeCode)
+        private static void EmitConvertValue(GroboIL il, Type from, Type to)
         {
+            var fromTypeCode = Type.GetTypeCode(from);
+            var toTypeCode = Type.GetTypeCode(to);
+            switch(fromTypeCode)
+            {
+            case TypeCode.DBNull:
+            case TypeCode.DateTime:
+            case TypeCode.Decimal:
+            case TypeCode.Empty:
+            case TypeCode.Object:
+            case TypeCode.String:
+                throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
+            }
             if(toTypeCode == fromTypeCode)
                 return;
             switch(toTypeCode)
@@ -548,6 +551,100 @@ namespace GrobExp
                         il.Conv_I8();
                     else
                         il.Conv_U8();
+                }
+                break;
+            case TypeCode.Single:
+                if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
+                    il.Conv_R_Un();
+                il.Conv_R4();
+                break;
+            case TypeCode.Double:
+                if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
+                    il.Conv_R_Un();
+                il.Conv_R8();
+                break;
+            default:
+                throw new NotSupportedException("Type with type code '" + toTypeCode + "' is not supported");
+            }
+        }
+
+        private static void EmitConvertValueChecked(GroboIL il, Type from, Type to)
+        {
+            var fromTypeCode = Type.GetTypeCode(from);
+            var toTypeCode = Type.GetTypeCode(to);
+            switch(fromTypeCode)
+            {
+            case TypeCode.DBNull:
+            case TypeCode.DateTime:
+            case TypeCode.Decimal:
+            case TypeCode.Empty:
+            case TypeCode.Object:
+            case TypeCode.String:
+                throw new NotSupportedException("Cast from type '" + from + "' to type '" + to + "' is not supported");
+            }
+            if(toTypeCode == fromTypeCode)
+                return;
+            switch(toTypeCode)
+            {
+            case TypeCode.SByte:
+                il.Conv_Ovf_I1(from);
+                break;
+            case TypeCode.Byte:
+            case TypeCode.Boolean:
+                il.Conv_Ovf_U1(from);
+                break;
+            case TypeCode.Int16:
+                il.Conv_Ovf_I2(from);
+                break;
+            case TypeCode.UInt16:
+                il.Conv_Ovf_U2(from);
+                break;
+            case TypeCode.Int32:
+                if(fromTypeCode == TypeCode.UInt32 || fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64
+                   || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
+                    il.Conv_Ovf_I4(from);
+                break;
+            case TypeCode.UInt32:
+                if(fromTypeCode == TypeCode.SByte || fromTypeCode == TypeCode.Int16 || fromTypeCode == TypeCode.Int32 || fromTypeCode == TypeCode.Int64
+                   || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
+                    il.Conv_Ovf_U4(from);
+                break;
+            case TypeCode.Int64:
+                switch(fromTypeCode)
+                {
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.UInt64:
+                    il.Conv_Ovf_I8(from);
+                    break;
+                case TypeCode.UInt32:
+                case TypeCode.Char:
+                case TypeCode.UInt16:
+                case TypeCode.Byte:
+                    il.Conv_U8();
+                    break;
+                default:
+                    il.Conv_I8();
+                    break;
+                }
+                break;
+            case TypeCode.UInt64:
+                switch(fromTypeCode)
+                {
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.Int64:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                    il.Conv_Ovf_U8(from);
+                    break;
+                case TypeCode.UInt32:
+                case TypeCode.Char:
+                case TypeCode.UInt16:
+                case TypeCode.Byte:
+                    il.Conv_U8();
+                    break;
                 }
                 break;
             case TypeCode.Single:

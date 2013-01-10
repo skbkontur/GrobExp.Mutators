@@ -24,6 +24,15 @@ namespace Tests
             Assert.IsFalse(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB(), } }));
         }
 
+        [Test]
+        public void TestSubLambda1x()
+        {
+            Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == "zzz");
+            var f = LambdaCompiler.Compile(exp);
+            Assert.IsTrue(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
+            Assert.IsFalse(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB(), } }));
+        }
+
         private static readonly MethodInfo anyMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any())).Body).Method.GetGenericMethodDefinition();
 
         private static readonly MethodInfo anyWithPredicateMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any(i => i == 0))).Body).Method.GetGenericMethodDefinition();

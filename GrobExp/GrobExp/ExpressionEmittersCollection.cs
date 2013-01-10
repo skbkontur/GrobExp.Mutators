@@ -104,6 +104,7 @@ namespace GrobExp
                 {ExpressionType.TypeEqual, new TypeEqualExpressionEmitter()},
                 {ExpressionType.TypeAs, new TypeAsExpressionEmitter()},
                 {ExpressionType.Unbox, new UnboxExpressionEmitter()},
+                {ExpressionType.Invoke, new InvocationExpressionEmitter()},
             };
     }
 }

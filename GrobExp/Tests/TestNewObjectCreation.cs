@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 using GrobExp;
@@ -39,6 +40,30 @@ namespace Tests
             Assert.AreEqual(10, a.X);
             Assert.AreEqual("zzz", a.S);
             Assert.AreEqual("qxx", a.B.S);
+        }
+
+        [Test]
+        public void TestMemberInit3()
+        {
+            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA { IntArray = new[] {i, j} };
+            var f = LambdaCompiler.Compile(exp);
+            var a = f(10, 20);
+            Assert.IsNotNull(a.IntArray);
+            Assert.AreEqual(2, a.IntArray.Length);
+            Assert.AreEqual(10, a.IntArray[0]);
+            Assert.AreEqual(20, a.IntArray[1]);
+        }
+
+        [Test]
+        public void TestMemberInit4()
+        {
+            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA { IntList = new List<int> {i, j} };
+            var f = LambdaCompiler.Compile(exp);
+            var a = f(10, 20);
+            Assert.IsNotNull(a.IntList);
+            Assert.AreEqual(2, a.IntList.Count);
+            Assert.AreEqual(10, a.IntList[0]);
+            Assert.AreEqual(20, a.IntList[1]);
         }
 
         [Test]
@@ -124,6 +149,8 @@ namespace Tests
             public string S { get; set; }
             public TestClassB B { get; set; }
             public int Y;
+            public int[] IntArray { get; set; }
+            public List<int> IntList { get; set; }
         }
 
         private class TestClassB

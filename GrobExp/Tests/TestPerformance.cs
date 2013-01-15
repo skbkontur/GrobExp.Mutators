@@ -18,6 +18,42 @@ namespace Tests
     [TestFixture]
     public class TestPerformance
     {
+        public string zzz(int x)
+        {
+            switch(x)
+            {
+                case 0:
+                case 2:
+                return "zzz";
+                case 5:
+                case 1000001:
+                return "qxx";
+                case 7:
+                case 1000000:
+                return "qzz";
+                default:
+                return "xxx";
+            }
+        }
+
+        public string qzz(string s)
+        {
+            switch(s)
+            {
+                case "0":
+                case "2":
+                return "zzz";
+                case "5":
+                case "1000001":
+                return "qxx";
+                case "7":
+                case "1000000":
+                return "qzz";
+                default:
+                return "xxx";
+            }
+        }
+
         [Test, Ignore]
         public void TestSimple()
         {

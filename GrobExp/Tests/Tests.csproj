@@ -152,6 +152,7 @@
     <Compile Include="AssignTests\SubtractAssign\TestStaticMember.cs" />
     <Compile Include="TestConvertChecked.cs" />
     <Compile Include="TestInvoke.cs" />
+    <Compile Include="TestListInit.cs" />
     <Compile Include="TestThrow.cs" />
     <Compile Include="TestTypeAs.cs" />
     <Compile Include="TestTypeEqual.cs" />

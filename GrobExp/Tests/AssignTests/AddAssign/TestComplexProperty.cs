@@ -57,6 +57,54 @@ namespace Tests.AssignTests.AddAssign
         }
 
         [Test]
+        public void TestIntx()
+        {
+            ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
+            BinaryExpression addAssign = Expression.AddAssign(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b);
+            Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.Block(addAssign, Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) })), a, b);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
+            var o = new TestClassA {IntArray = new IntArray()};
+            o.IntArray["zzz", 1] = 0;
+            Assert.AreEqual(0, f(o, 0));
+            Assert.AreEqual(0, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = 1;
+            Assert.AreEqual(3, f(o, 2));
+            Assert.AreEqual(3, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = -1;
+            Assert.AreEqual(1, f(o, 2));
+            Assert.AreEqual(1, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = 2000000000;
+            unchecked
+            {
+                Assert.AreEqual(2000000000 + 2000000000, f(o, 2000000000));
+                Assert.AreEqual(2000000000 + 2000000000, o.IntArray["zzz", 1]);
+            }
+            Assert.AreEqual(0, f(null, 1));
+
+            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            var f2 = exp.Compile();
+            Assert.IsNotNull(f2);
+            o = new TestClassA {IntArray = new IntArray()};
+            o.IntArray["zzz", 1] = 0;
+            Assert.AreEqual(0, f(o, 0));
+            Assert.AreEqual(0, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = 1;
+            Assert.AreEqual(3, f(o, 2));
+            Assert.AreEqual(3, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = -1;
+            Assert.AreEqual(1, f(o, 2));
+            Assert.AreEqual(1, o.IntArray["zzz", 1]);
+            o.IntArray["zzz", 1] = 2000000000;
+            unchecked
+            {
+                Assert.AreEqual(2000000000 + 2000000000, f(o, 2000000000));
+                Assert.AreEqual(2000000000 + 2000000000, o.IntArray["zzz", 1]);
+            }
+            Assert.Throws<NullReferenceException>(() => f(null, 1));
+        }
+
+        [Test]
         public void TestNullable()
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");

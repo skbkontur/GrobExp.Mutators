@@ -5,5 +5,6 @@ namespace GrobExp
         Value,
         ByRefAll,
         ByRefValueTypesOnly,
+        Void
     }
 }

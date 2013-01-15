@@ -94,6 +94,48 @@ namespace Tests
             MeasureSpeed(exp.Compile(), a, 1000000, ethalon);
         }
 
+        static Func<int, int, int> func = (x, y) => x + y;
+
+        [Test, Ignore]
+        public void TestInvoke1()
+        {
+            Expression<Func<TestClassA, int>> exp = o => func(o.Y, o.Z);
+            var a = new TestClassA{Y = 1, Z = 2};
+            Console.WriteLine("Compile");
+            var ethalon = MeasureSpeed(exp.Compile(), a, 100000000, null);
+            Console.WriteLine("Sharp");
+            MeasureSpeed(Func4, a, 100000000, ethalon);
+            Console.WriteLine("GroboCompile without checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), a, 100000000, ethalon);
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+        }
+
+        [Test, Ignore]
+        public void TestInvoke2()
+        {
+            Expression<Func<int, int, int>> lambda = (x, y) => x + y;
+            ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
+            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(lambda, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), parameter);
+            var a = new TestClassA{Y = 1, Z = 2};
+            Console.WriteLine("Sharp");
+            var ethalon = MeasureSpeed(Func5, a, 100000000, null);
+            Console.WriteLine("GroboCompile without checking");
+            Func<TestClassA, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            MeasureSpeed(compile1, a, 100000000, ethalon);
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            Console.WriteLine("Compile");
+            Func<TestClassA, int> compile = exp.Compile();
+            MeasureSpeed(compile, a, 100000000, ethalon);
+            Console.WriteLine("Build1");
+            Func<TestClassA, int> build1 = Build1();
+            MeasureSpeed(build1, a, 100000000, ethalon);
+            Console.WriteLine("Build2");
+            Func<TestClassA, int> build2 = Build1();
+            MeasureSpeed(build2, a, 100000000, ethalon);
+        }
+
         [Test, Ignore]
         public void TestCalls()
         {
@@ -175,6 +217,74 @@ namespace Tests
         private bool Func3(TestClassA a)
         {
             return a.ArrayB.Any(b => b.S == a.S && b.C.ArrayD.All(d => d.S == b.S && d.ArrayE.Any(e => e.S == a.S && e.S == b.S && e.S == d.S)));
+        }
+        
+        Func<int, int, int> xfunc = (x, y) => x + y;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Func4(TestClassA a)
+        {
+            return xfunc(a.Y, a.Z);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Func5(TestClassA a)
+        {
+            return a.Y + a.Z;
+        }
+
+        private Func<TestClassA, int> Build1()
+        {
+            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] {typeof(TestClassA)});
+            var il = new GroboIL(method);
+            il.Ldarg(0);
+            il.Ldfld(typeof(TestClassA).GetField("Y"));
+            var y = il.DeclareLocal(typeof(int));
+            il.Stloc(y);
+            il.Ldarg(0);
+            il.Ldfld(typeof(TestClassA).GetField("Z"));
+            var z = il.DeclareLocal(typeof(int));
+            il.Stloc(z);
+            il.Ldloc(y);
+            il.Ldloc(z);
+            il.Add();
+            il.Ret();
+            var type = typeBuilder.CreateType();
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), Type.EmptyTypes, LambdaCompiler.Module, true);
+            il = new GroboIL(dynamicMethod);
+            il.Ldnull(typeof(object));
+            il.Ldftn(type.GetMethod("zzz"));
+            il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
+            il.Ret();
+            return ((Func<Func<TestClassA, int>>)dynamicMethod.CreateDelegate(typeof(Func<Func<TestClassA, int>>)))();
+        }
+
+        private Func<TestClassA, int> Build2()
+        {
+            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public, typeof(int), new[] {typeof(TestClassA)});
+            var il = new GroboIL(method);
+            il.Ldarg(1);
+            il.Ldfld(typeof(TestClassA).GetField("Y"));
+            il.Ldarg(1);
+            il.Ldfld(typeof(TestClassA).GetField("Z"));
+            var y = il.DeclareLocal(typeof(int));
+            var z = il.DeclareLocal(typeof(int));
+            il.Stloc(z);
+            il.Stloc(y);
+            il.Ldloc(y);
+            il.Ldloc(z);
+            il.Add();
+            il.Ret();
+            var type = typeBuilder.CreateType();
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] {typeof(object)}, LambdaCompiler.Module, true);
+            il = new GroboIL(dynamicMethod);
+            il.Ldarg(0);
+            il.Ldftn(type.GetMethod("zzz"));
+            il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
+            il.Ret();
+            return ((Func<object, Func<TestClassA, int>>)dynamicMethod.CreateDelegate(typeof(Func<object, Func<TestClassA, int>>)))(Activator.CreateInstance(type));
         }
 
         private ITest BuildCall()
@@ -296,6 +406,7 @@ namespace Tests
 
         private double MeasureSpeed<T1, T2>(Func<T1, T2> func, T1 arg, int iter, double? ethalon)
         {
+            func(arg);
             var stopwatch = Stopwatch.StartNew();
             for(int i = 0; i < iter; ++i)
                 func(arg);
@@ -309,7 +420,7 @@ namespace Tests
         private static readonly FieldInfo xField = (FieldInfo)((MemberExpression)((Expression<Func<int>>)(() => x)).Body).Member;
         private static readonly Func<DynamicMethod, IntPtr> dynamicMethodPointerExtractor = EmitDynamicMethodPointerExtractor();
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -326,10 +437,11 @@ namespace Tests
             public Guid? NullableGuid;
             public bool? NullableBool;
             public int Y;
+            public int Z;
             public bool Bool;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -348,7 +460,7 @@ namespace Tests
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -357,7 +469,7 @@ namespace Tests
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -368,7 +480,7 @@ namespace Tests
             public string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }

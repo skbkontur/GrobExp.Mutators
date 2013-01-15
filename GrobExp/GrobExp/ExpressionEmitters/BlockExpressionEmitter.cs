@@ -20,7 +20,7 @@ namespace GrobExp.ExpressionEmitters
                 var expression = node.Expressions[index];
                 GroboIL il = context.Il;
                 var valueIsNullLabel = il.DefineLabel("valueIsNull");
-                bool labelUsed = ExpressionEmittersCollection.Emit(expression, context, valueIsNullLabel, out resultType);
+                bool labelUsed = ExpressionEmittersCollection.Emit(expression, context, valueIsNullLabel, index < node.Expressions.Count - 1 ? ResultType.Void : whatReturn, extend, out resultType);
                 if(resultType != typeof(void) && index < node.Expressions.Count - 1)
                 {
                     // eat results of all expressions except the last one
@@ -45,17 +45,21 @@ namespace GrobExp.ExpressionEmitters
                     il.MarkLabel(doneLabel);
                 }
             }
-            if(node.Type == typeof(bool) && resultType == typeof(bool?))
+            if (node.Type == typeof(bool) && resultType == typeof(bool?))
+            {
+                resultType = typeof(bool);
                 context.ConvertFromNullableBoolToBool();
-            else if(node.Type == typeof(void) && resultType != typeof(void))
+            }
+            else if (node.Type == typeof(void) && resultType != typeof(void))
             {
                 // eat result of the last expression if the result of block is void
-                if(resultType.IsStruct())
+                if (resultType.IsStruct())
                 {
-                    using(var temp = context.DeclareLocal(resultType))
+                    using (var temp = context.DeclareLocal(resultType))
                         context.Il.Stloc(temp);
                 }
                 else context.Il.Pop();
+                resultType = typeof(void);
             }
             foreach(var variable in node.Variables)
             {
@@ -63,7 +67,6 @@ namespace GrobExp.ExpressionEmitters
                 context.VariablesToLocals.Remove(variable);
                 context.Variables.Pop();
             }
-            resultType = node.Type;
             return false;
         }
     }

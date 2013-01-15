@@ -67,7 +67,7 @@ namespace GrobExp
                 };
             var returnDefaultValueLabel = il.DefineLabel("returnDefaultValue");
             Type resultType;
-            bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, out resultType);
+            bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
             if(returnType == typeof(bool) && resultType == typeof(bool?))
                 context.ConvertFromNullableBoolToBool();
             if(returnType == typeof(void) && resultType != typeof(void))

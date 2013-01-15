@@ -43,6 +43,29 @@ namespace Tests.AssignTests.AddAssign
         }
 
         [Test]
+        public void TestPropx()
+        {
+            ParameterExpression b = Expression.Parameter(typeof(int), "b");
+            Expression<Action<int>> exp = Expression.Lambda<Action<int>>(Expression.Block(typeof(void), Expression.AddAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("IntProp")), b)), b);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
+            TestClassA.IntProp = 0;
+            f(0);
+            Assert.AreEqual(0, TestClassA.IntProp);
+            TestClassA.IntProp = 1;
+            f(2);
+            Assert.AreEqual(3, TestClassA.IntProp);
+            TestClassA.IntProp = -1;
+            f(2);
+            Assert.AreEqual(1, TestClassA.IntProp);
+            TestClassA.IntProp = 2000000000;
+            unchecked
+            {
+                f(2000000000);
+                Assert.AreEqual(2000000000 + 2000000000, TestClassA.IntProp);
+            }
+        }
+
+        [Test]
         public void TestField()
         {
             ParameterExpression b = Expression.Parameter(typeof(int), "b");

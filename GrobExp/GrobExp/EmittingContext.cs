@@ -129,9 +129,6 @@ namespace GrobExp
                 Type propertyType = property.PropertyType;
                 switch(whatReturn)
                 {
-                case ResultType.Value:
-                    memberType = propertyType;
-                    break;
                 case ResultType.ByRefValueTypesOnly:
                     if(!propertyType.IsValueType)
                         memberType = propertyType;
@@ -148,17 +145,14 @@ namespace GrobExp
                 case ResultType.ByRefAll:
                     throw new InvalidOperationException("It's wierd to load a property by ref for a reference type");
                 default:
-                    throw new NotSupportedException("Result type '" + whatReturn + "' is not supported");
+                    memberType = propertyType;
+                    break;
                 }
                 break;
             case MemberTypes.Field:
                 var field = (FieldInfo)member;
                 switch(whatReturn)
                 {
-                case ResultType.Value:
-                    Il.Ldfld(field);
-                    memberType = field.FieldType;
-                    break;
                 case ResultType.ByRefAll:
                     Il.Ldflda(field);
                     memberType = field.FieldType.MakeByRefType();
@@ -176,7 +170,9 @@ namespace GrobExp
                     }
                     break;
                 default:
-                    throw new NotSupportedException("Return type '" + whatReturn + "' is not supported");
+                    Il.Ldfld(field);
+                    memberType = field.FieldType;
+                    break;
                 }
                 break;
             default:

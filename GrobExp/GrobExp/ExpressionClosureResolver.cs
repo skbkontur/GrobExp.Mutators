@@ -10,9 +10,9 @@ namespace GrobExp
     {
         public ExpressionClosureResolver(LambdaExpression lambda)
         {
-            this.lambda = lambda;
+            this.lambda = (LambdaExpression)new LambdaInvocationInliner().Visit(lambda);
             bool hasSubLambdas;
-            closureType = new ExpressionClosureBuilder(lambda).Build(out constants, out parameters, out hasSubLambdas);
+            closureType = new ExpressionClosureBuilder(this.lambda).Build(out constants, out parameters, out hasSubLambdas);
             closureParameter = parameters.Count > 0 || constants.Count > 0 || hasSubLambdas ? Expression.Parameter(closureType) : null;
         }
 

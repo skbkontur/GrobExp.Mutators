@@ -9,7 +9,7 @@ namespace GrobExp.ExpressionEmitters
 {
     internal class LambdaExpressionEmitter : ExpressionEmitter<LambdaExpression>
     {
-        public static IntPtr Compile(LambdaExpression node, EmittingContext context, out Type resultType)
+        protected override bool Emit(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
             resultType = Extensions.GetDelegateType(parameterTypes, node.ReturnType);
@@ -30,24 +30,12 @@ namespace GrobExp.ExpressionEmitters
             {
                 var parameters = new[] {context.ClosureParameter}.Concat(node.Parameters).ToArray();
                 var compiledLambda = LambdaCompiler.Compile(Expression.Lambda(Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), node.ReturnType), node.Body, parameters), context.ClosureType, context.ClosureParameter, context.Options, context.CompiledLambdas);
-                context.CompiledLambdas.Add(compiledLambda);
-                return DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
-            }
-        }
-
-        protected override bool Emit(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
-        {
-            var pointer = Compile(node, context, out resultType);
-            bool needClosure = context.ClosureParameter != null;
-            GroboIL il = context.Il;
-            if(!needClosure)
-                throw new NotSupportedException();
-            else
-            {
-                var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
                 Type closureType;
                 ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
+                context.CompiledLambdas.Add(compiledLambda);
+
                 var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, node.Body.Type, parameterTypes);
+                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
                 il.Ldc_IntPtr(pointer);
                 var types = new[] {closureType, typeof(IntPtr)};
                 il.Newobj(subLambdaInvoker.GetConstructor(types));

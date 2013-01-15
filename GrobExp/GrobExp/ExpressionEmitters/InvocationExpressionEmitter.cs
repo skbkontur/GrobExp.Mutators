@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using GrEmit;
 
@@ -22,21 +21,13 @@ namespace GrobExp.ExpressionEmitters
             }
             else
             {
-                result = false;
-                Type delegateType;
-                var pointer = LambdaExpressionEmitter.Compile((LambdaExpression)node.Expression, context, out delegateType);
-                bool needClosure = context.ClosureParameter != null;
-                GroboIL il = context.Il;
-                if(!needClosure)
-                    throw new NotSupportedException();
-                else
-                {
-                    Type closureType;
-                    ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
-                    context.EmitLoadArguments(node.Arguments.ToArray());
-                    il.Ldc_IntPtr(pointer);
-                    il.Calli(CallingConventions.Standard, node.Type, new[] {closureType}.Concat(node.Arguments.Select(argument => argument.Type)).ToArray());
-                }
+                throw new InvalidOperationException();
+                /*result = false;
+                var lambda = (LambdaExpression)node.Expression;
+                var expressions = lambda.Parameters.Select((t, i) => Expression.Assign(t, node.Arguments[i])).Cast<Expression>().ToList();
+                expressions.Add(lambda.Body);
+                var block = Expression.Block(lambda.Body.Type, lambda.Parameters, expressions);
+                ExpressionEmittersCollection.Emit(block, context, out resultType);*/
             }
             resultType = node.Type;
             return result;

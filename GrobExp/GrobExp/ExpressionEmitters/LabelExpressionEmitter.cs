@@ -12,7 +12,8 @@ namespace GrobExp.ExpressionEmitters
             bool result = false;
             if(node.DefaultValue != null)
                 result = ExpressionEmittersCollection.Emit(node.DefaultValue, context, returnDefaultValueLabel, out resultType);
-            resultType = typeof(void);
+            else
+                resultType = typeof(void);
             GroboIL.Label label;
             if(!context.Labels.TryGetValue(node.Target, out label))
                 context.Labels.Add(node.Target, label = context.Il.DefineLabel(node.Target.Name));

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,7 +8,6 @@ using GrEmit;
 
 namespace GrobExp.ExpressionEmitters
 {
-    // todo убрать дублирование
     internal class AssignExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
         protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
@@ -16,477 +16,562 @@ namespace GrobExp.ExpressionEmitters
             var left = node.Left;
             var right = node.Right;
             bool result = false;
+            Type assigneeType;
+            AssigneeKind assigneeKind;
+            bool checkNullReferences = context.Options.HasFlag(CompilerOptions.CheckNullReferences);
+            extend |= context.Options.HasFlag(CompilerOptions.ExtendOnAssign);
+
+            GroboIL.Label assigneeIsNullLabel = null;
+            bool assigneeIsNullLabelUsed = false;
             switch(left.NodeType)
             {
             case ExpressionType.Parameter:
+                assigneeType = null;
+                assigneeKind = AssigneeKind.Parameter;
+                checkNullReferences = false;
+                break;
+            case ExpressionType.MemberAccess:
+                var memberExpression = (MemberExpression)left;
+                if(memberExpression.Expression == null)
                 {
-                    Type parameterType;
-                    ExpressionEmittersCollection.Emit(left, context, null, ResultType.ByRefAll, false, out parameterType);
-                    var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                    Type valueType;
-                    bool labelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out valueType); // stack: [address, value]
-                    if(right.Type == typeof(bool) && valueType == typeof(bool?))
-                        context.ConvertFromNullableBoolToBool();
-                    if(labelUsed && context.CanReturn)
-                        context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                    using(var value = context.DeclareLocal(right.Type))
+                    assigneeType = null;
+                    assigneeKind = memberExpression.Member is FieldInfo ? AssigneeKind.StaticField : AssigneeKind.StaticProperty;
+                    checkNullReferences = false;
+                }
+                else
+                {
+                    bool closureAssign = memberExpression.Expression == context.ClosureParameter;
+                    checkNullReferences &= !closureAssign;
+                    if(node.NodeType != ExpressionType.Assign)
+                        result |= ExpressionEmittersCollection.Emit(memberExpression.Expression, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
+                    else
                     {
-                        il.Stloc(value);
+                        assigneeIsNullLabel = !closureAssign && context.CanReturn ? il.DefineLabel("assigneeIsNull") : null;
+                        assigneeIsNullLabelUsed = ExpressionEmittersCollection.Emit(memberExpression.Expression, context, assigneeIsNullLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
+                    }
+                    assigneeKind = memberExpression.Member is FieldInfo ? AssigneeKind.InstanceField : AssigneeKind.InstanceProperty;
+                }
+                break;
+            case ExpressionType.Index:
+                var indexExpression = (IndexExpression)left;
+                if(indexExpression.Object == null)
+                    throw new InvalidOperationException("Indexing of null object is invalid");
+                if(indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1)
+                {
+                    if (node.NodeType != ExpressionType.Assign)
+                    {
+                        result |= ExpressionEmittersCollection.Emit(Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single()), context, returnDefaultValueLabel, ResultType.ByRefAll, extend, out assigneeType);
+                        checkNullReferences = false;
+                    }
+                    else
+                    {
+                        assigneeIsNullLabel = context.CanReturn ? il.DefineLabel("assigneeIsNull") : null;
+                        assigneeIsNullLabelUsed = ExpressionEmittersCollection.Emit(Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single()), context, assigneeIsNullLabel, ResultType.ByRefAll, extend, out assigneeType);
+                    }
+                    assigneeKind = AssigneeKind.SimpleArray;
+                }
+                else
+                {
+                    if(node.NodeType != ExpressionType.Assign)
+                        result |= ExpressionEmittersCollection.Emit(indexExpression.Object, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
+                    else
+                    {
+                        assigneeIsNullLabel = context.CanReturn ? il.DefineLabel("assigneeIsNull") : null;
+                        assigneeIsNullLabelUsed = ExpressionEmittersCollection.Emit(indexExpression.Object, context, assigneeIsNullLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
+                    }
+                    assigneeKind = indexExpression.Indexer != null ? AssigneeKind.IndexedProperty : AssigneeKind.MultiDimensionalArray;
+                }
+                break;
+            default:
+                throw new InvalidOperationException("Unable to assign to an expression of type '" + left.NodeType + "'");
+            }
+            if(assigneeType != null && assigneeType.IsValueType)
+            {
+                using(var temp = context.DeclareLocal(assigneeType))
+                {
+                    il.Stloc(temp);
+                    il.Ldloca(temp);
+                }
+                assigneeType = assigneeType.MakeByRefType();
+            }
+            if(assigneeIsNullLabelUsed)
+                context.EmitReturnDefaultValue(assigneeType, assigneeIsNullLabel, il.DefineLabel("assigneeIsNotNull"));
 
-                        switch(node.NodeType)
+            if(node.NodeType == ExpressionType.Assign)
+            {
+                if(!checkNullReferences)
+                {
+                    if(whatReturn == ResultType.Void)
+                        EmitAssign(assigneeKind, left, context, null, right);
+                    else
+                    {
+                        if(assigneeKind == AssigneeKind.Parameter)
                         {
-                        case ExpressionType.Assign:
-                            il.Ldloc(value);
-                            il.Stind(left.Type); // *address = value
-                            il.Ldloc(value);
-                            break;
-                        case ExpressionType.AddAssign:
-                        case ExpressionType.AddAssignChecked:
-                        case ExpressionType.SubtractAssign:
-                        case ExpressionType.SubtractAssignChecked:
-                        case ExpressionType.MultiplyAssign:
-                        case ExpressionType.MultiplyAssignChecked:
-                        case ExpressionType.DivideAssign:
-                        case ExpressionType.ModuloAssign:
-                        case ExpressionType.PowerAssign:
-                        case ExpressionType.AndAssign:
-                        case ExpressionType.OrAssign:
-                        case ExpressionType.ExclusiveOrAssign:
-                        case ExpressionType.LeftShiftAssign:
-                        case ExpressionType.RightShiftAssign:
-                            il.Dup(); // stack: [&parameter, &parameter]
-                            il.Ldind(left.Type); // stack: [&parameter, parameter]
-                            il.Ldloc(value); // stack: [&parameter, parameter, value]
-                            context.EmitArithmeticOperation(GetOp(node.NodeType), left.Type, left.Type, right.Type, node.Method); // stack: [&parameter, result]
-                            using(var temp = context.DeclareLocal(left.Type))
+                            EmitAssign(assigneeKind, left, context, null, right);
+                            EmitAccess(assigneeKind, left, context);
+                        }
+                        else
+                        {
+                            context.EmitLoadArguments(right);
+                            using(var value = context.DeclareLocal(right.Type))
                             {
-                                il.Stloc(temp);
-                                il.Ldloc(temp);
-                                il.Stind(left.Type);
-                                il.Ldloc(temp);
+                                il.Stloc(value);
+                                EmitAssign(assigneeKind, left, context, null, value);
+                                il.Ldloc(value);
                             }
-                            break;
-                        default:
-                            throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
                         }
                     }
-                    break;
                 }
-            case ExpressionType.MemberAccess:
+                else
                 {
-                    var memberExpression = (MemberExpression)left;
-                    if(memberExpression.Expression == null) // static member
+                    if(whatReturn == ResultType.Void)
                     {
+                        il.Dup();
+                        var skipAssigneeLabel = il.DefineLabel("skipAssignee");
+                        il.Brfalse(skipAssigneeLabel);
+                        EmitAssign(assigneeKind, left, context, null, right);
+                        var returnLabel = il.DefineLabel("return");
+                        il.Br(returnLabel);
+                        il.MarkLabel(skipAssigneeLabel);
+                        il.Pop();
+                        il.MarkLabel(returnLabel);
+                    }
+                    else
+                    {
+                        // load value
                         var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                        Type rightType;
-                        var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                        if(right.Type == typeof(bool) && rightType == typeof(bool?))
+                        Type valueType;
+                        bool labelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out valueType); // stack: [address, value]
+                        if(right.Type == typeof(bool) && valueType == typeof(bool?))
                             context.ConvertFromNullableBoolToBool();
-                        if(rightIsNullLabelUsed && context.CanReturn)
+                        if(labelUsed && context.CanReturn)
                             context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
                         using(var value = context.DeclareLocal(right.Type))
                         {
                             il.Stloc(value);
-                            switch(node.NodeType)
-                            {
-                            case ExpressionType.Assign:
-                                il.Ldloc(value);
-                                context.EmitMemberAssign(null, memberExpression.Member);
-                                il.Ldloc(value);
-                                break;
-                            case ExpressionType.AddAssign:
-                            case ExpressionType.AddAssignChecked:
-                            case ExpressionType.SubtractAssign:
-                            case ExpressionType.SubtractAssignChecked:
-                            case ExpressionType.MultiplyAssign:
-                            case ExpressionType.MultiplyAssignChecked:
-                            case ExpressionType.DivideAssign:
-                            case ExpressionType.ModuloAssign:
-                            case ExpressionType.PowerAssign:
-                            case ExpressionType.AndAssign:
-                            case ExpressionType.OrAssign:
-                            case ExpressionType.ExclusiveOrAssign:
-                            case ExpressionType.LeftShiftAssign:
-                            case ExpressionType.RightShiftAssign:
-                                Type memberType;
-                                context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
-                                il.Ldloc(value);
-                                context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
-                                using(var temp = context.DeclareLocal(left.Type))
-                                {
-                                    il.Stloc(temp);
-                                    il.Ldloc(temp);
-                                    context.EmitMemberAssign(null, memberExpression.Member);
-                                    il.Ldloc(temp);
-                                }
-                                break;
-                            default:
-                                throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                            }
+                            il.Dup();
+                            var skipAssigneeLabel = il.DefineLabel("skipAssignee");
+                            il.Brfalse(skipAssigneeLabel);
+                            EmitAssign(assigneeKind, left, context, null, value);
+                            var returnValueLabel = il.DefineLabel("returnValue");
+                            il.Br(returnValueLabel);
+                            il.MarkLabel(skipAssigneeLabel);
+                            il.Pop();
+                            il.MarkLabel(returnValueLabel);
+                            il.Ldloc(value);
                         }
                     }
-                    else
-                    {
-                        bool closureAssign = memberExpression.Expression == context.ClosureParameter;
-                        var leftIsNullLabel = !closureAssign && context.CanReturn ? il.DefineLabel("leftIsNull") : null;
-                        Type type;
-                        bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(memberExpression.Expression, context, leftIsNullLabel, ResultType.ByRefValueTypesOnly, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out type);
-                        if(type.IsValueType)
-                        {
-                            using(var temp = context.DeclareLocal(type))
-                            {
-                                il.Stloc(temp);
-                                il.Ldloca(temp);
-                            }
-                            type = type.MakeByRefType();
-                        }
-                        if(leftIsNullLabelUsed)
-                            context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var owner = context.DeclareLocal(type))
-                        {
-                            il.Stloc(owner);
-                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                            Type rightType;
-                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                            if(right.Type == typeof(bool) && rightType == typeof(bool?))
-                                context.ConvertFromNullableBoolToBool();
-                            if(rightIsNullLabelUsed && context.CanReturn)
-                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                            using(var value = context.DeclareLocal(right.Type))
-                            {
-                                il.Stloc(value);
-                                il.Ldloc(owner);
-                                if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        il.Ldloc(value);
-                                        context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [owner, owner]
-                                        Type memberType;
-                                        context.EmitMemberAccess(null, memberExpression.Member, ResultType.Value, out memberType);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(left.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            il.Ldloc(temp);
-                                            context.EmitMemberAssign(null, memberExpression.Member);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                                else
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        var returnValueLabel = il.DefineLabel("returnValue");
-                                        il.Brfalse(returnValueLabel);
-                                        il.Ldloc(owner);
-                                        il.Ldloc(value);
-                                        context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
-                                        il.MarkLabel(returnValueLabel);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [owner, owner]
-                                        il.Brfalse(returnDefaultValueLabel);
-                                        result = true;
-                                        il.Dup(); // stack: [owner, owner]
-                                        Type memberType;
-                                        context.EmitMemberAccess(memberExpression.Expression.Type, memberExpression.Member, ResultType.Value, out memberType);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), memberType, memberType, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(left.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            il.Ldloc(temp);
-                                            context.EmitMemberAssign(memberExpression.Expression.Type, memberExpression.Member);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
                 }
-            case ExpressionType.Index:
-                {
-                    var indexExpression = (IndexExpression)left;
-                    if(indexExpression.Object != null && indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1)
-                    {
-                        left = Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single());
-                        var binaryExpression = (BinaryExpression)left;
-                        var leftIsNullLabel = context.CanReturn ? il.DefineLabel("leftIsNull") : null;
-                        Type elementType;
-                        bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(binaryExpression, context, leftIsNullLabel, ResultType.ByRefAll, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out elementType);
-                        if(leftIsNullLabelUsed)
-                            context.EmitReturnDefaultValue(elementType, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var itemAddress = context.DeclareLocal(elementType))
-                        {
-                            il.Stloc(itemAddress);
-                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                            Type rightType;
-                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                            if(right.Type == typeof(bool) && rightType == typeof(bool?))
-                                context.ConvertFromNullableBoolToBool();
-                            if(rightIsNullLabelUsed && context.CanReturn)
-                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                            using(var value = context.DeclareLocal(right.Type))
-                            {
-                                il.Stloc(value);
-                                il.Ldloc(itemAddress);
-                                if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        il.Ldloc(value);
-                                        il.Stind(binaryExpression.Type);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [owner, owner]
-                                        il.Ldind(binaryExpression.Type);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), binaryExpression.Type, binaryExpression.Type, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(binaryExpression.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            il.Ldloc(temp);
-                                            il.Stind(binaryExpression.Type);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                                else
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        var returnValueLabel = il.DefineLabel("returnValue");
-                                        il.Brfalse(returnValueLabel);
-                                        il.Ldloc(itemAddress);
-                                        il.Ldloc(value);
-                                        il.Stind(binaryExpression.Type);
-                                        il.MarkLabel(returnValueLabel);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [itemAddress, itemAddress]
-                                        il.Brfalse(returnDefaultValueLabel);
-                                        result = true;
-                                        il.Dup(); // stack: [itemAddress, itemAddress]
-                                        il.Ldind(binaryExpression.Type);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), binaryExpression.Type, binaryExpression.Type, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(binaryExpression.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            il.Ldloc(temp);
-                                            il.Stind(binaryExpression.Type);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if(indexExpression.Object == null)
-                            throw new InvalidOperationException("Indexing of null object is invalid");
-                        var leftIsNullLabel = context.CanReturn ? il.DefineLabel("leftIsNull") : null;
-                        Type type;
-                        bool leftIsNullLabelUsed = ExpressionEmittersCollection.Emit(indexExpression.Object, context, leftIsNullLabel, ResultType.ByRefValueTypesOnly, context.Options.HasFlag(CompilerOptions.ExtendOnAssign), out type);
-                        if(type.IsValueType)
-                        {
-                            using(var temp = context.DeclareLocal(type))
-                            {
-                                il.Stloc(temp);
-                                il.Ldloca(temp);
-                            }
-                            type = type.MakeByRefType();
-                        }
-                        if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                            leftIsNullLabelUsed |= context.EmitNullChecking(indexExpression.Object.Type, leftIsNullLabel);
-                        if(leftIsNullLabelUsed)
-                            context.EmitReturnDefaultValue(type, leftIsNullLabel, il.DefineLabel("leftIsNotNull"));
-                        using(var owner = context.DeclareLocal(type))
-                        {
-                            il.Stloc(owner);
-                            var rightIsNullLabel = context.CanReturn ? il.DefineLabel("rightIsNull") : null;
-                            Type rightType;
-                            var rightIsNullLabelUsed = ExpressionEmittersCollection.Emit(right, context, rightIsNullLabel, out rightType);
-                            if(right.Type == typeof(bool) && rightType == typeof(bool?))
-                                context.ConvertFromNullableBoolToBool();
-                            if(rightIsNullLabelUsed && context.CanReturn)
-                                context.EmitReturnDefaultValue(right.Type, rightIsNullLabel, il.DefineLabel("rightIsNotNull"));
-                            using(var value = context.DeclareLocal(right.Type))
-                            {
-                                il.Stloc(value);
-                                il.Ldloc(owner);
-                                if(!context.Options.HasFlag(CompilerOptions.CheckNullReferences))
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        EmitIndexAssign(indexExpression, context, value);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [owner, owner]
-                                        EmitIndexAccess(indexExpression, context);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), indexExpression.Type, indexExpression.Type, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(indexExpression.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            EmitIndexAssign(indexExpression, context, temp);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                                else
-                                {
-                                    switch(node.NodeType)
-                                    {
-                                    case ExpressionType.Assign:
-                                        var returnValueLabel = il.DefineLabel("returnValue");
-                                        il.Brfalse(returnValueLabel);
-                                        il.Ldloc(owner);
-                                        EmitIndexAssign(indexExpression, context, value);
-                                        il.MarkLabel(returnValueLabel);
-                                        il.Ldloc(value);
-                                        break;
-                                    case ExpressionType.AddAssign:
-                                    case ExpressionType.AddAssignChecked:
-                                    case ExpressionType.SubtractAssign:
-                                    case ExpressionType.SubtractAssignChecked:
-                                    case ExpressionType.MultiplyAssign:
-                                    case ExpressionType.MultiplyAssignChecked:
-                                    case ExpressionType.DivideAssign:
-                                    case ExpressionType.ModuloAssign:
-                                    case ExpressionType.PowerAssign:
-                                    case ExpressionType.AndAssign:
-                                    case ExpressionType.OrAssign:
-                                    case ExpressionType.ExclusiveOrAssign:
-                                    case ExpressionType.LeftShiftAssign:
-                                    case ExpressionType.RightShiftAssign:
-                                        il.Dup(); // stack: [itemAddress, itemAddress]
-                                        il.Brfalse(returnDefaultValueLabel);
-                                        result = true;
-                                        il.Dup(); // stack: [itemAddress, itemAddress]
-                                        EmitIndexAccess(indexExpression, context);
-                                        il.Ldloc(value);
-                                        context.EmitArithmeticOperation(GetOp(node.NodeType), indexExpression.Type, indexExpression.Type, right.Type, node.Method);
-                                        using(var temp = context.DeclareLocal(indexExpression.Type))
-                                        {
-                                            il.Stloc(temp);
-                                            EmitIndexAssign(indexExpression, context, temp);
-                                            il.Ldloc(temp);
-                                        }
-                                        break;
-                                    default:
-                                        throw new NotSupportedException("Node type '" + node.NodeType + "' is not supported");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
-                }
-            default:
-                throw new InvalidOperationException("Unable to assign to an expression with node type '" + left.NodeType + "'");
             }
-            resultType = left.Type;
+            else
+            {
+                if(checkNullReferences)
+                {
+                    il.Dup();
+                    il.Brfalse(returnDefaultValueLabel);
+                    result = true;
+                }
+                if(assigneeType != null)
+                    il.Dup();
+                object[] arguments = EmitAccess(assigneeKind, left, context);
+                context.EmitLoadArguments(right);
+                context.EmitArithmeticOperation(GetOp(node.NodeType), left.Type, left.Type, right.Type, node.Method);
+                if(whatReturn == ResultType.Void)
+                    EmitAssign(assigneeKind, left, context, arguments);
+                else
+                {
+                    if(assigneeKind == AssigneeKind.Parameter)
+                    {
+                        EmitAssign(assigneeKind, left, context, arguments);
+                        EmitAccess(assigneeKind, left, context);
+                    }
+                    else
+                    {
+                        using(var temp = context.DeclareLocal(left.Type))
+                        {
+                            il.Stloc(temp);
+                            EmitAssign(assigneeKind, left, context, arguments, temp);
+                            il.Ldloc(temp);
+                        }
+                    }
+                }
+            }
+            resultType = whatReturn == ResultType.Void ? typeof(void) : left.Type;
             return result;
+        }
+
+        private static object[] EmitAccess(AssigneeKind assigneeKind, Expression node, EmittingContext context)
+        {
+            object[] arguments = null;
+            var il = context.Il;
+            switch(assigneeKind)
+            {
+            case AssigneeKind.Parameter:
+                var index = Array.IndexOf(context.Parameters, node);
+                if(index >= 0)
+                    il.Ldarg(index);
+                else
+                {
+                    EmittingContext.LocalHolder variable;
+                    if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
+                        il.Ldloc(variable);
+                    else
+                        throw new InvalidOperationException("Unknown parameter " + node);
+                }
+                break;
+            case AssigneeKind.InstanceField:
+            case AssigneeKind.StaticField:
+                il.Ldfld((FieldInfo)((MemberExpression)node).Member);
+                break;
+            case AssigneeKind.InstanceProperty:
+            case AssigneeKind.StaticProperty:
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetGetMethod(true));
+                break;
+            case AssigneeKind.SimpleArray:
+                il.Ldind(node.Type);
+                break;
+            case AssigneeKind.IndexedProperty:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    var args = new List<object>();
+                    foreach(var argument in indexExpression.Arguments)
+                    {
+                        context.EmitLoadArguments(argument);
+                        if(argument.NodeType == ExpressionType.Constant || (argument.NodeType == ExpressionType.MemberAccess && ((MemberExpression)argument).Member.MemberType == MemberTypes.Field && ((FieldInfo)((MemberExpression)argument).Member).IsStatic))
+                            args.Add(argument);
+                        else
+                        {
+                            var local = context.DeclareLocal(argument.Type);
+                            args.Add(local);
+                            il.Stloc(local);
+                            il.Ldloc(local);
+                        }
+                    }
+                    arguments = args.ToArray();
+                    MethodInfo getter = indexExpression.Indexer.GetGetMethod(true);
+                    if(getter == null)
+                        throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "get_" + indexExpression.Indexer.Name);
+                    context.Il.Call(getter);
+                }
+                break;
+            case AssigneeKind.MultiDimensionalArray:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    Type arrayType = indexExpression.Object.Type;
+                    if(!arrayType.IsArray)
+                        throw new InvalidOperationException("An array expected");
+                    int rank = arrayType.GetArrayRank();
+                    if(rank != indexExpression.Arguments.Count)
+                        throw new InvalidOperationException("Incorrect number of indeces '" + indexExpression.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                    Type indexType = indexExpression.Arguments.First().Type;
+                    if(indexType != typeof(int))
+                        throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                    var args = new List<object>();
+                    foreach (var argument in indexExpression.Arguments)
+                    {
+                        context.EmitLoadArguments(argument);
+                        if (argument.NodeType == ExpressionType.Constant || (argument.NodeType == ExpressionType.MemberAccess && ((MemberExpression)argument).Member.MemberType == MemberTypes.Field && ((FieldInfo)((MemberExpression)argument).Member).IsStatic))
+                            args.Add(argument);
+                        else
+                        {
+                            var local = context.DeclareLocal(argument.Type);
+                            args.Add(local);
+                            il.Stloc(local);
+                            il.Ldloc(local);
+                        }
+                    }
+                    arguments = args.ToArray();
+                    MethodInfo getMethod = arrayType.GetMethod("Get");
+                    if(getMethod == null)
+                        throw new MissingMethodException(arrayType.ToString(), "Get");
+                    context.Il.Call(getMethod);
+                }
+                break;
+            }
+            return arguments;
+        }
+
+        private static void EmitAssign(AssigneeKind assigneeKind, Expression node, EmittingContext context, object[] arguments)
+        {
+            var il = context.Il;
+            switch(assigneeKind)
+            {
+            case AssigneeKind.Parameter:
+                var index = Array.IndexOf(context.Parameters, node);
+                if(index >= 0)
+                    il.Starg(index);
+                else
+                {
+                    EmittingContext.LocalHolder variable;
+                    if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
+                        il.Stloc(variable);
+                    else
+                        throw new InvalidOperationException("Unknown parameter " + node);
+                }
+                break;
+            case AssigneeKind.SimpleArray:
+                il.Stind(node.Type);
+                break;
+            case AssigneeKind.InstanceField:
+            case AssigneeKind.StaticField:
+                il.Stfld((FieldInfo)((MemberExpression)node).Member);
+                break;
+            case AssigneeKind.InstanceProperty:
+            case AssigneeKind.StaticProperty:
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                break;
+            case AssigneeKind.IndexedProperty:
+                {
+                    using(var temp = context.DeclareLocal(node.Type))
+                    {
+                        il.Stloc(temp);
+                        var indexExpression = (IndexExpression)node;
+                        if(arguments == null)
+                            context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                        else
+                        {
+                            foreach(var argument in arguments)
+                                if(argument is Expression)
+                                    context.EmitLoadArguments((Expression)argument);
+                                else
+                                {
+                                    var local = (EmittingContext.LocalHolder)argument;
+                                    il.Ldloc(local);
+                                    local.Dispose();
+                                }
+                        }
+                        il.Ldloc(temp);
+                        MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                        if(setter == null)
+                            throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
+                        context.Il.Call(setter);
+                    }
+                }
+                break;
+            case AssigneeKind.MultiDimensionalArray:
+                {
+                    using(var temp = context.DeclareLocal(node.Type))
+                    {
+                        il.Stloc(temp);
+                        var indexExpression = (IndexExpression)node;
+                        Type arrayType = indexExpression.Object.Type;
+                        if(!arrayType.IsArray)
+                            throw new InvalidOperationException("An array expected");
+                        int rank = arrayType.GetArrayRank();
+                        if(rank != indexExpression.Arguments.Count)
+                            throw new InvalidOperationException("Incorrect number of indeces '" + indexExpression.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                        Type indexType = indexExpression.Arguments.First().Type;
+                        if(indexType != typeof(int))
+                            throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                        if (arguments == null)
+                            context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                        else
+                        {
+                            foreach (var argument in arguments)
+                                if (argument is Expression)
+                                    context.EmitLoadArguments((Expression)argument);
+                                else
+                                {
+                                    var local = (EmittingContext.LocalHolder)argument;
+                                    il.Ldloc(local);
+                                    local.Dispose();
+                                }
+                        }
+                        il.Ldloc(temp);
+                        MethodInfo setMethod = arrayType.GetMethod("Set");
+                        if(setMethod == null)
+                            throw new MissingMethodException(arrayType.ToString(), "Set");
+                        context.Il.Call(setMethod);
+                    }
+                }
+                break;
+            }
+        }
+
+        private static void EmitAssign(AssigneeKind assigneeKind, Expression node, EmittingContext context, object[] arguments, EmittingContext.LocalHolder value)
+        {
+            var il = context.Il;
+            switch(assigneeKind)
+            {
+            case AssigneeKind.Parameter:
+                il.Ldloc(value);
+                var index = Array.IndexOf(context.Parameters, node);
+                if(index >= 0)
+                    il.Starg(index);
+                else
+                {
+                    EmittingContext.LocalHolder variable;
+                    if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
+                        il.Stloc(variable);
+                    else
+                        throw new InvalidOperationException("Unknown parameter " + node);
+                }
+                break;
+            case AssigneeKind.SimpleArray:
+                il.Ldloc(value);
+                il.Stind(node.Type);
+                break;
+            case AssigneeKind.InstanceField:
+            case AssigneeKind.StaticField:
+                il.Ldloc(value);
+                il.Stfld((FieldInfo)((MemberExpression)node).Member);
+                break;
+            case AssigneeKind.InstanceProperty:
+            case AssigneeKind.StaticProperty:
+                il.Ldloc(value);
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                break;
+            case AssigneeKind.IndexedProperty:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    if (arguments == null)
+                        context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                    else
+                    {
+                        foreach (var argument in arguments)
+                            if (argument is Expression)
+                                context.EmitLoadArguments((Expression)argument);
+                            else
+                            {
+                                var local = (EmittingContext.LocalHolder)argument;
+                                il.Ldloc(local);
+                                local.Dispose();
+                            }
+                    }
+                    il.Ldloc(value);
+                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                    if(setter == null)
+                        throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
+                    context.Il.Call(setter);
+                }
+                break;
+            case AssigneeKind.MultiDimensionalArray:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    Type arrayType = indexExpression.Object.Type;
+                    if(!arrayType.IsArray)
+                        throw new InvalidOperationException("An array expected");
+                    int rank = arrayType.GetArrayRank();
+                    if(rank != indexExpression.Arguments.Count)
+                        throw new InvalidOperationException("Incorrect number of indeces '" + indexExpression.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                    Type indexType = indexExpression.Arguments.First().Type;
+                    if(indexType != typeof(int))
+                        throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                    if (arguments == null)
+                        context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                    else
+                    {
+                        foreach (var argument in arguments)
+                            if (argument is Expression)
+                                context.EmitLoadArguments((Expression)argument);
+                            else
+                            {
+                                var local = (EmittingContext.LocalHolder)argument;
+                                il.Ldloc(local);
+                                local.Dispose();
+                            }
+                    }
+                    il.Ldloc(value);
+                    MethodInfo setMethod = arrayType.GetMethod("Set");
+                    if(setMethod == null)
+                        throw new MissingMethodException(arrayType.ToString(), "Set");
+                    context.Il.Call(setMethod);
+                }
+                break;
+            }
+        }
+
+        private static void EmitAssign(AssigneeKind assigneeKind, Expression node, EmittingContext context, object[] arguments, Expression value)
+        {
+            var il = context.Il;
+            switch(assigneeKind)
+            {
+            case AssigneeKind.Parameter:
+                context.EmitLoadArguments(value);
+                var index = Array.IndexOf(context.Parameters, node);
+                if(index >= 0)
+                    il.Starg(index);
+                else
+                {
+                    EmittingContext.LocalHolder variable;
+                    if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
+                        il.Stloc(variable);
+                    else
+                        throw new InvalidOperationException("Unknown parameter " + node);
+                }
+                break;
+            case AssigneeKind.SimpleArray:
+                context.EmitLoadArguments(value);
+                il.Stind(node.Type);
+                break;
+            case AssigneeKind.InstanceField:
+            case AssigneeKind.StaticField:
+                context.EmitLoadArguments(value);
+                il.Stfld((FieldInfo)((MemberExpression)node).Member);
+                break;
+            case AssigneeKind.InstanceProperty:
+            case AssigneeKind.StaticProperty:
+                context.EmitLoadArguments(value);
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                break;
+            case AssigneeKind.IndexedProperty:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    if (arguments == null)
+                        context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                    else
+                    {
+                        foreach (var argument in arguments)
+                            if (argument is Expression)
+                                context.EmitLoadArguments((Expression)argument);
+                            else
+                            {
+                                var local = (EmittingContext.LocalHolder)argument;
+                                il.Ldloc(local);
+                                local.Dispose();
+                            }
+                    }
+                    context.EmitLoadArguments(value);
+                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                    if(setter == null)
+                        throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
+                    context.Il.Call(setter);
+                }
+                break;
+            case AssigneeKind.MultiDimensionalArray:
+                {
+                    var indexExpression = (IndexExpression)node;
+                    Type arrayType = indexExpression.Object.Type;
+                    if(!arrayType.IsArray)
+                        throw new InvalidOperationException("An array expected");
+                    int rank = arrayType.GetArrayRank();
+                    if(rank != indexExpression.Arguments.Count)
+                        throw new InvalidOperationException("Incorrect number of indeces '" + indexExpression.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
+                    Type indexType = indexExpression.Arguments.First().Type;
+                    if(indexType != typeof(int))
+                        throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
+                    if (arguments == null)
+                        context.EmitLoadArguments(indexExpression.Arguments.ToArray());
+                    else
+                    {
+                        foreach (var argument in arguments)
+                            if (argument is Expression)
+                                context.EmitLoadArguments((Expression)argument);
+                            else
+                            {
+                                var local = (EmittingContext.LocalHolder)argument;
+                                il.Ldloc(local);
+                                local.Dispose();
+                            }
+                    }
+                    context.EmitLoadArguments(value);
+                    MethodInfo setMethod = arrayType.GetMethod("Set");
+                    if(setMethod == null)
+                        throw new MissingMethodException(arrayType.ToString(), "Set");
+                    context.Il.Call(setMethod);
+                }
+                break;
+            }
         }
 
         private static ExpressionType GetOp(ExpressionType nodeType)
@@ -526,64 +611,16 @@ namespace GrobExp.ExpressionEmitters
             }
         }
 
-        private static void EmitIndexAssign(IndexExpression node, EmittingContext context, EmittingContext.LocalHolder value)
+        private enum AssigneeKind
         {
-            if(node.Indexer != null)
-            {
-                context.EmitLoadArguments(node.Arguments.ToArray());
-                context.Il.Ldloc(value);
-                MethodInfo setter = node.Indexer.GetSetMethod(true);
-                if(setter == null)
-                    throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "set_" + node.Indexer.Name);
-                context.Il.Call(setter);
-            }
-            else
-            {
-                Type arrayType = node.Object.Type;
-                if(!arrayType.IsArray)
-                    throw new InvalidOperationException("An array expected");
-                int rank = arrayType.GetArrayRank();
-                if(rank != node.Arguments.Count)
-                    throw new InvalidOperationException("Incorrect number of indeces '" + node.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
-                Type indexType = node.Arguments.First().Type;
-                if(indexType != typeof(int))
-                    throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
-                context.EmitLoadArguments(node.Arguments.ToArray());
-                context.Il.Ldloc(value);
-                MethodInfo setMethod = arrayType.GetMethod("Set");
-                if(setMethod == null)
-                    throw new MissingMethodException(arrayType.ToString(), "Set");
-                context.Il.Call(setMethod);
-            }
-        }
-
-        private static void EmitIndexAccess(IndexExpression node, EmittingContext context)
-        {
-            if(node.Indexer != null)
-            {
-                context.EmitLoadArguments(node.Arguments.ToArray());
-                MethodInfo getter = node.Indexer.GetGetMethod(true);
-                if(getter == null)
-                    throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "get_" + node.Indexer.Name);
-                context.Il.Call(getter);
-            }
-            else
-            {
-                Type arrayType = node.Object.Type;
-                if(!arrayType.IsArray)
-                    throw new InvalidOperationException("An array expected");
-                int rank = arrayType.GetArrayRank();
-                if(rank != node.Arguments.Count)
-                    throw new InvalidOperationException("Incorrect number of indeces '" + node.Arguments.Count + "' provided to access an array with rank '" + rank + "'");
-                Type indexType = node.Arguments.First().Type;
-                if(indexType != typeof(int))
-                    throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
-                context.EmitLoadArguments(node.Arguments.ToArray());
-                MethodInfo getMethod = arrayType.GetMethod("Get");
-                if(getMethod == null)
-                    throw new MissingMethodException(arrayType.ToString(), "Get");
-                context.Il.Call(getMethod);
-            }
+            Parameter,
+            InstanceField,
+            InstanceProperty,
+            StaticField,
+            StaticProperty,
+            SimpleArray,
+            MultiDimensionalArray,
+            IndexedProperty
         }
     }
 }

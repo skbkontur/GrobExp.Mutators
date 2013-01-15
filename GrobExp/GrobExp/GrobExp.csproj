@@ -88,6 +88,7 @@
     <Compile Include="CompilerOptions.cs" />
     <Compile Include="ExpressionEmitters\IExpressionEmitter.cs" />
     <Compile Include="LambdaCompiler.cs" />
+    <Compile Include="LambdaInvocationInliner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultType.cs" />
   </ItemGroup>

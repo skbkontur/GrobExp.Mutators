@@ -68,6 +68,8 @@ namespace Tests
 
             da.Save("dyn.dll");
         }
+        
+        static Func<int, int, int> func = (x, y) => x + y;
 
         [Test, Ignore]
         public void CompileAndSave()
@@ -85,8 +87,13 @@ namespace Tests
 //            var exp = Expression.Lambda<Func<double?, double?, double?>>(Expression.Power(a, b), a, b);
 //            ParameterExpression parameter = Expression.Parameter(typeof(int?));
 //            var exp = Expression.Lambda<Func<int?, int?>>(Expression.Increment(parameter), parameter);
-            var parameter = Expression.Parameter(typeof(object));
-            var exp = Expression.Lambda<Func<object, int?>>(Expression.Unbox(parameter, typeof(int?)), parameter);
+//            var parameter = Expression.Parameter(typeof(object));
+//            var exp = Expression.Lambda<Func<object, int?>>(Expression.Unbox(parameter, typeof(int?)), parameter);
+//            Expression<Func<TestClassA, int>> exp = o => func(o.Y, o.Z);
+            Expression<Func<int, int, int>> lambda = (x, y) => x + y;
+            ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
+            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(lambda, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), parameter);
+
             CompileAndSave(exp);
         }
 
@@ -287,6 +294,7 @@ namespace Tests
             public Guid? NullableGuid;
             public bool? NullableBool;
             public int Y;
+            public int Z;
             public bool Bool;
 
             public int F(bool b)

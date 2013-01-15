@@ -169,10 +169,6 @@ namespace GrobExp.ExpressionEmitters
             }
             switch(whatReturn)
             {
-            case ResultType.Value:
-                il.Ldelem(node.Type); // stack: [array[arrayIndex]]
-                resultType = node.Type;
-                break;
             case ResultType.ByRefAll:
                 il.Ldelema(node.Type);
                 resultType = node.Type.MakeByRefType();
@@ -190,7 +186,9 @@ namespace GrobExp.ExpressionEmitters
                 }
                 break;
             default:
-                throw new NotSupportedException("Result type '" + whatReturn + "' is not supported");
+                il.Ldelem(node.Type); // stack: [array[arrayIndex]]
+                resultType = node.Type;
+                break;
             }
             return result;
         }

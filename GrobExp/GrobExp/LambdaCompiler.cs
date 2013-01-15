@@ -62,7 +62,7 @@ namespace GrobExp
                     CompiledLambdas = compiledLambdas,
                     Il = il
                 };
-            var returnDefaultValueLabel = il.DefineLabel("returnDefaultValue");
+            var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
             Type resultType;
             bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
             if(returnType == typeof(bool) && resultType == typeof(bool?))
@@ -73,7 +73,7 @@ namespace GrobExp
                     il.Stloc(temp);
             }
             il.Ret();
-            if(labelUsed && context.CanReturn)
+            if(labelUsed)
             {
                 il.MarkLabel(returnDefaultValueLabel);
                 il.Pop();

@@ -42,7 +42,7 @@ namespace GrobExp.ExpressionEmitters
                 {
                     bool closureAssign = memberExpression.Expression == context.ClosureParameter;
                     checkNullReferences &= !closureAssign;
-                    if(node.NodeType != ExpressionType.Assign)
+                    if(node.NodeType != ExpressionType.Assign && context.CanReturn)
                         result |= ExpressionEmittersCollection.Emit(memberExpression.Expression, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
                     else
                     {
@@ -58,7 +58,7 @@ namespace GrobExp.ExpressionEmitters
                     throw new InvalidOperationException("Indexing of null object is invalid");
                 if(indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1)
                 {
-                    if (node.NodeType != ExpressionType.Assign)
+                    if(node.NodeType != ExpressionType.Assign && context.CanReturn)
                     {
                         result |= ExpressionEmittersCollection.Emit(Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single()), context, returnDefaultValueLabel, ResultType.ByRefAll, extend, out assigneeType);
                         checkNullReferences = false;
@@ -72,7 +72,7 @@ namespace GrobExp.ExpressionEmitters
                 }
                 else
                 {
-                    if(node.NodeType != ExpressionType.Assign)
+                    if(node.NodeType != ExpressionType.Assign && context.CanReturn)
                         result |= ExpressionEmittersCollection.Emit(indexExpression.Object, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out assigneeType);
                     else
                     {
@@ -267,10 +267,10 @@ namespace GrobExp.ExpressionEmitters
                     if(indexType != typeof(int))
                         throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
                     var args = new List<object>();
-                    foreach (var argument in indexExpression.Arguments)
+                    foreach(var argument in indexExpression.Arguments)
                     {
                         context.EmitLoadArguments(argument);
-                        if (argument.NodeType == ExpressionType.Constant || (argument.NodeType == ExpressionType.MemberAccess && ((MemberExpression)argument).Member.MemberType == MemberTypes.Field && ((FieldInfo)((MemberExpression)argument).Member).IsStatic))
+                        if(argument.NodeType == ExpressionType.Constant || (argument.NodeType == ExpressionType.MemberAccess && ((MemberExpression)argument).Member.MemberType == MemberTypes.Field && ((FieldInfo)((MemberExpression)argument).Member).IsStatic))
                             args.Add(argument);
                         else
                         {
@@ -331,6 +331,7 @@ namespace GrobExp.ExpressionEmitters
                         else
                         {
                             foreach(var argument in arguments)
+                            {
                                 if(argument is Expression)
                                     context.EmitLoadArguments((Expression)argument);
                                 else
@@ -339,6 +340,7 @@ namespace GrobExp.ExpressionEmitters
                                     il.Ldloc(local);
                                     local.Dispose();
                                 }
+                            }
                         }
                         il.Ldloc(temp);
                         MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
@@ -363,12 +365,13 @@ namespace GrobExp.ExpressionEmitters
                         Type indexType = indexExpression.Arguments.First().Type;
                         if(indexType != typeof(int))
                             throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
-                        if (arguments == null)
+                        if(arguments == null)
                             context.EmitLoadArguments(indexExpression.Arguments.ToArray());
                         else
                         {
-                            foreach (var argument in arguments)
-                                if (argument is Expression)
+                            foreach(var argument in arguments)
+                            {
+                                if(argument is Expression)
                                     context.EmitLoadArguments((Expression)argument);
                                 else
                                 {
@@ -376,6 +379,7 @@ namespace GrobExp.ExpressionEmitters
                                     il.Ldloc(local);
                                     local.Dispose();
                                 }
+                            }
                         }
                         il.Ldloc(temp);
                         MethodInfo setMethod = arrayType.GetMethod("Set");
@@ -424,12 +428,13 @@ namespace GrobExp.ExpressionEmitters
             case AssigneeKind.IndexedProperty:
                 {
                     var indexExpression = (IndexExpression)node;
-                    if (arguments == null)
+                    if(arguments == null)
                         context.EmitLoadArguments(indexExpression.Arguments.ToArray());
                     else
                     {
-                        foreach (var argument in arguments)
-                            if (argument is Expression)
+                        foreach(var argument in arguments)
+                        {
+                            if(argument is Expression)
                                 context.EmitLoadArguments((Expression)argument);
                             else
                             {
@@ -437,6 +442,7 @@ namespace GrobExp.ExpressionEmitters
                                 il.Ldloc(local);
                                 local.Dispose();
                             }
+                        }
                     }
                     il.Ldloc(value);
                     MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
@@ -457,12 +463,13 @@ namespace GrobExp.ExpressionEmitters
                     Type indexType = indexExpression.Arguments.First().Type;
                     if(indexType != typeof(int))
                         throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
-                    if (arguments == null)
+                    if(arguments == null)
                         context.EmitLoadArguments(indexExpression.Arguments.ToArray());
                     else
                     {
-                        foreach (var argument in arguments)
-                            if (argument is Expression)
+                        foreach(var argument in arguments)
+                        {
+                            if(argument is Expression)
                                 context.EmitLoadArguments((Expression)argument);
                             else
                             {
@@ -470,6 +477,7 @@ namespace GrobExp.ExpressionEmitters
                                 il.Ldloc(local);
                                 local.Dispose();
                             }
+                        }
                     }
                     il.Ldloc(value);
                     MethodInfo setMethod = arrayType.GetMethod("Set");
@@ -517,12 +525,13 @@ namespace GrobExp.ExpressionEmitters
             case AssigneeKind.IndexedProperty:
                 {
                     var indexExpression = (IndexExpression)node;
-                    if (arguments == null)
+                    if(arguments == null)
                         context.EmitLoadArguments(indexExpression.Arguments.ToArray());
                     else
                     {
-                        foreach (var argument in arguments)
-                            if (argument is Expression)
+                        foreach(var argument in arguments)
+                        {
+                            if(argument is Expression)
                                 context.EmitLoadArguments((Expression)argument);
                             else
                             {
@@ -530,6 +539,7 @@ namespace GrobExp.ExpressionEmitters
                                 il.Ldloc(local);
                                 local.Dispose();
                             }
+                        }
                     }
                     context.EmitLoadArguments(value);
                     MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
@@ -550,12 +560,13 @@ namespace GrobExp.ExpressionEmitters
                     Type indexType = indexExpression.Arguments.First().Type;
                     if(indexType != typeof(int))
                         throw new InvalidOperationException("Indexing array with an index of type '" + indexType + "' is not allowed");
-                    if (arguments == null)
+                    if(arguments == null)
                         context.EmitLoadArguments(indexExpression.Arguments.ToArray());
                     else
                     {
-                        foreach (var argument in arguments)
-                            if (argument is Expression)
+                        foreach(var argument in arguments)
+                        {
+                            if(argument is Expression)
                                 context.EmitLoadArguments((Expression)argument);
                             else
                             {
@@ -563,6 +574,7 @@ namespace GrobExp.ExpressionEmitters
                                 il.Ldloc(local);
                                 local.Dispose();
                             }
+                        }
                     }
                     context.EmitLoadArguments(value);
                     MethodInfo setMethod = arrayType.GetMethod("Set");

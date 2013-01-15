@@ -17,6 +17,8 @@ namespace GrobExp.ExpressionEmitters
             if (buildFinalizer)
             {
                 var type = BuildDynamicMethodInvokerInternal(closureType, parameterTypes.Length, resultType == typeof(void));
+                if (!type.IsGenericType)
+                    return type;
                 var genericArguments = new List<Type>(parameterTypes);
                 if (resultType != typeof(void))
                     genericArguments.Add(resultType);
@@ -38,7 +40,9 @@ namespace GrobExp.ExpressionEmitters
                         }
                     }
                 }
-                var genericArguments = new List<Type> {closureType};
+                if (!type.IsGenericType)
+                    return type;
+                var genericArguments = new List<Type> { closureType };
                 genericArguments.AddRange(parameterTypes);
                 if(resultType != typeof(void))
                     genericArguments.Add(resultType);
@@ -95,7 +99,7 @@ namespace GrobExp.ExpressionEmitters
                 names.Add("T" + (i + 1));
             if(!returnsVoid)
                 names.Add("TResult");
-            GenericTypeParameterBuilder[] genericTypeParameters = typeBuilder.DefineGenericParameters(names.ToArray());
+            GenericTypeParameterBuilder[] genericTypeParameters = names.Count == 0 ? new GenericTypeParameterBuilder[0] : typeBuilder.DefineGenericParameters(names.ToArray());
             Type genericResultType = returnsVoid ? typeof(void) : genericTypeParameters.Last();
             Type[] genericParameterTypes = genericTypeParameters.Take(numberOfParameters).ToArray();
             var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);

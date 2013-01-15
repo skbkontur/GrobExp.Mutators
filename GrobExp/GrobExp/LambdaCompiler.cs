@@ -45,9 +45,6 @@ namespace GrobExp
             return (TDelegate)(object)result;
         }
 
-        public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
-        public static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
-
         internal static CompiledLambda Compile(LambdaExpression lambda, Type closureType, ParameterExpression closureParameter, CompilerOptions options, List<CompiledLambda> compiledLambdas)
         {
             var parameters = lambda.Parameters.ToArray();
@@ -103,6 +100,9 @@ namespace GrobExp
                     ILCode = il.GetILCode()
                 };
         }
+
+        internal static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         private static Action<Delegate[]> BuildDelegatesFoister(Type type)
         {

@@ -235,7 +235,7 @@ namespace Tests
 
         private Func<TestClassA, int> Build1()
         {
-            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var typeBuilder = module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] {typeof(TestClassA)});
             var il = new GroboIL(method);
             il.Ldarg(0);
@@ -251,7 +251,7 @@ namespace Tests
             il.Add();
             il.Ret();
             var type = typeBuilder.CreateType();
-            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), Type.EmptyTypes, LambdaCompiler.Module, true);
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), Type.EmptyTypes, module, true);
             il = new GroboIL(dynamicMethod);
             il.Ldnull(typeof(object));
             il.Ldftn(type.GetMethod("zzz"));
@@ -262,7 +262,7 @@ namespace Tests
 
         private Func<TestClassA, int> Build2()
         {
-            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var typeBuilder = module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public, typeof(int), new[] {typeof(TestClassA)});
             var il = new GroboIL(method);
             il.Ldarg(1);
@@ -278,7 +278,7 @@ namespace Tests
             il.Add();
             il.Ret();
             var type = typeBuilder.CreateType();
-            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] {typeof(object)}, LambdaCompiler.Module, true);
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] { typeof(object) }, module, true);
             il = new GroboIL(dynamicMethod);
             il.Ldarg(0);
             il.Ldftn(type.GetMethod("zzz"));
@@ -289,7 +289,7 @@ namespace Tests
 
         private ITest BuildCall()
         {
-            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var typeBuilder = module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var doNothingMethod = typeBuilder.DefineMethod("DoNothingImpl", MethodAttributes.Public, typeof(void), Type.EmptyTypes);
             var il = new GroboIL(doNothingMethod);
             il.Ldfld(xField);
@@ -311,7 +311,7 @@ namespace Tests
         private ITest BuildDelegate()
         {
             var action = Build();
-            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var typeBuilder = module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var actionField = typeBuilder.DefineField("action", typeof(Action), FieldAttributes.Private | FieldAttributes.InitOnly);
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {typeof(Action)});
             var il = new GroboIL(constructor);
@@ -334,7 +334,7 @@ namespace Tests
         private ITest BuildCalli()
         {
             var action = Build();
-            var typeBuilder = LambdaCompiler.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
+            var typeBuilder = module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var pointerField = typeBuilder.DefineField("pointer", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
             var delegateField = typeBuilder.DefineField("delegate", typeof(Delegate), FieldAttributes.Private | FieldAttributes.InitOnly);
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {typeof(IntPtr), typeof(Delegate)});
@@ -360,7 +360,7 @@ namespace Tests
 
         private Tuple<Action, MethodInfo> Build()
         {
-            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Type.EmptyTypes, LambdaCompiler.Module, true);
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Type.EmptyTypes, module, true);
             var il = new GroboIL(dynamicMethod);
             il.Ldfld(xField);
             il.Ldc_I4(1);
@@ -372,7 +372,7 @@ namespace Tests
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
         {
-            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, LambdaCompiler.Module, true);
+            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] { typeof(DynamicMethod) }, module, true);
             var il = new GroboIL(method);
             il.Ldarg(0); // stack: [dynamicMethod]
             MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -414,6 +414,9 @@ namespace Tests
             Console.WriteLine(string.Format("{0:0.000} millions runs per second = {1:0.000X}", iter * 1.0 / elapsed.TotalSeconds / 1000000.0, ethalon == null ? 1 : elapsed.TotalSeconds / iter / ethalon));
             return elapsed.TotalSeconds / iter;
         }
+
+        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         private volatile bool stop;
 

@@ -173,6 +173,41 @@ namespace Tests
         }
 
         [Test, Ignore]
+        public void TestFactorial()
+        {
+            ParameterExpression value = Expression.Parameter(typeof(int), "value");
+            ParameterExpression result = Expression.Parameter(typeof(int), "result");
+            LabelTarget label = Expression.Label(typeof(int));
+            BlockExpression block = Expression.Block(
+                new[] { result },
+                Expression.Assign(result, Expression.Constant(1)),
+                    Expression.Loop(
+                       Expression.IfThenElse(
+                           Expression.GreaterThan(value, Expression.Constant(1)),
+                           Expression.MultiplyAssign(result,
+                               Expression.PostDecrementAssign(value)),
+                           Expression.Break(label, result)
+                       ),
+                   label
+                )
+            );
+
+            Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(block, value); Console.WriteLine("Sharp");
+
+            var ethalon = MeasureSpeed(Func6, 5, 100000000, null);
+            Console.WriteLine("GroboCompile without checking");
+            Func<int, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            MeasureSpeed(compile1, 5, 100000000, ethalon);
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), 5, 100000000, ethalon);
+            Console.WriteLine("Compile");
+            Func<int, int> compile = exp.Compile();
+            MeasureSpeed(compile, 5, 100000000, ethalon);
+        }
+
+
+
+        [Test, Ignore]
         public void TestCalls()
         {
             var test = (ITest)new TestImpl();
@@ -267,6 +302,19 @@ namespace Tests
         private int Func5(TestClassA a)
         {
             return a.Y + a.Z;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Func6(int n)
+        {
+            var result = 1;
+            while(true)
+            {
+                if (n > 1)
+                    result *= n--;
+                else break;
+            }
+            return result;
         }
 
         private Func<TestClassA, int> Build1()

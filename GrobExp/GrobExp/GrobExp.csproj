@@ -62,6 +62,7 @@
     <Compile Include="ExpressionEmitters\ConvertExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\InvocationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ListInitExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\LoopExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ThrowExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\TypeAsExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\TypeEqualExpressionEmitter.cs" />

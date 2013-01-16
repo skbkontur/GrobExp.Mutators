@@ -9,24 +9,38 @@ namespace GrobExp.ExpressionEmitters
     {
         protected override bool Emit(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
+            Expression test = node.Test;
+            Expression ifTrue = node.IfTrue;
+            Expression ifFalse = node.IfFalse;
+            bool ifTrueBranchIsEmpty = ifTrue.NodeType == ExpressionType.Default && ifTrue.Type == typeof(void);
+            bool ifFalseBranchIsEmpty = ifFalse.NodeType == ExpressionType.Default && ifFalse.Type == typeof(void);
+            if(ifTrueBranchIsEmpty)
+            {
+                test = Expression.Not(test);
+                Expression temp = ifTrue;
+                ifTrue = ifFalse;
+                ifFalse = temp;
+                ifFalseBranchIsEmpty = true;
+            }
             var result = false;
             GroboIL il = context.Il;
             var testIsNullLabel = il.DefineLabel("testIsNull");
             Type testType;
-            var testIsNullLabelUsed = ExpressionEmittersCollection.Emit(node.Test, context, testIsNullLabel, out testType);
+            var testIsNullLabelUsed = ExpressionEmittersCollection.Emit(test, context, testIsNullLabel, out testType);
             if(testType == typeof(bool?))
                 context.ConvertFromNullableBoolToBool();
             var ifFalseLabel = il.DefineLabel("ifFalse");
             il.Brfalse(ifFalseLabel);
             Type ifTrueType;
-            result |= ExpressionEmittersCollection.Emit(node.IfTrue, context, returnDefaultValueLabel, whatReturn, extend, out ifTrueType);
-            if (node.Type == typeof(void) && ifTrueType != typeof(void))
+            result |= ExpressionEmittersCollection.Emit(ifTrue, context, returnDefaultValueLabel, whatReturn, extend, out ifTrueType);
+            if(node.Type == typeof(void) && ifTrueType != typeof(void))
             {
-                using (var temp = context.DeclareLocal(ifTrueType))
+                using(var temp = context.DeclareLocal(ifTrueType))
                     il.Stloc(temp);
             }
-            var doneLabel = il.DefineLabel("done");
-            il.Br(doneLabel);
+            var doneLabel = ifFalseBranchIsEmpty ? null : il.DefineLabel("done");
+            if(!ifFalseBranchIsEmpty)
+                il.Br(doneLabel);
             if(testIsNullLabelUsed)
             {
                 il.MarkLabel(testIsNullLabel);
@@ -34,13 +48,14 @@ namespace GrobExp.ExpressionEmitters
             }
             il.MarkLabel(ifFalseLabel);
             Type ifFalseType;
-            result |= ExpressionEmittersCollection.Emit(node.IfFalse, context, returnDefaultValueLabel, whatReturn, extend, out ifFalseType);
-            if (node.Type == typeof(void) && ifFalseType != typeof(void))
+            result |= ExpressionEmittersCollection.Emit(ifFalse, context, returnDefaultValueLabel, whatReturn, extend, out ifFalseType);
+            if(node.Type == typeof(void) && ifFalseType != typeof(void))
             {
-                using (var temp = context.DeclareLocal(ifFalseType))
+                using(var temp = context.DeclareLocal(ifFalseType))
                     il.Stloc(temp);
             }
-            il.MarkLabel(doneLabel);
+            if(!ifFalseBranchIsEmpty)
+                il.MarkLabel(doneLabel);
             resultType = node.Type;
             return result;
         }

@@ -9,7 +9,7 @@ namespace GrobExp.ExpressionEmitters
     {
         public bool Emit(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            return Emit((TExpression)node, context, returnDefaultValueLabel, whatReturn, extend, out resultType);
+            return Emit((TExpression)node, context, returnDefaultValueLabel, node.Type == typeof(void) ? ResultType.Void : whatReturn, extend, out resultType);
         }
 
         protected abstract bool Emit(TExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType);

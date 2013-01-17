@@ -153,10 +153,13 @@
     <Compile Include="ExtensionTests\ForEachExpression.cs" />
     <Compile Include="ExtensionTests\TestForEach.cs" />
     <Compile Include="TestConvertChecked.cs" />
+    <Compile Include="TestDynamic.cs" />
     <Compile Include="TestInvoke.cs" />
     <Compile Include="TestListInit.cs" />
     <Compile Include="TestLoop.cs" />
+    <Compile Include="TestQuote.cs" />
     <Compile Include="TestThrow.cs" />
+    <Compile Include="TestTry.cs" />
     <Compile Include="TestTypeAs.cs" />
     <Compile Include="TestTypeEqual.cs" />
     <Compile Include="TestBlock.cs" />

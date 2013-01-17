@@ -8,7 +8,11 @@ using System.Runtime.CompilerServices;
 
 using GrobExp;
 
+using Microsoft.CSharp.RuntimeBinder;
+
 using NUnit.Framework;
+
+using Binder = System.Reflection.Binder;
 
 namespace Tests
 {
@@ -90,9 +94,22 @@ namespace Tests
 //            var parameter = Expression.Parameter(typeof(object));
 //            var exp = Expression.Lambda<Func<object, int?>>(Expression.Unbox(parameter, typeof(int?)), parameter);
 //            Expression<Func<TestClassA, int>> exp = o => func(o.Y, o.Z);
-            Expression<Func<int, int, int>> lambda = (x, y) => x + y;
-            ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
-            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(lambda, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), parameter);
+//            Expression<Func<int, int, int>> lambda = (x, y) => x + y;
+//            ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
+//            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(lambda, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), parameter);
+
+            var x = Expression.Parameter(typeof(object), "x");
+            var y = Expression.Parameter(typeof(object), "y");
+            var binder = Microsoft.CSharp.RuntimeBinder.Binder.BinaryOperation(
+                CSharpBinderFlags.None, ExpressionType.Add, typeof(TestTry),
+                new CSharpArgumentInfo[] { 
+        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), 
+        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)});
+            var exp = Expression.Lambda<Func<object, object, object>>(
+                Expression.Dynamic(binder, typeof(object), x, y),
+                new[] { x, y }
+                );
+
 
             CompileAndSave(exp);
         }

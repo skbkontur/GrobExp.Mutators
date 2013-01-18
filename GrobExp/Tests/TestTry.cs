@@ -93,7 +93,7 @@ namespace Tests
 
             f = LambdaCompiler.Compile(exp);
             B = false;
-            Assert.AreEqual("0", f(null, null));
+            Assert.AreEqual("Null reference", f(null, null));
             Assert.IsTrue(B);
             B = false;
             Assert.AreEqual("Null reference", f(null, new TestClassA()));
@@ -191,7 +191,7 @@ namespace Tests
 
             f = LambdaCompiler.Compile(exp);
             B = false;
-            Assert.AreEqual("0", f(null, null));
+            Assert.AreEqual("Object reference not set to an instance of an object.", f(null, null));
             Assert.IsTrue(B);
             B = false;
             Assert.AreEqual("Object reference not set to an instance of an object.", f(null, new TestClassA()));

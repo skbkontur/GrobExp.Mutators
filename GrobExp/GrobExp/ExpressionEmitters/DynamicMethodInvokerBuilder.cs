@@ -113,12 +113,11 @@ namespace GrobExp.ExpressionEmitters
 
             var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
             il = new GroboIL(method);
-            il.Newobj(closureType.GetConstructor(Type.EmptyTypes));
             for(int i = 0; i < genericParameterTypes.Length; ++i)
                 il.Ldarg(i + 1);
             il.Ldarg(0);
             il.Ldfld(methodField);
-            il.Calli(CallingConventions.Standard, genericResultType, new[] {closureType}.Concat(genericParameterTypes).ToArray());
+            il.Calli(CallingConventions.Standard, genericResultType, genericParameterTypes);
             il.Ret();
 
             MethodInfo objectFinalizer = typeof(Object).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);

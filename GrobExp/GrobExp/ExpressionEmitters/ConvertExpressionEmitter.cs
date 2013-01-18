@@ -9,7 +9,10 @@ namespace GrobExp.ExpressionEmitters
     {
         protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            var result = ExpressionEmittersCollection.Emit(node.Operand, context, returnDefaultValueLabel, ResultType.Value, extend, out resultType); // stack: [obj]
+            GroboIL.Label operandIsNullLabel = context.CanReturn ? context.Il.DefineLabel("operandIsNull") : null;
+            var operandIsNullLabelUsed = ExpressionEmittersCollection.Emit(node.Operand, context, operandIsNullLabel, ResultType.Value, extend, out resultType); // stack: [obj]
+            if(operandIsNullLabelUsed)
+                context.EmitReturnDefaultValue(resultType, operandIsNullLabel, context.Il.DefineLabel("operandIsNotNull"));
             if(resultType != node.Type && !(context.Options.HasFlag(CompilerOptions.UseTernaryLogic) && resultType == typeof(bool?) && node.Type == typeof(bool)))
             {
                 if(node.Method != null)
@@ -30,7 +33,7 @@ namespace GrobExp.ExpressionEmitters
                 }
                 resultType = node.Type;
             }
-            return result;
+            return false;
         }
     }
 }

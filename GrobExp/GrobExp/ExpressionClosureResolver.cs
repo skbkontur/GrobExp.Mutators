@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -21,9 +22,10 @@ namespace GrobExp
             var body = ((LambdaExpression)Visit(lambda)).Body;
             closureParameter = this.closureParameter;
             closureType = this.closureType;
-            var parameters = (closureParameter == null ? lambda.Parameters : new[] {closureParameter}.Concat(lambda.Parameters)).ToArray();
-            var delegateType = Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), lambda.ReturnType);
-            return Expression.Lambda(delegateType, body, parameters);
+            if(closureParameter != null)
+                body = Expression.Block(new[] {closureParameter}, Expression.Assign(closureParameter, Expression.New(closureType)), body);
+            var delegateType = Extensions.GetDelegateType(lambda.Parameters.Select(parameter => parameter.Type).ToArray(), lambda.ReturnType);
+            return Expression.Lambda(delegateType, body, lambda.Parameters);
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)

@@ -118,9 +118,8 @@ namespace GrobExp
         {
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(Delegate), Type.EmptyTypes, Module, true);
             var il = new GroboIL(method);
-            var types = new[] {typeof(IntPtr)};
             il.Ldc_IntPtr(pointer);
-            il.Newobj(lambdaInvokerType.GetConstructor(types));
+            il.Newobj(lambdaInvokerType.GetConstructor(new[] {typeof(IntPtr)}));
             il.Ldftn(lambdaInvokerType.GetMethod("Invoke"));
             il.Newobj(resultType.GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
             il.Ret();

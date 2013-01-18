@@ -304,6 +304,23 @@ namespace Tests
             }
         }
 
+        [Test]
+        public void TestObject()
+        {
+            Assert.AreEqual(1, Convert<object, int>(1));
+            Assert.AreEqual(1.125, Convert<object, double>(1.125));
+            Assert.Throws<NullReferenceException>(() => Convert<object, int>(null));
+            Expression<Func<TestClassA, int>> exp = a => (int)a.X;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.Throws<NullReferenceException>(() => f(null));
+            Assert.Throws<NullReferenceException>(() => f(new TestClassA()));
+        }
+
+        private class TestClassA
+        {
+            public object X { get; set; }
+        }
+
         private T ConvertFromDecimal<T>(Expression<Func<decimal, T>> exp, decimal value)
         {
             var f = LambdaCompiler.Compile(exp);

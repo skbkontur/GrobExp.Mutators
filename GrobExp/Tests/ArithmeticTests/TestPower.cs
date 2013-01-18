@@ -7,8 +7,7 @@ using NUnit.Framework;
 
 namespace Tests.ArithmeticTests
 {
-    [TestFixture]
-    public class TestPower
+    public class TestPower : TestBase
     {
         [Test]
         public void TestPower1()
@@ -16,7 +15,7 @@ namespace Tests.ArithmeticTests
             ParameterExpression a = Expression.Parameter(typeof(double));
             ParameterExpression b = Expression.Parameter(typeof(double));
             var exp = Expression.Lambda<Func<double, double, double>>(Expression.Power(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.AreEqual(1, f(0, 0));
             Assert.AreEqual(1, f(1, 2));
             Assert.AreEqual(16, f(2, 4));
@@ -29,7 +28,7 @@ namespace Tests.ArithmeticTests
             ParameterExpression a = Expression.Parameter(typeof(double?));
             ParameterExpression b = Expression.Parameter(typeof(double?));
             var exp = Expression.Lambda<Func<double?, double?, double?>>(Expression.Power(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.AreEqual(1, f(0, 0));
             Assert.AreEqual(1, f(1, 2));
             Assert.AreEqual(16, f(2, 4));

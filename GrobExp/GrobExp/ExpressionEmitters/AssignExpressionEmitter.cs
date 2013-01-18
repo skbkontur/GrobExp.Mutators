@@ -225,7 +225,7 @@ namespace GrobExp.ExpressionEmitters
                 break;
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetGetMethod(true));
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetGetMethod(context.SkipVisibility));
                 break;
             case AssigneeKind.SimpleArray:
                 il.Ldind(node.Type);
@@ -248,7 +248,7 @@ namespace GrobExp.ExpressionEmitters
                         }
                     }
                     arguments = args.ToArray();
-                    MethodInfo getter = indexExpression.Indexer.GetGetMethod(true);
+                    MethodInfo getter = indexExpression.Indexer.GetGetMethod(context.SkipVisibility);
                     if(getter == null)
                         throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "get_" + indexExpression.Indexer.Name);
                     context.Il.Call(getter);
@@ -318,7 +318,7 @@ namespace GrobExp.ExpressionEmitters
                 break;
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(context.SkipVisibility));
                 break;
             case AssigneeKind.IndexedProperty:
                 {
@@ -343,7 +343,7 @@ namespace GrobExp.ExpressionEmitters
                             }
                         }
                         il.Ldloc(temp);
-                        MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                        MethodInfo setter = indexExpression.Indexer.GetSetMethod(context.SkipVisibility);
                         if(setter == null)
                             throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
                         context.Il.Call(setter);
@@ -423,7 +423,7 @@ namespace GrobExp.ExpressionEmitters
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
                 il.Ldloc(value);
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(context.SkipVisibility));
                 break;
             case AssigneeKind.IndexedProperty:
                 {
@@ -445,7 +445,7 @@ namespace GrobExp.ExpressionEmitters
                         }
                     }
                     il.Ldloc(value);
-                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(context.SkipVisibility);
                     if(setter == null)
                         throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
                     context.Il.Call(setter);
@@ -520,7 +520,7 @@ namespace GrobExp.ExpressionEmitters
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
                 context.EmitLoadArguments(value);
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(true));
+                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(context.SkipVisibility));
                 break;
             case AssigneeKind.IndexedProperty:
                 {
@@ -542,7 +542,7 @@ namespace GrobExp.ExpressionEmitters
                         }
                     }
                     context.EmitLoadArguments(value);
-                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(true);
+                    MethodInfo setter = indexExpression.Indexer.GetSetMethod(context.SkipVisibility);
                     if(setter == null)
                         throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
                     context.Il.Call(setter);

@@ -31,7 +31,7 @@ namespace GrobExp.ExpressionEmitters
             if(node.Indexer != null)
             {
                 context.EmitLoadArguments(node.Arguments.ToArray());
-                MethodInfo getter = node.Indexer.GetGetMethod(true);
+                MethodInfo getter = node.Indexer.GetGetMethod(context.SkipVisibility);
                 if(getter == null)
                     throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "get_" + node.Indexer.Name);
                 context.Il.Call(getter);

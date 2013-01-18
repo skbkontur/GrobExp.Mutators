@@ -29,11 +29,11 @@ namespace GrobExp.ExpressionEmitters
                 {
                     il.Stloc(value);
                     il.Ldloca(value);
-                    il.Ldfld(nullableBoolHasValueField);
+                    context.EmitHasValueAccess(typeof(bool?));
                     var returnLabel = il.DefineLabel("return");
                     il.Brfalse(returnLabel);
                     il.Ldloca(value);
-                    il.Ldfld(nullableBoolValueField);
+                    context.EmitValueAccess(typeof(bool?));
                     il.Ldc_I4(1);
                     il.Xor();
                     il.Newobj(nullableBoolConstructor);
@@ -49,7 +49,5 @@ namespace GrobExp.ExpressionEmitters
         // ReSharper disable RedundantExplicitNullableCreation
         private static readonly ConstructorInfo nullableBoolConstructor = ((NewExpression)((Expression<Func<bool, bool?>>)(b => new bool?(b))).Body).Constructor;
         // ReSharper restore RedundantExplicitNullableCreation
-        private static readonly FieldInfo nullableBoolValueField = typeof(bool?).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo nullableBoolHasValueField = typeof(bool?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
     }
 }

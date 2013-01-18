@@ -5,13 +5,12 @@ using GrobExp;
 
 using NUnit.Framework;
 
-namespace Tests
+namespace Tests.TryCatchTests
 {
-    [TestFixture]
-    public class TestTry
+    public class TestTryCatchFinally : TestBase
     {
         [Test]
-        public void Test1()
+        public void TestTryCatch()
         {
             TryExpression tryCatchExpr =
                 Expression.TryCatch(
@@ -25,14 +24,12 @@ namespace Tests
                         )
                     );
             var exp = Expression.Lambda<Func<string>>(tryCatchExpr);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.AreEqual("Catch block", f());
         }
 
-        public static bool B;
-
         [Test]
-        public void Test2()
+        public void TestTryCatchFinally1()
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(TestClassA), "b");
@@ -43,7 +40,7 @@ namespace Tests
                             Expression.Convert(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("X")), typeof(int)),
                             Expression.Convert(Expression.MakeMemberAccess(b, typeof(TestClassA).GetProperty("X")), typeof(int))
                             ), typeof(object).GetMethod("ToString")),
-                    Expression.Assign(Expression.MakeMemberAccess(null, typeof(TestTry).GetField("B")), Expression.Constant(true)),
+                    Expression.Assign(Expression.MakeMemberAccess(null, typeof(TestTryCatchFinally).GetField("B")), Expression.Constant(true)),
                     Expression.Catch(
                         typeof(OverflowException),
                         Expression.Constant("Overflow")
@@ -58,7 +55,7 @@ namespace Tests
                         )
                     );
             var exp = Expression.Lambda<Func<TestClassA, TestClassA, string>>(tryExpr, a, b);
-            var f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            var f = Compile(exp, CompilerOptions.None);
             B = false;
             Assert.AreEqual("Null reference", f(null, null));
             Assert.IsTrue(B);
@@ -72,26 +69,26 @@ namespace Tests
             Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Null reference", f(new TestClassA{X = 1}, new TestClassA()));
+            Assert.AreEqual("Null reference", f(new TestClassA {X = 1}, new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA{X = 1}));
+            Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Invalid cast", f(new TestClassA{X = "zzz"}, new TestClassA{X = 1}));
+            Assert.AreEqual("Invalid cast", f(new TestClassA {X = "zzz"}, new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Invalid cast", f(new TestClassA{X = 1}, new TestClassA{X = "zzz"}));
+            Assert.AreEqual("Invalid cast", f(new TestClassA {X = 1}, new TestClassA {X = "zzz"}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Overflow", f(new TestClassA{X = 1000000}, new TestClassA{X = 1000000}));
+            Assert.AreEqual("Overflow", f(new TestClassA {X = 1000000}, new TestClassA {X = 1000000}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("1000000", f(new TestClassA{X = 1000}, new TestClassA{X = 1000}));
+            Assert.AreEqual("1000000", f(new TestClassA {X = 1000}, new TestClassA {X = 1000}));
             Assert.IsTrue(B);
             B = false;
 
-            f = LambdaCompiler.Compile(exp);
+            f = Compile(exp);
             B = false;
             Assert.AreEqual("Null reference", f(null, null));
             Assert.IsTrue(B);
@@ -105,29 +102,28 @@ namespace Tests
             Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Null reference", f(new TestClassA { X = 1 }, new TestClassA()));
+            Assert.AreEqual("Null reference", f(new TestClassA {X = 1}, new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA { X = 1 }));
+            Assert.AreEqual("Null reference", f(new TestClassA(), new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Invalid cast", f(new TestClassA { X = "zzz" }, new TestClassA { X = 1 }));
+            Assert.AreEqual("Invalid cast", f(new TestClassA {X = "zzz"}, new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Invalid cast", f(new TestClassA { X = 1 }, new TestClassA { X = "zzz" }));
+            Assert.AreEqual("Invalid cast", f(new TestClassA {X = 1}, new TestClassA {X = "zzz"}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Overflow", f(new TestClassA { X = 1000000 }, new TestClassA { X = 1000000 }));
+            Assert.AreEqual("Overflow", f(new TestClassA {X = 1000000}, new TestClassA {X = 1000000}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("1000000", f(new TestClassA { X = 1000 }, new TestClassA { X = 1000 }));
+            Assert.AreEqual("1000000", f(new TestClassA {X = 1000}, new TestClassA {X = 1000}));
             Assert.IsTrue(B);
             B = false;
         }
 
-
         [Test]
-        public void Test3()
+        public void TestTryCatchFinally2()
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(TestClassA), "b");
@@ -141,7 +137,7 @@ namespace Tests
                             Expression.Convert(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("X")), typeof(int)),
                             Expression.Convert(Expression.MakeMemberAccess(b, typeof(TestClassA).GetProperty("X")), typeof(int))
                             ), typeof(object).GetMethod("ToString")),
-                    Expression.Assign(Expression.MakeMemberAccess(null, typeof(TestTry).GetField("B")), Expression.Constant(true)),
+                    Expression.Assign(Expression.MakeMemberAccess(null, typeof(TestTryCatchFinally).GetField("B")), Expression.Constant(true)),
                     Expression.Catch(
                         overflow,
                         Expression.MakeMemberAccess(overflow, typeof(Exception).GetProperty("Message"))
@@ -156,7 +152,7 @@ namespace Tests
                         )
                     );
             var exp = Expression.Lambda<Func<TestClassA, TestClassA, string>>(Expression.Block(new[] {overflow, invalidCast, nullReference}, tryExpr), a, b);
-            var f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            var f = Compile(exp, CompilerOptions.None);
             B = false;
             Assert.AreEqual("Object reference not set to an instance of an object.", f(null, null));
             Assert.IsTrue(B);
@@ -170,26 +166,26 @@ namespace Tests
             Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA { X = 1 }, new TestClassA()));
+            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA {X = 1}, new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA { X = 1 }));
+            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA { X = "zzz" }, new TestClassA { X = 1 }));
+            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA {X = "zzz"}, new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA { X = 1 }, new TestClassA { X = "zzz" }));
+            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA {X = 1}, new TestClassA {X = "zzz"}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Arithmetic operation resulted in an overflow.", f(new TestClassA { X = 1000000 }, new TestClassA { X = 1000000 }));
+            Assert.AreEqual("Arithmetic operation resulted in an overflow.", f(new TestClassA {X = 1000000}, new TestClassA {X = 1000000}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("1000000", f(new TestClassA{X = 1000}, new TestClassA{X = 1000}));
+            Assert.AreEqual("1000000", f(new TestClassA {X = 1000}, new TestClassA {X = 1000}));
             Assert.IsTrue(B);
             B = false;
 
-            f = LambdaCompiler.Compile(exp);
+            f = Compile(exp);
             B = false;
             Assert.AreEqual("Object reference not set to an instance of an object.", f(null, null));
             Assert.IsTrue(B);
@@ -203,25 +199,28 @@ namespace Tests
             Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA { X = 1 }, new TestClassA()));
+            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA {X = 1}, new TestClassA()));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA { X = 1 }));
+            Assert.AreEqual("Object reference not set to an instance of an object.", f(new TestClassA(), new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA { X = "zzz" }, new TestClassA { X = 1 }));
+            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA {X = "zzz"}, new TestClassA {X = 1}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA { X = 1 }, new TestClassA { X = "zzz" }));
+            Assert.AreEqual("Specified cast is not valid.", f(new TestClassA {X = 1}, new TestClassA {X = "zzz"}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("Arithmetic operation resulted in an overflow.", f(new TestClassA { X = 1000000 }, new TestClassA { X = 1000000 }));
+            Assert.AreEqual("Arithmetic operation resulted in an overflow.", f(new TestClassA {X = 1000000}, new TestClassA {X = 1000000}));
             Assert.IsTrue(B);
             B = false;
-            Assert.AreEqual("1000000", f(new TestClassA { X = 1000 }, new TestClassA { X = 1000 }));
+            Assert.AreEqual("1000000", f(new TestClassA {X = 1000}, new TestClassA {X = 1000}));
             Assert.IsTrue(B);
             B = false;
         }
+
+        public static bool B;
+        public static string F;
 
         private class TestClassA
         {

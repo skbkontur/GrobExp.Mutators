@@ -7,6 +7,8 @@ using Microsoft.CSharp.RuntimeBinder;
 
 using NUnit.Framework;
 
+using Tests.TryCatchTests;
+
 namespace Tests
 {
     [TestFixture]
@@ -18,7 +20,7 @@ namespace Tests
             var x = Expression.Parameter(typeof(object), "x");
             var y = Expression.Parameter(typeof(object), "y");
             var binder = Binder.BinaryOperation(
-                CSharpBinderFlags.None, ExpressionType.Add, typeof(TestTry),
+                CSharpBinderFlags.None, ExpressionType.Add, typeof(TestDynamic),
                 new[]
                     {
                         CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),

@@ -20,12 +20,25 @@ namespace GrobExp
             if(type.IsNullable())
             {
                 Il.Dup();
-                Type memberType;
-                EmitMemberAccess(type, type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), ResultType.Value, out memberType);
+                EmitHasValueAccess(type);
                 Il.Brfalse(objIsNullLabel);
                 return true;
             }
             return false;
+        }
+
+        public void EmitHasValueAccess(Type type)
+        {
+            Type memberType;
+            MemberInfo member = SkipVisibility ? (MemberInfo)type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance) : type.GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance);
+            EmitMemberAccess(type, member, ResultType.Value, out memberType);
+        }
+
+        public void EmitValueAccess(Type type)
+        {
+            Type memberType;
+            MemberInfo member = SkipVisibility ? (MemberInfo)type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance) : type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
+            EmitMemberAccess(type, member, ResultType.Value, out memberType);
         }
 
         public bool EmitMemberAccess(MemberExpression node, GroboIL.Label returnDefaultValueLabel, bool checkNullReferences, bool extend, ResultType whatReturn, out Type resultType, out LocalHolder owner)
@@ -122,7 +135,7 @@ namespace GrobExp
             {
             case MemberTypes.Property:
                 var property = (PropertyInfo)member;
-                var getter = property.GetGetMethod(true);
+                var getter = property.GetGetMethod(SkipVisibility);
                 if(getter == null)
                     throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_get");
                 Il.Call(getter, type);
@@ -185,7 +198,7 @@ namespace GrobExp
             switch(member.MemberType)
             {
             case MemberTypes.Property:
-                var setter = ((PropertyInfo)member).GetSetMethod(true);
+                var setter = ((PropertyInfo)member).GetSetMethod(SkipVisibility);
                 if(setter == null)
                     throw new MissingMemberException(member.DeclaringType.Name, member.Name + "_set");
                 Il.Call(setter, type);
@@ -268,13 +281,13 @@ namespace GrobExp
                     if(leftType.IsNullable())
                     {
                         Il.Ldloca(localLeft);
-                        Il.Ldfld(leftType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        EmitHasValueAccess(leftType);
                         Il.Brfalse(returnNullLabel);
                     }
                     if(rightType.IsNullable())
                     {
                         Il.Ldloca(localRight);
-                        Il.Ldfld(rightType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                        EmitHasValueAccess(rightType);
                         Il.Brfalse(returnNullLabel);
                     }
                     if(!leftType.IsNullable())
@@ -282,14 +295,14 @@ namespace GrobExp
                     else
                     {
                         Il.Ldloca(localLeft);
-                        Il.Ldfld(leftType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        EmitValueAccess(leftType);
                     }
                     if(!rightType.IsNullable())
                         Il.Ldloc(localRight);
                     else
                     {
                         Il.Ldloca(localRight);
-                        Il.Ldfld(rightType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                        EmitValueAccess(rightType);
                     }
                     Type argumentType = resultType.GetGenericArguments()[0];
                     if(method != null)
@@ -341,13 +354,11 @@ namespace GrobExp
                             {
                                 Il.Stloc(temp);
                                 Il.Ldloca(temp);
-                                FieldInfo hasValueField = from.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
-                                Il.Ldfld(hasValueField);
+                                EmitHasValueAccess(from);
                                 var valueIsNullLabel = Il.DefineLabel("valueIsNull");
                                 Il.Brfalse(valueIsNullLabel);
                                 Il.Ldloca(temp);
-                                FieldInfo valueField = from.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-                                Il.Ldfld(valueField);
+                                EmitValueAccess(from);
                                 if(toArgument != fromArgument)
                                     EmitConvert(fromArgument, toArgument, check);
                                 Il.Newobj(to.GetConstructor(new[] {toArgument}));
@@ -404,11 +415,12 @@ namespace GrobExp
             {
                 Il.Stloc(temp);
                 Il.Ldloca(temp);
-                Il.Ldfld(nullableBoolValueField);
+                EmitValueAccess(typeof(bool?));
             }
         }
 
         public CompilerOptions Options { get; set; }
+        public bool SkipVisibility { get; set; }
         public ParameterExpression[] Parameters { get; set; }
         public Type ClosureType { get; set; }
         public ParameterExpression ClosureParameter { get; set; }
@@ -681,8 +693,5 @@ namespace GrobExp
         private readonly Dictionary<LabelTarget, GroboIL.Label> labels = new Dictionary<LabelTarget, GroboIL.Label>();
 
         private readonly Dictionary<Type, Queue<GroboIL.Local>> locals = new Dictionary<Type, Queue<GroboIL.Local>>();
-
-        private static readonly FieldInfo nullableBoolValueField = typeof(bool?).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo nullableBoolHasValueField = typeof(bool?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
     }
 }

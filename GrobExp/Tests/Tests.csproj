@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestBase.cs" />
     <Compile Include="ArithmeticTests\TestBitwiseOperations.cs" />
     <Compile Include="ArithmeticTests\TestDecrement.cs" />
     <Compile Include="ArithmeticTests\TestIncrement.cs" />
@@ -159,7 +160,9 @@
     <Compile Include="TestLoop.cs" />
     <Compile Include="TestQuote.cs" />
     <Compile Include="TestThrow.cs" />
-    <Compile Include="TestTry.cs" />
+    <Compile Include="TryCatchTests\TestFault.cs" />
+    <Compile Include="TryCatchTests\FilterExceptionTest.cs" />
+    <Compile Include="TryCatchTests\TestTryCatchFinally.cs" />
     <Compile Include="TestTypeAs.cs" />
     <Compile Include="TestTypeEqual.cs" />
     <Compile Include="TestBlock.cs" />

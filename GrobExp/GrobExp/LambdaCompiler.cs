@@ -45,6 +45,26 @@ namespace GrobExp
             return (TDelegate)(object)result;
         }
 
+        public static void CompileToMethod<TDelegate>(Expression<TDelegate> lambda, MethodBuilder method, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        {
+            var compiledLambdas = new List<CompiledLambda>();
+            ParameterExpression closureParameter;
+            Type closureType;
+            var resolvedLambda = new ExpressionClosureResolver(lambda).Resolve(out closureType, out closureParameter);
+            var ilCode = new StringBuilder(Compile(resolvedLambda, closureType, closureParameter, options, compiledLambdas, method));
+            for(int i = 0; i < compiledLambdas.Count; ++i)
+            {
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine("delegates[" + i + "]");
+                ilCode.AppendLine(compiledLambdas[i].ILCode);
+            }
+            if(closureParameter != null)
+                BuildDelegatesFoister(closureType)(compiledLambdas.Select(compiledLambda => compiledLambda.Delegate).ToArray());
+        }
+
         internal static CompiledLambda Compile(LambdaExpression lambda, Type closureType, ParameterExpression closureParameter, CompilerOptions options, List<CompiledLambda> compiledLambdas)
         {
             var parameters = lambda.Parameters.ToArray();
@@ -56,6 +76,7 @@ namespace GrobExp
             var context = new EmittingContext
                 {
                     Options = options,
+                    SkipVisibility = true,
                     Parameters = parameters,
                     ClosureType = closureType,
                     ClosureParameter = closureParameter,
@@ -103,6 +124,55 @@ namespace GrobExp
 
         internal static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+
+        private static string Compile(LambdaExpression lambda, Type closureType, ParameterExpression closureParameter, CompilerOptions options, List<CompiledLambda> compiledLambdas, MethodBuilder method)
+        {
+            Type returnType = lambda.ReturnType;
+            var il = new GroboIL(method);
+
+            var context = new EmittingContext
+                {
+                    Options = options,
+                    SkipVisibility = false,
+                    Parameters = lambda.Parameters.ToArray(),
+                    ClosureType = closureType,
+                    ClosureParameter = closureParameter,
+                    CompiledLambdas = compiledLambdas,
+                    Il = il
+                };
+            var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
+            Type resultType;
+            bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
+            if(returnType == typeof(bool) && resultType == typeof(bool?))
+                context.ConvertFromNullableBoolToBool();
+            if(returnType == typeof(void) && resultType != typeof(void))
+            {
+                using(var temp = context.DeclareLocal(resultType))
+                    il.Stloc(temp);
+            }
+            il.Ret();
+            if(labelUsed)
+            {
+                il.MarkLabel(returnDefaultValueLabel);
+                il.Pop();
+                if(returnType != typeof(void))
+                {
+                    if(!returnType.IsValueType)
+                        il.Ldnull(returnType);
+                    else
+                    {
+                        using(var defaultValue = context.DeclareLocal(returnType))
+                        {
+                            il.Ldloca(defaultValue);
+                            il.Initobj(returnType);
+                            il.Ldloc(defaultValue);
+                        }
+                    }
+                }
+                il.Ret();
+            }
+            return il.GetILCode();
+        }
 
         private static Action<Delegate[]> BuildDelegatesFoister(Type type)
         {

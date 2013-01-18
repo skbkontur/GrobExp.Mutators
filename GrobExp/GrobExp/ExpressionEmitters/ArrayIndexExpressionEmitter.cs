@@ -116,7 +116,7 @@ namespace GrobExp.ExpressionEmitters
                             break;
                         case MemberTypes.Property:
                             var propertyInfo = (PropertyInfo)memberExpression.Member;
-                            var setter = propertyInfo.GetSetMethod(true);
+                            var setter = propertyInfo.GetSetMethod(context.SkipVisibility);
                             if(setter == null)
                                 throw new MissingMethodException(propertyInfo.ReflectedType.ToString(), "set_" + propertyInfo.Name);
                             il.Call(setter, memberExpression.Expression == null ? null : memberExpression.Expression.Type);

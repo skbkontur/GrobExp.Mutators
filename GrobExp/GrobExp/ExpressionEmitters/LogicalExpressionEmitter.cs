@@ -78,11 +78,11 @@ namespace GrobExp.ExpressionEmitters
                         {
                             il.Stloc(localLeft); // localLeft = left; stack: []
                             il.Ldloca(localLeft); // stack: [&localLeft]
-                            il.Ldfld(nullableBoolHasValueField); // stack: [localLeft.HasValue]
+                            context.EmitHasValueAccess(typeof(bool?)); // stack: [localLeft.HasValue]
                             il.Ldc_I4(1); // stack: [localLeft.HasValue, true]
                             il.Xor(); // stack: [!localLeft.HasValue]
                             il.Ldloca(localLeft); // stack: [!localLeft.HasValue, &localLeft]
-                            il.Ldfld(nullableBoolValueField); // stack: [!localLeft.HasValue, localLeft.Value]
+                            context.EmitValueAccess(typeof(bool?)); // stack: [!localLeft.HasValue, localLeft.Value]
                             il.Or(); // stack: [!localLeft.HasValue || localLeft.Value]
                             var returnFalseLabel = il.DefineLabel("returnFalse");
                             il.Brfalse(returnFalseLabel); // if(localLeft == false) goto returnFalse; stack: []
@@ -96,11 +96,11 @@ namespace GrobExp.ExpressionEmitters
                                 else
                                 {
                                     il.Ldloca(localRight); // stack: [&localRight]
-                                    il.Ldfld(nullableBoolHasValueField); // stack: [localRight.HasValue]
+                                    context.EmitHasValueAccess(typeof(bool?)); // stack: [localRight.HasValue]
                                     il.Ldc_I4(1); // stack: [localRight.HasValue, true]
                                     il.Xor(); // stack: [!localRight.HasValue]
                                     il.Ldloca(localRight); // stack: [!localRight.HasValue, &localRight]
-                                    il.Ldfld(nullableBoolValueField); // stack: [!localRight.HasValue, localRight.Value]
+                                    context.EmitValueAccess(typeof(bool?)); // stack: [!localRight.HasValue, localRight.Value]
                                     il.Or(); // stack: [!localRight.HasValue || localRight.Value]
                                 }
                                 il.Brfalse(returnFalseLabel); // if(localRight == false) goto returnFalse;
@@ -109,9 +109,9 @@ namespace GrobExp.ExpressionEmitters
                                 else
                                 {
                                     il.Ldloca(localRight); // stack: [&localRight]
-                                    il.Ldfld(nullableBoolHasValueField); // stack: [localRight.HasValue]
+                                    context.EmitHasValueAccess(typeof(bool?)); // stack: [localRight.HasValue]
                                     il.Ldloca(localRight); // stack: [localRight.HasValue, &localRight]
-                                    il.Ldfld(nullableBoolValueField); // stack: [localRight.HasValue, localRight.Value]
+                                    context.EmitValueAccess(typeof(bool?)); // stack: [localRight.HasValue, localRight.Value]
                                     il.And(); // stack: [localRight.HasValue && localRight.Value]
                                 }
                                 var returnLeftLabel = il.DefineLabel("returnLeft");
@@ -148,9 +148,9 @@ namespace GrobExp.ExpressionEmitters
                         {
                             il.Stloc(localLeft); // localLeft = left; stack: []
                             il.Ldloca(localLeft); // stack: [&localLeft]
-                            il.Ldfld(nullableBoolHasValueField); // stack: [localLeft.HasValue]
+                            context.EmitHasValueAccess(typeof(bool?)); // stack: [localLeft.HasValue]
                             il.Ldloca(localLeft); // stack: [localLeft.HasValue, &localLeft]
-                            il.Ldfld(nullableBoolValueField); // stack: [localLeft.HasValue, localLeft.Value]
+                            context.EmitValueAccess(typeof(bool?)); // stack: [localLeft.HasValue, localLeft.Value]
                             il.And(); // stack: [localLeft.HasValue && localLeft.Value]
                             var returnTrueLabel = il.DefineLabel("returnTrue");
                             il.Brtrue(returnTrueLabel); // if(localLeft == true) goto returnTrue; stack: []
@@ -164,9 +164,9 @@ namespace GrobExp.ExpressionEmitters
                                 else
                                 {
                                     il.Ldloca(localRight); // stack: [&localRight]
-                                    il.Ldfld(nullableBoolHasValueField); // stack: [localRight.HasValue]
+                                    context.EmitHasValueAccess(typeof(bool?)); // stack: [localRight.HasValue]
                                     il.Ldloca(localRight); // stack: [localRight.HasValue, &localRight]
-                                    il.Ldfld(nullableBoolValueField); // stack: [localRight.HasValue, localRight.Value]
+                                    context.EmitValueAccess(typeof(bool?)); // stack: [localRight.HasValue, localRight.Value]
                                     il.And(); // stack: [localRight.HasValue && localRight.Value]
                                 }
                                 il.Brtrue(returnTrueLabel); // if(localRight == true) goto returnTrue; stack: []
@@ -175,11 +175,11 @@ namespace GrobExp.ExpressionEmitters
                                 else
                                 {
                                     il.Ldloca(localRight); // stack: [&localRight]
-                                    il.Ldfld(nullableBoolHasValueField); // stack: [localRight.HasValue]
+                                    context.EmitHasValueAccess(typeof(bool?)); // stack: [localRight.HasValue]
                                     il.Ldc_I4(1); // stack: [localRight.HasValue, true]
                                     il.Xor(); // stack: [!localRight.HasValue]
                                     il.Ldloca(localRight); // stack: [!localRight.HasValue, &localRight]
-                                    il.Ldfld(nullableBoolValueField); // stack: [!localRight.HasValue, localRight.Value]
+                                    context.EmitValueAccess(typeof(bool?)); // stack: [!localRight.HasValue, localRight.Value]
                                     il.Or(); // stack: [!localRight.HasValue || localRight.Value]
                                 }
                                 var returnLeftLabel = il.DefineLabel("returnLeft");
@@ -209,7 +209,5 @@ namespace GrobExp.ExpressionEmitters
         // ReSharper disable RedundantExplicitNullableCreation
         private static readonly ConstructorInfo nullableBoolConstructor = ((NewExpression)((Expression<Func<bool, bool?>>)(b => new bool?(b))).Body).Constructor;
         // ReSharper restore RedundantExplicitNullableCreation
-        private static readonly FieldInfo nullableBoolValueField = typeof(bool?).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo nullableBoolHasValueField = typeof(bool?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
     }
 }

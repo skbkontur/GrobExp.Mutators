@@ -33,7 +33,7 @@ namespace GrobExp.ExpressionEmitters
             {
                 if(!left.Type.IsNullable())
                     throw new InvalidOperationException("Type '" + left.Type + "' cannot be null");
-                il.Ldfld(left.Type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                context.EmitValueAccess(left.Type);
             }
             var valueIsNotNullLabel = il.DefineLabel("valueIsNotNull");
             il.Br(valueIsNotNullLabel);

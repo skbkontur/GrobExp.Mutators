@@ -44,21 +44,19 @@ namespace GrobExp.ExpressionEmitters
                     il.Stloc(localLeft);
                     if(node.Method != null)
                     {
-                        FieldInfo hasValueField = type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
                         il.Ldloca(localLeft); // stack: [&left]
-                        il.Ldfld(hasValueField); // stack: [left.HasValue]
+                        context.EmitHasValueAccess(type); // stack: [left.HasValue]
                         il.Dup(); // stack: [left.HasValue, left.HasValue]
                         il.Ldloca(localRight); // stack: [left.HasValue, left.HasValue, &right]
-                        il.Ldfld(hasValueField); // stack: [left.HasValue, left.HasValue, right.HasValue]
+                        context.EmitHasValueAccess(type); // stack: [left.HasValue, left.HasValue, right.HasValue]
                         var notEqualLabel = il.DefineLabel("notEqual");
                         il.Bne(notEqualLabel); // stack: [left.HasValue]
                         var equalLabel = il.DefineLabel("equal");
                         il.Brfalse(equalLabel);
-                        FieldInfo valueField = type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
                         il.Ldloca(localLeft);
-                        il.Ldfld(valueField);
+                        context.EmitValueAccess(type);
                         il.Ldloca(localRight);
-                        il.Ldfld(valueField);
+                        context.EmitValueAccess(type);
                         il.Call(node.Method);
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
@@ -73,17 +71,15 @@ namespace GrobExp.ExpressionEmitters
                     else
                     {
                         il.Ldloca(localLeft);
-                        FieldInfo valueField = type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-                        il.Ldfld(valueField);
+                        context.EmitValueAccess(type);
                         il.Ldloca(localRight);
-                        il.Ldfld(valueField);
+                        context.EmitValueAccess(type);
                         var notEqualLabel = il.DefineLabel("notEqual");
                         il.Bne(notEqualLabel);
                         il.Ldloca(localLeft);
-                        FieldInfo hasValueField = type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
-                        il.Ldfld(hasValueField);
+                        context.EmitHasValueAccess(type);
                         il.Ldloca(localRight);
-                        il.Ldfld(hasValueField);
+                        context.EmitHasValueAccess(type);
                         il.Ceq();
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);

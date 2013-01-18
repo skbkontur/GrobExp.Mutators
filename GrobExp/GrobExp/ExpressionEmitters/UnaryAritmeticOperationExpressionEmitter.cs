@@ -35,11 +35,11 @@ namespace GrobExp.ExpressionEmitters
                     {
                         il.Stloc(temp);
                         il.Ldloca(temp);
-                        il.Ldfld(operandType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
+                        context.EmitHasValueAccess(operandType);
                         var returnFalseLabel = il.DefineLabel("returnFalse");
                         il.Brfalse(returnFalseLabel);
                         il.Ldloca(temp);
-                        il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                        context.EmitValueAccess(operandType);
                         if(node.Method != null)
                             il.Call(node.Method);
                         else if(operandType == typeof(bool?))
@@ -110,14 +110,14 @@ namespace GrobExp.ExpressionEmitters
                     {
                         il.Stloc(temp);
                         il.Ldloca(temp);
-                        il.Ldfld(operandType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
+                        context.EmitHasValueAccess(operandType);
                         var returnNullLabel = il.DefineLabel("returnLabel");
                         il.Brfalse(returnNullLabel);
                         Type argumentType = operandType.GetGenericArguments()[0];
                         if(node.Method != null)
                         {
                             il.Ldloca(temp);
-                            il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            context.EmitValueAccess(operandType);
                             il.Call(node.Method);
                         }
                         else
@@ -126,37 +126,37 @@ namespace GrobExp.ExpressionEmitters
                             {
                             case ExpressionType.UnaryPlus:
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 break;
                             case ExpressionType.Negate:
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 il.Neg();
                                 break;
                             case ExpressionType.NegateChecked:
                                 il.Ldc_I4(0);
                                 context.EmitConvert(typeof(int), argumentType);
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 il.Sub_Ovf(argumentType);
                                 break;
                             case ExpressionType.Increment:
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 il.Ldc_I4(1);
                                 context.EmitConvert(typeof(int), argumentType);
                                 il.Add();
                                 break;
                             case ExpressionType.Decrement:
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 il.Ldc_I4(1);
                                 context.EmitConvert(typeof(int), argumentType);
                                 il.Sub();
                                 break;
                             case ExpressionType.OnesComplement:
                                 il.Ldloca(temp);
-                                il.Ldfld(operandType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                                context.EmitValueAccess(operandType);
                                 il.Not();
                                 break;
                             default:

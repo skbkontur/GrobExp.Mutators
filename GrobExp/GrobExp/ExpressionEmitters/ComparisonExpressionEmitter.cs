@@ -31,13 +31,13 @@ namespace GrobExp.ExpressionEmitters
                         if(leftType.IsNullable())
                         {
                             il.Ldloca(localLeft);
-                            il.Ldfld(leftType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            context.EmitHasValueAccess(leftType);
                             il.Brfalse(returnNullLabel);
                         }
                         if(rightType.IsNullable())
                         {
                             il.Ldloca(localRight);
-                            il.Ldfld(rightType.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance));
+                            context.EmitHasValueAccess(rightType);
                             il.Brfalse(returnNullLabel);
                         }
                         if(!leftType.IsNullable())
@@ -45,14 +45,14 @@ namespace GrobExp.ExpressionEmitters
                         else
                         {
                             il.Ldloca(localLeft);
-                            il.Ldfld(leftType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                            context.EmitValueAccess(leftType);
                         }
                         if(!rightType.IsNullable())
                             il.Ldloc(localRight);
                         else
                         {
                             il.Ldloca(localRight);
-                            il.Ldfld(rightType.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance));
+                            context.EmitValueAccess(rightType);
                         }
                         il.Call(node.Method);
 
@@ -105,10 +105,9 @@ namespace GrobExp.ExpressionEmitters
                             il.Stloc(localRight);
                             il.Stloc(localLeft);
                             il.Ldloca(localLeft);
-                            FieldInfo valueField = type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
-                            il.Ldfld(valueField);
+                            context.EmitValueAccess(type);
                             il.Ldloca(localRight);
-                            il.Ldfld(valueField);
+                            context.EmitValueAccess(type);
                             var returnFalseLabel = il.DefineLabel("returnFalse");
 
                             Type argument = type.GetGenericArguments()[0];
@@ -130,10 +129,9 @@ namespace GrobExp.ExpressionEmitters
                                 throw new InvalidOperationException();
                             }
                             il.Ldloca(localLeft);
-                            FieldInfo hasValueField = type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
-                            il.Ldfld(hasValueField);
+                            context.EmitHasValueAccess(type);
                             il.Ldloca(localRight);
-                            il.Ldfld(hasValueField);
+                            context.EmitHasValueAccess(type);
                             il.And();
                             var doneLabel = il.DefineLabel("done");
                             il.Br(doneLabel);
@@ -150,19 +148,17 @@ namespace GrobExp.ExpressionEmitters
                         {
                             il.Stloc(localRight);
                             il.Stloc(localLeft);
-                            FieldInfo hasValueField = type.GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance);
                             il.Ldloca(localLeft);
-                            il.Ldfld(hasValueField);
+                            context.EmitHasValueAccess(type);
                             il.Ldloca(localRight);
-                            il.Ldfld(hasValueField);
+                            context.EmitHasValueAccess(type);
                             il.And();
                             var returnNullLabel = il.DefineLabel("returnNull");
                             il.Brfalse(returnNullLabel);
-                            FieldInfo valueField = type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance);
                             il.Ldloca(localLeft);
-                            il.Ldfld(valueField);
+                            context.EmitValueAccess(type);
                             il.Ldloca(localRight);
-                            il.Ldfld(valueField);
+                            context.EmitValueAccess(type);
                             var argumentType = type.GetGenericArguments()[0];
 
                             switch(node.NodeType)

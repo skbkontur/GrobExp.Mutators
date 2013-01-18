@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 
 using GrEmit;
@@ -9,7 +10,8 @@ namespace GrobExp.ExpressionEmitters
     {
         protected override bool Emit(BlockExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            foreach(var variable in node.Variables)
+            var variables = node.Variables.Where(variable => !context.VariablesToLocals.ContainsKey(variable)).ToArray();
+            foreach(var variable in variables)
             {
                 context.VariablesToLocals.Add(variable, context.DeclareLocal(variable.Type));
                 context.Variables.Push(variable);
@@ -45,23 +47,23 @@ namespace GrobExp.ExpressionEmitters
                     il.MarkLabel(doneLabel);
                 }
             }
-            if (node.Type == typeof(bool) && resultType == typeof(bool?))
+            if(node.Type == typeof(bool) && resultType == typeof(bool?))
             {
                 resultType = typeof(bool);
                 context.ConvertFromNullableBoolToBool();
             }
-            else if (node.Type == typeof(void) && resultType != typeof(void))
+            else if(node.Type == typeof(void) && resultType != typeof(void))
             {
                 // eat result of the last expression if the result of block is void
-                if (resultType.IsStruct())
+                if(resultType.IsStruct())
                 {
-                    using (var temp = context.DeclareLocal(resultType))
+                    using(var temp = context.DeclareLocal(resultType))
                         context.Il.Stloc(temp);
                 }
                 else context.Il.Pop();
                 resultType = typeof(void);
             }
-            foreach(var variable in node.Variables)
+            foreach(var variable in variables)
             {
                 context.VariablesToLocals[variable].Dispose();
                 context.VariablesToLocals.Remove(variable);

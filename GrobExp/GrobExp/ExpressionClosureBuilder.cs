@@ -21,52 +21,89 @@ namespace GrobExp
             typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
         }
 
-        public Type Build(out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out bool hasSubLambdas)
+        public LambdaExpression Build(out Type closureType, out ParameterExpression closureParameter, out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out bool hasSubLambdas)
         {
-            Visit(lambda);
+            var result = (LambdaExpression)Visit(lambda);
             typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.Static);
-            Type result = typeBuilder.CreateType();
-            BuildInitializer(result)();
-            constants = this.constants.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
-            parameters = this.parameters.ToDictionary(item => item.Key, item => result.GetField(item.Value.Name));
+            Type type = typeBuilder.CreateType();
+            closureType = type;
+            closureParameter = this.parameters.Count > 0 || this.constants.Count > 0 || this.hasSubLambdas ? Expression.Parameter(closureType) : null;
+            constants = this.constants.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
+            parameters = this.parameters.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
             hasSubLambdas = this.hasSubLambdas;
+            BuildInitializer(type, new ClosureSubstituter(closureParameter, parameters))();
+            return result;
+        }
+
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            if(node.NodeType != ExpressionType.Quote)
+                return base.VisitUnary(node);
+            ++quoteDepth;
+            localParameters.Push(new HashSet<ParameterExpression>());
+            var result = base.VisitUnary(node);
+            localParameters.Pop();
+            --quoteDepth;
+            if(quoteDepth == 0)
+                result = Visit(Expression.Constant(((UnaryExpression)result).Operand, result.Type));
             return result;
         }
 
         protected override Expression VisitLambda<T>(Expression<T> node)
         {
-            if(node != lambda)
-                hasSubLambdas = true;
-            localParameters.Push(new HashSet<ParameterExpression>(node.Parameters));
-            var res = base.VisitLambda(node);
-            localParameters.Pop();
+            Expression res;
+            if(quoteDepth == 0)
+            {
+                if(node != lambda)
+                    hasSubLambdas = true;
+                localParameters.Push(new HashSet<ParameterExpression>(node.Parameters));
+                res = base.VisitLambda(node);
+                localParameters.Pop();
+            }
+            else
+            {
+                var peek = localParameters.Peek();
+                foreach(var parameter in node.Parameters)
+                    peek.Add(parameter);
+                res = base.VisitLambda(node);
+                foreach(var parameter in node.Parameters)
+                    peek.Remove(parameter);
+            }
             return res;
         }
 
         protected override Expression VisitBlock(BlockExpression node)
         {
             var peek = localParameters.Peek();
-            foreach(var variable in node.Variables)
+            var variables = node.Variables.Where(variable => !peek.Contains(variable)).ToArray();
+            foreach(var variable in variables)
                 peek.Add(variable);
             var res = base.VisitBlock(node);
-            foreach(var variable in node.Variables)
+            foreach(var variable in variables)
+                peek.Remove(variable);
+            return res;
+        }
+
+        protected override CatchBlock VisitCatchBlock(CatchBlock node)
+        {
+            var peek = localParameters.Peek();
+            var variable = node.Variable;
+            if(variable != null && peek.Contains(variable))
+                variable = null;
+            if(variable != null)
+                peek.Add(variable);
+            var res = base.VisitCatchBlock(node);
+            if(variable != null)
                 peek.Remove(variable);
             return res;
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if(node.Value == null || node.Type.IsPrimitive || node.Type == typeof(string))
+            if(quoteDepth > 0 || node.Value == null || node.Type.IsPrimitive || node.Type == typeof(string))
                 return node;
-            var key = new KeyValuePair<Type, object>(node.Type, node.Value);
-            var field = (FieldInfo)hashtable[key];
-            if(field == null)
-            {
-                field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public | FieldAttributes.Static);
-                hashtable[key] = field;
-            }
             if(!constants.ContainsKey(node))
-                constants.Add(node, field);
+                constants.Add(node, BuildConstField(node.Type, node.Value));
             return node;
         }
 
@@ -81,7 +118,19 @@ namespace GrobExp
             return base.VisitParameter(node);
         }
 
-        private Action BuildInitializer(Type type)
+        private FieldInfo BuildConstField(Type type, object value)
+        {
+            var key = new KeyValuePair<Type, object>(type, value);
+            var field = (FieldInfo)hashtable[key];
+            if(field == null)
+            {
+                field = typeBuilder.DefineField(GetFieldName(type), GetFieldType(type), FieldAttributes.Public | FieldAttributes.Static);
+                hashtable[key] = field;
+            }
+            return field;
+        }
+
+        private Action BuildInitializer(Type type, ClosureSubstituter closureSubstituter)
         {
             var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, LambdaCompiler.Module, true);
             var il = new GroboIL(method);
@@ -91,7 +140,7 @@ namespace GrobExp
             {
                 var pair = (KeyValuePair<Type, object>)entry.Key;
                 var constType = pair.Key;
-                consts[index] = pair.Value;
+                consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
                 il.Ldarg(0);
                 il.Ldc_I4(index++);
                 il.Ldelem(typeof(object));
@@ -137,6 +186,8 @@ namespace GrobExp
         {
             return Format(type) + "_" + fieldId++;
         }
+
+        private int quoteDepth;
 
         private bool hasSubLambdas;
 

@@ -50,7 +50,7 @@ namespace Tests.AssignTests.ExclusiveOrAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.ExclusiveOrAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            var o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(123, f(o, 123));
             Assert.AreEqual(123, o.NullableIntArray[0, 0]);
@@ -71,7 +71,7 @@ namespace Tests.AssignTests.ExclusiveOrAssign
             Assert.IsNull(o.NullableIntArray[0, 0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(123, f(o, 123));
             Assert.AreEqual(123, o.NullableIntArray[0, 0]);

@@ -45,25 +45,17 @@ namespace Tests
             var f = LambdaCompiler.Compile(exp2);
             Assert.AreEqual(false, f(null));
             Assert.AreEqual(false, f(new TestClassA()));
-            Assert.AreEqual(false, f(new TestClassA{X = -1}));
-            Assert.AreEqual(true, f(new TestClassA{X = 1}));
-        }
-
-        private struct TestStructA
-        {
-            public string S { get; set; }
-            public TestStructB b;
-            public int? X { get; set; }
-            public int Y { get; set; }
-        }
-
-        private struct TestStructB
-        {
-            public string S { get; set; }
+            Assert.AreEqual(false, f(new TestClassA {X = -1}));
+            Assert.AreEqual(true, f(new TestClassA {X = 1}));
         }
 
         private class TestClassA
         {
+            public int F(bool b)
+            {
+                return b ? 1 : 0;
+            }
+
             public string S { get; set; }
             public TestClassA A { get; set; }
             public TestClassB B { get; set; }
@@ -76,11 +68,6 @@ namespace Tests
             public int Y;
             public bool Bool;
             public TestStructA structA;
-
-            public int F(bool b)
-            {
-                return b ? 1 : 0;
-            }
         }
 
         private class TestClassB
@@ -126,6 +113,19 @@ namespace Tests
         {
             public string S { get; set; }
             public int X { get; set; }
+        }
+
+        private struct TestStructA
+        {
+            public string S { get; set; }
+            public int? X { get; set; }
+            public int Y { get; set; }
+            public TestStructB b;
+        }
+
+        private struct TestStructB
+        {
+            public string S { get; set; }
         }
 
         private struct Qzz

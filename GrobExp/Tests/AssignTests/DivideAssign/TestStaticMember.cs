@@ -10,14 +10,6 @@ namespace Tests.AssignTests.DivideAssign
     [TestFixture]
     public class TestStaticMember
     {
-        private class TestClassA
-        {
-            public static int IntProp { get; set; }
-            public static double DoubleField;
-            public static int? NullableIntProp { get; set; }
-            public static uint UIntField;
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -92,6 +84,14 @@ namespace Tests.AssignTests.DivideAssign
             TestClassA.UIntField = uint.MaxValue - 3 + 1;
             Assert.AreEqual(2147483646, f(2));
             Assert.AreEqual(2147483646, TestClassA.UIntField);
+        }
+
+        private class TestClassA
+        {
+            public static int IntProp { get; set; }
+            public static int? NullableIntProp { get; set; }
+            public static double DoubleField;
+            public static uint UIntField;
         }
     }
 }

@@ -6,27 +6,23 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
-using GrobExp;
-
 using Microsoft.CSharp.RuntimeBinder;
 
 using NUnit.Framework;
 
-using Tests.TryCatchTests;
-
-using Binder = System.Reflection.Binder;
+using Binder = Microsoft.CSharp.RuntimeBinder.Binder;
 
 namespace Tests
 {
-    public class TestSubLambda: TestBase
+    public class TestSubLambda : TestBase
     {
         [Test]
         public void TestSubLambda1()
         {
             Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == a.S);
             var f = Compile(exp);
-            Assert.IsTrue(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
-            Assert.IsFalse(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB(), } }));
+            Assert.IsTrue(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
+            Assert.IsFalse(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB(),}}));
         }
 
         [Test]
@@ -34,13 +30,9 @@ namespace Tests
         {
             Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == "zzz");
             var f = Compile(exp);
-            Assert.IsTrue(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
-            Assert.IsFalse(f(new TestClassA { S = "zzz", ArrayB = new[] { new TestClassB(), } }));
+            Assert.IsTrue(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
+            Assert.IsFalse(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB(),}}));
         }
-
-        private static readonly MethodInfo anyMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any())).Body).Method.GetGenericMethodDefinition();
-
-        private static readonly MethodInfo anyWithPredicateMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any(i => i == 0))).Body).Method.GetGenericMethodDefinition();
 
         [Test]
         public void TestSubLambda2()
@@ -51,30 +43,11 @@ namespace Tests
             Expression assignTemp = Expression.Assign(temp, where);
             Expression assignS = Expression.Assign(Expression.MakeMemberAccess(exp.Parameters[0], typeof(TestClassA).GetProperty("S", BindingFlags.Public | BindingFlags.Instance)), Expression.Constant("zzz"));
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestClassB)), temp);
-            var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);
+            var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
             var f = Compile(exp2);
-            Assert.IsTrue(f(new TestClassA { S = "qzz", ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
+            Assert.IsTrue(f(new TestClassA {S = "qzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
         }
-
-
-        private void CompileAndSave(LambdaExpression lambda)
-        {
-            var da = AppDomain.CurrentDomain.DefineDynamicAssembly(
-            new AssemblyName("dyn"), // call it whatever you want
-            AssemblyBuilderAccess.Save);
-
-            var dm = da.DefineDynamicModule("dyn_mod", "dyn.dll");
-            var dt = dm.DefineType("dyn_type");
-            var method = dt.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static);
-
-            lambda.CompileToMethod(method);
-            dt.CreateType();
-
-            da.Save("dyn.dll");
-        }
-        
-        static Func<int, int, int> func = (x, y) => x + y;
 
         [Test, Ignore]
         public void CompileAndSave()
@@ -101,16 +74,17 @@ namespace Tests
 
             var x = Expression.Parameter(typeof(object), "x");
             var y = Expression.Parameter(typeof(object), "y");
-            var binder = Microsoft.CSharp.RuntimeBinder.Binder.BinaryOperation(
+            var binder = Binder.BinaryOperation(
                 CSharpBinderFlags.None, ExpressionType.Add, typeof(TestDynamic),
-                new CSharpArgumentInfo[] { 
-        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null), 
-        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)});
+                new[]
+                    {
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                    });
             var exp = Expression.Lambda<Func<object, object, object>>(
                 Expression.Dynamic(binder, typeof(object), x, y),
-                new[] { x, y }
+                new[] {x, y}
                 );
-
 
             CompileAndSave(exp);
         }
@@ -118,7 +92,7 @@ namespace Tests
         [Test, Ignore]
         public void TestDebugInfo()
         {
-            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), System.Reflection.Emit.AssemblyBuilderAccess.RunAndSave);
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
 
             var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
             var type = mod.DefineType("baz", TypeAttributes.Public);
@@ -127,7 +101,6 @@ namespace Tests
             var sdi = Expression.SymbolDocument("TestDebug.txt");
 
             var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
-
 
             var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
             var block = Expression.Block(di, exp);
@@ -154,10 +127,10 @@ namespace Tests
             Expression assignTemp = Expression.Assign(temp, where);
             Expression assignS = Expression.Assign(Expression.MakeMemberAccess(exp.Parameters[0], typeof(TestStructA).GetProperty("S", BindingFlags.Public | BindingFlags.Instance)), Expression.Constant("zzz"));
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestStructB)), temp);
-            var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);
+            var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
             var f = Compile(exp2);
-            Assert.IsTrue(f(new TestStructA { S = "qzz", ArrayB = new[] { new TestStructB { S = "zzz" }, } }));
+            Assert.IsTrue(f(new TestStructA {S = "qzz", ArrayB = new[] {new TestStructB {S = "zzz"},}}));
         }
 
         [Test]
@@ -172,7 +145,7 @@ namespace Tests
             Expression<Func<TestStructA, bool>> exp = Expression.Lambda<Func<TestStructA, bool>>(any, parameterA);
             var f = Compile(exp);
             aaa.Y = 1;
-            Assert.IsFalse(f(new TestStructA { ArrayB = new[] { new TestStructB { Y = 1 }, } }));
+            Assert.IsFalse(f(new TestStructA {ArrayB = new[] {new TestStructB {Y = 1},}}));
         }
 
         [Test]
@@ -181,8 +154,8 @@ namespace Tests
             Expression<Func<TestClassA, int>> exp = data => data.ArrayB.SelectMany(b => b.C.ArrayD, (classB, classD) => classD.ArrayE.FirstOrDefault(c => c.S == "zzz").X).Where(i => i > 0).FirstOrDefault();
             var f = Compile(exp);
             var a = new TestClassA
-            {
-                ArrayB = new[]
+                {
+                    ArrayB = new[]
                         {
                             new TestClassB
                                 {
@@ -219,7 +192,7 @@ namespace Tests
                                         }
                                 },
                         }
-            };
+                };
             Assert.AreEqual(1, f(a));
             Assert.AreEqual(0, f(null));
         }
@@ -235,10 +208,10 @@ namespace Tests
             Expression left = new ParameterReplacer(path.Parameters[0], exp.Parameters[0]).Visit(path.Body);
             Expression assignS = Expression.Assign(left, Expression.Constant("zzz"));
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestClassB)), temp);
-            var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] { temp }, assignTemp, assignS, any), exp.Parameters);
+            var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
             var f = Compile(exp2);
-            Assert.IsTrue(f(new TestClassA { ArrayB = new[] { new TestClassB { S = "zzz" }, } }));
+            Assert.IsTrue(f(new TestClassA {ArrayB = new[] {new TestClassB {S = "zzz"},}}));
         }
 
         [Test]
@@ -258,8 +231,8 @@ namespace Tests
                                         {
                                             ArrayD = new[]
                                                 {
-                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } },
-                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } }
+                                                    new TestClassD {S = "zzz", ArrayE = new[] {new TestClassE {S = "zzz"},}},
+                                                    new TestClassD {S = "zzz", ArrayE = new[] {new TestClassE {S = "zzz"},}}
                                                 }
                                         }
                                 },
@@ -277,8 +250,8 @@ namespace Tests
                                         {
                                             ArrayD = new[]
                                                 {
-                                                    new TestClassD { S = "qxx", ArrayE = new[] { new TestClassE { S = "zzz" }, } },
-                                                    new TestClassD { S = "zzz", ArrayE = new[] { new TestClassE { S = "zzz" }, } }
+                                                    new TestClassD {S = "qxx", ArrayE = new[] {new TestClassE {S = "zzz"},}},
+                                                    new TestClassD {S = "zzz", ArrayE = new[] {new TestClassE {S = "zzz"},}}
                                                 }
                                         }
                                 },
@@ -286,22 +259,34 @@ namespace Tests
                 }));
         }
 
-        private struct TestStructA
+        private void CompileAndSave(LambdaExpression lambda)
         {
-            public string S { get; set; }
-            public TestStructB[] ArrayB { get; set; }
-            public int? X { get; set; }
-            public int Y { get; set; }
+            var da = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                new AssemblyName("dyn"), // call it whatever you want
+                AssemblyBuilderAccess.Save);
+
+            var dm = da.DefineDynamicModule("dyn_mod", "dyn.dll");
+            var dt = dm.DefineType("dyn_type");
+            var method = dt.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static);
+
+            lambda.CompileToMethod(method);
+            dt.CreateType();
+
+            da.Save("dyn.dll");
         }
 
-        private struct TestStructB
-        {
-            public string S { get; set; }
-            public int Y { get; set; }
-        }
+        private static readonly MethodInfo anyMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any())).Body).Method.GetGenericMethodDefinition();
+
+        private static readonly MethodInfo anyWithPredicateMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any(i => i == 0))).Body).Method.GetGenericMethodDefinition();
+        private static Func<int, int, int> func = (x, y) => x + y;
 
         private class TestClassA
         {
+            public int F(bool b)
+            {
+                return b ? 1 : 0;
+            }
+
             public string S { get; set; }
             public TestClassA A { get; set; }
             public TestClassB B { get; set; }
@@ -314,11 +299,6 @@ namespace Tests
             public int Y;
             public int Z;
             public bool Bool;
-
-            public int F(bool b)
-            {
-                return b ? 1 : 0;
-            }
         }
 
         private class TestClassB
@@ -366,5 +346,18 @@ namespace Tests
             public int X { get; set; }
         }
 
+        private struct TestStructA
+        {
+            public string S { get; set; }
+            public TestStructB[] ArrayB { get; set; }
+            public int? X { get; set; }
+            public int Y { get; set; }
+        }
+
+        private struct TestStructB
+        {
+            public string S { get; set; }
+            public int Y { get; set; }
+        }
     }
 }

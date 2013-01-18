@@ -14,13 +14,13 @@ namespace GrobExp.ExpressionEmitters
     {
         public static Type BuildDynamicMethodInvoker(Type closureType, Type resultType, Type[] parameterTypes, bool buildFinalizer = false)
         {
-            if (buildFinalizer)
+            if(buildFinalizer)
             {
                 var type = BuildDynamicMethodInvokerInternal(closureType, parameterTypes.Length, resultType == typeof(void));
-                if (!type.IsGenericType)
+                if(!type.IsGenericType)
                     return type;
                 var genericArguments = new List<Type>(parameterTypes);
-                if (resultType != typeof(void))
+                if(resultType != typeof(void))
                     genericArguments.Add(resultType);
                 return type.MakeGenericType(genericArguments.ToArray());
             }
@@ -40,9 +40,9 @@ namespace GrobExp.ExpressionEmitters
                         }
                     }
                 }
-                if (!type.IsGenericType)
+                if(!type.IsGenericType)
                     return type;
-                var genericArguments = new List<Type> { closureType };
+                var genericArguments = new List<Type> {closureType};
                 genericArguments.AddRange(parameterTypes);
                 if(resultType != typeof(void))
                     genericArguments.Add(resultType);
@@ -123,7 +123,7 @@ namespace GrobExp.ExpressionEmitters
             MethodInfo objectFinalizer = typeof(Object).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
             var finalizer = typeBuilder.DefineMethod("Finalize", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
             il = new GroboIL(finalizer);
-            foreach (var field in closureType.GetFields(BindingFlags.Static | BindingFlags.Public))
+            foreach(var field in closureType.GetFields(BindingFlags.Static | BindingFlags.Public))
             {
                 if(!field.FieldType.IsValueType)
                 {

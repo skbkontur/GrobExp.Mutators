@@ -95,7 +95,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(double), "b");
             Expression<Func<TestClassA, double, double>> exp = Expression.Lambda<Func<TestClassA, double, double>>(Expression.DivideAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("DoubleArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { DoubleArray = new[] { 1.0 } };
+            var o = new TestClassA {DoubleArray = new[] {1.0}};
             Assert.AreEqual(0.5, f(o, 2));
             Assert.AreEqual(0.5, o.DoubleArray[0]);
             o.DoubleArray[0] = 5;
@@ -107,7 +107,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { DoubleArray = new[] { 1.0 } };
+            o = new TestClassA {DoubleArray = new[] {1.0}};
             Assert.AreEqual(0.5, f(o, 2));
             Assert.AreEqual(0.5, o.DoubleArray[0]);
             o.DoubleArray[0] = 5;
@@ -126,7 +126,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.DivideAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntArray = new[] { 1U } };
+            var o = new TestClassA {UIntArray = new[] {1U}};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.UIntArray[0]);
             o.UIntArray[0] = 5;
@@ -138,7 +138,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntArray = new[] { 1U } };
+            o = new TestClassA {UIntArray = new[] {1U}};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.UIntArray[0]);
             o.UIntArray[0] = 5;
@@ -153,8 +153,8 @@ namespace Tests.AssignTests.DivideAssign
         private class TestClassA
         {
             public int[] IntArray { get; set; }
-            public double[] DoubleArray;
             public int?[] NullableIntArray { get; set; }
+            public double[] DoubleArray;
             public uint[] UIntArray;
         }
     }

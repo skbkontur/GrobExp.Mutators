@@ -31,13 +31,13 @@ namespace Tests
             ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Unbox(Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("X")), typeof(int)), parameter);
             var f = LambdaCompiler.Compile(exp);
-            Assert.AreEqual(-1, f(new TestClassA{X = -1}));
-            Assert.AreEqual(1, f(new TestClassA { X = 1 }));
+            Assert.AreEqual(-1, f(new TestClassA {X = -1}));
+            Assert.AreEqual(1, f(new TestClassA {X = 1}));
             Assert.AreEqual(0, f(null));
             Assert.AreEqual(0, f(new TestClassA()));
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            Assert.AreEqual(-1, f(new TestClassA { X = -1 }));
-            Assert.AreEqual(1, f(new TestClassA { X = 1 }));
+            Assert.AreEqual(-1, f(new TestClassA {X = -1}));
+            Assert.AreEqual(1, f(new TestClassA {X = 1}));
             Assert.Throws<NullReferenceException>(() => f(new TestClassA()));
             Assert.Throws<NullReferenceException>(() => f(null));
         }
@@ -57,16 +57,16 @@ namespace Tests
             Assert.Throws<NullReferenceException>(() => f(null));
         }
 
+        private class TestClassA
+        {
+            public object X;
+        }
+
         private enum TestEnum
         {
             Zero,
             One,
             Two
-        }
-
-        private class TestClassA
-        {
-            public object X;
         }
     }
 }

@@ -22,7 +22,7 @@ namespace Tests
         [Test]
         public void TestMemberInit1()
         {
-            Expression<Func<int, string, TestClassA>> exp = (i, s) => new TestClassA { S = s, Y = i, B = new TestClassB{S = "qxx"}};
+            Expression<Func<int, string, TestClassA>> exp = (i, s) => new TestClassA {S = s, Y = i, B = new TestClassB {S = "qxx"}};
             var f = LambdaCompiler.Compile(exp);
             var a = f(10, "zzz");
             Assert.AreEqual(10, a.Y);
@@ -34,7 +34,7 @@ namespace Tests
         [Test]
         public void TestMemberInit2()
         {
-            Expression<Func<int?, string, TestStructA>> exp = (i, s) => new TestStructA { S = s, X = i, B = new TestStructB{S = "qxx"} };
+            Expression<Func<int?, string, TestStructA>> exp = (i, s) => new TestStructA {S = s, X = i, B = new TestStructB {S = "qxx"}};
             var f = LambdaCompiler.Compile(exp);
             var a = f(10, "zzz");
             Assert.AreEqual(10, a.X);
@@ -45,7 +45,7 @@ namespace Tests
         [Test]
         public void TestMemberInit3()
         {
-            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA { IntArray = new[] {i, j} };
+            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA {IntArray = new[] {i, j}};
             var f = LambdaCompiler.Compile(exp);
             var a = f(10, 20);
             Assert.IsNotNull(a.IntArray);
@@ -57,7 +57,7 @@ namespace Tests
         [Test]
         public void TestMemberInit4()
         {
-            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA { IntList = new List<int> {i, j} };
+            Expression<Func<int, int, TestClassA>> exp = (i, j) => new TestClassA {IntList = new List<int> {i, j}};
             var f = LambdaCompiler.Compile(exp);
             var a = f(10, 20);
             Assert.IsNotNull(a.IntList);
@@ -69,7 +69,7 @@ namespace Tests
         [Test]
         public void TestNewArrayInit1()
         {
-            Expression<Func<int?, int?, int?, int?[]>> exp = (a, b, c) => new[] { a, b, c };
+            Expression<Func<int?, int?, int?, int?[]>> exp = (a, b, c) => new[] {a, b, c};
             var f = LambdaCompiler.Compile(exp);
             var arr = f(1, null, 2);
             Assert.IsNotNull(arr);
@@ -82,7 +82,7 @@ namespace Tests
         [Test]
         public void TestNewArrayInit2()
         {
-            Expression<Func<string, string, string, string[]>> exp = (a, b, c) => new[] { a, b, c };
+            Expression<Func<string, string, string, string[]>> exp = (a, b, c) => new[] {a, b, c};
             var f = LambdaCompiler.Compile(exp);
             var arr = f("zzz", null, "qxx");
             Assert.IsNotNull(arr);
@@ -95,7 +95,7 @@ namespace Tests
         [Test]
         public void TestNewArrayInit3()
         {
-            Expression<Func<long, long, long, long[]>> exp = (a, b, c) => new[] { a, b, c };
+            Expression<Func<long, long, long, long[]>> exp = (a, b, c) => new[] {a, b, c};
             var f = LambdaCompiler.Compile(exp);
             var arr = f(1, long.MaxValue, long.MinValue);
             Assert.IsNotNull(arr);
@@ -124,12 +124,11 @@ namespace Tests
             var arr = f(null);
             Assert.IsNotNull(arr);
             Assert.AreEqual(0, arr.Length);
-            arr = f(new TestClassA{Y = 1});
+            arr = f(new TestClassA {Y = 1});
             Assert.IsNotNull(arr);
             Assert.AreEqual(1, arr.Length);
             Assert.AreEqual(null, arr[0]);
         }
-
 
         public struct TestStructA
         {
@@ -148,9 +147,9 @@ namespace Tests
         {
             public string S { get; set; }
             public TestClassB B { get; set; }
-            public int Y;
             public int[] IntArray { get; set; }
             public List<int> IntList { get; set; }
+            public int Y;
         }
 
         private class TestClassB

@@ -10,14 +10,6 @@ namespace Tests.AssignTests.DivideAssign
     [TestFixture]
     public class TestInstanceMember
     {
-        private class TestClassA
-        {
-            public int IntProp { get; set; }
-            public double DoubleField;
-            public int? NullableIntProp { get; set; }
-            public uint UIntField;
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -25,7 +17,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.DivideAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{IntProp = 1};
+            var o = new TestClassA {IntProp = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.IntProp);
             o.IntProp = 5;
@@ -37,7 +29,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { IntProp = 1 };
+            o = new TestClassA {IntProp = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.IntProp);
             o.IntProp = 5;
@@ -56,7 +48,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(double), "b");
             Expression<Func<TestClassA, double, double>> exp = Expression.Lambda<Func<TestClassA, double, double>>(Expression.DivideAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("DoubleField")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{DoubleField = 1};
+            var o = new TestClassA {DoubleField = 1};
             Assert.AreEqual(0.5, f(o, 2));
             Assert.AreEqual(0.5, o.DoubleField);
             o.DoubleField = 5;
@@ -68,7 +60,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { DoubleField = 1 };
+            o = new TestClassA {DoubleField = 1};
             Assert.AreEqual(0.5, f(o, 2));
             Assert.AreEqual(0.5, o.DoubleField);
             o.DoubleField = 5;
@@ -87,7 +79,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.DivideAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{NullableIntProp = 1};
+            var o = new TestClassA {NullableIntProp = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 5;
@@ -107,7 +99,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.IsNull(o.NullableIntProp);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableIntProp = 1 };
+            o = new TestClassA {NullableIntProp = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 5;
@@ -134,7 +126,7 @@ namespace Tests.AssignTests.DivideAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.DivideAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntField")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntField = 1 };
+            var o = new TestClassA {UIntField = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.UIntField);
             o.UIntField = 5;
@@ -146,7 +138,7 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntField = 1 };
+            o = new TestClassA {UIntField = 1};
             Assert.AreEqual(0, f(o, 2));
             Assert.AreEqual(0, o.UIntField);
             o.UIntField = 5;
@@ -156,6 +148,14 @@ namespace Tests.AssignTests.DivideAssign
             Assert.AreEqual(2147483646, f(o, 2));
             Assert.AreEqual(2147483646, o.UIntField);
             Assert.Throws<NullReferenceException>(() => f(null, 1));
+        }
+
+        private class TestClassA
+        {
+            public int IntProp { get; set; }
+            public int? NullableIntProp { get; set; }
+            public double DoubleField;
+            public uint UIntField;
         }
     }
 }

@@ -50,7 +50,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.ModuloAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            var o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 1;
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.NullableIntArray[0, 0]);
@@ -71,7 +71,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.IsNull(o.NullableIntArray[0, 0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 1;
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.NullableIntArray[0, 0]);
@@ -99,7 +99,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.ModuloAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntArray = new uint[1, 1] };
+            var o = new TestClassA {UIntArray = new uint[1,1]};
             o.UIntArray[0, 0] = 1;
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntArray[0, 0]);
@@ -112,7 +112,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntArray = new uint[1, 1] };
+            o = new TestClassA {UIntArray = new uint[1,1]};
             o.UIntArray[0, 0] = 1;
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntArray[0, 0]);

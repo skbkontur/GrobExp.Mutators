@@ -22,16 +22,16 @@ namespace Tests
         {
             switch(x)
             {
-                case 0:
-                case 2:
+            case 0:
+            case 2:
                 return "zzz";
-                case 5:
-                case 1000001:
+            case 5:
+            case 1000001:
                 return "qxx";
-                case 7:
-                case 1000000:
+            case 7:
+            case 1000000:
                 return "qzz";
-                default:
+            default:
                 return "xxx";
             }
         }
@@ -40,16 +40,16 @@ namespace Tests
         {
             switch(s)
             {
-                case "0":
-                case "2":
+            case "0":
+            case "2":
                 return "zzz";
-                case "5":
-                case "1000001":
+            case "5":
+            case "1000001":
                 return "qxx";
-                case "7":
-                case "1000000":
+            case "7":
+            case "1000000":
                 return "qzz";
-                default:
+            default:
                 return "xxx";
             }
         }
@@ -130,13 +130,11 @@ namespace Tests
             MeasureSpeed(exp.Compile(), a, 1000000, ethalon);
         }
 
-        static Func<int, int, int> func = (x, y) => x + y;
-
         [Test, Ignore]
         public void TestInvoke1()
         {
             Expression<Func<TestClassA, int>> exp = o => func(o.Y, o.Z);
-            var a = new TestClassA{Y = 1, Z = 2};
+            var a = new TestClassA {Y = 1, Z = 2};
             Console.WriteLine("Compile");
             var ethalon = MeasureSpeed(exp.Compile(), a, 100000000, null);
             Console.WriteLine("Sharp");
@@ -153,7 +151,7 @@ namespace Tests
             Expression<Func<int, int, int>> lambda = (x, y) => x + y;
             ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(lambda, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), parameter);
-            var a = new TestClassA{Y = 1, Z = 2};
+            var a = new TestClassA {Y = 1, Z = 2};
             Console.WriteLine("Sharp");
             var ethalon = MeasureSpeed(Func5, a, 100000000, null);
             Console.WriteLine("GroboCompile without checking");
@@ -179,20 +177,21 @@ namespace Tests
             ParameterExpression result = Expression.Parameter(typeof(int), "result");
             LabelTarget label = Expression.Label(typeof(int));
             BlockExpression block = Expression.Block(
-                new[] { result },
+                new[] {result},
                 Expression.Assign(result, Expression.Constant(1)),
-                    Expression.Loop(
-                       Expression.IfThenElse(
-                           Expression.GreaterThan(value, Expression.Constant(1)),
-                           Expression.MultiplyAssign(result,
-                               Expression.PostDecrementAssign(value)),
-                           Expression.Break(label, result)
-                       ),
-                   label
-                )
-            );
+                Expression.Loop(
+                    Expression.IfThenElse(
+                        Expression.GreaterThan(value, Expression.Constant(1)),
+                        Expression.MultiplyAssign(result,
+                                                  Expression.PostDecrementAssign(value)),
+                        Expression.Break(label, result)
+                        ),
+                    label
+                    )
+                );
 
-            Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(block, value); Console.WriteLine("Sharp");
+            Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(block, value);
+            Console.WriteLine("Sharp");
 
             var ethalon = MeasureSpeed(Func6, 5, 100000000, null);
             Console.WriteLine("GroboCompile without checking");
@@ -204,8 +203,6 @@ namespace Tests
             Func<int, int> compile = exp.Compile();
             MeasureSpeed(compile, 5, 100000000, ethalon);
         }
-
-
 
         [Test, Ignore]
         public void TestCalls()
@@ -244,6 +241,8 @@ namespace Tests
         }
 
         public static int x;
+        public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        public static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         public class TestImpl : ITest
         {
@@ -256,6 +255,72 @@ namespace Tests
             {
                 ++x;
             }
+        }
+
+        public class TestClassA
+        {
+            public int F(bool b)
+            {
+                return b ? 1 : 0;
+            }
+
+            public string S { get; set; }
+            public TestClassA A { get; set; }
+            public TestClassB B { get; set; }
+            public TestClassB[] ArrayB { get; set; }
+            public int[] IntArray { get; set; }
+            public int? X;
+            public Guid Guid = Guid.Empty;
+            public Guid? NullableGuid;
+            public bool? NullableBool;
+            public int Y;
+            public int Z;
+            public bool Bool;
+        }
+
+        public class TestClassB
+        {
+            public int? F2(int? x)
+            {
+                return x;
+            }
+
+            public int? F( /*Qzz*/ int a, int b)
+            {
+                return b;
+            }
+
+            public string S { get; set; }
+
+            public TestClassC C { get; set; }
+            public int? X;
+            public int Y;
+        }
+
+        public class TestClassC
+        {
+            public string S { get; set; }
+
+            public TestClassD D { get; set; }
+
+            public TestClassD[] ArrayD { get; set; }
+        }
+
+        public class TestClassD
+        {
+            public TestClassE E { get; set; }
+            public TestClassE[] ArrayE { get; set; }
+            public string Z { get; set; }
+
+            public int? X { get; set; }
+
+            public string S;
+        }
+
+        public class TestClassE
+        {
+            public string S { get; set; }
+            public int X { get; set; }
         }
 
         public interface ITest
@@ -289,8 +354,6 @@ namespace Tests
         {
             return a.ArrayB.Any(b => b.S == a.S && b.C.ArrayD.All(d => d.S == b.S && d.ArrayE.Any(e => e.S == a.S && e.S == b.S && e.S == d.S)));
         }
-        
-        Func<int, int, int> xfunc = (x, y) => x + y;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private int Func4(TestClassA a)
@@ -310,7 +373,7 @@ namespace Tests
             var result = 1;
             while(true)
             {
-                if (n > 1)
+                if(n > 1)
                     result *= n--;
                 else break;
             }
@@ -362,7 +425,7 @@ namespace Tests
             il.Add();
             il.Ret();
             var type = typeBuilder.CreateType();
-            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] { typeof(object) }, Module, true);
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] {typeof(object)}, Module, true);
             il = new GroboIL(dynamicMethod);
             il.Ldarg(0);
             il.Ldftn(type.GetMethod("zzz"));
@@ -456,7 +519,7 @@ namespace Tests
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
         {
-            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] { typeof(DynamicMethod) }, Module, true);
+            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, Module, true);
             var il = new GroboIL(method);
             il.Ldarg(0); // stack: [dynamicMethod]
             MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -499,78 +562,12 @@ namespace Tests
             return elapsed.TotalSeconds / iter;
         }
 
-        public static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
-        public static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+        private static readonly Func<int, int, int> func = (x, y) => x + y;
+        private readonly Func<int, int, int> xfunc = (x, y) => x + y;
 
         private volatile bool stop;
 
         private static readonly FieldInfo xField = (FieldInfo)((MemberExpression)((Expression<Func<int>>)(() => x)).Body).Member;
         private static readonly Func<DynamicMethod, IntPtr> dynamicMethodPointerExtractor = EmitDynamicMethodPointerExtractor();
-
-        public class TestClassA
-        {
-            public int F(bool b)
-            {
-                return b ? 1 : 0;
-            }
-
-            public string S { get; set; }
-            public TestClassA A { get; set; }
-            public TestClassB B { get; set; }
-            public TestClassB[] ArrayB { get; set; }
-            public int[] IntArray { get; set; }
-            public int? X;
-            public Guid Guid = Guid.Empty;
-            public Guid? NullableGuid;
-            public bool? NullableBool;
-            public int Y;
-            public int Z;
-            public bool Bool;
-        }
-
-        public class TestClassB
-        {
-            public int? F2(int? x)
-            {
-                return x;
-            }
-
-            public int? F( /*Qzz*/ int a, int b)
-            {
-                return b;
-            }
-
-            public string S { get; set; }
-
-            public TestClassC C { get; set; }
-            public int? X;
-            public int Y;
-        }
-
-        public class TestClassC
-        {
-            public string S { get; set; }
-
-            public TestClassD D { get; set; }
-
-            public TestClassD[] ArrayD { get; set; }
-        }
-
-        public class TestClassD
-        {
-            public TestClassE E { get; set; }
-            public TestClassE[] ArrayE { get; set; }
-            public string Z { get; set; }
-
-            public int? X { get; set; }
-
-            public string S;
-        }
-
-        public class TestClassE
-        {
-            public string S { get; set; }
-            public int X { get; set; }
-        }
     }
 }

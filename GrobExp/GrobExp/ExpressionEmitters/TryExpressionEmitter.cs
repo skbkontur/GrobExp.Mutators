@@ -44,24 +44,30 @@ namespace GrobExp.ExpressionEmitters
             }
             foreach(var catchBlock in node.Handlers)
             {
+                bool disposeVariable = false;
+                var variable = catchBlock.Variable;
                 if(catchBlock.Filter == null)
                 {
                     il.BeginCatchBlock(catchBlock.Test);
-                    if(catchBlock.Variable == null)
+                    if(variable == null)
                         il.Pop();
                     else
                     {
                         // todo вызвать ф-цию из AssignExpressionEmitter
-                        var index = Array.IndexOf(context.Parameters, catchBlock.Variable);
+                        var index = Array.IndexOf(context.Parameters, variable);
                         if(index >= 0)
                             il.Starg(index);
                         else
                         {
-                            EmittingContext.LocalHolder variable;
-                            if(context.VariablesToLocals.TryGetValue(catchBlock.Variable, out variable))
-                                il.Stloc(variable);
-                            else
-                                throw new InvalidOperationException("Unknown parameter " + catchBlock.Variable);
+                            EmittingContext.LocalHolder local;
+                            if(!context.VariablesToLocals.TryGetValue(variable, out local))
+                            {
+                                local = context.DeclareLocal(variable.Type);
+                                context.VariablesToLocals.Add(variable, local);
+                                context.Variables.Push(variable);
+                                disposeVariable = true;
+                            }
+                            il.Stloc(local);
                         }
                     }
                 }
@@ -77,21 +83,25 @@ namespace GrobExp.ExpressionEmitters
                     var endFilterLabel = il.DefineLabel("endFilter");
                     il.Br(endFilterLabel);
                     il.MarkLabel(rightTypeLabel);
-                    if(catchBlock.Variable == null)
+                    if(variable == null)
                         il.Pop();
                     else
                     {
                         // todo вызвать ф-цию из AssignExpressionEmitter
-                        var index = Array.IndexOf(context.Parameters, catchBlock.Variable);
+                        var index = Array.IndexOf(context.Parameters, variable);
                         if(index >= 0)
                             il.Starg(index);
                         else
                         {
-                            EmittingContext.LocalHolder variable;
-                            if(context.VariablesToLocals.TryGetValue(catchBlock.Variable, out variable))
-                                il.Stloc(variable);
-                            else
-                                throw new InvalidOperationException("Unknown parameter " + catchBlock.Variable);
+                            EmittingContext.LocalHolder local;
+                            if(!context.VariablesToLocals.TryGetValue(variable, out local))
+                            {
+                                local = context.DeclareLocal(variable.Type);
+                                context.VariablesToLocals.Add(variable, local);
+                                context.Variables.Push(variable);
+                                disposeVariable = true;
+                            }
+                            il.Stloc(local);
                         }
                     }
                     GroboIL.Label returnFalseLabel = context.CanReturn ? il.DefineLabel("returnFalse") : null;
@@ -112,6 +122,13 @@ namespace GrobExp.ExpressionEmitters
                 context.EmitLoadArguments(catchBlock.Body);
                 if(catchBlock.Body.Type != typeof(void))
                     il.Stloc(retValue);
+
+                if(disposeVariable)
+                {
+                    context.VariablesToLocals[variable].Dispose();
+                    context.VariablesToLocals.Remove(variable);
+                    context.Variables.Pop();
+                }
             }
 
             if(node.Fault != null)

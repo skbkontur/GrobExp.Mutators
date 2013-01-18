@@ -7,8 +7,6 @@ using Microsoft.CSharp.RuntimeBinder;
 
 using NUnit.Framework;
 
-using Tests.TryCatchTests;
-
 namespace Tests
 {
     [TestFixture]

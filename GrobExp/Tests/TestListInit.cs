@@ -39,7 +39,7 @@ namespace Tests
         [Test]
         public void TestStruct()
         {
-            Expression<Func<TestStructA>> exp = () => new TestStructA(3) { 1, 2 };
+            Expression<Func<TestStructA>> exp = () => new TestStructA(3) {1, 2};
             var f = LambdaCompiler.Compile(exp);
             var list = f();
             Assert.IsNotNull(list);
@@ -48,18 +48,11 @@ namespace Tests
             Assert.AreEqual(2, list[1]);
         }
 
-        private struct TestStructA:IEnumerable<int>
+        private struct TestStructA : IEnumerable<int>
         {
-            private readonly List<int> list;
-
             public TestStructA(int x)
             {
                 list = new List<int>();
-            }
-
-            public void Add(int x)
-            {
-                list.Add(x);
             }
 
             public IEnumerator<int> GetEnumerator()
@@ -72,10 +65,15 @@ namespace Tests
                 return GetEnumerator();
             }
 
-            public int Count{get { return list.Count; }}
+            public void Add(int x)
+            {
+                list.Add(x);
+            }
+
+            public int Count { get { return list.Count; } }
 
             public int this[int index] { get { return list[index]; } set { list[index] = value; } }
+            private readonly List<int> list;
         }
-
     }
 }

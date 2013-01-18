@@ -29,12 +29,5 @@ namespace GrobExp
             ConstantExpression constant = Expression.Constant(site, siteType);
             return Expression.Call(Expression.MakeMemberAccess(constant, siteType.GetField("Target")), node.DelegateType.GetMethod("Invoke"), new[] {constant}.Concat(node.Arguments.Select(Visit)));
         }
-
-        protected override Expression VisitUnary(UnaryExpression node)
-        {
-            if(node.NodeType != ExpressionType.Quote)
-                return base.VisitUnary(node);
-            return Expression.Constant(node.Operand, node.Type);
-        }
     }
 }

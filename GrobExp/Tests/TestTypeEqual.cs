@@ -66,7 +66,6 @@ namespace Tests
             Assert.IsFalse(f(5.5));
         }
 
-
         [Test]
         public void Test7()
         {
@@ -86,20 +85,18 @@ namespace Tests
             Assert.IsFalse(f(TestEnum.One));
         }
 
+        private class TestClassA
+        {
+        }
+
+        private class TestClassB : TestClassA
+        {
+        }
+
         private enum TestEnum
         {
             One,
             Two
-        }
-
-        private class TestClassA
-        {
-            
-        }
-
-        private class TestClassB: TestClassA
-        {
-            
         }
     }
 }

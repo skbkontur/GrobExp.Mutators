@@ -60,7 +60,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.SubtractAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            var o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntArray[0, 0]);
@@ -87,7 +87,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.IsNull(o.NullableIntArray[0, 0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntArray[0, 0]);
@@ -121,7 +121,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.SubtractAssignChecked(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {IntArray = new int[1, 1]};
+            var o = new TestClassA {IntArray = new int[1,1]};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.IntArray[0, 0]);
             o.IntArray[0, 0] = 1;
@@ -135,7 +135,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {IntArray = new int[1, 1]};
+            o = new TestClassA {IntArray = new int[1,1]};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.IntArray[0, 0]);
             o.IntArray[0, 0] = 1;
@@ -156,7 +156,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.SubtractAssignChecked(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            var o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntArray[0, 0]);
@@ -179,7 +179,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.IsNull(o.NullableIntArray[0, 0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {NullableIntArray = new int?[1, 1]};
+            o = new TestClassA {NullableIntArray = new int?[1,1]};
             o.NullableIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntArray[0, 0]);
@@ -209,7 +209,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.SubtractAssignChecked(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {UIntArray = new uint[1, 1]};
+            var o = new TestClassA {UIntArray = new uint[1,1]};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.UIntArray[0, 0]);
             o.UIntArray[0, 0] = 4000000000;
@@ -220,7 +220,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {UIntArray = new uint[1, 1]};
+            o = new TestClassA {UIntArray = new uint[1,1]};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.UIntArray[0, 0]);
             o.UIntArray[0, 0] = 4000000000;
@@ -238,7 +238,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
             Expression<Func<TestClassA, uint?, uint?>> exp = Expression.Lambda<Func<TestClassA, uint?, uint?>>(Expression.SubtractAssignChecked(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntArray")), Expression.Constant(0), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA {NullableUIntArray = new uint?[1, 1]};
+            var o = new TestClassA {NullableUIntArray = new uint?[1,1]};
             o.NullableUIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0, 0]);
@@ -258,7 +258,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.IsNull(o.NullableUIntArray[0, 0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA {NullableUIntArray = new uint?[1, 1]};
+            o = new TestClassA {NullableUIntArray = new uint?[1,1]};
             o.NullableUIntArray[0, 0] = 0;
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0, 0]);

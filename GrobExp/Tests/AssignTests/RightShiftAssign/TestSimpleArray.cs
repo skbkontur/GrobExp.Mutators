@@ -186,7 +186,7 @@ namespace Tests.AssignTests.RightShiftAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, uint>> exp = Expression.Lambda<Func<TestClassA, int, uint>>(Expression.RightShiftAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("UIntArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntArray = new[] { 0U } };
+            var o = new TestClassA {UIntArray = new[] {0U}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.UIntArray[0]);
             o.UIntArray[0] = 0;
@@ -207,7 +207,7 @@ namespace Tests.AssignTests.RightShiftAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntArray = new[] { 0U } };
+            o = new TestClassA {UIntArray = new[] {0U}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.UIntArray[0]);
             o.UIntArray[0] = 0;
@@ -235,7 +235,7 @@ namespace Tests.AssignTests.RightShiftAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, uint?>> exp = Expression.Lambda<Func<TestClassA, int, uint?>>(Expression.RightShiftAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { NullableUIntArray = new uint?[] { 0U } };
+            var o = new TestClassA {NullableUIntArray = new uint?[] {0U}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0]);
             o.NullableUIntArray[0] = 0;
@@ -259,7 +259,7 @@ namespace Tests.AssignTests.RightShiftAssign
             Assert.IsNull(o.NullableUIntArray[0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableUIntArray = new uint?[] { 0 } };
+            o = new TestClassA {NullableUIntArray = new uint?[] {0}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0]);
             o.NullableUIntArray[0] = 0;
@@ -290,7 +290,7 @@ namespace Tests.AssignTests.RightShiftAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, uint?>> exp = Expression.Lambda<Func<TestClassA, int?, uint?>>(Expression.RightShiftAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { NullableUIntArray = new uint?[] { 0 } };
+            var o = new TestClassA {NullableUIntArray = new uint?[] {0}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0]);
             o.NullableUIntArray[0] = 0;
@@ -319,7 +319,7 @@ namespace Tests.AssignTests.RightShiftAssign
             Assert.IsNull(o.NullableUIntArray[0]);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableUIntArray = new uint?[] { 0 } };
+            o = new TestClassA {NullableUIntArray = new uint?[] {0}};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntArray[0]);
             o.NullableUIntArray[0] = 0;
@@ -351,8 +351,8 @@ namespace Tests.AssignTests.RightShiftAssign
         private class TestClassA
         {
             public int[] IntArray { get; set; }
-            public int?[] NullableIntArray;
             public uint[] UIntArray { get; set; }
+            public int?[] NullableIntArray;
             public uint?[] NullableUIntArray;
         }
     }

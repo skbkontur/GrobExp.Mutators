@@ -16,7 +16,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
-            Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.MultiplyAssign(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.MultiplyAssign(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {IntArray = new IntArray()};
             o.IntArray["zzz", 1] = 0;
@@ -67,7 +67,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
-            Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssign(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), typeof(NullableIntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssign(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), typeof(NullableIntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {NullableIntArray = new NullableIntArray()};
             o.NullableIntArray["zzz", 1] = 0;
@@ -134,7 +134,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
-            Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntArray")), typeof(IntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {IntArray = new IntArray()};
             o.IntArray["zzz", 1] = 0;
@@ -177,7 +177,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
-            Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), typeof(NullableIntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntArray")), typeof(NullableIntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {NullableIntArray = new NullableIntArray()};
             o.NullableIntArray["zzz", 1] = 0;
@@ -236,7 +236,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
-            Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), typeof(UIntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), typeof(UIntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {UIntArray = new UIntArray()};
             o.UIntArray["zzz", 1] = 0;
@@ -273,7 +273,7 @@ namespace Tests.AssignTests.MultiplyAssign
         {
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
-            Expression<Func<TestClassA, uint?, uint?>> exp = Expression.Lambda<Func<TestClassA, uint?, uint?>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntArray")), typeof(NullableUIntArray).GetProperty("Item"), new[] { Expression.Constant("zzz"), Expression.Constant(1) }), b), a, b);
+            Expression<Func<TestClassA, uint?, uint?>> exp = Expression.Lambda<Func<TestClassA, uint?, uint?>>(Expression.MultiplyAssignChecked(Expression.MakeIndex(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntArray")), typeof(NullableUIntArray).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
             var o = new TestClassA {NullableUIntArray = new NullableUIntArray()};
             o.NullableUIntArray["zzz", 1] = 0;

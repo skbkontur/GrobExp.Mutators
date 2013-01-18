@@ -10,7 +10,6 @@ namespace Tests
     [TestFixture]
     public class TestCheckArrayIndex
     {
-
         [Test]
         public void Test1()
         {
@@ -18,9 +17,9 @@ namespace Tests
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new TestClassB[] { null } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB() } }), Is.EqualTo(null));
-            int? actual = compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { X = 1 } } });
+            Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(null));
+            int? actual = compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {X = 1}}});
             Assert.That(actual, Is.EqualTo(1));
         }
 
@@ -31,14 +30,14 @@ namespace Tests
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new TestClassB[] { null } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB() } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC() } } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new TestClassD[0] } } } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), } } } } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), null, } } } } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), new TestClassD(), } } } } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { C = new TestClassC { ArrayD = new[] { new TestClassD(), new TestClassD { X = 1 }, } } } } }), Is.EqualTo(1));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC()}}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC {ArrayD = new TestClassD[0]}}}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC {ArrayD = new[] {new TestClassD(),}}}}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC {ArrayD = new[] {new TestClassD(), null,}}}}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC {ArrayD = new[] {new TestClassD(), new TestClassD(),}}}}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {C = new TestClassC {ArrayD = new[] {new TestClassD(), new TestClassD {X = 1},}}}}}), Is.EqualTo(1));
         }
 
         [Test]
@@ -48,10 +47,10 @@ namespace Tests
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new TestClassB[] { null } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB() } }), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA { ArrayB = new[] { new TestClassB { X = 1 } } }), Is.EqualTo(1));
-            Assert.That(compiledExp(new TestClassA { B = new TestClassB{Y = 1}, ArrayB = new[] { new TestClassB { X = 1 } } }), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {X = 1}}}), Is.EqualTo(1));
+            Assert.That(compiledExp(new TestClassA {B = new TestClassB {Y = 1}, ArrayB = new[] {new TestClassB {X = 1}}}), Is.EqualTo(null));
         }
 
         [Test]
@@ -59,7 +58,7 @@ namespace Tests
         {
             Expression<Func<TestClassA, int>> exp = a => a.IntArray[314159265];
             var compiledExp = LambdaCompiler.Compile(exp);
-            Assert.AreEqual(0, compiledExp(new TestClassA { IntArray = new[] { 1, 2, 3 } }));
+            Assert.AreEqual(0, compiledExp(new TestClassA {IntArray = new[] {1, 2, 3}}));
         }
 
         [Test]
@@ -69,7 +68,7 @@ namespace Tests
             Expression<Func<TestClassA, int>> exp = a => a.IntArray[-1];
 #pragma warning restore 251
             var compiledExp = LambdaCompiler.Compile(exp);
-            Assert.AreEqual(0, compiledExp(new TestClassA { IntArray = new[] { 1, 2, 3 } }));
+            Assert.AreEqual(0, compiledExp(new TestClassA {IntArray = new[] {1, 2, 3}}));
         }
 
         [Test]
@@ -77,12 +76,16 @@ namespace Tests
         {
             Expression<Func<TestClassA, string>> exp = a => a.ArrayB[271828183].C.D.E.S;
             var compiledExp = LambdaCompiler.Compile(exp);
-            Assert.AreEqual(null, compiledExp(new TestClassA { ArrayB = new[] { new TestClassB() } }));
+            Assert.AreEqual(null, compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}));
         }
-
 
         private class TestClassA
         {
+            public int F(bool b)
+            {
+                return b ? 1 : 0;
+            }
+
             public string S { get; set; }
             public TestClassA A { get; set; }
             public TestClassB B { get; set; }
@@ -94,11 +97,6 @@ namespace Tests
             public bool? NullableBool;
             public int Y;
             public bool Bool;
-
-            public int F(bool b)
-            {
-                return b ? 1 : 0;
-            }
         }
 
         private class TestClassB

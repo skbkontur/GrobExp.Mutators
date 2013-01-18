@@ -316,11 +316,6 @@ namespace Tests
             Assert.Throws<NullReferenceException>(() => f(new TestClassA()));
         }
 
-        private class TestClassA
-        {
-            public object X { get; set; }
-        }
-
         private T ConvertFromDecimal<T>(Expression<Func<decimal, T>> exp, decimal value)
         {
             var f = LambdaCompiler.Compile(exp);
@@ -339,6 +334,11 @@ namespace Tests
             Expression<Func<TIn, TOut>> exp = Expression.Lambda<Func<TIn, TOut>>(Expression.Convert(parameter, typeof(TOut)), parameter);
             var f = LambdaCompiler.Compile(exp);
             return f(value);
+        }
+
+        private class TestClassA
+        {
+            public object X { get; set; }
         }
     }
 }

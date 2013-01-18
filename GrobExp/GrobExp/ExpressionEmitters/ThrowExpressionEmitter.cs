@@ -5,7 +5,7 @@ using GrEmit;
 
 namespace GrobExp.ExpressionEmitters
 {
-    internal class ThrowExpressionEmitter: ExpressionEmitter<UnaryExpression>
+    internal class ThrowExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
         protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {

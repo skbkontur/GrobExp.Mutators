@@ -93,20 +93,18 @@ namespace Tests
             Assert.AreEqual(TestEnum.One, actual);
         }
 
+        private class TestClassA
+        {
+        }
+
+        private class TestClassB : TestClassA
+        {
+        }
+
         private enum TestEnum
         {
             One,
             Two
-        }
-
-        private class TestClassA
-        {
-            
-        }
-
-        private class TestClassB: TestClassA
-        {
-            
         }
     }
 }

@@ -82,7 +82,7 @@ namespace Tests.AssignTests.PreIncrementAssign
             ParameterExpression a = Expression.Parameter(typeof(TestClassA), "a");
             Expression<Func<TestClassA, double>> exp = Expression.Lambda<Func<TestClassA, double>>(Expression.PreIncrementAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("DoubleArray")), Expression.Constant(0))), a);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { DoubleArray = new[] { 0.0 } };
+            var o = new TestClassA {DoubleArray = new[] {0.0}};
             Assert.AreEqual(1, f(o));
             Assert.AreEqual(1, o.DoubleArray[0]);
             o.DoubleArray[0] = -1;
@@ -94,7 +94,7 @@ namespace Tests.AssignTests.PreIncrementAssign
             Assert.AreEqual(0, f(null));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { DoubleArray = new[] { 0.0 } };
+            o = new TestClassA {DoubleArray = new[] {0.0}};
             Assert.AreEqual(1, f(o));
             Assert.AreEqual(1, o.DoubleArray[0]);
             o.DoubleArray[0] = -1;
@@ -109,8 +109,8 @@ namespace Tests.AssignTests.PreIncrementAssign
         private class TestClassA
         {
             public int[] IntArray { get; set; }
-            public double[] DoubleArray;
             public int?[] NullableIntArray { get; set; }
+            public double[] DoubleArray;
         }
     }
 }

@@ -10,12 +10,6 @@ namespace Tests.AssignTests.ExclusiveOrAssign
     [TestFixture]
     public class TestStaticMember
     {
-        private class TestClassA
-        {
-            public static int IntProp { get; set; }
-            public static int? NullableIntField;
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -56,6 +50,12 @@ namespace Tests.AssignTests.ExclusiveOrAssign
             Assert.IsNull(TestClassA.NullableIntField);
             Assert.IsNull(f(null));
             Assert.IsNull(TestClassA.NullableIntField);
+        }
+
+        private class TestClassA
+        {
+            public static int IntProp { get; set; }
+            public static int? NullableIntField;
         }
     }
 }

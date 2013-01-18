@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-using GrobExp;
-
 using NUnit.Framework;
 
 namespace Tests.ArithmeticTests
@@ -35,8 +33,8 @@ namespace Tests.ArithmeticTests
             var f = Compile(exp);
             Assert.IsFalse(f(null));
             Assert.IsFalse(f(new TestClassA()));
-            Assert.IsFalse(f(new TestClassA{X = -1}));
-            Assert.IsTrue(f(new TestClassA{X = 0}));
+            Assert.IsFalse(f(new TestClassA {X = -1}));
+            Assert.IsTrue(f(new TestClassA {X = 0}));
         }
 
         [Test]
@@ -65,8 +63,8 @@ namespace Tests.ArithmeticTests
             var f = Compile(exp);
             Assert.IsFalse(f(null));
             Assert.IsFalse(f(new TestClassA()));
-            Assert.IsTrue(f(new TestClassA{X = -1}));
-            Assert.IsFalse(f(new TestClassA{X = 0}));
+            Assert.IsTrue(f(new TestClassA {X = -1}));
+            Assert.IsFalse(f(new TestClassA {X = 0}));
         }
 
         public class TestClassA

@@ -10,13 +10,6 @@ namespace Tests.AssignTests.ModuloAssign
     [TestFixture]
     public class TestInstanceMember
     {
-        private class TestClassA
-        {
-            public int IntProp { get; set; }
-            public int? NullableIntProp { get; set; }
-            public uint UIntField;
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -24,7 +17,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.ModuloAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{IntProp = 1};
+            var o = new TestClassA {IntProp = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.IntProp);
             o.IntProp = 5;
@@ -36,7 +29,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { IntProp = 1 };
+            o = new TestClassA {IntProp = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.IntProp);
             o.IntProp = 5;
@@ -55,7 +48,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.ModuloAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{NullableIntProp = 1};
+            var o = new TestClassA {NullableIntProp = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.NullableIntProp);
             o.NullableIntProp = 5;
@@ -75,7 +68,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.IsNull(o.NullableIntProp);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableIntProp = 1 };
+            o = new TestClassA {NullableIntProp = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.NullableIntProp);
             o.NullableIntProp = 5;
@@ -102,7 +95,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.ModuloAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntField")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntField = 1 };
+            var o = new TestClassA {UIntField = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntField);
             o.UIntField = 5;
@@ -114,7 +107,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntField = 1 };
+            o = new TestClassA {UIntField = 1};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntField);
             o.UIntField = 5;
@@ -124,6 +117,13 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntField);
             Assert.Throws<NullReferenceException>(() => f(null, 1));
+        }
+
+        private class TestClassA
+        {
+            public int IntProp { get; set; }
+            public int? NullableIntProp { get; set; }
+            public uint UIntField;
         }
     }
 }

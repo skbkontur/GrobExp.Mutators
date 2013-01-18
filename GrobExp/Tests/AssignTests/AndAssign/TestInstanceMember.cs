@@ -10,12 +10,6 @@ namespace Tests.AssignTests.AndAssign
     [TestFixture]
     public class TestInstanceMember
     {
-        private class TestClassA
-        {
-            public int IntProp { get; set; }
-            public int? NullableIntField;
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -23,7 +17,7 @@ namespace Tests.AssignTests.AndAssign
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<TestClassA, int, int>> exp = Expression.Lambda<Func<TestClassA, int, int>>(Expression.AndAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("IntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{IntProp = 0};
+            var o = new TestClassA {IntProp = 0};
             Assert.AreEqual(0, f(o, 123));
             Assert.AreEqual(0, o.IntProp);
             o.IntProp = 3;
@@ -35,7 +29,7 @@ namespace Tests.AssignTests.AndAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { IntProp = 0 };
+            o = new TestClassA {IntProp = 0};
             Assert.AreEqual(0, f(o, 123));
             Assert.AreEqual(0, o.IntProp);
             o.IntProp = 3;
@@ -54,7 +48,7 @@ namespace Tests.AssignTests.AndAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.AndAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableIntField")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{NullableIntField = 0};
+            var o = new TestClassA {NullableIntField = 0};
             Assert.AreEqual(0, f(o, 123));
             Assert.AreEqual(0, o.NullableIntField);
             o.NullableIntField = 3;
@@ -74,7 +68,7 @@ namespace Tests.AssignTests.AndAssign
             Assert.IsNull(o.NullableIntField);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableIntField = 0 };
+            o = new TestClassA {NullableIntField = 0};
             Assert.AreEqual(0, f(o, 123));
             Assert.AreEqual(0, o.NullableIntField);
             o.NullableIntField = 3;
@@ -92,6 +86,12 @@ namespace Tests.AssignTests.AndAssign
             Assert.IsNull(o.NullableIntField);
             Assert.IsNull(f(o, null));
             Assert.IsNull(o.NullableIntField);
+        }
+
+        private class TestClassA
+        {
+            public int IntProp { get; set; }
+            public int? NullableIntField;
         }
     }
 }

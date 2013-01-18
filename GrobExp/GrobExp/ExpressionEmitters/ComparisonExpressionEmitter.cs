@@ -18,7 +18,7 @@ namespace GrobExp.ExpressionEmitters
             GroboIL il = context.Il;
             if(node.Method != null)
             {
-                if (!leftType.IsNullable() && !rightType.IsNullable())
+                if(!leftType.IsNullable() && !rightType.IsNullable())
                     il.Call(node.Method);
                 else
                 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -9,14 +10,12 @@ using GrobExp;
 
 using NUnit.Framework;
 
-using System.Linq;
-
 namespace Tests
 {
     [TestFixture]
     public class TestBase
     {
-        protected TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate: class
+        protected TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
         {
             return LambdaCompiler.Compile(lambda, options);
             var typeBuilder = TestPerformance.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public);
@@ -32,7 +31,7 @@ namespace Tests
             return ((Func<TDelegate>)dynamicMethod.CreateDelegate(typeof(Func<TDelegate>)))();
         }
 
-        protected TDelegate CompileToMethod<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate: class
+        protected TDelegate CompileToMethod<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
         {
             var typeBuilder = TestPerformance.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("lambda", MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());

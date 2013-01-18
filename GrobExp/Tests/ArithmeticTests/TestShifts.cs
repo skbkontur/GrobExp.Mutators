@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-using GrobExp;
-
 using NUnit.Framework;
 
 namespace Tests.ArithmeticTests

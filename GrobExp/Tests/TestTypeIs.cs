@@ -85,20 +85,18 @@ namespace Tests
             Assert.IsTrue(f(TestEnum.One));
         }
 
+        private class TestClassA
+        {
+        }
+
+        private class TestClassB : TestClassA
+        {
+        }
+
         private enum TestEnum
         {
             One,
             Two
-        }
-
-        private class TestClassA
-        {
-            
-        }
-
-        private class TestClassB: TestClassA
-        {
-            
         }
     }
 }

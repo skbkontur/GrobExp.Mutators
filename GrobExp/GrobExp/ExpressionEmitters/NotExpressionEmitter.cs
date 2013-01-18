@@ -10,7 +10,7 @@ namespace GrobExp.ExpressionEmitters
     {
         protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            if (node.Type != typeof(bool) && node.Type != typeof(bool?))
+            if(node.Type != typeof(bool) && node.Type != typeof(bool?))
                 return ExpressionEmittersCollection.Emit(Expression.OnesComplement(node.Operand, node.Method), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
             GroboIL il = context.Il;
             if(node.Method != null)

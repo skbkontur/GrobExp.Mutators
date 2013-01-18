@@ -95,7 +95,7 @@ namespace Tests.AssignTests.ModuloAssign
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<TestClassA, uint, uint>> exp = Expression.Lambda<Func<TestClassA, uint, uint>>(Expression.ModuloAssign(Expression.ArrayAccess(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("UIntArray")), Expression.Constant(0)), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { UIntArray = new[] { 1U } };
+            var o = new TestClassA {UIntArray = new[] {1U}};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntArray[0]);
             o.UIntArray[0] = 5;
@@ -107,7 +107,7 @@ namespace Tests.AssignTests.ModuloAssign
             Assert.AreEqual(0, f(null, 1));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { UIntArray = new[] { 1U } };
+            o = new TestClassA {UIntArray = new[] {1U}};
             Assert.AreEqual(1, f(o, 2));
             Assert.AreEqual(1, o.UIntArray[0]);
             o.UIntArray[0] = 5;

@@ -10,13 +10,6 @@ namespace Tests.AssignTests.PostIncrementAssign
     [TestFixture]
     public class TestStaticMember
     {
-        private class TestClassA
-        {
-            public static int IntProp { get; set; }
-            public static double DoubleField;
-            public static int? NullableIntProp { get; set; }
-        }
-
         [Test]
         public void TestIntProp()
         {
@@ -66,6 +59,13 @@ namespace Tests.AssignTests.PostIncrementAssign
             TestClassA.NullableIntProp = null;
             Assert.IsNull(f());
             Assert.IsNull(TestClassA.NullableIntProp);
+        }
+
+        private class TestClassA
+        {
+            public static int IntProp { get; set; }
+            public static int? NullableIntProp { get; set; }
+            public static double DoubleField;
         }
     }
 }

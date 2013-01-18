@@ -48,7 +48,7 @@ namespace Tests
             Expression<Func<TestClassA, bool[,]>> path = o => o.BoolArray;
             Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.ArrayAccess(path.Body, Expression.Constant(1), Expression.Constant(2)), path.Parameters);
             var f = LambdaCompiler.Compile(exp);
-            var a = new TestClassA { BoolArray = new bool[2, 3] };
+            var a = new TestClassA {BoolArray = new bool[2,3]};
             a.BoolArray[1, 2] = true;
             Assert.AreEqual(true, f(a));
         }

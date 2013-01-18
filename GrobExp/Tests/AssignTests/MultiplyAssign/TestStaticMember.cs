@@ -10,15 +10,6 @@ namespace Tests.AssignTests.MultiplyAssign
     [TestFixture]
     public class TestStaticMember
     {
-        private class TestClassA
-        {
-            public static int IntProp { get; set; }
-            public static int IntField;
-            public static int? NullableIntProp { get; set; }
-            public static uint UIntField;
-            public static uint? NullableUIntField;
-        }
-
         [Test]
         public void TestProp()
         {
@@ -201,6 +192,15 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.IsNull(TestClassA.NullableUIntField);
             Assert.IsNull(f(null));
             Assert.IsNull(TestClassA.NullableUIntField);
+        }
+
+        private class TestClassA
+        {
+            public static int IntProp { get; set; }
+            public static int? NullableIntProp { get; set; }
+            public static int IntField;
+            public static uint UIntField;
+            public static uint? NullableUIntField;
         }
     }
 }

@@ -10,15 +10,6 @@ namespace Tests.AssignTests.MultiplyAssign
     [TestFixture]
     public class TestInstanceMember
     {
-        private class TestClassA
-        {
-            public int IntProp { get; set; }
-            public int IntField;
-            public int? NullableIntProp { get; set; }
-            public uint UIntField;
-            public uint? NullableUIntField;
-        }
-
         [Test]
         public void TestProp()
         {
@@ -124,7 +115,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssign(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA{NullableIntProp = 0};
+            var o = new TestClassA {NullableIntProp = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 1;
@@ -153,7 +144,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.IsNull(o.NullableIntProp);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableIntProp = 0 };
+            o = new TestClassA {NullableIntProp = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 1;
@@ -230,7 +221,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<TestClassA, int?, int?>> exp = Expression.Lambda<Func<TestClassA, int?, int?>>(Expression.MultiplyAssignChecked(Expression.MakeMemberAccess(a, typeof(TestClassA).GetProperty("NullableIntProp")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { NullableIntProp = 0 };
+            var o = new TestClassA {NullableIntProp = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 1;
@@ -255,7 +246,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.IsNull(o.NullableIntProp);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableIntProp = 0 };
+            o = new TestClassA {NullableIntProp = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableIntProp);
             o.NullableIntProp = 1;
@@ -322,7 +313,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
             Expression<Func<TestClassA, uint?, uint?>> exp = Expression.Lambda<Func<TestClassA, uint?, uint?>>(Expression.MultiplyAssignChecked(Expression.MakeMemberAccess(a, typeof(TestClassA).GetField("NullableUIntField")), b), a, b);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.CheckNullReferences);
-            var o = new TestClassA { NullableUIntField = 0 };
+            var o = new TestClassA {NullableUIntField = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntField);
             o.NullableUIntField = 1;
@@ -344,7 +335,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.IsNull(o.NullableUIntField);
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);
-            o = new TestClassA { NullableUIntField = 0 };
+            o = new TestClassA {NullableUIntField = 0};
             Assert.AreEqual(0, f(o, 0));
             Assert.AreEqual(0, o.NullableUIntField);
             o.NullableUIntField = 1;
@@ -364,6 +355,15 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.IsNull(o.NullableUIntField);
             Assert.IsNull(f(o, null));
             Assert.IsNull(o.NullableUIntField);
+        }
+
+        private class TestClassA
+        {
+            public int IntProp { get; set; }
+            public int? NullableIntProp { get; set; }
+            public int IntField;
+            public uint UIntField;
+            public uint? NullableUIntField;
         }
     }
 }

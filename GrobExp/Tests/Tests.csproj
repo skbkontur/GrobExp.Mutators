@@ -159,6 +159,7 @@
     <Compile Include="TestListInit.cs" />
     <Compile Include="TestLoop.cs" />
     <Compile Include="TestQuote.cs" />
+    <Compile Include="TestRuntimeVariables.cs" />
     <Compile Include="TestThrow.cs" />
     <Compile Include="TryCatchTests\TestFault.cs" />
     <Compile Include="TryCatchTests\FilterExceptionTest.cs" />

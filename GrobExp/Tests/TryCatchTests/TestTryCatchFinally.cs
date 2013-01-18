@@ -24,7 +24,7 @@ namespace Tests.TryCatchTests
                         )
                     );
             var exp = Expression.Lambda<Func<string>>(tryCatchExpr);
-            var f = Compile(exp);
+            var f = CompileToMethod(exp);
             Assert.AreEqual("Catch block", f());
         }
 

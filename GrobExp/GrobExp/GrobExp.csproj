@@ -63,6 +63,8 @@
     <Compile Include="ExpressionEmitters\InvocationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ListInitExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\LoopExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\RuntimeVariables.cs" />
+    <Compile Include="ExpressionEmitters\RuntimeVariablesExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ThrowExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\TryExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\TypeAsExpressionEmitter.cs" />

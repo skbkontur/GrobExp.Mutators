@@ -109,7 +109,6 @@ namespace GrobExp
                 {ExpressionType.ListInit, new ListInitExpressionEmitter()},
                 {ExpressionType.Loop, new LoopExpressionEmitter()},
                 {ExpressionType.Try, new TryExpressionEmitter()},
-                {ExpressionType.RuntimeVariables, new RuntimeVariablesExpressionEmitter()},
             };
     }
 }

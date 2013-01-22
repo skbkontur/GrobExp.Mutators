@@ -34,7 +34,7 @@ namespace GrobExp.ExpressionEmitters
                 MethodInfo getter = node.Indexer.GetGetMethod(context.SkipVisibility);
                 if(getter == null)
                     throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "get_" + node.Indexer.Name);
-                context.Il.Call(getter);
+                context.Il.Call(getter, node.Object.Type);
             }
             else
             {
@@ -51,7 +51,7 @@ namespace GrobExp.ExpressionEmitters
                 MethodInfo getMethod = arrayType.GetMethod("Get");
                 if(getMethod == null)
                     throw new MissingMethodException(arrayType.ToString(), "Get");
-                context.Il.Call(getMethod);
+                context.Il.Call(getMethod, arrayType);
             }
             resultType = node.Type;
             return result;

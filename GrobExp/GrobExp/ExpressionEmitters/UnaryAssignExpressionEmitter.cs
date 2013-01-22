@@ -250,7 +250,8 @@ namespace GrobExp.ExpressionEmitters
                 break;
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetGetMethod(context.SkipVisibility));
+                var memberExpression = (MemberExpression)node;
+                il.Call(((PropertyInfo)memberExpression.Member).GetGetMethod(context.SkipVisibility), memberExpression.Expression == null ? null : memberExpression.Expression.Type);
                 break;
             case AssigneeKind.SimpleArray:
                 il.Ldind(node.Type);
@@ -276,7 +277,7 @@ namespace GrobExp.ExpressionEmitters
                     MethodInfo getter = indexExpression.Indexer.GetGetMethod(context.SkipVisibility);
                     if(getter == null)
                         throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "get_" + indexExpression.Indexer.Name);
-                    context.Il.Call(getter);
+                    context.Il.Call(getter, indexExpression.Object.Type);
                 }
                 break;
             case AssigneeKind.MultiDimensionalArray:
@@ -309,7 +310,7 @@ namespace GrobExp.ExpressionEmitters
                     MethodInfo getMethod = arrayType.GetMethod("Get");
                     if(getMethod == null)
                         throw new MissingMethodException(arrayType.ToString(), "Get");
-                    context.Il.Call(getMethod);
+                    context.Il.Call(getMethod, arrayType);
                 }
                 break;
             }
@@ -343,7 +344,8 @@ namespace GrobExp.ExpressionEmitters
                 break;
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(context.SkipVisibility));
+                var memberExpression = (MemberExpression)node;
+                il.Call(((PropertyInfo)memberExpression.Member).GetSetMethod(context.SkipVisibility), memberExpression.Expression == null ? null : memberExpression.Expression.Type);
                 break;
             case AssigneeKind.IndexedProperty:
                 {
@@ -371,7 +373,7 @@ namespace GrobExp.ExpressionEmitters
                         MethodInfo setter = indexExpression.Indexer.GetSetMethod(context.SkipVisibility);
                         if(setter == null)
                             throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
-                        context.Il.Call(setter);
+                        context.Il.Call(setter, indexExpression.Object.Type);
                     }
                 }
                 break;
@@ -410,7 +412,7 @@ namespace GrobExp.ExpressionEmitters
                         MethodInfo setMethod = arrayType.GetMethod("Set");
                         if(setMethod == null)
                             throw new MissingMethodException(arrayType.ToString(), "Set");
-                        context.Il.Call(setMethod);
+                        context.Il.Call(setMethod, arrayType);
                     }
                 }
                 break;
@@ -448,7 +450,8 @@ namespace GrobExp.ExpressionEmitters
             case AssigneeKind.InstanceProperty:
             case AssigneeKind.StaticProperty:
                 il.Ldloc(value);
-                il.Call(((PropertyInfo)((MemberExpression)node).Member).GetSetMethod(context.SkipVisibility));
+                var memberExpression = (MemberExpression)node;
+                il.Call(((PropertyInfo)memberExpression.Member).GetSetMethod(context.SkipVisibility), memberExpression.Expression == null ? null : memberExpression.Expression.Type);
                 break;
             case AssigneeKind.IndexedProperty:
                 {
@@ -473,7 +476,7 @@ namespace GrobExp.ExpressionEmitters
                     MethodInfo setter = indexExpression.Indexer.GetSetMethod(context.SkipVisibility);
                     if(setter == null)
                         throw new MissingMethodException(indexExpression.Indexer.ReflectedType.ToString(), "set_" + indexExpression.Indexer.Name);
-                    context.Il.Call(setter);
+                    context.Il.Call(setter, indexExpression.Object.Type);
                 }
                 break;
             case AssigneeKind.MultiDimensionalArray:
@@ -508,7 +511,7 @@ namespace GrobExp.ExpressionEmitters
                     MethodInfo setMethod = arrayType.GetMethod("Set");
                     if(setMethod == null)
                         throw new MissingMethodException(arrayType.ToString(), "Set");
-                    context.Il.Call(setMethod);
+                    context.Il.Call(setMethod, arrayType);
                 }
                 break;
             }

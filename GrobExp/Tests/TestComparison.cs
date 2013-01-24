@@ -7,17 +7,16 @@ using NUnit.Framework;
 
 namespace Tests
 {
-    [TestFixture]
-    public class TestComparison
+    public class TestComparison: TestBase
     {
         [Test]
         public void TestGreaterThan1()
         {
             Expression<Func<int, int, bool>> exp = (a, b) => a > b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
         }
@@ -26,13 +25,13 @@ namespace Tests
         public void TestGreaterThan2()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => a > b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(1, null));
@@ -44,13 +43,13 @@ namespace Tests
         public void TestGreaterThan3()
         {
             Expression<Func<long?, int?, bool>> exp = (a, b) => a > b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(1, null));
@@ -62,10 +61,10 @@ namespace Tests
         public void TestGreaterThan4()
         {
             Expression<Func<uint, uint, bool>> exp = (a, b) => a > b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(1, uint.MaxValue));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(1, uint.MaxValue));
         }
@@ -74,13 +73,13 @@ namespace Tests
         public void TestGreaterThan5()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => !(a > b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(1, null));
@@ -92,11 +91,11 @@ namespace Tests
         public void TestGreaterThanOrEqual1()
         {
             Expression<Func<int, int, bool>> exp = (a, b) => a >= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -106,14 +105,14 @@ namespace Tests
         public void TestGreaterThanOrEqual2()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => a >= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -126,14 +125,14 @@ namespace Tests
         public void TestGreaterThanOrEqual3()
         {
             Expression<Func<long?, int?, bool>> exp = (a, b) => a >= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -146,11 +145,11 @@ namespace Tests
         public void TestGreaterThanOrEqual4()
         {
             Expression<Func<uint, uint, bool>> exp = (a, b) => a >= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(1, uint.MaxValue));
             Assert.IsTrue(f(3000000000, 3000000000));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(1, uint.MaxValue));
             Assert.IsTrue(f(3000000000, 3000000000));
@@ -160,14 +159,14 @@ namespace Tests
         public void TestGreaterThanOrEqual5()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => !(a >= b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(-1, -1));
@@ -180,10 +179,10 @@ namespace Tests
         public void TestLessThan1()
         {
             Expression<Func<int, int, bool>> exp = (a, b) => a < b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
         }
@@ -192,13 +191,13 @@ namespace Tests
         public void TestLessThan2()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => a < b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(1, null));
@@ -210,13 +209,13 @@ namespace Tests
         public void TestLessThan3()
         {
             Expression<Func<long?, int?, bool>> exp = (a, b) => a < b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsFalse(f(1, null));
@@ -228,10 +227,10 @@ namespace Tests
         public void TestLessThan4()
         {
             Expression<Func<uint, uint, bool>> exp = (a, b) => a < b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(1, uint.MaxValue));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(1, uint.MaxValue));
         }
@@ -240,13 +239,13 @@ namespace Tests
         public void TestLessThan5()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => !(a < b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsTrue(f(1, null));
@@ -258,11 +257,11 @@ namespace Tests
         public void TestLessThanOrEqual1()
         {
             Expression<Func<int, int, bool>> exp = (a, b) => a <= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -272,14 +271,14 @@ namespace Tests
         public void TestLessThanOrEqual2()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => a <= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -292,14 +291,14 @@ namespace Tests
         public void TestLessThanOrEqual3()
         {
             Expression<Func<long?, int?, bool>> exp = (a, b) => a <= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(-3, -1));
             Assert.IsTrue(f(-1, -1));
@@ -312,11 +311,11 @@ namespace Tests
         public void TestLessThanOrEqual4()
         {
             Expression<Func<uint, uint, bool>> exp = (a, b) => a <= b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(1, uint.MaxValue));
             Assert.IsTrue(f(3000000000, 3000000000));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsFalse(f(3, 1));
             Assert.IsTrue(f(1, uint.MaxValue));
             Assert.IsTrue(f(3000000000, 3000000000));
@@ -326,14 +325,14 @@ namespace Tests
         public void TestLessThanOrEqual5()
         {
             Expression<Func<int?, int?, bool>> exp = (a, b) => !(a <= b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = Compile(exp);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(-1, -1));
             Assert.IsFalse(f(1, null));
             Assert.IsFalse(f(null, 1));
             Assert.IsFalse(f(null, null));
-            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            f = Compile(exp, CompilerOptions.None);
             Assert.IsTrue(f(3, 1));
             Assert.IsFalse(f(-3, -1));
             Assert.IsFalse(f(-1, -1));

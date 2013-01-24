@@ -173,5 +173,60 @@ namespace Tests
             Assert.AreEqual("qzz", f("1000000"));
             Assert.AreEqual("qxx", f("1000001"));
         }
+
+        [Test]
+        public void TestDouble()
+        {
+            ParameterExpression a = Expression.Parameter(typeof(double));
+            var exp = Expression.Lambda<Func<double, string>>(
+                Expression.Switch(
+                    a,
+                    Expression.Constant("xxx"),
+                    Expression.SwitchCase(Expression.Constant("zzz"), Expression.Constant(0.0), Expression.Constant(2.0)),
+                    Expression.SwitchCase(Expression.Constant("qxx"), Expression.Constant(5.0), Expression.Constant(1000001.0)),
+                    Expression.SwitchCase(Expression.Constant("qzz"), Expression.Constant(7.0), Expression.Constant(1000000.0))
+                    ),
+                a
+                );
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual("zzz", f(0.0));
+            Assert.AreEqual("xxx", f(1.0));
+            Assert.AreEqual("zzz", f(2.0));
+            Assert.AreEqual("xxx", f(3.0));
+            Assert.AreEqual("qxx", f(5.0));
+            Assert.AreEqual("xxx", f(6.0));
+            Assert.AreEqual("qzz", f(7.0));
+            Assert.AreEqual("xxx", f(123456.0));
+            Assert.AreEqual("qzz", f(1000000.0));
+            Assert.AreEqual("qxx", f(1000001.0));
+        }
+
+        [Test]
+        public void TestNullableDouble()
+        {
+            ParameterExpression a = Expression.Parameter(typeof(double?));
+            var exp = Expression.Lambda<Func<double?, string>>(
+                Expression.Switch(
+                    a,
+                    Expression.Constant("xxx"),
+                    Expression.SwitchCase(Expression.Constant("zzz"), Expression.Constant(null, typeof(double?)), Expression.Constant((double?)0.0, typeof(double?)), Expression.Constant((double?)2.0, typeof(double?))),
+                    Expression.SwitchCase(Expression.Constant("qxx"), Expression.Constant((double?)5.0, typeof(double?)), Expression.Constant((double?)1000001.0, typeof(double?))),
+                    Expression.SwitchCase(Expression.Constant("qzz"), Expression.Constant((double?)7.0, typeof(double?)), Expression.Constant((double?)1000000.0, typeof(double?)))
+                    ),
+                a
+                );
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual("zzz", f(null));
+            Assert.AreEqual("zzz", f(0.0));
+            Assert.AreEqual("xxx", f(1.0));
+            Assert.AreEqual("zzz", f(2.0));
+            Assert.AreEqual("xxx", f(3.0));
+            Assert.AreEqual("qxx", f(5.0));
+            Assert.AreEqual("xxx", f(6.0));
+            Assert.AreEqual("qzz", f(7.0));
+            Assert.AreEqual("xxx", f(123456.0));
+            Assert.AreEqual("qzz", f(1000000.0));
+            Assert.AreEqual("qxx", f(1000001.0));
+        }
     }
 }

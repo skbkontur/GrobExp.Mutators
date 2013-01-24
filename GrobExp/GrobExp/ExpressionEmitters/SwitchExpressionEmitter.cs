@@ -12,32 +12,33 @@ namespace GrobExp.ExpressionEmitters
         protected override bool Emit(SwitchExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             GroboIL il = context.Il;
-            Tuple<FieldInfo, FieldInfo, int> switchCase;
-            if(context.Switches.TryGetValue(node, out switchCase))
+            var defaultLabel = il.DefineLabel("default");
+            var caseLabels = new GroboIL.Label[node.Cases.Count];
+            GroboIL.Label switchValueIsNullLabel = null;
+            for(int index = 0; index < node.Cases.Count; index++)
+                caseLabels[index] = il.DefineLabel("case#" + index);
+            context.EmitLoadArguments(node.SwitchValue);
+            using(var switchValue = context.DeclareLocal(node.SwitchValue.Type))
             {
-                var defaultLabel = il.DefineLabel("default");
-                var labels = new List<GroboIL.Label>();
-                var caseLabels = new GroboIL.Label[node.Cases.Count];
-                GroboIL.Label switchValueIsNullLabel = null;
-                for(int index = 0; index < node.Cases.Count; index++)
+                il.Stloc(switchValue);
+                Tuple<FieldInfo, FieldInfo, int> switchCase;
+                if(context.Switches.TryGetValue(node, out switchCase))
                 {
-                    var label = il.DefineLabel("case#" + index);
-                    caseLabels[index] = label;
-                    foreach(var testValue in node.Cases[index].TestValues)
+                    // use simplified hashtable to locate the proper case
+                    var labels = new List<GroboIL.Label>();
+                    for (int index = 0; index < node.Cases.Count; index++)
                     {
-                        if(((ConstantExpression)testValue).Value != null)
-                            labels.Add(label);
-                        else
-                            switchValueIsNullLabel = label;
+                        foreach (var testValue in node.Cases[index].TestValues)
+                        {
+                            if (((ConstantExpression)testValue).Value != null)
+                                labels.Add(caseLabels[index]);
+                            else
+                                switchValueIsNullLabel = caseLabels[index];
+                        }
                     }
-                }
-                context.EmitLoadArguments(node.SwitchValue);
-                using(var switchValue = context.DeclareLocal(node.SwitchValue.Type))
-                {
-                    il.Stloc(switchValue);
-                    if(switchValueIsNullLabel != null)
+                    if (switchValueIsNullLabel != null)
                     {
-                        if(!node.SwitchValue.Type.IsNullable())
+                        if (!node.SwitchValue.Type.IsNullable())
                             il.Ldloc(switchValue);
                         else
                         {
@@ -45,6 +46,14 @@ namespace GrobExp.ExpressionEmitters
                             context.EmitHasValueAccess(node.SwitchValue.Type);
                         }
                         il.Brfalse(switchValueIsNullLabel);
+                    }
+                    EmittingContext.LocalHolder pureSwitchValue = switchValue;
+                    if (node.SwitchValue.Type.IsNullable())
+                    {
+                        pureSwitchValue = context.DeclareLocal(node.SwitchValue.Type.GetGenericArguments()[0]);
+                        il.Ldloca(switchValue);
+                        context.EmitValueAccess(node.SwitchValue.Type);
+                        il.Stloc(pureSwitchValue);
                     }
                     il.Ldfld(switchCase.Item1);
                     var type = node.SwitchValue.Type.IsNullable() ? node.SwitchValue.Type.GetGenericArguments()[0] : node.SwitchValue.Type;
@@ -60,20 +69,14 @@ namespace GrobExp.ExpressionEmitters
                     case TypeCode.UInt16:
                     case TypeCode.UInt32:
                     case TypeCode.UInt64:
-                        if(!node.SwitchValue.Type.IsNullable())
-                            il.Ldloc(switchValue);
-                        else
-                        {
-                            il.Ldloca(switchValue);
-                            context.EmitValueAccess(node.SwitchValue.Type);
-                        }
+                        il.Ldloc(pureSwitchValue);
                         break;
                     default:
-                        if(node.SwitchValue.Type.IsValueType)
-                            il.Ldloca(switchValue);
+                        if(type.IsValueType)
+                            il.Ldloca(pureSwitchValue);
                         else
-                            il.Ldloc(switchValue);
-                        il.Call(typeof(object).GetMethod("GetHashCode"), node.SwitchValue.Type);
+                            il.Ldloc(pureSwitchValue);
+                        il.Call(typeof(object).GetMethod("GetHashCode"), type);
                         break;
                     }
                     using(var index = context.DeclareLocal(typeof(int)))
@@ -83,13 +86,7 @@ namespace GrobExp.ExpressionEmitters
                         il.Stloc(index);
                         il.Ldloc(index);
                         il.Ldelem(type);
-                        if(!node.SwitchValue.Type.IsNullable())
-                            il.Ldloc(switchValue);
-                        else
-                        {
-                            il.Ldloca(switchValue);
-                            context.EmitValueAccess(node.SwitchValue.Type);
-                        }
+                        il.Ldloc(pureSwitchValue);
                         if(node.Comparison != null)
                             il.Call(node.Comparison);
                         else
@@ -100,23 +97,80 @@ namespace GrobExp.ExpressionEmitters
                         il.Ldelem(typeof(int));
                         il.Switch(labels.ToArray());
                     }
-                    il.MarkLabel(defaultLabel);
-                    var doneLabel = il.DefineLabel("done");
-                    context.EmitLoadArguments(node.DefaultBody);
-                    il.Br(doneLabel);
-                    for(int index = 0; index < node.Cases.Count; ++index)
+                    if (pureSwitchValue != switchValue)
+                        pureSwitchValue.Dispose();
+                }
+                else
+                {
+                    // use a number of if/else branches to locate the proper case
+                    EmittingContext.LocalHolder pureSwitchValue = switchValue;
+                    EmittingContext.LocalHolder switchValueIsNull = null;
+                    if (node.SwitchValue.Type.IsNullable())
                     {
-                        il.MarkLabel(caseLabels[index]);
-                        context.EmitLoadArguments(node.Cases[index].Body);
-                        if(index < node.Cases.Count - 1)
-                            il.Br(doneLabel);
+                        pureSwitchValue = context.DeclareLocal(node.SwitchValue.Type.GetGenericArguments()[0]);
+                        switchValueIsNull = context.DeclareLocal(typeof(bool));
+                        il.Ldloca(switchValue);
+                        il.Dup();
+                        context.EmitValueAccess(node.SwitchValue.Type);
+                        il.Stloc(pureSwitchValue);
+                        context.EmitHasValueAccess(node.SwitchValue.Type);
+                        il.Stloc(switchValueIsNull);
                     }
-                    il.MarkLabel(doneLabel);
+                    for(int index = 0; index < node.Cases.Count; index++)
+                    {
+                        var @case = node.Cases[index];
+                        var label = caseLabels[index];
+                        foreach(var testValue in @case.TestValues)
+                        {
+                            context.EmitLoadArguments(testValue);
+                            GroboIL.Label elseLabel = null;
+                            if(testValue.Type.IsNullable())
+                            {
+                                elseLabel = il.DefineLabel("else");
+                                using(var temp = context.DeclareLocal(testValue.Type))
+                                {
+                                    il.Stloc(temp);
+                                    il.Ldloca(temp);
+                                    context.EmitHasValueAccess(testValue.Type);
+                                    if(switchValueIsNull != null)
+                                    {
+                                        il.Ldloc(switchValueIsNull);
+                                        il.Or();
+                                        il.Brfalse(label);
+                                        il.Ldloca(temp);
+                                        context.EmitHasValueAccess(testValue.Type);
+                                        il.Ldloc(switchValueIsNull);
+                                        il.And();
+                                    }
+                                    il.Brfalse(elseLabel);
+                                    il.Ldloca(temp);
+                                    context.EmitValueAccess(testValue.Type);
+                                }
+                            }
+                            il.Ldloc(pureSwitchValue);
+                            if(node.Comparison != null)
+                                il.Call(node.Comparison);
+                            else
+                                il.Ceq();
+                            il.Brtrue(label);
+                            if(elseLabel != null)
+                                il.MarkLabel(elseLabel);
+                        }
+                    }
                 }
             }
-            else
+            il.MarkLabel(defaultLabel);
+            var doneLabel = il.DefineLabel("done");
+            context.EmitLoadArguments(node.DefaultBody);
+            il.Br(doneLabel);
+            for(int index = 0; index < node.Cases.Count; ++index)
             {
+                il.MarkLabel(caseLabels[index]);
+                context.EmitLoadArguments(node.Cases[index].Body);
+                if(index < node.Cases.Count - 1)
+                    il.Br(doneLabel);
             }
+            il.MarkLabel(doneLabel);
             resultType = node.Type;
             return false;
         }

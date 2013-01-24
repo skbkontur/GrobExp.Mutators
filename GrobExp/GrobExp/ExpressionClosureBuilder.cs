@@ -209,7 +209,7 @@ namespace GrobExp
                 }
             }
             var was = new HashSet<uint>();
-            for(int length = hashCodes.Count; length < 10000; ++length)
+            for(int length = hashCodes.Count; length < 100000; ++length)
             {
                 bool ok = true;
                 was.Clear();

@@ -37,8 +37,10 @@ namespace GrobExp
         public void EmitValueAccess(Type type)
         {
             Type memberType;
-            MemberInfo member = SkipVisibility ? (MemberInfo)type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance) : type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
-            EmitMemberAccess(type, member, ResultType.Value, out memberType);
+            if(SkipVisibility)
+                EmitMemberAccess(type, type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance), ResultType.Value, out memberType);
+            else
+                Il.Call(type.GetMethod("GetValueOrDefault", Type.EmptyTypes));
         }
 
         public bool EmitMemberAccess(MemberExpression node, GroboIL.Label returnDefaultValueLabel, bool checkNullReferences, bool extend, ResultType whatReturn, out Type resultType, out LocalHolder owner)

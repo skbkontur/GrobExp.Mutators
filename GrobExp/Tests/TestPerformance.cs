@@ -23,14 +23,13 @@ namespace Tests
             switch(x)
             {
             case 0:
-            case 2:
                 return "zzz";
-            case 5:
-            case 1000001:
-                return "qxx";
-            case 7:
-            case 1000000:
+            case 3:
                 return "qzz";
+            case 6:
+                return "qxx";
+            case 9:
+                return "jgjkfgfhgf";
             default:
                 return "xxx";
             }
@@ -40,6 +39,7 @@ namespace Tests
         {
             switch(s)
             {
+            case null:
             case "0":
             case "2":
                 return "zzz";
@@ -202,6 +202,65 @@ namespace Tests
             Console.WriteLine("Compile");
             Func<int, int> compile = exp.Compile();
             MeasureSpeed(compile, 5, 100000000, ethalon);
+        }
+
+        [Test, Ignore]
+        public void TestSwitch1()
+        {
+            Console.WriteLine("Sharp");
+            var ethalon = MeasureSpeed(Func7, 2, 1000000000, null);
+            var func1 = BuildSwitch1();
+            Console.WriteLine("Switch1");
+            MeasureSpeed(func1, 2, 1000000000, ethalon);
+            var func2 = BuildSwitch2();
+            Console.WriteLine("Switch2");
+            MeasureSpeed(func2, 2, 1000000000, ethalon);
+
+            ParameterExpression a = Expression.Parameter(typeof(int));
+            var exp = Expression.Lambda<Func<int, string>>(
+                Expression.Switch(
+                    a,
+                    Expression.Constant("xxx"),
+                    Expression.SwitchCase(Expression.Constant("zzz"), Expression.Constant(0), Expression.Constant(2)),
+                    Expression.SwitchCase(Expression.Constant("qxx"), Expression.Constant(5), Expression.Constant(1000001)),
+                    Expression.SwitchCase(Expression.Constant("qzz"), Expression.Constant(7), Expression.Constant(1000000))
+                    ),
+                a
+                );
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), 2, 1000000000, ethalon);
+            Console.WriteLine("GroboCompile without checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), 2, 1000000000, ethalon);
+            Console.WriteLine("Compile");
+            MeasureSpeed(exp.Compile(), 2, 1000000000, ethalon);
+        }
+
+        [Test, Ignore]
+        public void TestSwitch2()
+        {
+            Console.WriteLine("Sharp");
+            var ethalon = MeasureSpeed(Func8, "1000000", 100000000, null);
+            var func4 = BuildSwitch4();
+            Console.WriteLine("Switch4");
+            MeasureSpeed(func4, "1000000", 100000000, ethalon);
+
+            ParameterExpression a = Expression.Parameter(typeof(string));
+            var exp = Expression.Lambda<Func<string, string>>(
+                Expression.Switch(
+                    a,
+                    Expression.Constant("xxx"),
+                    Expression.SwitchCase(Expression.Constant("zzz"), Expression.Constant("0"), Expression.Constant("2")),
+                    Expression.SwitchCase(Expression.Constant("qxx"), Expression.Constant("5"), Expression.Constant("1000001")),
+                    Expression.SwitchCase(Expression.Constant("qzz"), Expression.Constant("7"), Expression.Constant("1000000"))
+                    ),
+                a
+                );
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), "1000000", 100000000, ethalon);
+            Console.WriteLine("GroboCompile without checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), "1000000", 100000000, ethalon);
+            Console.WriteLine("Compile");
+            MeasureSpeed(exp.Compile(), "1000000", 100000000, ethalon);
         }
 
         [Test, Ignore]
@@ -515,6 +574,195 @@ namespace Tests
             il.Stfld(xField);
             il.Ret();
             return new Tuple<Action, MethodInfo>((Action)dynamicMethod.CreateDelegate(typeof(Action)), dynamicMethod);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string Func7(int x)
+        {
+            switch (x)
+            {
+                case 0:
+                case 2:
+                    return "zzz";
+                case 5:
+                case 1000001:
+                    return "qxx";
+                case 7:
+                case 1000000:
+                    return "qzz";
+                default:
+                    return "xxx";
+            }
+        }
+
+        private Func<int, string> BuildSwitch1()
+        {
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] {typeof(int)}, Module, true);
+            var il = new GroboIL(dynamicMethod);
+            il.Ldarg(0);
+            var zzzLabel = il.DefineLabel("zzz");
+            var qxxLabel = il.DefineLabel("qxx");
+            var qzzLabel = il.DefineLabel("qzz");
+            var xxxLabel = il.DefineLabel("xxx");
+            il.Switch(zzzLabel, xxxLabel, zzzLabel);
+            il.Ldarg(0);
+            il.Ldc_I4(5);
+            il.Sub();
+            il.Switch(qxxLabel, xxxLabel, qzzLabel);
+            il.Ldarg(0);
+            il.Ldc_I4(0xf4240);
+            il.Sub();
+            il.Switch(qzzLabel, qxxLabel);
+            il.Br(xxxLabel);
+            il.MarkLabel(zzzLabel);
+            il.Ldstr("zzz");
+            il.Ret();
+            il.MarkLabel(qxxLabel);
+            il.Ldstr("qxx");
+            il.Ret();
+            il.MarkLabel(qzzLabel);
+            il.Ldstr("qzz");
+            il.Ret();
+            il.MarkLabel(xxxLabel);
+            il.Ldstr("xxx");
+            il.Ret();
+            return (Func<int, string>)dynamicMethod.CreateDelegate(typeof(Func<int, string>));
+        }
+
+        public static int[] testValues = new[] { 0, -1, 2, -1, -1, 5, -1, 7, 1000000, 1000001, -1, -1, -1, -1 };
+        public static int[] indexes = new[] { 0, -1, 1, -1, -1, 2, -1, 3, 4, 5, -1, -1, -1, -1 };
+
+        private Func<int, string> BuildSwitch2()
+        {
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] {typeof(int)}, Module, true);
+            var il = new GroboIL(dynamicMethod);
+            var zzzLabel = il.DefineLabel("zzz");
+            var qxxLabel = il.DefineLabel("qxx");
+            var qzzLabel = il.DefineLabel("qzz");
+            var xxxLabel = il.DefineLabel("xxx");
+            var index = il.DeclareLocal(typeof(uint));
+            il.Ldfld(typeof(TestPerformance).GetField("testValues"));
+            il.Ldarg(0);
+            il.Ldc_I4(14);
+            il.Rem(typeof(uint));
+            il.Stloc(index);
+            il.Ldloc(index);
+            il.Ldelem(typeof(int));
+            il.Ldarg(0);
+            il.Bne(xxxLabel);
+            il.Ldfld(typeof(TestPerformance).GetField("indexes"));
+            il.Ldloc(index);
+            il.Ldelem(typeof(int));
+            il.Switch(zzzLabel, zzzLabel, qxxLabel, qzzLabel, qzzLabel, qxxLabel);
+            il.Br(xxxLabel);
+            il.MarkLabel(zzzLabel);
+            il.Ldstr("zzz");
+            il.Ret();
+            il.MarkLabel(qxxLabel);
+            il.Ldstr("qxx");
+            il.Ret();
+            il.MarkLabel(qzzLabel);
+            il.Ldstr("qzz");
+            il.Ret();
+            il.MarkLabel(xxxLabel);
+            il.Ldstr("xxx");
+            il.Ret();
+            return (Func<int, string>)dynamicMethod.CreateDelegate(typeof(Func<int, string>));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private string Func8(string s)
+        {
+            switch (s)
+            {
+                case "0":
+                case "2":
+                    return "zzz";
+                case "5":
+                case "1000001":
+                    return "qxx";
+                case "7":
+                case "1000000":
+                    return "qzz";
+                default:
+                    return "xxx";
+            }
+        }
+
+        public static string[] testValues2;
+        public static int[] indexes2;
+
+        private static void Init(string[] values)
+        {
+            for(int x = values.Length; ;++x)
+            {
+                bool[] exist = new bool[x];
+                bool ok = true;
+                foreach(var s in values)
+                {
+                    var hash = s.GetHashCode();
+                    if(exist[hash % x])
+                    {
+                        ok = false;
+                        break;
+                    }
+                    exist[hash % x] = true;
+                }
+                if(ok)
+                {
+                    testValues2 = new string[x];
+                    indexes2 = new int[x];
+                    for(int index = 0; index < values.Length; index++)
+                    {
+                        var s = values[index];
+                        var i = s.GetHashCode() % x;
+                        testValues2[i] = s;
+                        indexes2[i] = index;
+                    }
+                    return;
+                }
+            }
+        }
+
+        private Func<string, string> BuildSwitch4()
+        {
+            Init(new[] {"0", "2", "5", "1000001", "7", "1000000"});
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] { typeof(string) }, Module, true);
+            var il = new GroboIL(dynamicMethod);
+            var zzzLabel = il.DefineLabel("zzz");
+            var qxxLabel = il.DefineLabel("qxx");
+            var qzzLabel = il.DefineLabel("qzz");
+            var xxxLabel = il.DefineLabel("xxx");
+            var index = il.DeclareLocal(typeof(uint));
+            il.Ldfld(typeof(TestPerformance).GetField("testValues2"));
+            il.Ldarg(0);
+            il.Call(typeof(object).GetMethod("GetHashCode"), typeof(string));
+            il.Ldc_I4(testValues2.Length);
+            il.Rem(typeof(uint));
+            il.Stloc(index);
+            il.Ldloc(index);
+            il.Ldelem(typeof(string));
+            il.Ldarg(0);
+            il.Call(typeof(object).GetMethod("Equals", new[] {typeof(object)}), typeof(string));
+            il.Brfalse(xxxLabel);
+            il.Ldfld(typeof(TestPerformance).GetField("indexes2"));
+            il.Ldloc(index);
+            il.Ldelem(typeof(int));
+            il.Switch(zzzLabel, zzzLabel, qxxLabel, qxxLabel, qzzLabel, qzzLabel);
+            il.Br(xxxLabel);
+            il.MarkLabel(zzzLabel);
+            il.Ldstr("zzz");
+            il.Ret();
+            il.MarkLabel(qxxLabel);
+            il.Ldstr("qxx");
+            il.Ret();
+            il.MarkLabel(qzzLabel);
+            il.Ldstr("qzz");
+            il.Ret();
+            il.MarkLabel(xxxLabel);
+            il.Ldstr("xxx");
+            il.Ret();
+            return (Func<string, string>)dynamicMethod.CreateDelegate(typeof(Func<string, string>));
         }
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()

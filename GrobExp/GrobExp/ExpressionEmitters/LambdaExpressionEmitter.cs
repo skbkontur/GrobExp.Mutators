@@ -30,7 +30,7 @@ namespace GrobExp.ExpressionEmitters
             {
                 var parameters = new[] {context.ClosureParameter}.Concat(node.Parameters).ToArray();
                 var lambda = Expression.Lambda(Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), node.ReturnType), node.Body, node.Name, node.TailCall, parameters);
-                var compiledLambda = LambdaCompiler.Compile(lambda, context.ClosureType, context.ClosureParameter, context.Options, context.CompiledLambdas);
+                var compiledLambda = LambdaCompiler.Compile(lambda, context.ClosureType, context.ClosureParameter, context.Switches, context.Options, context.CompiledLambdas);
                 Type closureType;
                 ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
                 context.CompiledLambdas.Add(compiledLambda);

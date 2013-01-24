@@ -21,7 +21,9 @@ namespace GrobExp
             typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
         }
 
-        public LambdaExpression Build(out Type closureType, out ParameterExpression closureParameter, out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters, out bool hasSubLambdas)
+        public LambdaExpression Build(out Type closureType, out ParameterExpression closureParameter,
+                                      out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters,
+                                      out Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, out bool hasSubLambdas)
         {
             var result = (LambdaExpression)Visit(lambda);
             typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.Static);
@@ -30,9 +32,30 @@ namespace GrobExp
             closureParameter = this.parameters.Count > 0 || this.constants.Count > 0 || this.hasSubLambdas ? Expression.Parameter(closureType) : null;
             constants = this.constants.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
             parameters = this.parameters.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
+            switches = this.switches.ToDictionary(item => item.Key, item => new Tuple<FieldInfo, FieldInfo, int>(type.GetField(item.Value.Item1.Name), type.GetField(item.Value.Item2.Name), item.Value.Item3));
             hasSubLambdas = this.hasSubLambdas;
             BuildInitializer(type, new ClosureSubstituter(closureParameter, parameters))();
             return result;
+        }
+
+        protected override Expression VisitSwitch(SwitchExpression node)
+        {
+            object switchCaseValues;
+            object switchCaseIndexes;
+            int count;
+            var type = node.SwitchValue.Type;
+            if(type.IsNullable())
+                type = type.GetGenericArguments()[0];
+            if(node.Cases.All(@case => @case.TestValues.All(expression => expression.NodeType == ExpressionType.Constant)) && TryBuildSwitchCaseValues(type, node.Cases, out switchCaseValues, out switchCaseIndexes, out count))
+            {
+                switches.Add(node, new Tuple<FieldBuilder, FieldBuilder, int>(BuildConstField(type.MakeArrayType(), switchCaseValues), BuildConstField(typeof(int[]), switchCaseIndexes), count));
+                Visit(node.SwitchValue);
+                Visit(node.DefaultBody);
+                foreach(var @case in node.Cases)
+                    Visit(@case.Body);
+                return node;
+            }
+            return base.VisitSwitch(node);
         }
 
         protected override Expression VisitUnary(UnaryExpression node)
@@ -112,16 +135,168 @@ namespace GrobExp
             var peek = localParameters.Peek();
             if(!peek.Contains(node) && !parameters.ContainsKey(node))
             {
-                FieldInfo field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public);
+                FieldBuilder field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public);
                 parameters.Add(node, field);
             }
             return base.VisitParameter(node);
         }
 
-        private FieldInfo BuildConstField(Type type, object value)
+        private bool TryBuildSwitchCaseValues(Type type, IEnumerable<SwitchCase> cases, out object switchCaseValues, out object switchCaseIndexes, out int count)
+        {
+            switchCaseValues = null;
+            switchCaseIndexes = null;
+            count = 0;
+            var typeCode = Type.GetTypeCode(type);
+            switch(typeCode)
+            {
+            case TypeCode.DBNull:
+            case TypeCode.Boolean:
+            case TypeCode.DateTime:
+            case TypeCode.Decimal:
+            case TypeCode.Double:
+            case TypeCode.Single:
+            case TypeCode.Empty:
+                return false;
+            }
+            var hashCodes = new Dictionary<ulong, object>();
+            foreach(var @case in cases)
+            {
+                foreach(ConstantExpression constant in @case.TestValues)
+                {
+                    var value = constant.Value;
+                    if(value == null)
+                        continue;
+                    ulong hashCode;
+                    unchecked
+                    {
+                        switch(typeCode)
+                        {
+                        case TypeCode.Byte:
+                            hashCode = (byte)value;
+                            break;
+                        case TypeCode.Char:
+                            hashCode = (char)value;
+                            break;
+                        case TypeCode.Int16:
+                            hashCode = (ulong)(short)value;
+                            break;
+                        case TypeCode.Int32:
+                            hashCode = (ulong)(int)value;
+                            break;
+                        case TypeCode.Int64:
+                            hashCode = (ulong)(long)value;
+                            break;
+                        case TypeCode.SByte:
+                            hashCode = (ulong)(sbyte)value;
+                            break;
+                        case TypeCode.UInt16:
+                            hashCode = (ushort)value;
+                            break;
+                        case TypeCode.UInt32:
+                            hashCode = (uint)value;
+                            break;
+                        case TypeCode.UInt64:
+                            hashCode = (ulong)value;
+                            break;
+                        default:
+                            hashCode = (ulong)value.GetHashCode();
+                            break;
+                        }
+                    }
+                    if(hashCodes.ContainsKey(hashCode))
+                        return false;
+                    hashCodes.Add(hashCode, value);
+                }
+            }
+            var was = new HashSet<uint>();
+            for(int length = hashCodes.Count; length < 10000; ++length)
+            {
+                bool ok = true;
+                was.Clear();
+                foreach(var entry in hashCodes)
+                {
+                    unchecked
+                    {
+                        var index = (uint)(entry.Key % (uint)length);
+                        if(was.Contains(index))
+                        {
+                            ok = false;
+                            break;
+                        }
+                        was.Add(index);
+                    }
+                }
+                if(!ok) continue;
+                var values = new object[length];
+                var indexes = new int[length];
+                for(int k = 0; k < length; ++k)
+                {
+                    unchecked
+                    {
+                        switch(typeCode)
+                        {
+                        case TypeCode.Byte:
+                            values[k] = (byte)(k + 1);
+                            break;
+                        case TypeCode.Char:
+                            values[k] = (char)(k + 1);
+                            break;
+                        case TypeCode.Int16:
+                            values[k] = (short)(k + 1);
+                            break;
+                        case TypeCode.Int32:
+                            values[k] = k + 1;
+                            break;
+                        case TypeCode.Int64:
+                            values[k] = (long)(k + 1);
+                            break;
+                        case TypeCode.SByte:
+                            values[k] = (sbyte)(k + 1);
+                            break;
+                        case TypeCode.UInt16:
+                            values[k] = (ushort)(k + 1);
+                            break;
+                        case TypeCode.UInt32:
+                            values[k] = (uint)(k + 1);
+                            break;
+                        case TypeCode.UInt64:
+                            values[k] = (ulong)(k + 1);
+                            break;
+                        default:
+                            values[k] = null;
+                            break;
+                        }
+                    }
+                    indexes[k] = -1;
+                }
+                int i = 0;
+                foreach(var entry in hashCodes)
+                {
+                    unchecked
+                    {
+                        var index = (uint)(entry.Key % (uint)length);
+                        values[index] = entry.Value;
+                        indexes[index] = i;
+                    }
+                    ++i;
+                }
+                switchCaseValues = convertMethod.MakeGenericMethod(type).Invoke(null, new object[] {values});
+                switchCaseIndexes = indexes;
+                count = length;
+                return true;
+            }
+            return false;
+        }
+
+        private static T[] Convert<T>(object[] arr)
+        {
+            return arr.Cast<T>().ToArray();
+        }
+
+        private FieldBuilder BuildConstField(Type type, object value)
         {
             var key = new KeyValuePair<Type, object>(type, value);
-            var field = (FieldInfo)hashtable[key];
+            var field = (FieldBuilder)hashtable[key];
             if(field == null)
             {
                 field = typeBuilder.DefineField(GetFieldName(type), GetFieldType(type), FieldAttributes.Public | FieldAttributes.Static);
@@ -187,6 +362,8 @@ namespace GrobExp
             return Format(type) + "_" + fieldId++;
         }
 
+        private static readonly MethodInfo convertMethod = ((MethodCallExpression)((Expression<Func<object[], int[]>>)(arr => Convert<int>(arr))).Body).Method.GetGenericMethodDefinition();
+
         private int quoteDepth;
 
         private bool hasSubLambdas;
@@ -198,8 +375,9 @@ namespace GrobExp
         private readonly Stack<HashSet<ParameterExpression>> localParameters = new Stack<HashSet<ParameterExpression>>();
 
         private readonly Hashtable hashtable = new Hashtable();
-        private readonly Dictionary<ConstantExpression, FieldInfo> constants = new Dictionary<ConstantExpression, FieldInfo>();
-        private readonly Dictionary<ParameterExpression, FieldInfo> parameters = new Dictionary<ParameterExpression, FieldInfo>();
+        private readonly Dictionary<ConstantExpression, FieldBuilder> constants = new Dictionary<ConstantExpression, FieldBuilder>();
+        private readonly Dictionary<ParameterExpression, FieldBuilder> parameters = new Dictionary<ParameterExpression, FieldBuilder>();
+        private readonly Dictionary<SwitchExpression, Tuple<FieldBuilder, FieldBuilder, int>> switches = new Dictionary<SwitchExpression, Tuple<FieldBuilder, FieldBuilder, int>>();
 
         private readonly TypeBuilder typeBuilder;
     }

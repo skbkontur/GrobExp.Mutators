@@ -424,6 +424,7 @@ namespace GrobExp
         public ParameterExpression[] Parameters { get; set; }
         public Type ClosureType { get; set; }
         public ParameterExpression ClosureParameter { get; set; }
+        public Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> Switches { get; set; }
         public List<CompiledLambda> CompiledLambdas { get; set; }
         public GroboIL Il { get; set; }
         public Dictionary<ParameterExpression, LocalHolder> VariablesToLocals { get { return variablesToLocals; } }

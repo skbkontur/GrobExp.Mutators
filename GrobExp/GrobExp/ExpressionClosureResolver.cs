@@ -12,15 +12,16 @@ namespace GrobExp
         {
             lambda = (LambdaExpression)new LambdaPreparer().Visit(lambda);
             bool hasSubLambdas;
-            this.lambda = new ExpressionClosureBuilder(lambda).Build(out closureType, out closureParameter, out constants, out parameters, out hasSubLambdas);
-            closureParameter = parameters.Count > 0 || constants.Count > 0 || hasSubLambdas ? Expression.Parameter(closureType) : null;
+            this.lambda = new ExpressionClosureBuilder(lambda).Build(out closureType, out closureParameter, out constants, out parameters, out switches, out hasSubLambdas);
+            closureParameter = parameters.Count > 0 || hasSubLambdas ? Expression.Parameter(closureType) : null;
         }
 
-        public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter)
+        public LambdaExpression Resolve(out Type closureType, out ParameterExpression closureParameter, out Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches)
         {
             var body = ((LambdaExpression)Visit(lambda)).Body;
             closureParameter = this.closureParameter;
             closureType = this.closureType;
+            switches = this.switches;
             if(closureParameter != null)
                 body = Expression.Block(new[] {closureParameter}, Expression.Assign(closureParameter, Expression.New(closureType)), body);
             var delegateType = Extensions.GetDelegateType(lambda.Parameters.Select(parameter => parameter.Type).ToArray(), lambda.ReturnType);
@@ -109,5 +110,6 @@ namespace GrobExp
         private readonly Type closureType;
         private readonly Dictionary<ConstantExpression, FieldInfo> constants;
         private readonly Dictionary<ParameterExpression, FieldInfo> parameters;
+        private readonly Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
     }
 }

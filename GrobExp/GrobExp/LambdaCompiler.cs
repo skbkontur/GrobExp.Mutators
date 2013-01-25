@@ -16,6 +16,12 @@ namespace GrobExp
     {
         public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
         {
+            string il;
+            return Compile(lambda, out il, options);
+        }
+
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, out string il, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
             ParameterExpression closureParameter;
@@ -32,6 +38,7 @@ namespace GrobExp
                 ilCode.AppendLine("delegates[" + i + "]");
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
+            il = ilCode.ToString();
             Delegate result;
             if(closureType == null)
                 result = compiledLambda.Delegate;

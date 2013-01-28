@@ -12,21 +12,29 @@ namespace GrobExp.ExpressionEmitters
         {
             var il = context.Il;
 
-            GroboIL.Label lengthIsNullLabel = context.CanReturn ? il.DefineLabel("lengthIsNull") : null;
-            Type lengthType;
-            var labelUsed = ExpressionEmittersCollection.Emit(node.Expressions.Single(), context, lengthIsNullLabel, out lengthType);
-            if(lengthType != typeof(int))
-                throw new InvalidOperationException("Cannot create an array with length of type '" + lengthType + "'");
-            if(labelUsed && context.CanReturn)
+            if(node.Expressions.Count != 1)
             {
-                var lengthIsNotNullLabel = il.DefineLabel("lengthIsNotNull");
-                il.Br(lengthIsNotNullLabel);
-                il.MarkLabel(lengthIsNullLabel);
-                il.Pop();
-                il.Ldc_I4(0);
-                il.MarkLabel(lengthIsNotNullLabel);
+                context.EmitLoadArguments(node.Expressions.ToArray());
+                il.Newobj(node.Type.GetConstructor(node.Expressions.Select(exp => exp.Type).ToArray()));
             }
-            il.Newarr(node.Type.GetElementType());
+            else
+            {
+                GroboIL.Label lengthIsNullLabel = context.CanReturn ? il.DefineLabel("lengthIsNull") : null;
+                Type lengthType;
+                var labelUsed = ExpressionEmittersCollection.Emit(node.Expressions.Single(), context, lengthIsNullLabel, out lengthType);
+                if(lengthType != typeof(int))
+                    throw new InvalidOperationException("Cannot create an array with length of type '" + lengthType + "'");
+                if(labelUsed && context.CanReturn)
+                {
+                    var lengthIsNotNullLabel = il.DefineLabel("lengthIsNotNull");
+                    il.Br(lengthIsNotNullLabel);
+                    il.MarkLabel(lengthIsNullLabel);
+                    il.Pop();
+                    il.Ldc_I4(0);
+                    il.MarkLabel(lengthIsNotNullLabel);
+                }
+                il.Newarr(node.Type.GetElementType());
+            }
             resultType = node.Type;
             return false;
         }

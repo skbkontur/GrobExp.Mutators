@@ -130,6 +130,18 @@ namespace Tests
             Assert.AreEqual(null, arr[0]);
         }
 
+        [Test]
+        public void TestNewArrayBounds3()
+        {
+            Expression<Func<int, int, int?[,]>> exp = (i, j) => new int?[i, j];
+            var f = LambdaCompiler.Compile(exp);
+            var arr = f(1, 2);
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(2, arr.Length);
+            Assert.AreEqual(null, arr[0, 0]);
+            Assert.AreEqual(null, arr[0, 1]);
+        }
+
         public struct TestStructA
         {
             public string S { get; set; }

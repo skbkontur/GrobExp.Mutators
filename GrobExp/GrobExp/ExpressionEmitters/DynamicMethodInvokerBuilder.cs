@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -111,6 +112,9 @@ namespace GrobExp.ExpressionEmitters
             il.Stfld(methodField);
             il.Ret();
 
+            var fields = closureType.GetFields(BindingFlags.Static | BindingFlags.Public);
+            bool needFinalizer = fields.Length > 0;
+
             var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
             il = new GroboIL(method);
             for(int i = 0; i < genericParameterTypes.Length; ++i)
@@ -118,29 +122,37 @@ namespace GrobExp.ExpressionEmitters
             il.Ldarg(0);
             il.Ldfld(methodField);
             il.Calli(CallingConventions.Standard, genericResultType, genericParameterTypes);
-            il.Ret();
-
-            MethodInfo objectFinalizer = typeof(Object).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
-            var finalizer = typeBuilder.DefineMethod("Finalize", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
-            il = new GroboIL(finalizer);
-            foreach(var field in closureType.GetFields(BindingFlags.Static | BindingFlags.Public))
+            if(needFinalizer)
             {
-                if(!field.FieldType.IsValueType)
-                {
-                    il.Ldnull(field.FieldType);
-                    il.Stfld(field);
-                }
-                else
-                {
-                    il.Ldflda(field);
-                    il.Initobj(field.FieldType);
-                }
+                il.Ldarg(0);
+                il.Call(gcKeepAliveMethod);
             }
-            il.Ldarg(0);
-            il.Callnonvirt(objectFinalizer);
             il.Ret();
 
-            typeBuilder.DefineMethodOverride(finalizer, objectFinalizer);
+            if(needFinalizer)
+            {
+                MethodInfo objectFinalizer = typeof(Object).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+                var finalizer = typeBuilder.DefineMethod("Finalize", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
+                il = new GroboIL(finalizer);
+                foreach(var field in fields)
+                {
+                    if(!field.FieldType.IsValueType)
+                    {
+                        il.Ldnull(field.FieldType);
+                        il.Stfld(field);
+                    }
+                    else
+                    {
+                        il.Ldflda(field);
+                        il.Initobj(field.FieldType);
+                    }
+                }
+                il.Ldarg(0);
+                il.Callnonvirt(objectFinalizer);
+                il.Ret();
+
+                typeBuilder.DefineMethodOverride(finalizer, objectFinalizer);
+            }
 
             return typeBuilder.CreateType();
         }
@@ -174,6 +186,8 @@ namespace GrobExp.ExpressionEmitters
             il.Ret(); // return runtimeMethodHandle.GetFunctionPointer()
             return (Func<DynamicMethod, IntPtr>)method.CreateDelegate(typeof(Func<DynamicMethod, IntPtr>));
         }
+
+        private static readonly MethodInfo gcKeepAliveMethod = ((MethodCallExpression)((Expression<Action>)(() => GC.KeepAlive(null))).Body).Method;
 
         private static readonly Hashtable types = new Hashtable();
         private static readonly object typesLock = new object();

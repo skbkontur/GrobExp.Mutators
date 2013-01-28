@@ -123,7 +123,7 @@ namespace GrobExp
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if(quoteDepth > 0 || node.Value == null || node.Type.IsPrimitive || node.Type == typeof(string))
+            if(quoteDepth > 0 || node.Value == null || node.Type.IsPrimitive /*|| (node.Type.IsNullable() && node.Type.GetGenericArguments()[0].IsPrimitive)*/ || node.Type == typeof(string))
                 return node;
             if(!constants.ContainsKey(node))
                 constants.Add(node, BuildConstField(node.Type, node.Value));

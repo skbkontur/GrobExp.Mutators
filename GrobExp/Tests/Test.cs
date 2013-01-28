@@ -58,6 +58,24 @@ namespace Tests
         }
 
         [Test]
+        public void TestConstsAreNotFreedWhileRunning()
+        {
+            var guid = new Guid("2e224f5f-e392-4753-a19a-4304f226b965");
+            ParameterExpression parameter = Expression.Parameter(typeof(Guid));
+            Expression<Func<Guid, bool>> exp = Expression.Lambda<Func<Guid, bool>>(
+                Expression.Block(
+                    Expression.Call(threadSleepMethod, new[] {Expression.Constant(10)}),
+                    Expression.Equal(parameter, Expression.Constant(guid), false, typeof(Guid).GetMethod("op_Equality"))
+                    ),
+                parameter);
+
+            new Thread(Collect).Start();
+
+            for(int iter = 0; iter < 100; ++iter)
+                DoTestConstsAreNotFreedWhileRunning(exp, new Guid("2e224f5f-e392-4753-a19a-4304f226b965"));
+        }
+
+        [Test]
         public void TestConstsAreFreedAfterGarbageCollecting1()
         {
             var weakRef = DoTestConstsAreFreedAfterGarbageCollecting1();
@@ -419,6 +437,16 @@ namespace Tests
             Two = 2
         }
 
+        private void DoTestConstsAreNotFreedWhileRunning(Expression<Func<Guid, bool>> lambda, Guid guid)
+        {
+            string il;
+            var func = LambdaCompiler.Compile(lambda, out il, CompilerOptions.None);
+            var actual = func(guid);
+            if(!actual)
+                Console.WriteLine(il);
+            Assert.IsTrue(actual);
+        }
+
         private static int?[] CreateNullableIntArray(TestClassA a)
         {
             return new int?[a.Z];
@@ -531,6 +559,8 @@ namespace Tests
         {
             return a.Y;
         }
+
+        private static readonly MethodInfo threadSleepMethod = ((MethodCallExpression)((Expression<Action>)(() => Thread.Sleep(0))).Body).Method;
 
         private static readonly MethodInfo getStringMethod = ((MethodCallExpression)((Expression<Func<string>>)(() => GetString())).Body).Method;
 

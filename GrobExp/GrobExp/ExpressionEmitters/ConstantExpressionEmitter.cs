@@ -13,7 +13,8 @@ namespace GrobExp.ExpressionEmitters
                 context.EmitLoadDefaultValue(node.Type);
             else
             {
-                switch(Type.GetTypeCode(node.Type))
+                var typeCode = Type.GetTypeCode(node.Type.IsNullable() ? node.Type.GetGenericArguments()[0] : node.Type);
+                switch(typeCode)
                 {
                 case TypeCode.Boolean:
                     context.Il.Ldc_I4(((bool)node.Value) ? 1 : 0);
@@ -63,6 +64,8 @@ namespace GrobExp.ExpressionEmitters
                 default:
                     throw new NotSupportedException("Constant of type '" + node.Type + "' is not supported");
                 }
+                if(node.Type.IsNullable())
+                    context.Il.Newobj(node.Type.GetConstructor(new[] {node.Type.GetGenericArguments()[0]}));
             }
             resultType = node.Type;
             return false;

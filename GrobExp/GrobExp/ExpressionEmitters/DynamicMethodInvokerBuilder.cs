@@ -13,66 +13,124 @@ namespace GrobExp.ExpressionEmitters
 {
     internal static class DynamicMethodInvokerBuilder
     {
-        public static Type BuildDynamicMethodInvoker(Type closureType, Type resultType, Type[] parameterTypes, bool buildFinalizer = false)
+        public static Type BuildDynamicMethodInvoker(Type constantsType, Type closureType, Type resultType, Type[] parameterTypes)
         {
-            if(buildFinalizer)
+            string key = GetKey(resultType, parameterTypes);
+            var type = (Type)typesWithClosure[key];
+            if(type == null)
             {
-                var type = BuildDynamicMethodInvokerInternal(closureType, parameterTypes.Length, resultType == typeof(void));
-                if(!type.IsGenericType)
-                    return type;
-                var genericArguments = new List<Type>(parameterTypes);
-                if(resultType != typeof(void))
-                    genericArguments.Add(resultType);
-                return type.MakeGenericType(genericArguments.ToArray());
-            }
-            else
-            {
-                string key = GetKey(resultType, parameterTypes);
-                var type = (Type)types[key];
-                if(type == null)
+                lock(typesWithClosureLock)
                 {
-                    lock(typesLock)
+                    type = (Type)typesWithClosure[key];
+                    if(type == null)
                     {
-                        type = (Type)types[key];
-                        if(type == null)
-                        {
-                            type = BuildDynamicMethodInvokerInternal(key, parameterTypes.Length, resultType == typeof(void));
-                            types[key] = type;
-                        }
+                        type = BuildDynamicMethodInvokerWithClosure(key, parameterTypes.Length, resultType == typeof(void));
+                        typesWithClosure[key] = type;
                     }
                 }
-                if(!type.IsGenericType)
-                    return type;
-                var genericArguments = new List<Type> {closureType};
-                genericArguments.AddRange(parameterTypes);
-                if(resultType != typeof(void))
-                    genericArguments.Add(resultType);
-                return type.MakeGenericType(genericArguments.ToArray());
             }
+            if(!type.IsGenericType)
+                return type;
+            var genericArguments = new List<Type> {constantsType, closureType};
+            genericArguments.AddRange(parameterTypes);
+            if(resultType != typeof(void))
+                genericArguments.Add(resultType);
+            return type.MakeGenericType(genericArguments.ToArray());
+        }
+
+        public static Type BuildDynamicMethodInvoker(Type constantsType, Type resultType, Type[] parameterTypes)
+        {
+            string key = GetKey(resultType, parameterTypes);
+            var type = (Type)typesWithoutClosure[key];
+            if(type == null)
+            {
+                lock(typesWithoutClosureLock)
+                {
+                    type = (Type)typesWithoutClosure[key];
+                    if(type == null)
+                    {
+                        type = BuildDynamicMethodInvokerWithoutClosure(key, parameterTypes.Length, resultType == typeof(void));
+                        typesWithoutClosure[key] = type;
+                    }
+                }
+            }
+            if(!type.IsGenericType)
+                return type;
+            var genericArguments = new List<Type> {constantsType};
+            genericArguments.AddRange(parameterTypes);
+            if(resultType != typeof(void))
+                genericArguments.Add(resultType);
+            return type.MakeGenericType(genericArguments.ToArray());
         }
 
         public static readonly Func<DynamicMethod, IntPtr> DynamicMethodPointerExtractor = EmitDynamicMethodPointerExtractor();
 
-        private static Type BuildDynamicMethodInvokerInternal(string name, int numberOfParameters, bool returnsVoid)
+        private static Type BuildDynamicMethodInvokerWithClosure(string name, int numberOfParameters, bool returnsVoid)
         {
-            var typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
-            var names = new List<string> {"TClosure"};
+            var typeBuilder = LambdaCompiler.Module.DefineType(name + "_WithClosure", TypeAttributes.Public | TypeAttributes.Class);
+            var names = new List<string> {"TConstants", "TClosure"};
             for(int i = 0; i < numberOfParameters; ++i)
                 names.Add("T" + (i + 1));
             if(!returnsVoid)
                 names.Add("TResult");
             GenericTypeParameterBuilder[] genericTypeParameters = typeBuilder.DefineGenericParameters(names.ToArray());
-            Type genericClosureType = genericTypeParameters.First();
+            Type genericConstantsType = genericTypeParameters.First();
+            Type genericClosureType = genericTypeParameters.Skip(1).First();
             Type genericResultType = returnsVoid ? typeof(void) : genericTypeParameters.Last();
-            Type[] genericParameterTypes = genericTypeParameters.Skip(1).Take(numberOfParameters).ToArray();
+            Type[] genericParameterTypes = genericTypeParameters.Skip(2).Take(numberOfParameters).ToArray();
+            var constantsField = typeBuilder.DefineField("constants", genericConstantsType, FieldAttributes.Private | FieldAttributes.InitOnly);
             var closureField = typeBuilder.DefineField("closure", genericClosureType, FieldAttributes.Private | FieldAttributes.InitOnly);
             var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
 
-            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {genericClosureType, typeof(IntPtr)});
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {genericConstantsType, genericClosureType, typeof(IntPtr)});
             var il = new GroboIL(constructor);
             il.Ldarg(0);
             il.Ldarg(1);
+            il.Stfld(constantsField);
+            il.Ldarg(0);
+            il.Ldarg(2);
             il.Stfld(closureField);
+            il.Ldarg(0);
+            il.Ldarg(3);
+            il.Stfld(methodField);
+            il.Ret();
+
+            var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
+            il = new GroboIL(method);
+            il.Ldarg(0);
+            il.Ldfld(constantsField);
+            il.Ldarg(0);
+            il.Ldfld(closureField);
+            for(int i = 0; i < genericParameterTypes.Length; ++i)
+                il.Ldarg(i + 1);
+            il.Ldarg(0);
+            il.Ldfld(methodField);
+            il.Calli(CallingConventions.Standard, genericResultType, new[] {genericConstantsType, genericClosureType}.Concat(genericParameterTypes).ToArray());
+            il.Ret();
+
+            return typeBuilder.CreateType();
+        }
+
+        private static Type BuildDynamicMethodInvokerWithoutClosure(string name, int numberOfParameters, bool returnsVoid)
+        {
+            var typeBuilder = LambdaCompiler.Module.DefineType(name + "_WithoutClosure", TypeAttributes.Public | TypeAttributes.Class);
+            var names = new List<string> {"TConstants"};
+            for(int i = 0; i < numberOfParameters; ++i)
+                names.Add("T" + (i + 1));
+            if(!returnsVoid)
+                names.Add("TResult");
+            GenericTypeParameterBuilder[] genericTypeParameters = typeBuilder.DefineGenericParameters(names.ToArray());
+            Type genericConstantsType = genericTypeParameters.First();
+            Type genericResultType = returnsVoid ? typeof(void) : genericTypeParameters.Last();
+            Type[] genericParameterTypes = genericTypeParameters.Skip(1).Take(numberOfParameters).ToArray();
+            var constantsField = typeBuilder.DefineField("constants", genericConstantsType, FieldAttributes.Private | FieldAttributes.InitOnly);
+            var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
+
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {genericConstantsType, typeof(IntPtr)});
+            var il = new GroboIL(constructor);
+            il.Ldarg(0);
+            il.Ldarg(1);
+            il.Stfld(constantsField);
             il.Ldarg(0);
             il.Ldarg(2);
             il.Stfld(methodField);
@@ -81,78 +139,13 @@ namespace GrobExp.ExpressionEmitters
             var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
             il = new GroboIL(method);
             il.Ldarg(0);
-            il.Ldfld(closureField);
+            il.Ldfld(constantsField);
             for(int i = 0; i < genericParameterTypes.Length; ++i)
                 il.Ldarg(i + 1);
             il.Ldarg(0);
             il.Ldfld(methodField);
-            il.Calli(CallingConventions.Standard, genericResultType, new[] {genericClosureType}.Concat(genericParameterTypes).ToArray());
+            il.Calli(CallingConventions.Standard, genericResultType, new[] {genericConstantsType}.Concat(genericParameterTypes).ToArray());
             il.Ret();
-
-            return typeBuilder.CreateType();
-        }
-
-        private static Type BuildDynamicMethodInvokerInternal(Type closureType, int numberOfParameters, bool returnsVoid)
-        {
-            var typeBuilder = LambdaCompiler.Module.DefineType(closureType.Name + "_Invoker", TypeAttributes.Public | TypeAttributes.Class);
-            var names = new List<string>();
-            for(int i = 0; i < numberOfParameters; ++i)
-                names.Add("T" + (i + 1));
-            if(!returnsVoid)
-                names.Add("TResult");
-            GenericTypeParameterBuilder[] genericTypeParameters = names.Count == 0 ? new GenericTypeParameterBuilder[0] : typeBuilder.DefineGenericParameters(names.ToArray());
-            Type genericResultType = returnsVoid ? typeof(void) : genericTypeParameters.Last();
-            Type[] genericParameterTypes = genericTypeParameters.Take(numberOfParameters).ToArray();
-            var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
-
-            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {typeof(IntPtr)});
-            var il = new GroboIL(constructor);
-            il.Ldarg(0);
-            il.Ldarg(1);
-            il.Stfld(methodField);
-            il.Ret();
-
-            var fields = closureType.GetFields(BindingFlags.Static | BindingFlags.Public);
-            bool needFinalizer = fields.Length > 0;
-
-            var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
-            il = new GroboIL(method);
-            for(int i = 0; i < genericParameterTypes.Length; ++i)
-                il.Ldarg(i + 1);
-            il.Ldarg(0);
-            il.Ldfld(methodField);
-            il.Calli(CallingConventions.Standard, genericResultType, genericParameterTypes);
-            if(needFinalizer)
-            {
-                il.Ldarg(0);
-                il.Call(gcKeepAliveMethod);
-            }
-            il.Ret();
-
-            if(needFinalizer)
-            {
-                MethodInfo objectFinalizer = typeof(Object).GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
-                var finalizer = typeBuilder.DefineMethod("Finalize", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
-                il = new GroboIL(finalizer);
-                foreach(var field in fields)
-                {
-                    if(!field.FieldType.IsValueType)
-                    {
-                        il.Ldnull(field.FieldType);
-                        il.Stfld(field);
-                    }
-                    else
-                    {
-                        il.Ldflda(field);
-                        il.Initobj(field.FieldType);
-                    }
-                }
-                il.Ldarg(0);
-                il.Callnonvirt(objectFinalizer);
-                il.Ret();
-
-                typeBuilder.DefineMethodOverride(finalizer, objectFinalizer);
-            }
 
             return typeBuilder.CreateType();
         }
@@ -189,7 +182,9 @@ namespace GrobExp.ExpressionEmitters
 
         private static readonly MethodInfo gcKeepAliveMethod = ((MethodCallExpression)((Expression<Action>)(() => GC.KeepAlive(null))).Body).Method;
 
-        private static readonly Hashtable types = new Hashtable();
-        private static readonly object typesLock = new object();
+        private static readonly Hashtable typesWithClosure = new Hashtable();
+        private static readonly object typesWithClosureLock = new object();
+        private static readonly Hashtable typesWithoutClosure = new Hashtable();
+        private static readonly object typesWithoutClosureLock = new object();
     }
 }

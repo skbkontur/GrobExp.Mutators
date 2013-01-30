@@ -68,7 +68,7 @@ namespace GrobExp
                         il.Ldloca(temp);
                     }
                 }
-                if(checkNullReferences && node.Expression != ClosureParameter)
+                if(checkNullReferences && node.Expression != ClosureParameter && node.Expression != ConstantsParameter)
                     result |= EmitNullChecking(node.Expression.Type, returnDefaultValueLabel);
             }
             extend &= CanAssign(node.Member);
@@ -433,6 +433,8 @@ namespace GrobExp
         public ParameterExpression[] Parameters { get; set; }
         public Type ClosureType { get; set; }
         public ParameterExpression ClosureParameter { get; set; }
+        public Type ConstantsType { get; set; }
+        public ParameterExpression ConstantsParameter { get; set; }
         public Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> Switches { get; set; }
         public List<CompiledLambda> CompiledLambdas { get; set; }
         public GroboIL Il { get; set; }

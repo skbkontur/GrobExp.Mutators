@@ -17,15 +17,12 @@ namespace GrobExp.ExpressionEmitters
 
             GroboIL il = context.Il;
             bool needClosure = context.ClosureParameter != null;
-            if(!needClosure)
-                throw new NotSupportedException();
-            else
             {
-                var parameters = new[] {context.ClosureParameter}.Concat(node.Parameters).ToArray();
+                var parameters = (needClosure ? new[] {context.ConstantsParameter, context.ClosureParameter} : new[] {context.ConstantsParameter}).Concat(node.Parameters).ToArray();
                 var lambda = Expression.Lambda(Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), node.ReturnType), node.Body, node.Name, node.TailCall, parameters);
                 CompiledLambda compiledLambda;
                 if(context.TypeBuilder == null)
-                    compiledLambda = LambdaCompiler.CompileInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.Switches, context.Options, context.CompiledLambdas);
+                    compiledLambda = LambdaCompiler.CompileInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.ConstantsType, context.ConstantsParameter, null, context.Switches, context.Options, context.CompiledLambdas);
                 else
                 {
                     var method = context.TypeBuilder.DefineMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
@@ -33,17 +30,26 @@ namespace GrobExp.ExpressionEmitters
                     compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
                 }
                 context.CompiledLambdas.Add(compiledLambda);
-                Type closureType;
-                ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
+                Type constantsType;
+                ExpressionEmittersCollection.Emit(context.ConstantsParameter, context, out constantsType);
+                if(needClosure)
+                {
+                    Type closureType;
+                    ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
+                }
 
                 if(context.TypeBuilder != null)
                     il.Ldftn(compiledLambda.Method);
                 else
                 {
-                    var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, node.Body.Type, parameterTypes);
+                    var subLambdaInvoker = needClosure
+                                               ? DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(context.ConstantsType, context.ClosureType, node.Body.Type, parameterTypes)
+                                               : DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(context.ConstantsType, node.Body.Type, parameterTypes);
                     var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
                     il.Ldc_IntPtr(pointer);
-                    var types = new[] {closureType, typeof(IntPtr)};
+                    var types = needClosure
+                                    ? new[] {context.ConstantsType, context.ClosureType, typeof(IntPtr)}
+                                    : new[] {context.ConstantsType, typeof(IntPtr)};
                     il.Newobj(subLambdaInvoker.GetConstructor(types));
                     il.Ldftn(subLambdaInvoker.GetMethod("Invoke"));
                 }

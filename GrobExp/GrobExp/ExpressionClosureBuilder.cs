@@ -17,25 +17,49 @@ namespace GrobExp
         public ExpressionClosureBuilder(LambdaExpression lambda, ModuleBuilder module)
         {
             this.lambda = lambda;
-            string name = "Closure_" + (uint)Interlocked.Increment(ref closureId);
-            typeBuilder = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
+            var id = (uint)Interlocked.Increment(ref closureId);
+            closureTypeBuilder = module.DefineType("Closure_" + id, TypeAttributes.Public | TypeAttributes.Class);
+            constantsTypeBuilder = module.DefineType("Constants_" + id, TypeAttributes.Public | TypeAttributes.Class);
         }
 
-        public LambdaExpression Build(out Type closureType, out ParameterExpression closureParameter,
-                                      out Dictionary<ConstantExpression, FieldInfo> constants, out Dictionary<ParameterExpression, FieldInfo> parameters,
-                                      out Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, out bool hasSubLambdas)
+        public Result Build(bool dynamic)
         {
-            var result = (LambdaExpression)Visit(lambda);
-            typeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public | FieldAttributes.Static);
-            Type type = typeBuilder.CreateType();
-            closureType = type;
-            closureParameter = this.parameters.Count > 0 || this.constants.Count > 0 || this.hasSubLambdas ? Expression.Parameter(closureType) : null;
-            constants = this.constants.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
-            parameters = this.parameters.ToDictionary(item => item.Key, item => type.GetField(item.Value.Name));
-            switches = this.switches.ToDictionary(item => item.Key, item => new Tuple<FieldInfo, FieldInfo, int>(type.GetField(item.Value.Item1.Name), type.GetField(item.Value.Item2.Name), item.Value.Item3));
-            hasSubLambdas = this.hasSubLambdas;
-            BuildInitializer(type, new ClosureSubstituter(closureParameter, parameters))();
-            return result;
+            var visitedLambda = (LambdaExpression)Visit(lambda);
+            if(hasSubLambdas && dynamic)
+                constantsTypeBuilder.DefineField("delegates", typeof(Delegate[]), FieldAttributes.Public);
+            Type closureType = closureTypeBuilder.CreateType();
+            var closureParameter = parameters.Count > 0 ? Expression.Parameter(closureType) : null;
+            Type constantsType = constantsTypeBuilder.CreateType();
+            var constantsParameter = constants.Count > 0 || switches.Count > 0 || (hasSubLambdas && dynamic) ? Expression.Parameter(constantsType) : null;
+            var parsedParameters = parameters.ToDictionary(item => item.Key, item => closureType.GetField(item.Value.Name));
+            var parsedConstants = constants.ToDictionary(item => item.Key, item => constantsType.GetField(item.Value.Name));
+            var parsedSwitches = switches.ToDictionary(item => item.Key, item => new Tuple<FieldInfo, FieldInfo, int>(constantsType.GetField(item.Value.Item1.Name), constantsType.GetField(item.Value.Item2.Name), item.Value.Item3));
+            var func = constantsParameter != null ? BuildConstants(constantsType, new ClosureSubstituter(closureParameter, parsedParameters)) : (() => null);
+            return new Result
+                {
+                    Lambda = visitedLambda,
+                    ClosureType = closureType,
+                    ClosureParameter = closureParameter,
+                    ConstantsType = constantsType,
+                    ConstantsParameter = constantsParameter,
+                    ParsedParameters = parsedParameters,
+                    ParsedConstants = parsedConstants,
+                    ParsedSwitches = parsedSwitches,
+                    Constants = func()
+                };
+        }
+
+        public class Result
+        {
+            public LambdaExpression Lambda { get; set; }
+            public Type ClosureType { get; set; }
+            public Type ConstantsType { get; set; }
+            public ParameterExpression ClosureParameter { get; set; }
+            public ParameterExpression ConstantsParameter { get; set; }
+            public object Constants { get; set; }
+            public Dictionary<ParameterExpression, FieldInfo> ParsedParameters { get; set; }
+            public Dictionary<ConstantExpression, FieldInfo> ParsedConstants { get; set; }
+            public Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> ParsedSwitches { get; set; }
         }
 
         protected override Expression VisitSwitch(SwitchExpression node)
@@ -123,7 +147,7 @@ namespace GrobExp
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if(quoteDepth > 0 || node.Value == null || node.Type.IsPrimitive /*|| (node.Type.IsNullable() && node.Type.GetGenericArguments()[0].IsPrimitive)*/ || node.Type == typeof(string))
+            if(quoteDepth > 0 || node.Value == null || node.Type.IsPrimitive /*|| (node.Type.IsNullable() && node.Type.GetGenericArguments()[0].IsPrimitive)*/|| node.Type == typeof(string))
                 return node;
             if(!constants.ContainsKey(node))
                 constants.Add(node, BuildConstField(node.Type, node.Value));
@@ -135,7 +159,7 @@ namespace GrobExp
             var peek = localParameters.Peek();
             if(!peek.Contains(node) && !parameters.ContainsKey(node))
             {
-                FieldBuilder field = typeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public);
+                FieldBuilder field = closureTypeBuilder.DefineField(GetFieldName(node.Type), GetFieldType(node.Type), FieldAttributes.Public);
                 parameters.Add(node, field);
             }
             return base.VisitParameter(node);
@@ -299,16 +323,17 @@ namespace GrobExp
             var field = (FieldBuilder)hashtable[key];
             if(field == null)
             {
-                field = typeBuilder.DefineField(GetFieldName(type), GetFieldType(type), FieldAttributes.Public | FieldAttributes.Static);
+                field = constantsTypeBuilder.DefineField(GetFieldName(type), GetFieldType(type), FieldAttributes.Public);
                 hashtable[key] = field;
             }
             return field;
         }
 
-        private Action BuildInitializer(Type type, ClosureSubstituter closureSubstituter)
+        private Func<object> BuildConstants(Type type, ClosureSubstituter closureSubstituter)
         {
-            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, typeof(ExpressionClosureBuilder), true);
+            var method = new DynamicMethod("Construct_" + type.Name, typeof(object), new[] {typeof(object[])}, typeof(ExpressionClosureBuilder), true);
             var il = new GroboIL(method);
+            il.Newobj(type.GetConstructor(Type.EmptyTypes));
             var consts = new object[hashtable.Count];
             int index = 0;
             foreach(DictionaryEntry entry in hashtable)
@@ -316,11 +341,12 @@ namespace GrobExp
                 var pair = (KeyValuePair<Type, object>)entry.Key;
                 var constType = pair.Key;
                 consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
+                il.Dup();
                 il.Ldarg(0);
                 il.Ldc_I4(index++);
                 il.Ldelem(typeof(object));
                 string name = ((FieldInfo)entry.Value).Name;
-                var field = type.GetField(name, BindingFlags.Public | BindingFlags.Static);
+                var field = type.GetField(name);
                 if(field == null)
                     throw new MissingFieldException(type.Name, name);
                 if(constType.IsValueType)
@@ -339,8 +365,8 @@ namespace GrobExp
                 il.Stfld(field);
             }
             il.Ret();
-            var action = (Action<object[]>)method.CreateDelegate(typeof(Action<object[]>));
-            return () => action(consts);
+            var func = (Func<object[], object>)method.CreateDelegate(typeof(Func<object[], object>));
+            return () => func(consts);
         }
 
         private static Type GetFieldType(Type type)
@@ -379,6 +405,7 @@ namespace GrobExp
         private readonly Dictionary<ParameterExpression, FieldBuilder> parameters = new Dictionary<ParameterExpression, FieldBuilder>();
         private readonly Dictionary<SwitchExpression, Tuple<FieldBuilder, FieldBuilder, int>> switches = new Dictionary<SwitchExpression, Tuple<FieldBuilder, FieldBuilder, int>>();
 
-        private readonly TypeBuilder typeBuilder;
+        private readonly TypeBuilder closureTypeBuilder;
+        private readonly TypeBuilder constantsTypeBuilder;
     }
 }

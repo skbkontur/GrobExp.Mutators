@@ -9,8 +9,6 @@ using System.Text;
 
 using GrEmit;
 
-using GrobExp.ExpressionEmitters;
-
 namespace GrobExp
 {
     public static class LambdaCompiler
@@ -48,36 +46,27 @@ namespace GrobExp
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out il, options);
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options = CompilerOptions.All)
+        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options = CompilerOptions.All)
         {
-            CompileToMethod(lambda, method, null, options);
+            return CompileToMethodInternal(lambda, method, null, options);
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options = CompilerOptions.All)
+        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options = CompilerOptions.All)
         {
-            var compiledLambdas = new List<CompiledLambda>();
-            Type closureType;
-            ParameterExpression closureParameter;
-            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            var module = method.Module as ModuleBuilder;
-            if (module == null)
-                throw new ArgumentException("Unable to obtain module builder of the method", "method");
-            method.SetReturnType(lambda.ReturnType);
-            method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
-            var resolvedLambda = new ExpressionClosureResolver(lambda, module).Resolve(out closureType, out closureParameter, out switches);
-            var ilCode = new StringBuilder(CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method));
-            for(int i = 0; i < compiledLambdas.Count; ++i)
-            {
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine("delegates[" + i + "]");
-                ilCode.AppendLine(compiledLambdas[i].ILCode);
-            }
+            return CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
-        internal static CompiledLambda CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, Type closureType, ParameterExpression closureParameter, Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, CompilerOptions options, List<CompiledLambda> compiledLambdas)
+        internal static CompiledLambda CompileInternal(
+            LambdaExpression lambda,
+            DebugInfoGenerator debugInfoGenerator,
+            Type closureType,
+            ParameterExpression closureParameter,
+            Type constantsType,
+            ParameterExpression constantsParameter,
+            object constants,
+            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
+            CompilerOptions options,
+            List<CompiledLambda> compiledLambdas)
         {
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
@@ -95,6 +84,8 @@ namespace GrobExp
                     Parameters = parameters,
                     ClosureType = closureType,
                     ClosureParameter = closureParameter,
+                    ConstantsType = constantsType,
+                    ConstantsParameter = constantsParameter,
                     Switches = switches,
                     CompiledLambdas = compiledLambdas,
                     Il = il
@@ -132,7 +123,7 @@ namespace GrobExp
             }
             return new CompiledLambda
                 {
-                    Delegate = method.CreateDelegate(Extensions.GetDelegateType(parameterTypes, returnType)),
+                    Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
                     Method = method,
                     ILCode = il.GetILCode()
                 };
@@ -198,14 +189,17 @@ namespace GrobExp
         internal static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
-        private static Delegate CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options = CompilerOptions.All)
+        private static Delegate CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
             ParameterExpression closureParameter;
+            Type constantsType;
+            ParameterExpression constantsParameter;
+            object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            var resolvedLambda = new ExpressionClosureResolver(lambda, Module).Resolve(out closureType, out closureParameter, out switches);
-            var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas);
+            var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             var ilCode = new StringBuilder(compiledLambda.ILCode);
             for(int i = 0; i < compiledLambdas.Count; ++i)
             {
@@ -217,40 +211,50 @@ namespace GrobExp
                 ilCode.AppendLine(compiledLambdas[i].ILCode);
             }
             il = ilCode.ToString();
-            Delegate result;
-            if(closureType == null)
-                result = compiledLambda.Delegate;
-            else
-            {
-                BuildDelegatesFoister(closureType)(compiledLambdas.Concat(new[] {compiledLambda}).Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
-                Type returnType = lambda.ReturnType;
-                Type[] parameterTypes = lambda.Parameters.Select(parameter => parameter.Type).ToArray();
-                var lambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(closureType, returnType, parameterTypes, true);
-                result = CreateLambdaInvoker(lambdaInvoker, Extensions.GetDelegateType(parameterTypes, returnType), DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method));
-            }
-            return result;
+            if(compiledLambdas.Count > 0)
+                BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
+            return compiledLambda.Delegate;
         }
 
-        private static Action<Delegate[]> BuildDelegatesFoister(Type type)
+        private static string CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(Delegate[])}, Module, true);
+            var compiledLambdas = new List<CompiledLambda>();
+            Type closureType;
+            ParameterExpression closureParameter;
+            Type constantsType;
+            ParameterExpression constantsParameter;
+            object constants;
+            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
+            var module = method.Module as ModuleBuilder;
+            if(module == null)
+                throw new ArgumentException("Unable to obtain module builder of the method", "method");
+            method.SetReturnType(lambda.ReturnType);
+            method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
+            var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            if(constantsParameter != null)
+                throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
+            var ilCode = new StringBuilder(CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method));
+            for(int i = 0; i < compiledLambdas.Count; ++i)
+            {
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine();
+                ilCode.AppendLine("delegates[" + i + "]");
+                ilCode.AppendLine(compiledLambdas[i].ILCode);
+            }
+            return ilCode.ToString();
+        }
+
+        private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(object), typeof(Delegate[])}, Module, true);
             var il = new GroboIL(method);
             il.Ldarg(0);
-            il.Stfld(type.GetField("delegates", BindingFlags.Public | BindingFlags.Static));
+            il.Ldarg(1);
+            il.Stfld(type.GetField("delegates"));
             il.Ret();
-            return (Action<Delegate[]>)method.CreateDelegate(typeof(Action<Delegate[]>));
-        }
-
-        private static Delegate CreateLambdaInvoker(Type lambdaInvokerType, Type resultType, IntPtr pointer)
-        {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(Delegate), Type.EmptyTypes, Module, true);
-            var il = new GroboIL(method);
-            il.Ldc_IntPtr(pointer);
-            il.Newobj(lambdaInvokerType.GetConstructor(new[] {typeof(IntPtr)}));
-            il.Ldftn(lambdaInvokerType.GetMethod("Invoke"));
-            il.Newobj(resultType.GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
-            il.Ret();
-            return ((Func<Delegate>)method.CreateDelegate(typeof(Func<Delegate>)))();
+            return (Action<object, Delegate[]>)method.CreateDelegate(typeof(Action<object, Delegate[]>));
         }
     }
 }

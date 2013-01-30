@@ -55,6 +55,8 @@ namespace GrobExp.ExpressionEmitters
                         context.EmitValueAccess(node.SwitchValue.Type);
                         il.Stloc(pureSwitchValue);
                     }
+                    Type constantsType;
+                    ExpressionEmittersCollection.Emit(context.ConstantsParameter, context, out constantsType);
                     il.Ldfld(switchCase.Item1);
                     var type = node.SwitchValue.Type.IsNullable() ? node.SwitchValue.Type.GetGenericArguments()[0] : node.SwitchValue.Type;
                     var typeCode = Type.GetTypeCode(type);
@@ -92,6 +94,7 @@ namespace GrobExp.ExpressionEmitters
                         else
                             il.Ceq();
                         il.Brfalse(defaultLabel);
+                        ExpressionEmittersCollection.Emit(context.ConstantsParameter, context, out constantsType);
                         il.Ldfld(switchCase.Item2);
                         il.Ldloc(index);
                         il.Ldelem(typeof(int));

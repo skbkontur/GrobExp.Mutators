@@ -15,7 +15,7 @@ namespace Tests.TryCatchTests
             TryExpression tryCatchExpr =
                 Expression.TryCatch(
                     Expression.Block(
-                        Expression.Throw(Expression.Constant(new DivideByZeroException())),
+                        Expression.Throw(Expression.New(typeof(DivideByZeroException))),
                         Expression.Constant("Try block")
                         ),
                     Expression.Catch(

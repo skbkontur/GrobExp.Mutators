@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 
 namespace GrobExp
 {
     internal class ExpressionClosureResolver : ExpressionVisitor
     {
-        public ExpressionClosureResolver(LambdaExpression lambda)
+        public ExpressionClosureResolver(LambdaExpression lambda, ModuleBuilder module)
         {
             lambda = (LambdaExpression)new LambdaPreparer().Visit(lambda);
             bool hasSubLambdas;
-            this.lambda = new ExpressionClosureBuilder(lambda).Build(out closureType, out closureParameter, out constants, out parameters, out switches, out hasSubLambdas);
+            this.lambda = new ExpressionClosureBuilder(lambda, module).Build(out closureType, out closureParameter, out constants, out parameters, out switches, out hasSubLambdas);
             closureParameter = parameters.Count > 0 || hasSubLambdas ? Expression.Parameter(closureType) : null;
         }
 
@@ -85,7 +86,7 @@ namespace GrobExp
                     var temp = new ClosureSubstituter(closureParameter, parameters).Visit(exp);
                     if(temp != exp)
                     {
-                        var constructor = typeof(ExpressionQuoter).GetConstructor(new[] {typeof(Closure)});
+                        var constructor = typeof(ExpressionQuoter).GetConstructor(new[] {typeof(object)});
                         result = Expression.Convert(Expression.Call(Expression.New(constructor, closureParameter), typeof(ExpressionVisitor).GetMethod("Visit", new[] {typeof(Expression)}), new[] {result}), node.Type);
                     }
                 }

@@ -5,7 +5,7 @@ namespace GrobExp
 {
     public class ExpressionQuoter : ExpressionVisitor
     {
-        public ExpressionQuoter(Closure closure)
+        public ExpressionQuoter(object closure)
         {
             closureType = closure.GetType();
             this.closure = Expression.Constant(closure, closureType);

@@ -44,7 +44,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Closure.cs" />
     <Compile Include="ClosureSubstituter.cs" />
     <Compile Include="CompiledLambda.cs" />
     <Compile Include="EmittingContext.cs" />
@@ -61,6 +60,7 @@
     <Compile Include="ExpressionEmitters\ConditionalExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ConstantExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ConvertExpressionEmitter.cs" />
+    <Compile Include="ExpressionEmitters\DebugInfoExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\InvocationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\ListInitExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\LoopExpressionEmitter.cs" />

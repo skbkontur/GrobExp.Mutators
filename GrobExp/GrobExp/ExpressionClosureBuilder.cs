@@ -14,11 +14,11 @@ namespace GrobExp
 {
     internal class ExpressionClosureBuilder : ExpressionVisitor
     {
-        public ExpressionClosureBuilder(LambdaExpression lambda)
+        public ExpressionClosureBuilder(LambdaExpression lambda, ModuleBuilder module)
         {
             this.lambda = lambda;
             string name = "Closure_" + (uint)Interlocked.Increment(ref closureId);
-            typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class, typeof(Closure));
+            typeBuilder = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
         }
 
         public LambdaExpression Build(out Type closureType, out ParameterExpression closureParameter,
@@ -307,7 +307,7 @@ namespace GrobExp
 
         private Action BuildInitializer(Type type, ClosureSubstituter closureSubstituter)
         {
-            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, LambdaCompiler.Module, true);
+            var method = new DynamicMethod("Initialize_" + type.Name, typeof(void), new[] {typeof(object[])}, typeof(ExpressionClosureBuilder), true);
             var il = new GroboIL(method);
             var consts = new object[hashtable.Count];
             int index = 0;

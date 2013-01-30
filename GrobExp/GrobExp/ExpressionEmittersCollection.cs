@@ -110,6 +110,7 @@ namespace GrobExp
                 {ExpressionType.Loop, new LoopExpressionEmitter()},
                 {ExpressionType.Try, new TryExpressionEmitter()},
                 {ExpressionType.Switch, new SwitchExpressionEmitter()},
+                {ExpressionType.DebugInfo, new DebugInfoExpressionEmitter()},
             };
     }
 }

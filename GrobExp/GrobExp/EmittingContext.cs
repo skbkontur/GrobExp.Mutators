@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using GrEmit;
 
@@ -422,6 +424,11 @@ namespace GrobExp
         }
 
         public CompilerOptions Options { get; set; }
+        public TypeBuilder TypeBuilder { get; set; }
+        public DebugInfoGenerator DebugInfoGenerator { get; set; }
+        public bool SequencePointCleared { get; set; }
+        public LambdaExpression Lambda { get; set; }
+        public MethodInfo Method { get; set; }
         public bool SkipVisibility { get; set; }
         public ParameterExpression[] Parameters { get; set; }
         public Type ClosureType { get; set; }

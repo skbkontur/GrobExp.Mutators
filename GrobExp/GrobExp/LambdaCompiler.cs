@@ -71,7 +71,7 @@ namespace GrobExp
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+            var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
             var il = new GroboIL(method);
 
             var context = new EmittingContext
@@ -186,8 +186,22 @@ namespace GrobExp
             return il.GetILCode();
         }
 
-        internal static readonly AssemblyBuilder Assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        internal static readonly AssemblyBuilder Assembly = CreateAssembly();
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+
+        private static AssemblyBuilder CreateAssembly()
+        {
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+//            Type daType = typeof(AssemblyFlagsAttribute);
+//            ConstructorInfo daCtor = daType.GetConstructor(new[] {typeof(AssemblyNameFlags)});
+////[assembly : AssemblyFlags(AssemblyNameFlags.EnableJITcompileOptimizer)]
+//            var daBuilder = new CustomAttributeBuilder(daCtor, new object[]
+//                {
+//                    AssemblyNameFlags.EnableJITcompileOptimizer
+//                });
+//            assemblyBuilder.SetCustomAttribute(daBuilder);
+            return assemblyBuilder;
+        }
 
         private static Delegate CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options)
         {

@@ -31,6 +31,8 @@ namespace GrobExp.ExpressionEmitters
             il.Br(continueLabel);
             if(breakLabel != null)
                 il.MarkLabel(breakLabel);
+            if(node.BreakLabel != null)
+                resultType = node.BreakLabel.Type;
             return false;
         }
     }

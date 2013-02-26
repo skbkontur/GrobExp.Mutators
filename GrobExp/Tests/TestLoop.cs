@@ -45,6 +45,42 @@ namespace Tests
         }
 
         [Test]
+        public void Test1x()
+        {
+            ParameterExpression value = Expression.Parameter(typeof(int), "value");
+            ParameterExpression result = Expression.Parameter(typeof(int), "result");
+            LabelTarget label = Expression.Label(typeof(int));
+            BlockExpression block = Expression.Block(
+                new[] {result},
+                Expression.Assign(result, Expression.Constant(1)),
+                Expression.Loop(
+                    Expression.Block(typeof(void), new[] {
+                    Expression.IfThenElse(
+                        Expression.GreaterThan(value, Expression.Constant(1)),
+                        Expression.MultiplyAssign(result,
+                                                  Expression.PostDecrementAssign(value)),
+                        Expression.Break(label, result)
+                        )
+                    }),
+                    label
+                    )
+                );
+            Expression<Func<int, string>> exp = Expression.Lambda<Func<int, string>>(Expression.Call(block, "ToString", Type.EmptyTypes), value);
+
+            Func<int, string> f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual("1", f(0));
+            Assert.AreEqual("120", f(5));
+
+            f = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            Assert.AreEqual("1", f(0));
+            Assert.AreEqual("120", f(5));
+
+            f = exp.Compile();
+            Assert.AreEqual("1", f(0));
+            Assert.AreEqual("120", f(5));
+        }
+
+        [Test]
         public void Test2()
         {
             ParameterExpression array = Expression.Parameter(typeof(int[]), "array");

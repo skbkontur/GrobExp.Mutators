@@ -54,5 +54,16 @@ namespace Tests
             Assert.AreEqual(true, f(0, 1m));
             Assert.AreEqual(false, f(1, 1m));
         }
+
+        [Test]
+        public void Test6()
+        {
+            ParameterExpression a = Expression.Parameter(typeof(int?));
+            Expression body = Expression.NotEqual(a, Expression.Constant(null));
+            Expression<Func<int?, bool>> exp = Expression.Lambda<Func<int?, bool>>(body, a);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(true, f(1));
+            Assert.AreEqual(false, f(null));
+        }
     }
 }

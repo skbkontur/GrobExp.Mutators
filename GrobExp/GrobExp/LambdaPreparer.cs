@@ -37,5 +37,18 @@ namespace GrobExp
             var constructor = typeof(RuntimeVariables).GetConstructor(new[] {typeof(object[])});
             return Expression.New(constructor, Expression.NewArrayInit(typeof(object), node.Variables.Select(parameter => parameter.Type.IsValueType ? Expression.Convert(parameter, typeof(object)) : (Expression)parameter)));
         }
+
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            if(node.NodeType == ExpressionType.Equal || node.NodeType == ExpressionType.NotEqual)
+            {
+                var left = Visit(node.Left);
+                var right = Visit(node.Right);
+                if(left.Type.IsNullable() && right.Type == typeof(object))
+                    right = Expression.Convert(right, node.Left.Type);
+                return node.Update(left, (LambdaExpression)Visit(node.Conversion), right);
+            }
+            return base.VisitBinary(node);
+        }
     }
 }

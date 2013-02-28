@@ -76,6 +76,17 @@ namespace Tests
             Assert.AreEqual(true, f(TestEnum.One, TestEnum.One));
         }
 
+        [Test]
+        public void Test8()
+        {
+            ParameterExpression a = Expression.Parameter(typeof(int?));
+            Expression body = Expression.Equal(a, Expression.Constant(null));
+            Expression<Func<int?, bool>> exp = Expression.Lambda<Func<int?, bool>>(body, a);
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(false, f(1));
+            Assert.AreEqual(true, f(null));
+        }
+
         private enum TestEnum
         {
             Zero = 0,

@@ -16,7 +16,7 @@ namespace GrobExp.ExpressionEmitters
             var left = node.Left;
             var right = node.Right;
             GroboIL il = context.Il;
-            GroboIL.Label valueIsNullLabel = context.CanReturn ? il.DefineLabel("valueIsNull") : null;
+            GroboIL.Label valueIsNullLabel = il.DefineLabel("valueIsNull");
             Type leftType;
             bool labelUsed = ExpressionEmittersCollection.Emit(left, context, valueIsNullLabel, out leftType);
             if(left.Type.IsValueType)

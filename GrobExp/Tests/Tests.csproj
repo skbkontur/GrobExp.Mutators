@@ -155,6 +155,7 @@
     <Compile Include="ExtensionTests\TestForEach.cs" />
     <Compile Include="TestConvertChecked.cs" />
     <Compile Include="TestDynamic.cs" />
+    <Compile Include="TestExtensionMethod.cs" />
     <Compile Include="TestInvoke.cs" />
     <Compile Include="TestListInit.cs" />
     <Compile Include="TestLoop.cs" />

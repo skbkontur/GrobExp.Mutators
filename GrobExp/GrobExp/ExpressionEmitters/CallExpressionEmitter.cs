@@ -17,7 +17,8 @@ namespace GrobExp.ExpressionEmitters
             var method = node.Method;
             Expression obj;
             IEnumerable<Expression> arguments;
-            if(!method.IsStatic)
+            bool isStatic = method.IsStatic;
+            if(!isStatic)
             {
                 obj = node.Object;
                 arguments = node.Arguments;
@@ -36,16 +37,17 @@ namespace GrobExp.ExpressionEmitters
             if(obj != null)
             {
                 Type actualType;
-                result |= ExpressionEmittersCollection.Emit(obj, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out actualType); // stack: [obj]
-                if(actualType.IsValueType)
+                result |= ExpressionEmittersCollection.Emit(obj, context, returnDefaultValueLabel, isStatic ? ResultType.Value : ResultType.ByRefValueTypesOnly, extend, out actualType); // stack: [obj]
+                if(actualType.IsValueType && !isStatic)
                 {
                     using(var temp = context.DeclareLocal(actualType))
                     {
                         il.Stloc(temp);
                         il.Ldloca(temp);
                     }
+                    actualType = actualType.MakeByRefType();
                 }
-                if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
+                if(context.Options.HasFlag(CompilerOptions.CheckNullReferences) && !actualType.IsValueType)
                     result |= context.EmitNullChecking(type, returnDefaultValueLabel);
             }
             context.EmitLoadArguments(arguments.ToArray());

@@ -15,6 +15,19 @@ namespace Tests
     [TestFixture]
     public class Test // todo растащить на куски
     {
+        [Test]
+        public void TestRefParameter()
+        {
+            Expression<Action<TestClassA>> exp = a => Array.Resize(ref a.IntArray2, 5);
+            var f = LambdaCompiler.Compile(exp);
+            var o = new TestClassA { IntArray2 = new int[] { 1, 2, 3 } };
+            f(o);
+            Assert.AreEqual(5, o.IntArray2.Length);
+            Assert.AreEqual(1, o.IntArray2[0]);
+            Assert.AreEqual(2, o.IntArray2[1]);
+            Assert.AreEqual(3, o.IntArray2[2]);
+        }
+
         [Test, Ignore]
         public void TestPinning1()
         {
@@ -355,6 +368,7 @@ namespace Tests
             public TestEnum E { get; set; }
             public TestStructA[] StructAArray { get; set; }
             public string[] StringArray { get; set; }
+            public int[] IntArray2;
             public int? X;
             public Guid Guid = Guid.Empty;
             public Guid? NullableGuid;

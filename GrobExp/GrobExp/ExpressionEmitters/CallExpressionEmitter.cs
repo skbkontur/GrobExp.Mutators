@@ -50,7 +50,28 @@ namespace GrobExp.ExpressionEmitters
                 if(context.Options.HasFlag(CompilerOptions.CheckNullReferences) && !actualType.IsValueType)
                     result |= context.EmitNullChecking(type, returnDefaultValueLabel);
             }
-            context.EmitLoadArguments(arguments.ToArray());
+            var parameters = method.GetParameters();
+            var argumentsArray = arguments.ToArray();
+            for(int i = 0; i < argumentsArray.Length; i++)
+            {
+                var argument = argumentsArray[i];
+                var parameter = parameters[i];
+                if (parameter.ParameterType.IsByRef)
+                {
+                    Type argumentType;
+                    var options = context.Options;
+                    context.Options = CompilerOptions.None;
+                    ExpressionEmittersCollection.Emit(argument, context, null, ResultType.ByRefAll, false, out argumentType);
+                    context.Options = options;
+                    if(!argumentType.IsByRef)
+                        throw new InvalidOperationException("Expected type by reference");
+                }
+                else
+                {
+                    Type argumentType;
+                    context.EmitLoadArgument(argument, true, out argumentType);
+                }
+            }
             il.Call(method, type);
             resultType = node.Type;
             return result;

@@ -260,6 +260,21 @@ namespace Tests
         }
 
         [Test]
+        public void TestCoalesce2()
+        {
+            Expression<Func<TestClassA, int?, int?>> exp = (o, x) => o.B.X ?? x;
+            var f = LambdaCompiler.Compile(exp);
+            Assert.AreEqual(null, f(null, null));
+            Assert.AreEqual(1, f(null, 1));
+            Assert.AreEqual(null, f(new TestClassA(), null));
+            Assert.AreEqual(2, f(new TestClassA(), 2));
+            Assert.AreEqual(null, f(new TestClassA {B = new TestClassB()}, null));
+            Assert.AreEqual(3, f(new TestClassA {B = new TestClassB()}, 3));
+            Assert.AreEqual(4, f(new TestClassA {B = new TestClassB {X = 4}}, null));
+            Assert.AreEqual(4, f(new TestClassA {B = new TestClassB {X = 4}}, 5));
+        }
+
+        [Test]
         public void TestLazyEvaluation()
         {
             Expression<Func<TestClassA, bool>> exp = o => o.A != null && Y(o.A) > 0;

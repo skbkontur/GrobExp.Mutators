@@ -380,6 +380,26 @@ namespace GrobExp
                             Il.Newobj(to.GetConstructor(new[] {toArgument}));
                         }
                     }
+                    else if(from.IsNullable())
+                    {
+                        var fromArgument = from.GetGenericArguments()[0];
+                        using(var temp = DeclareLocal(from))
+                        {
+                            Il.Stloc(temp);
+                            Il.Ldloca(temp);
+                            var valueIsNullLabel = Il.DefineLabel("valueIsNull");
+                            Il.Brfalse(valueIsNullLabel);
+                            Il.Ldloca(temp);
+                            EmitValueAccess(from);
+                            if (to != fromArgument)
+                                EmitConvert(fromArgument, to, check);
+                            var doneLabel = Il.DefineLabel("done");
+                            Il.Br(doneLabel);
+                            Il.MarkLabel(valueIsNullLabel);
+                            EmitLoadDefaultValue(to);
+                            Il.MarkLabel(doneLabel);
+                        }
+                    }
                     else if(to.IsEnum || to == typeof(Enum))
                         EmitConvert(from, typeof(int), check);
                     else if(from.IsEnum || from == typeof(Enum))

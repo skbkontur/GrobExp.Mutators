@@ -171,6 +171,32 @@ namespace Tests
         }
 
         [Test, Ignore]
+        public void TestInvoke3()
+        {
+            Expression<Func<int, int, int>> sum = (x, y) => x + y;
+            Expression<Func<int, int, int>> mul = (x, y) => x * y;
+            ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
+            Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Invoke(sum, Expression.Invoke(mul, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Y")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Z"))), Expression.Invoke(mul, Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("P")), Expression.MakeMemberAccess(parameter, typeof(TestClassA).GetField("Q")))), parameter);
+            var a = new TestClassA {Y = 1, Z = 2, P = 3, Q = 4};
+            Console.WriteLine("Sharp");
+            var ethalon = MeasureSpeed(Func7, a, 100000000, null);
+            Console.WriteLine("GroboCompile without checking");
+            Func<TestClassA, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
+            MeasureSpeed(compile1, a, 100000000, ethalon);
+            Console.WriteLine("GroboCompile with checking");
+            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            Console.WriteLine("Compile");
+            Func<TestClassA, int> compile = exp.Compile();
+            MeasureSpeed(compile, a, 100000000, ethalon);
+//            Console.WriteLine("Build1");
+//            Func<TestClassA, int> build1 = Build1();
+//            MeasureSpeed(build1, a, 100000000, ethalon);
+//            Console.WriteLine("Build2");
+//            Func<TestClassA, int> build2 = Build1();
+//            MeasureSpeed(build2, a, 100000000, ethalon);
+        }
+
+        [Test, Ignore]
         public void TestFactorial()
         {
             ParameterExpression value = Expression.Parameter(typeof(int), "value");
@@ -334,6 +360,8 @@ namespace Tests
             public bool? NullableBool;
             public int Y;
             public int Z;
+            public int P;
+            public int Q;
             public bool Bool;
         }
 
@@ -437,6 +465,12 @@ namespace Tests
                 else break;
             }
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private int Func7(TestClassA a)
+        {
+            return a.Y * a.Z + a.P * a.Q;
         }
 
         private Func<TestClassA, int> Build1()

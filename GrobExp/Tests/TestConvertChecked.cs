@@ -266,7 +266,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(TIn));
             Expression<Func<TIn, TOut>> exp = Expression.Lambda<Func<TIn, TOut>>(Expression.ConvertChecked(parameter, typeof(TOut)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             return f(value);
         }
     }

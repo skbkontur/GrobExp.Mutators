@@ -15,7 +15,7 @@ namespace Tests
         {
             Func<int, int, int> func = (a, b) => a + b;
             Expression<Func<int, int, int>> exp = (a, b) => func(a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(3, f(1, 2));
         }
 
@@ -26,7 +26,7 @@ namespace Tests
             ParameterExpression parameterA = Expression.Parameter(typeof(int));
             ParameterExpression parameterB = Expression.Parameter(typeof(int));
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.Invoke(lambda, parameterA, parameterB), parameterA, parameterB);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(3, f(1, 2));
         }
     }

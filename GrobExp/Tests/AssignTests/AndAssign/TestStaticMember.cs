@@ -32,7 +32,7 @@ namespace Tests.AssignTests.AndAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.AndAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetField("NullableIntField")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntField = 0;
             Assert.AreEqual(0, f(123));
             Assert.AreEqual(0, TestClassA.NullableIntField);

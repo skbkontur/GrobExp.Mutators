@@ -16,7 +16,7 @@ namespace Tests
             var target = Expression.Label(typeof(int));
             Expression body = Expression.Block(Expression.Goto(target, Expression.Constant(1)), Expression.Label(target, Expression.Constant(2)));
             Expression<Func<int>> exp = Expression.Lambda<Func<int>>(body);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(1, f());
         }
     }

@@ -16,13 +16,13 @@ namespace Tests.AssignTests.OrAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.OrAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(123, f(0, 123));
             Assert.AreEqual(7, f(3, 5));
             Assert.AreEqual(17235476 | 73172563, f(17235476, 73172563));
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.OrAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(123, f(0, 123));
             Assert.AreEqual(7, f(3, 5));
             Assert.AreEqual(17235476 | 73172563, f(17235476, 73172563));
@@ -34,7 +34,7 @@ namespace Tests.AssignTests.OrAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.OrAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(123, f(0, 123));
             Assert.AreEqual(7, f(3, 5));
             Assert.AreEqual(17235476 | 73172563, f(17235476, 73172563));
@@ -43,7 +43,7 @@ namespace Tests.AssignTests.OrAssign
             Assert.IsNull(f(null, null));
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.OrAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(123, f(0, 123));
             Assert.AreEqual(7, f(3, 5));
             Assert.AreEqual(17235476 | 73172563, f(17235476, 73172563));

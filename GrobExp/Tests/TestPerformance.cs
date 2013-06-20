@@ -64,7 +64,7 @@ namespace Tests
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), a, 1000000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 1000000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 1000000000, ethalon);
             Console.WriteLine("Compile");
             MeasureSpeed(exp.Compile(), a, 100000000, ethalon);
         }
@@ -79,7 +79,7 @@ namespace Tests
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), a, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 100000000, ethalon);
             Console.WriteLine("Compile");
             MeasureSpeed(exp.Compile(), a, 1000000, ethalon);
         }
@@ -125,7 +125,7 @@ namespace Tests
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), a, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 100000000, ethalon);
             Console.WriteLine("Compile");
             MeasureSpeed(exp.Compile(), a, 1000000, ethalon);
         }
@@ -142,7 +142,7 @@ namespace Tests
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), a, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 100000000, ethalon);
         }
 
         [Test, Ignore]
@@ -158,7 +158,7 @@ namespace Tests
             Func<TestClassA, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
             MeasureSpeed(compile1, a, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 100000000, ethalon);
             Console.WriteLine("Compile");
             Func<TestClassA, int> compile = exp.Compile();
             MeasureSpeed(compile, a, 100000000, ethalon);
@@ -184,7 +184,7 @@ namespace Tests
             Func<TestClassA, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
             MeasureSpeed(compile1, a, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), a, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), a, 100000000, ethalon);
             Console.WriteLine("Compile");
             Func<TestClassA, int> compile = exp.Compile();
             MeasureSpeed(compile, a, 100000000, ethalon);
@@ -224,7 +224,7 @@ namespace Tests
             Func<int, int> compile1 = LambdaCompiler.Compile(exp, CompilerOptions.None);
             MeasureSpeed(compile1, 5, 100000000, ethalon);
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), 5, 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), 5, 100000000, ethalon);
             Console.WriteLine("Compile");
             Func<int, int> compile = exp.Compile();
             MeasureSpeed(compile, 5, 100000000, ethalon);
@@ -254,7 +254,7 @@ namespace Tests
                 a
                 );
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), 2, 1000000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), 2, 1000000000, ethalon);
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), 2, 1000000000, ethalon);
             Console.WriteLine("Compile");
@@ -282,7 +282,7 @@ namespace Tests
                 a
                 );
             Console.WriteLine("GroboCompile with checking");
-            MeasureSpeed(LambdaCompiler.Compile(exp), "1000000", 100000000, ethalon);
+            MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.All), "1000000", 100000000, ethalon);
             Console.WriteLine("GroboCompile without checking");
             MeasureSpeed(LambdaCompiler.Compile(exp, CompilerOptions.None), "1000000", 100000000, ethalon);
             Console.WriteLine("Compile");

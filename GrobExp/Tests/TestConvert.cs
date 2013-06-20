@@ -311,20 +311,20 @@ namespace Tests
             Assert.AreEqual(1.125, Convert<object, double>(1.125));
             Assert.Throws<NullReferenceException>(() => Convert<object, int>(null));
             Expression<Func<TestClassA, int>> exp = a => (int)a.X;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.Throws<NullReferenceException>(() => f(null));
             Assert.Throws<NullReferenceException>(() => f(new TestClassA()));
         }
 
         private T ConvertFromDecimal<T>(Expression<Func<decimal, T>> exp, decimal value)
         {
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             return f(value);
         }
 
         private decimal ConvertToDecimal<T>(Expression<Func<T, decimal>> exp, T value)
         {
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             return f(value);
         }
 
@@ -332,7 +332,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(TIn));
             Expression<Func<TIn, TOut>> exp = Expression.Lambda<Func<TIn, TOut>>(Expression.Convert(parameter, typeof(TOut)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             return f(value);
         }
 

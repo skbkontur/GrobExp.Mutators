@@ -117,7 +117,7 @@ namespace Tests.TryCatchTests
             Assert.IsTrue(B);
             B = false;
 
-            f = CompileToMethod(exp);
+            f = CompileToMethod(exp, CompilerOptions.All);
             B = false;
             F = "zzz";
             Assert.AreEqual("Null reference", f(null, null));
@@ -307,7 +307,7 @@ namespace Tests.TryCatchTests
             Assert.IsTrue(B);
             B = false;
 
-            f = CompileToMethod(exp);
+            f = CompileToMethod(exp, CompilerOptions.All);
             B = false;
             F = "zzz";
             Assert.AreEqual("Object reference not set to an instance of an object.", f(null, null));

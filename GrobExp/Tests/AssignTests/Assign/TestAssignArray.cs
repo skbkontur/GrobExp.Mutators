@@ -16,7 +16,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string>> path1 = a => a.ArrayB[1].S;
             Expression body = Expression.Assign(path1.Body, Expression.Constant("zzz"));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {ArrayB = new[] {new TestClassB {S = "qxx"},}};
             Assert.AreEqual("zzz", f(o));
             Assert.IsNotNull(o.ArrayB);
@@ -31,7 +31,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string>> path1 = a => a.ArrayB[1].C.ArrayD[2].ArrayE[3].S;
             Expression body = Expression.Assign(path1.Body, Expression.Constant("zzz"));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("zzz", f(o));
             Assert.IsNotNull(o.ArrayB);
@@ -50,7 +50,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int[]>> path1 = a => a.IntArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(path1.Body, Expression.Constant(1)), Expression.Constant(-123));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {IntArray = new[] {12}};
             Assert.AreEqual(-123, f(o));
             Assert.IsNotNull(o.IntArray);
@@ -64,7 +64,7 @@ namespace Tests.AssignTests.Assign
         {
             var parameter = Expression.Parameter(typeof(int[]));
             var exp = Expression.Lambda<Func<int[], int>>(Expression.Block(typeof(int), Expression.Assign(Expression.ArrayAccess(parameter, Expression.Constant(1)), Expression.Constant(-123)), Expression.ArrayIndex(parameter, Expression.Constant(1))), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(-123, f(new int[0]));
         }
 
@@ -73,7 +73,7 @@ namespace Tests.AssignTests.Assign
         {
             Expression<Func<int[]>> path = () => intArray;
             var exp = Expression.Lambda<Func<int>>(Expression.Block(typeof(int), Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(1)), Expression.Constant(-123)), Expression.ArrayIndex(path.Body, Expression.Constant(1))));
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(-123, f());
         }
 
@@ -83,7 +83,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int[][]>> path1 = a => a.DoubleIntArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(Expression.ArrayAccess(path1.Body, Expression.Constant(1)), Expression.Constant(1)), Expression.Constant(-123));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {DoubleIntArray = new[] {new[] {12}}};
             Assert.AreEqual(-123, f(o));
             Assert.IsNotNull(o.DoubleIntArray);
@@ -102,7 +102,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int[][]>> path1 = a => a.DoubleIntArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(Expression.ArrayIndex(path1.Body, Expression.Constant(1)), Expression.Constant(1)), Expression.Constant(-123));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {DoubleIntArray = new[] {new[] {12}}};
             Assert.AreEqual(-123, f(o));
             Assert.IsNotNull(o.DoubleIntArray);
@@ -121,7 +121,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string[]>> path = a => a.ArrayB[0].C.ArrayD[0].StringArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(1)), Expression.Constant("zzz"));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("zzz", f(o));
             Assert.IsNotNull(o.ArrayB);
@@ -156,7 +156,7 @@ namespace Tests.AssignTests.Assign
             ParameterExpression variable = Expression.Parameter(typeof(int[]));
             Expression body = Expression.Block(typeof(int), new[] {variable}, Expression.Assign(variable, parameter), Expression.Assign(Expression.ArrayAccess(variable, Expression.Constant(1)), Expression.Constant(-123)));
             var exp = Expression.Lambda<Func<int[], int>>(body, parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(-123, f(new int[0]));
         }
 
@@ -167,7 +167,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, bool>> condition = a => a.X > 0;
             Expression body = Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(1)), new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body));
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.IsNotNull(o.BoolArray);
@@ -185,7 +185,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int>> path2 = a => a.Y;
             Expression body = Expression.Assign(Expression.ArrayAccess(path1.Body, Expression.Constant(1)), new ParameterReplacer(path2.Parameters[0], path1.Parameters[0]).Visit(path2.Body));
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.IsNotNull(o.IntArray);
@@ -207,7 +207,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<DateTime>> path2 = () => MyBirthDate;
             Expression body = Expression.Assign(Expression.ArrayAccess(path1.Body, Expression.Constant(1)), path2.Body);
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.IsNotNull(o.DateTimeArray);
@@ -224,7 +224,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string[,]>> path = a => a.StringArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(0), Expression.Constant(0)), Expression.Constant("zzz"));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {StringArray = new string[1,1]};
             o.StringArray[0, 0] = "qxx";
             Assert.AreEqual("zzz", f(o));
@@ -238,7 +238,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, bool>> condition = a => a.X > 0;
             Expression body = Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(0), Expression.Constant(0)), new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body));
             Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(body, path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {B = new TestClassB {BoolArray = new bool[1,1]}};
             o.B.BoolArray[0, 0] = true;
             Assert.AreEqual(false, f(o));
@@ -255,7 +255,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int>> path2 = a => a.B.C.D.Y;
             Expression body = Expression.Assign(Expression.ArrayAccess(path1.Body, Expression.Constant(0), Expression.Constant(0)), new ParameterReplacer(path2.Parameters[0], path1.Parameters[0]).Visit(path2.Body));
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {B = new TestClassB {IntArray = new int[1,1]}};
             o.B.IntArray[0, 0] = 123;
             Assert.AreEqual(0, f(o));
@@ -281,7 +281,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<int[,]>> path = () => TwoDimensionalIntArray;
             Expression body = Expression.Assign(Expression.ArrayAccess(path.Body, Expression.Constant(1), Expression.Constant(2)), Expression.Constant(-123));
             Expression<Func<int>> exp = Expression.Lambda<Func<int>>(body);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TwoDimensionalIntArray = new int[3,3];
             TwoDimensionalIntArray[1, 2] = 82736;
             Assert.AreEqual(-123, f());

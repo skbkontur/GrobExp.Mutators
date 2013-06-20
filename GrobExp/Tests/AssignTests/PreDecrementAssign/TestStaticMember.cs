@@ -46,7 +46,7 @@ namespace Tests.AssignTests.PreDecrementAssign
         public void TestNullable()
         {
             Expression<Func<int?>> exp = Expression.Lambda<Func<int?>>(Expression.PreDecrementAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableIntProp"))));
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntProp = 0;
             Assert.AreEqual(-1, f());
             Assert.AreEqual(-1, TestClassA.NullableIntProp);

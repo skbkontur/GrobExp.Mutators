@@ -16,7 +16,7 @@ namespace Tests
         public void TestList()
         {
             Expression<Func<List<int>>> exp = () => new List<int> {1, 2};
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var list = f();
             Assert.IsNotNull(list);
             Assert.AreEqual(2, list.Count);
@@ -28,7 +28,7 @@ namespace Tests
         public void TestDictionary()
         {
             Expression<Func<Dictionary<int, string>>> exp = () => new Dictionary<int, string> {{1, "zzz"}, {2, "qxx"}};
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var dict = f();
             Assert.IsNotNull(dict);
             Assert.AreEqual(2, dict.Count);
@@ -40,7 +40,7 @@ namespace Tests
         public void TestStruct()
         {
             Expression<Func<TestStructA>> exp = () => new TestStructA(3) {1, 2};
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var list = f();
             Assert.IsNotNull(list);
             Assert.AreEqual(2, list.Count);

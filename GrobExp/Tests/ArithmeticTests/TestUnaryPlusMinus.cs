@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq.Expressions;
 
+using GrobExp;
+
 using NUnit.Framework;
 
 namespace Tests.ArithmeticTests
@@ -11,7 +13,7 @@ namespace Tests.ArithmeticTests
         public void TestNegate1()
         {
             Expression<Func<int, int>> exp = x => -x;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(-1, f(1));
             Assert.AreEqual(1, f(-1));
@@ -22,7 +24,7 @@ namespace Tests.ArithmeticTests
         public void TestNegate2()
         {
             Expression<Func<int?, int?>> exp = x => -x;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(-1, f(1));
             Assert.AreEqual(1, f(-1));
@@ -35,7 +37,7 @@ namespace Tests.ArithmeticTests
         {
             ParameterExpression parameter = Expression.Parameter(typeof(int));
             Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(Expression.NegateChecked(parameter), parameter);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(-1, f(1));
             Assert.AreEqual(1, f(-1));
@@ -47,7 +49,7 @@ namespace Tests.ArithmeticTests
         {
             ParameterExpression parameter = Expression.Parameter(typeof(int?));
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.NegateChecked(parameter), parameter);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(-1, f(1));
             Assert.AreEqual(1, f(-1));
@@ -60,7 +62,7 @@ namespace Tests.ArithmeticTests
         {
             ParameterExpression parameter = Expression.Parameter(typeof(int));
             Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(Expression.UnaryPlus(parameter), parameter);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(1, f(1));
             Assert.AreEqual(-1, f(-1));
@@ -72,7 +74,7 @@ namespace Tests.ArithmeticTests
         {
             ParameterExpression parameter = Expression.Parameter(typeof(int?));
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.UnaryPlus(parameter), parameter);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(1, f(1));
             Assert.AreEqual(-1, f(-1));

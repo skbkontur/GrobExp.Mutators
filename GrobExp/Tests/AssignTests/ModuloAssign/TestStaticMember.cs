@@ -32,7 +32,7 @@ namespace Tests.AssignTests.ModuloAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.ModuloAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableIntProp")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntProp = 1;
             Assert.AreEqual(1, f(2));
             Assert.AreEqual(1, TestClassA.NullableIntProp);

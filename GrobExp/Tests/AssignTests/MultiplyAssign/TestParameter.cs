@@ -16,7 +16,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.MultiplyAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -27,7 +27,7 @@ namespace Tests.AssignTests.MultiplyAssign
             }
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.MultiplyAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -44,7 +44,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.MultiplyAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -58,7 +58,7 @@ namespace Tests.AssignTests.MultiplyAssign
             }
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.MultiplyAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -78,7 +78,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.MultiplyAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -86,7 +86,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.Throws<OverflowException>(() => f(2000000000, 2000000000));
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.MultiplyAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -100,7 +100,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.MultiplyAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -112,7 +112,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.Throws<OverflowException>(() => f(2000000000, 2000000000));
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.MultiplyAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(6, f(-2, -3));
@@ -130,14 +130,14 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(uint), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<uint, uint, uint>> exp = Expression.Lambda<Func<uint, uint, uint>>(Expression.MultiplyAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(4000000000, f(2000000000, 2));
             Assert.Throws<OverflowException>(() => f(2000000000, 3));
 
             exp = Expression.Lambda<Func<uint, uint, uint>>(Expression.Block(typeof(uint), Expression.MultiplyAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 1));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(4000000000, f(2000000000, 2));
@@ -150,7 +150,7 @@ namespace Tests.AssignTests.MultiplyAssign
             ParameterExpression a = Expression.Parameter(typeof(uint?), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
             Expression<Func<uint?, uint?, uint?>> exp = Expression.Lambda<Func<uint?, uint?, uint?>>(Expression.MultiplyAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(4000000000, f(2000000000, 2));
@@ -160,7 +160,7 @@ namespace Tests.AssignTests.MultiplyAssign
             Assert.Throws<OverflowException>(() => f(2000000000, 3));
 
             exp = Expression.Lambda<Func<uint?, uint?, uint?>>(Expression.Block(typeof(uint?), Expression.MultiplyAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(2, f(1, 2));
             Assert.AreEqual(4000000000, f(2000000000, 2));

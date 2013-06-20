@@ -57,7 +57,7 @@ namespace Tests.TryCatchTests
             Assert.IsFalse(B);
             B = false;
 
-            f = CompileToMethod(exp);
+            f = CompileToMethod(exp, CompilerOptions.All);
             B = false;
             Assert.Throws<NullReferenceException>(() => f(null, null));
             Assert.IsTrue(B);

@@ -24,7 +24,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(0));
             Assert.AreEqual("xxx", f(1));
             Assert.AreEqual("zzz", f(2));
@@ -51,7 +51,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(null));
             Assert.AreEqual("zzz", f(0));
             Assert.AreEqual("xxx", f(1));
@@ -79,7 +79,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(0));
             Assert.AreEqual("xxx", f(1));
             Assert.AreEqual("zzz", f(2));
@@ -106,7 +106,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(0));
             Assert.AreEqual("xxx", f(1));
             Assert.AreEqual("zzz", f(2));
@@ -133,7 +133,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(0));
             Assert.AreEqual("xxx", f(1));
             Assert.AreEqual("zzz", f(2));
@@ -160,7 +160,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(null));
             Assert.AreEqual("zzz", f("0"));
             Assert.AreEqual("xxx", f("1"));
@@ -188,7 +188,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(0.0));
             Assert.AreEqual("xxx", f(1.0));
             Assert.AreEqual("zzz", f(2.0));
@@ -215,7 +215,7 @@ namespace Tests
                     ),
                 a
                 );
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f(null));
             Assert.AreEqual("zzz", f(0.0));
             Assert.AreEqual("xxx", f(1.0));

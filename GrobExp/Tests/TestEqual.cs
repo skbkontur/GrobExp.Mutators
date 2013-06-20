@@ -14,7 +14,7 @@ namespace Tests
         public void Test1()
         {
             Expression<Func<int, int, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(0, 1));
             Assert.AreEqual(true, f(1, 1));
         }
@@ -23,7 +23,7 @@ namespace Tests
         public void Test2()
         {
             Expression<Func<int, long, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(0, 1));
             Assert.AreEqual(true, f(1, 1));
         }
@@ -32,7 +32,7 @@ namespace Tests
         public void Test3()
         {
             Expression<Func<long, long, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(0, 1));
             Assert.AreEqual(true, f(1, 1));
         }
@@ -41,7 +41,7 @@ namespace Tests
         public void Test4()
         {
             Expression<Func<string, string, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f("zzz", "qxx"));
             Assert.AreEqual(true, f("zzz", "zzz"));
         }
@@ -50,7 +50,7 @@ namespace Tests
         public void Test5()
         {
             Expression<Func<int, decimal, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(0, 1m));
             Assert.AreEqual(true, f(1, 1m));
         }
@@ -59,7 +59,7 @@ namespace Tests
         public void Test6()
         {
             Expression<Func<TestEnum, TestEnum, bool>> exp = (a, b) => a == b;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(TestEnum.Zero, TestEnum.One));
             Assert.AreEqual(true, f(TestEnum.One, TestEnum.One));
         }
@@ -71,7 +71,7 @@ namespace Tests
             ParameterExpression b = Expression.Parameter(typeof(TestEnum));
             Expression body = Expression.Equal(a, b);
             Expression<Func<TestEnum, TestEnum, bool>> exp = Expression.Lambda<Func<TestEnum, TestEnum, bool>>(body, a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(TestEnum.Zero, TestEnum.One));
             Assert.AreEqual(true, f(TestEnum.One, TestEnum.One));
         }
@@ -82,7 +82,7 @@ namespace Tests
             ParameterExpression a = Expression.Parameter(typeof(int?));
             Expression body = Expression.Equal(a, Expression.Constant(null));
             Expression<Func<int?, bool>> exp = Expression.Lambda<Func<int?, bool>>(body, a);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(1));
             Assert.AreEqual(true, f(null));
         }

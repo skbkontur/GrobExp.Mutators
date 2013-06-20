@@ -30,7 +30,7 @@ namespace Tests.ExtensionTests
                 result);
             Expression<Func<int[], int>> exp = Expression.Lambda<Func<int[], int>>(block, array);
 
-            Func<int[], int> f = LambdaCompiler.Compile(exp);
+            Func<int[], int> f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(6, f(new[] {1, -1, 2, -2, 3, -3}));
             Assert.AreEqual(6, f(new[] {1, 2, 3}));
             Assert.AreEqual(0, f(new[] {-1, -2, -3}));

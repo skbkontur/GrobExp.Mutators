@@ -19,7 +19,7 @@ namespace Tests
         public void TestRefParameter()
         {
             Expression<Action<TestClassA>> exp = a => Array.Resize(ref a.IntArray2, 5);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA { IntArray2 = new int[] { 1, 2, 3 } };
             f(o);
             Assert.AreEqual(5, o.IntArray2.Length);
@@ -33,7 +33,7 @@ namespace Tests
         {
             Expression<Func<TestClassA, bool>> path = a => a.StructAArray[0].S == GetString();
             Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), Expression.Assign(((BinaryExpression)path.Body).Left, Expression.Call(getStringMethod)), path.Body), path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var collectingThread = new Thread(Collect);
             collectingThread.Start();
             for(int i = 0; i < 10; ++i)
@@ -55,7 +55,7 @@ namespace Tests
             var arrayIndex = (BinaryExpression)((BinaryExpression)path.Body).Left;
             Expression arrayAccess = Expression.ArrayAccess(arrayIndex.Left, arrayIndex.Right);
             Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), Expression.Assign(arrayAccess, Expression.Call(getStringMethod)), path.Body), path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var collectingThread = new Thread(Collect);
             collectingThread.Start();
             for(int i = 0; i < 10; ++i)
@@ -119,7 +119,7 @@ namespace Tests
             MethodCallExpression forEach = Expression.Call(forEachMethod.MakeGenericMethod(new[] {typeof(TestClassB)}), pathToArray.Body, Expression.Lambda<Action<TestClassB>>(addToList, pathToS.Parameters));
             var body = Expression.Block(typeof(List<string>), new[] {list}, listCreate, forEach, list);
             var exp = Expression.Lambda<Func<TestClassA, List<string>>>(body, pathToArray.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             wasBug = false;
             var thread = new Thread(Run);
             thread.Start(f);
@@ -148,7 +148,7 @@ namespace Tests
         public void TestDefault()
         {
             Expression<Func<long>> exp = Expression.Lambda<Func<long>>(Expression.Default(typeof(long)));
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f());
         }
 
@@ -156,7 +156,7 @@ namespace Tests
         public void TestConvertToEnum()
         {
             Expression<Func<TestEnum, Enum>> exp = x => (Enum)x;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(TestEnum.Two, f(TestEnum.Two));
         }
 
@@ -164,7 +164,7 @@ namespace Tests
         public void TestConvertFromEnum()
         {
             Expression<Func<Enum, TestEnum>> exp = x => (TestEnum)x;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(TestEnum.Two, f(TestEnum.Two));
         }
 
@@ -172,7 +172,7 @@ namespace Tests
         public void TestConditional1()
         {
             Expression<Func<TestClassA, int>> exp = a => a.Bool ? 1 : -1;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(1, f(new TestClassA {Bool = true}));
             Assert.AreEqual(-1, f(null));
             Assert.AreEqual(-1, f(new TestClassA()));
@@ -186,7 +186,7 @@ namespace Tests
             Expression assign = Expression.Assign(path.Body, Expression.Constant("qxx"));
             Expression test = new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body);
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(Expression.IfThenElse(test, assign, Expression.Default(typeof(void))), path.Parameters);
-            var action = LambdaCompiler.Compile(exp);
+            var action = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {S = "zzz"};
             action(o);
             Assert.IsNotNull(o.B);
@@ -205,7 +205,7 @@ namespace Tests
             Expression assign3 = Expression.Assign(new ParameterReplacer(path2.Parameters[0], path.Parameters[0]).Visit(path2.Body), Expression.Block(typeof(string), Expression.IfThenElse(test, assign1, assign2), path.Body));
             //Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(Expression.IfThenElse(test, assign1, assign2), path.Parameters);
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(assign3, path.Parameters);
-            var action = LambdaCompiler.Compile(exp);
+            var action = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA {S = "zzz"};
             action(o);
             Assert.IsNotNull(o.B);
@@ -217,7 +217,7 @@ namespace Tests
         public void TestToStringOfGuid()
         {
             Expression<Func<TestClassA, string>> exp = f => "_xxx_" + f.Guid.ToString();
-            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(new TestClassA {Guid = new Guid("8DCBF7DF-772A-4A9C-81F0-D4B25C183ACE")}), Is.EqualTo("_xxx_8DCBF7DF-772A-4A9C-81F0-D4B25C183ACE").IgnoreCase);
         }
 
@@ -225,7 +225,7 @@ namespace Tests
         public void Test9()
         {
             Expression<Func<TestClassA, int>> exp = o => (o.B ?? new TestClassB {Y = 3}).Y;
-            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(3));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(3));
             Assert.That(compiledExp(new TestClassA {B = new TestClassB {Y = 2}}), Is.EqualTo(2));
@@ -235,7 +235,7 @@ namespace Tests
         public void Test23()
         {
             Expression<Func<TestClassA, bool>> exp = o => o.NullableBool == false;
-            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsFalse(compiledExp(null));
             Assert.IsFalse(compiledExp(new TestClassA()));
         }
@@ -244,7 +244,7 @@ namespace Tests
         public void TestNullableGuidNoCoalesce()
         {
             Expression<Func<TestClassA, bool>> exp = o => o.NullableGuid == null;
-            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsFalse(compiledExp(new TestClassA {NullableGuid = Guid.Empty}));
         }
 
@@ -252,7 +252,7 @@ namespace Tests
         public void TestCoalesce1()
         {
             Expression<Func<TestClassA, int>> exp = o => o.B.X ?? 1;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(1, f(null));
             Assert.AreEqual(1, f(new TestClassA()));
             Assert.AreEqual(1, f(new TestClassA {B = new TestClassB()}));
@@ -263,7 +263,7 @@ namespace Tests
         public void TestCoalesce2()
         {
             Expression<Func<TestClassA, int?, int?>> exp = (o, x) => o.B.X ?? x;
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(null, f(null, null));
             Assert.AreEqual(1, f(null, 1));
             Assert.AreEqual(null, f(new TestClassA(), null));
@@ -278,7 +278,7 @@ namespace Tests
         public void TestLazyEvaluation()
         {
             Expression<Func<TestClassA, bool>> exp = o => o.A != null && Y(o.A) > 0;
-            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.False);
             Assert.That(compiledExp(new TestClassA()), Is.False);
             Assert.That(compiledExp(new TestClassA {A = new TestClassA()}), Is.False);
@@ -289,7 +289,7 @@ namespace Tests
         public void TestLazyEvaluation2()
         {
             Expression<Func<int?, bool>> exp = o => o != null && o.ToString() == "1";
-            Func<int?, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<int?, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.False);
             Assert.That(compiledExp(1), Is.True);
         }
@@ -298,7 +298,7 @@ namespace Tests
         public void TestStaticMethod()
         {
             Expression<Func<TestClassA, TestClassA, int>> exp = (x, y) => NotExtension(x, y);
-            Func<TestClassA, TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
 
             Assert.That(compiledExp(new TestClassA(), new TestClassA()), Is.EqualTo(3), "!null,!null");
             Assert.That(compiledExp(new TestClassA(), null), Is.EqualTo(2), "!null,null");
@@ -309,7 +309,7 @@ namespace Tests
         public void TestStaticMethodAsSubChain()
         {
             Expression<Func<TestClassA, TestClassA, int>> exp = (x, y) => NotExtension2(x.A, y.A).Y;
-            Func<TestClassA, TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
 
             Assert.That(compiledExp(new TestClassA {A = new TestClassA()}, new TestClassA {A = new TestClassA()}), Is.EqualTo(3), "!null,!null");
             Assert.That(compiledExp(new TestClassA {A = new TestClassA()}, null), Is.EqualTo(2), "!null,null");
@@ -321,7 +321,7 @@ namespace Tests
         {
             var closure = 11;
             Expression<Func<TestClassA, bool>> exp = o => closure == o.Y;
-            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(new TestClassA {Y = 11}), Is.True);
         }
 
@@ -329,7 +329,7 @@ namespace Tests
         public void TestNullableValidType()
         {
             Expression<Func<int?, string>> exp = o => o == null ? "" : o.ToString();
-            Func<int?, string> compiledExp = LambdaCompiler.Compile(exp);
+            Func<int?, string> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(compiledExp(null), "");
         }
 
@@ -337,7 +337,7 @@ namespace Tests
         public void TestExtendFunctionArguments()
         {
             Expression<Func<TestClassA, int>> exp = o => zzz(o.X > 0);
-            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, compiledExp(null));
             Assert.AreEqual(0, compiledExp(new TestClassA()));
             Assert.AreEqual(1, compiledExp(new TestClassA {X = 1}));
@@ -347,7 +347,7 @@ namespace Tests
         public void Test99()
         {
             Expression<Func<int[], bool>> exp = o => 11 == o[o.Count() - 1];
-            Func<int[], bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<int[], bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(new[] {1, 11}), Is.True);
         }
 
@@ -355,7 +355,7 @@ namespace Tests
         public void TestExtendForNullableValueTypes()
         {
             Expression<Func<int?, string>> exp = s => s.ToString();
-            Func<int?, string> compiledExp = LambdaCompiler.Compile(exp);
+            Func<int?, string> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(null, compiledExp(null));
             Assert.AreEqual("1", compiledExp(1));
         }
@@ -364,7 +364,7 @@ namespace Tests
         public void TestExtendForNullableValueTypes2()
         {
             Expression<Func<int?, bool>> exp = s => s == 0;
-            Func<int?, bool> compiledExp = LambdaCompiler.Compile(exp);
+            Func<int?, bool> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsFalse(compiledExp(null));
         }
 
@@ -533,7 +533,7 @@ namespace Tests
             var result = new WeakReference(a);
             Expression<Func<TestClassA, string>> path = o => o.S;
             var exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Equal(path.Body, Expression.MakeMemberAccess(Expression.Constant(a), typeof(TestClassA).GetProperty("S"))), path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {S = "qxx"}));
             Assert.IsFalse(f(new TestClassA {S = "qzz"}));
             return result;
@@ -546,7 +546,7 @@ namespace Tests
             var aa = new TestStructA {A = a};
             Expression<Func<TestClassA, string>> path = o => o.S;
             var exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Equal(path.Body, Expression.MakeMemberAccess(Expression.MakeMemberAccess(Expression.Constant(aa), typeof(TestStructA).GetProperty("A")), typeof(TestClassA).GetProperty("S"))), path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {S = "qxx"}));
             Assert.IsFalse(f(new TestClassA {S = "qzz"}));
             return result;

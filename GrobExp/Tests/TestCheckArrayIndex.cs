@@ -14,7 +14,7 @@ namespace Tests
         public void Test1()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].X;
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
@@ -27,7 +27,7 @@ namespace Tests
         public void Test2()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[1].X;
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
@@ -44,7 +44,7 @@ namespace Tests
         public void Test3()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[o.B.Y].X;
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {ArrayB = new TestClassB[] {null}}), Is.EqualTo(null));
@@ -57,7 +57,7 @@ namespace Tests
         public void TestBadArrayIndex()
         {
             Expression<Func<TestClassA, int>> exp = a => a.IntArray[314159265];
-            var compiledExp = LambdaCompiler.Compile(exp);
+            var compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, compiledExp(new TestClassA {IntArray = new[] {1, 2, 3}}));
         }
 
@@ -67,7 +67,7 @@ namespace Tests
 #pragma warning disable 251
             Expression<Func<TestClassA, int>> exp = a => a.IntArray[-1];
 #pragma warning restore 251
-            var compiledExp = LambdaCompiler.Compile(exp);
+            var compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, compiledExp(new TestClassA {IntArray = new[] {1, 2, 3}}));
         }
 
@@ -75,7 +75,7 @@ namespace Tests
         public void TestBadArrayIndex3()
         {
             Expression<Func<TestClassA, string>> exp = a => a.ArrayB[271828183].C.D.E.S;
-            var compiledExp = LambdaCompiler.Compile(exp);
+            var compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(null, compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}));
         }
 

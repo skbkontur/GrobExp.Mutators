@@ -16,7 +16,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.SubtractAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -26,7 +26,7 @@ namespace Tests.AssignTests.SubtractAssign
             }
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.SubtractAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -42,7 +42,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.SubtractAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -55,7 +55,7 @@ namespace Tests.AssignTests.SubtractAssign
             }
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.SubtractAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -74,14 +74,14 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.SubtractAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
             Assert.Throws<OverflowException>(() => f(2000000000, -2000000000));
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.SubtractAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -94,7 +94,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.SubtractAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -104,7 +104,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.Throws<OverflowException>(() => f(2000000000, -2000000000));
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.SubtractAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(-1, f(1, 2));
             Assert.AreEqual(1, f(-1, -2));
@@ -120,13 +120,13 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(uint), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint), "b");
             Expression<Func<uint, uint, uint>> exp = Expression.Lambda<Func<uint, uint, uint>>(Expression.SubtractAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(3000000000, f(4000000000, 1000000000));
             Assert.Throws<OverflowException>(() => f(1, 2));
 
             exp = Expression.Lambda<Func<uint, uint, uint>>(Expression.Block(typeof(uint), Expression.SubtractAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(3000000000, f(4000000000, 1000000000));
             Assert.Throws<OverflowException>(() => f(1, 2));
@@ -138,7 +138,7 @@ namespace Tests.AssignTests.SubtractAssign
             ParameterExpression a = Expression.Parameter(typeof(uint?), "a");
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
             Expression<Func<uint?, uint?, uint?>> exp = Expression.Lambda<Func<uint?, uint?, uint?>>(Expression.SubtractAssignChecked(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(3000000000, f(4000000000, 1000000000));
             Assert.IsNull(f(null, 2));
@@ -147,7 +147,7 @@ namespace Tests.AssignTests.SubtractAssign
             Assert.Throws<OverflowException>(() => f(1, 2));
 
             exp = Expression.Lambda<Func<uint?, uint?, uint?>>(Expression.Block(typeof(uint?), Expression.SubtractAssignChecked(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(3000000000, f(4000000000, 1000000000));
             Assert.IsNull(f(null, 2));

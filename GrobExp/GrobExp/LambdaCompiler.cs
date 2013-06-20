@@ -13,45 +13,45 @@ namespace GrobExp
 {
     public static class LambdaCompiler
     {
-        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options = CompilerOptions.All)
+        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
             string il;
             return CompileInternal(lambda, null, out il, options);
         }
 
-        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options = CompilerOptions.All)
+        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
             string il;
             return CompileInternal(lambda, debugInfoGenerator, out il, options);
         }
 
-        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options = CompilerOptions.All)
+        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options)
         {
             return CompileInternal(lambda, debugInfoGenerator, out il, options);
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
             string il;
             return Compile(lambda, null, out il, options);
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, out string il, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, out string il, CompilerOptions options) where TDelegate : class
         {
             return Compile(lambda, null, out il, options);
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options) where TDelegate : class
         {
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out il, options);
         }
 
-        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options = CompilerOptions.All)
+        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
         {
             return CompileToMethodInternal(lambda, method, null, options);
         }
 
-        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options = CompilerOptions.All)
+        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
             return CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }

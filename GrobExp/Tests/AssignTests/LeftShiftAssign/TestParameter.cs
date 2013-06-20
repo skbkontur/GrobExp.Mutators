@@ -16,7 +16,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(int), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int, int, int>> exp = Expression.Lambda<Func<int, int, int>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -25,7 +25,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.AreEqual(-2468, f(-1234, 1));
 
             exp = Expression.Lambda<Func<int, int, int>>(Expression.Block(typeof(int), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -40,7 +40,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?, int?>> exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -52,7 +52,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.IsNull(f(null, null));
 
             exp = Expression.Lambda<Func<int?, int?, int?>>(Expression.Block(typeof(int?), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -70,7 +70,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(int?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<int?, int, int?>> exp = Expression.Lambda<Func<int?, int, int?>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -80,7 +80,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.IsNull(f(null, 1));
 
             exp = Expression.Lambda<Func<int?, int, int?>>(Expression.Block(typeof(int?), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -96,7 +96,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(uint), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<uint, int, uint>> exp = Expression.Lambda<Func<uint, int, uint>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -105,7 +105,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.AreEqual(2147483648, f(1, 31));
 
             exp = Expression.Lambda<Func<uint, int, uint>>(Expression.Block(typeof(uint), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -120,7 +120,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(uint?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int), "b");
             Expression<Func<uint?, int, uint?>> exp = Expression.Lambda<Func<uint?, int, uint?>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -130,7 +130,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.IsNull(f(null, 1));
 
             exp = Expression.Lambda<Func<uint?, int, uint?>>(Expression.Block(typeof(uint?), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -146,7 +146,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             ParameterExpression a = Expression.Parameter(typeof(uint?), "a");
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<uint?, int?, uint?>> exp = Expression.Lambda<Func<uint?, int?, uint?>>(Expression.LeftShiftAssign(a, b), a, b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -158,7 +158,7 @@ namespace Tests.AssignTests.LeftShiftAssign
             Assert.IsNull(f(null, null));
 
             exp = Expression.Lambda<Func<uint?, int?, uint?>>(Expression.Block(typeof(uint?), Expression.LeftShiftAssign(a, b), a), a, b);
-            f = LambdaCompiler.Compile(exp);
+            f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));

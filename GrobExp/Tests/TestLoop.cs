@@ -31,7 +31,7 @@ namespace Tests
                 );
             Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(block, value);
 
-            Func<int, int> f = LambdaCompiler.Compile(exp);
+            Func<int, int> f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(1, f(0));
             Assert.AreEqual(120, f(5));
 
@@ -67,7 +67,7 @@ namespace Tests
                 );
             Expression<Func<int, string>> exp = Expression.Lambda<Func<int, string>>(Expression.Call(block, "ToString", Type.EmptyTypes), value);
 
-            Func<int, string> f = LambdaCompiler.Compile(exp);
+            Func<int, string> f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("1", f(0));
             Assert.AreEqual("120", f(5));
 
@@ -111,7 +111,7 @@ namespace Tests
                 );
             Expression<Func<int[], int>> exp = Expression.Lambda<Func<int[], int>>(block, array);
 
-            Func<int[], int> f = LambdaCompiler.Compile(exp);
+            Func<int[], int> f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(6, f(new[] {1, -1, 2, -2, 3, -3}));
             Assert.AreEqual(6, f(new[] {1, 2, 3}));
             Assert.AreEqual(0, f(new[] {-1, -2, -3}));

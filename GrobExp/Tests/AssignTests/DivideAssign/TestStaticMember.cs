@@ -49,7 +49,7 @@ namespace Tests.AssignTests.DivideAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.DivideAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableIntProp")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntProp = 1;
             Assert.AreEqual(0, f(2));
             Assert.AreEqual(0, TestClassA.NullableIntProp);

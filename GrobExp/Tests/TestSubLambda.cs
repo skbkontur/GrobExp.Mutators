@@ -25,7 +25,7 @@ namespace Tests
         public void TestSubLambda1()
         {
             Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == a.S);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
             Assert.IsFalse(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB(),}}));
         }
@@ -34,7 +34,7 @@ namespace Tests
         public void TestSubLambda1x()
         {
             Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == "zzz");
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
             Assert.IsFalse(f(new TestClassA {S = "zzz", ArrayB = new[] {new TestClassB(),}}));
         }
@@ -50,7 +50,7 @@ namespace Tests
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestClassB)), temp);
             var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
-            var f = Compile(exp2);
+            var f = Compile(exp2, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {S = "qzz", ArrayB = new[] {new TestClassB {S = "zzz"},}}));
         }
 
@@ -127,7 +127,7 @@ namespace Tests
             var gen = DebugInfoGenerator.CreatePdbGenerator();
 
             LambdaExpression lambda = Expression.Lambda(block, new ParameterExpression[0]);
-            LambdaCompiler.CompileToMethod(lambda, meth, gen);
+            LambdaCompiler.CompileToMethod(lambda, meth, gen, CompilerOptions.All);
             //lambda.CompileToMethod(meth, gen);
 
             var newtype = type.CreateType();
@@ -247,7 +247,7 @@ namespace Tests
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestStructB)), temp);
             var exp2 = Expression.Lambda<Func<TestStructA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
-            var f = Compile(exp2);
+            var f = Compile(exp2, CompilerOptions.All);
             Assert.IsTrue(f(new TestStructA {S = "qzz", ArrayB = new[] {new TestStructB {S = "zzz"},}}));
         }
 
@@ -261,7 +261,7 @@ namespace Tests
             ParameterExpression parameterA = Expression.Parameter(typeof(TestStructA));
             Expression any = Expression.Call(anyWithPredicateMethod.MakeGenericMethod(typeof(TestStructB)), Expression.MakeMemberAccess(parameterA, typeof(TestStructA).GetProperty("ArrayB")), predicate);
             Expression<Func<TestStructA, bool>> exp = Expression.Lambda<Func<TestStructA, bool>>(any, parameterA);
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             aaa.Y = 1;
             Assert.IsFalse(f(new TestStructA {ArrayB = new[] {new TestStructB {Y = 1},}}));
         }
@@ -270,7 +270,7 @@ namespace Tests
         public void TestSubLambda3()
         {
             Expression<Func<TestClassA, int>> exp = data => data.ArrayB.SelectMany(b => b.C.ArrayD, (classB, classD) => classD.ArrayE.FirstOrDefault(c => c.S == "zzz").X).Where(i => i > 0).FirstOrDefault();
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             var a = new TestClassA
                 {
                     ArrayB = new[]
@@ -328,7 +328,7 @@ namespace Tests
             Expression any = Expression.Call(anyMethod.MakeGenericMethod(typeof(TestClassB)), temp);
             var exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), new[] {temp}, assignTemp, assignS, any), exp.Parameters);
 
-            var f = Compile(exp2);
+            var f = Compile(exp2, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA {ArrayB = new[] {new TestClassB {S = "zzz"},}}));
         }
 
@@ -336,7 +336,7 @@ namespace Tests
         public void TestSubLambda5()
         {
             Expression<Func<TestClassA, bool>> exp = a => a.ArrayB.Any(b => b.S == a.S && b.C.ArrayD.All(d => d.S == b.S && d.ArrayE.Any(e => e.S == a.S && e.S == b.S && e.S == d.S)));
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(new TestClassA
                 {
                     S = "zzz",

@@ -15,7 +15,7 @@ namespace Tests
         {
             Expression<Func<long, DateTime>> exp = ticks => new DateTime(ticks);
             Expression<Func<long, long>> exp2 = Expression.Lambda<Func<long, long>>(Expression.Block(typeof(long), exp.Body, exp.Parameters[0]), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2, CompilerOptions.All);
             Assert.AreEqual(1234566789123456789, f(1234566789123456789));
         }
 
@@ -24,7 +24,7 @@ namespace Tests
         {
             Expression<Func<long, DateTime>> exp = ticks => new DateTime(ticks);
             Expression<Action<long>> exp2 = Expression.Lambda<Action<long>>(Expression.Block(typeof(void), exp.Body, exp.Parameters[0]), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2,CompilerOptions.All);
             f(123485234785);
         }
 
@@ -33,7 +33,7 @@ namespace Tests
         {
             Expression<Func<long, DateTime>> exp = ticks => new DateTime(ticks);
             Expression<Action<long>> exp2 = Expression.Lambda<Action<long>>(Expression.Block(typeof(void), exp.Body), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2, CompilerOptions.All);
             f(123485234785);
         }
 
@@ -42,7 +42,7 @@ namespace Tests
         {
             Expression<Func<TestClassA, bool>> exp = a => a.X > 0;
             Expression<Func<TestClassA, bool>> exp2 = Expression.Lambda<Func<TestClassA, bool>>(Expression.Block(typeof(bool), exp.Body), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2, CompilerOptions.All);
             Assert.AreEqual(false, f(null));
             Assert.AreEqual(false, f(new TestClassA()));
             Assert.AreEqual(false, f(new TestClassA {X = -1}));

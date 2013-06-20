@@ -24,7 +24,7 @@ namespace Tests.TryCatchTests
                         )
                     );
             var exp = Expression.Lambda<Func<string>>(tryCatchExpr);
-            var f = CompileToMethod(exp);
+            var f = CompileToMethod(exp, CompilerOptions.All);
             Assert.AreEqual("Catch block", f());
         }
 
@@ -88,7 +88,7 @@ namespace Tests.TryCatchTests
             Assert.IsTrue(B);
             B = false;
 
-            f = Compile(exp);
+            f = Compile(exp, CompilerOptions.All);
             B = false;
             Assert.AreEqual("Null reference", f(null, null));
             Assert.IsTrue(B);
@@ -185,7 +185,7 @@ namespace Tests.TryCatchTests
             Assert.IsTrue(B);
             B = false;
 
-            f = Compile(exp);
+            f = Compile(exp, CompilerOptions.All);
             B = false;
             Assert.AreEqual("Object reference not set to an instance of an object.", f(null, null));
             Assert.IsTrue(B);

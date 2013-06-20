@@ -30,7 +30,7 @@ namespace Tests
                 new[] {x, y}
                 );
 
-            Func<dynamic, dynamic, dynamic> f = LambdaCompiler.Compile(exp);
+            Func<dynamic, dynamic, dynamic> f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(3, f(1, 2));
 
             f = LambdaCompiler.Compile(exp, CompilerOptions.None);

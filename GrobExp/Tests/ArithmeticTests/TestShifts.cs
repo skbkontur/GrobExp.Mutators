@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq.Expressions;
 
+using GrobExp;
+
 using NUnit.Framework;
 
 namespace Tests.ArithmeticTests
@@ -11,7 +13,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift1()
         {
             Expression<Func<int, int, int>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -24,7 +26,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift2()
         {
             Expression<Func<int?, int?, int?>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -40,7 +42,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift3()
         {
             Expression<Func<int?, int, int?>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -54,7 +56,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift4()
         {
             Expression<Func<uint, int, uint>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -67,7 +69,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift5()
         {
             Expression<Func<uint?, int, uint?>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -81,7 +83,7 @@ namespace Tests.ArithmeticTests
         public void TestLeftShift6()
         {
             Expression<Func<uint?, int?, uint?>> exp = (a, b) => a << b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1024, f(1, 10));
@@ -97,7 +99,7 @@ namespace Tests.ArithmeticTests
         public void TestRightShift1()
         {
             Expression<Func<int, int, int>> exp = (a, b) => a >> b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1, f(1024, 10));
@@ -110,7 +112,7 @@ namespace Tests.ArithmeticTests
         public void TestRightShift2()
         {
             Expression<Func<int?, int?, int?>> exp = (a, b) => a >> b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1, f(1024, 10));
@@ -126,7 +128,7 @@ namespace Tests.ArithmeticTests
         public void TestRightShift3()
         {
             Expression<Func<uint, int, uint>> exp = (a, b) => a >> b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1, f(1024, 10));
@@ -139,7 +141,7 @@ namespace Tests.ArithmeticTests
         public void TestRightShift4()
         {
             Expression<Func<uint?, int, uint?>> exp = (a, b) => a >> b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1, f(1024, 10));
@@ -153,7 +155,7 @@ namespace Tests.ArithmeticTests
         public void TestRightShift5()
         {
             Expression<Func<uint?, int?, uint?>> exp = (a, b) => a >> b;
-            var f = Compile(exp);
+            var f = Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(0, 0));
             Assert.AreEqual(0, f(0, 10));
             Assert.AreEqual(1, f(1024, 10));

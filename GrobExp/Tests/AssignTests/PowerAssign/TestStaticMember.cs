@@ -35,7 +35,7 @@ namespace Tests.AssignTests.PowerAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(double?), "b");
             Expression<Func<double?, double?>> exp = Expression.Lambda<Func<double?, double?>>(Expression.PowerAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableDoubleProp")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableDoubleProp = 0;
             Assert.AreEqual(1, f(0));
             Assert.AreEqual(1, TestClassA.NullableDoubleProp);

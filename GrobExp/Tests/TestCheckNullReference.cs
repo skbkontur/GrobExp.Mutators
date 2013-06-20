@@ -15,7 +15,7 @@ namespace Tests
         public void Test2()
         {
             Expression<Func<TestClassA, string>> exp = o => o.B.S;
-            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {B = new TestClassB {S = "zzz"}}), Is.EqualTo("zzz"));
@@ -25,7 +25,7 @@ namespace Tests
         public void Test3()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.B.X;
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {B = new TestClassB {X = 1}}), Is.EqualTo(1));
@@ -35,7 +35,7 @@ namespace Tests
         public void Test4()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.B.F2( /*new Qzz{X = 1}*/1);
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {B = new TestClassB {X = 1}}), Is.EqualTo(1));
@@ -45,7 +45,7 @@ namespace Tests
         public void Test6()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB.Sum(b => b.X);
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(0));
@@ -57,7 +57,7 @@ namespace Tests
         public void Test7a()
         {
             Expression<Func<TestClassA, int>> exp = o => o.B.Y + o.Y;
-            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA {Y = 1}), Is.EqualTo(1));
@@ -70,7 +70,7 @@ namespace Tests
         public void Test7b()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.B.X + o.X;
-            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {X = 1}), Is.EqualTo(null));
@@ -83,7 +83,7 @@ namespace Tests
         public void Test8()
         {
             Expression<Func<TestClassA, int>> exp = o => o.ArrayB.Sum(b => b.Y);
-            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA()), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(0));

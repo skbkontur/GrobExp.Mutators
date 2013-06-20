@@ -17,7 +17,7 @@ namespace Tests.AssignTests.Assign
             var parameter = Expression.Parameter(typeof(int));
             var assign = Expression.Assign(parameter, Expression.Constant(-1));
             var exp = Expression.Lambda<Func<int, int>>(assign, parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(-1, f(1));
         }
 
@@ -29,7 +29,7 @@ namespace Tests.AssignTests.Assign
             var assign = Expression.Assign(variable, parameter);
             var body = Expression.Block(typeof(int), new[] {variable}, assign);
             var exp = Expression.Lambda<Func<int, int>>(body, parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(1, f(1));
         }
 
@@ -40,7 +40,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, bool>> condition = a => a.X > 0;
             Expression body = Expression.Assign(path.Body, new ParameterReplacer(condition.Parameters[0], path.Parameters[0]).Visit(condition.Body));
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.AreEqual(false, o.Bool);
@@ -56,7 +56,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, int>> path2 = a => a.B.Y;
             Expression body = Expression.Assign(path1.Body, new ParameterReplacer(path2.Parameters[0], path1.Parameters[0]).Visit(path2.Body));
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.AreEqual(0, o.Y);
@@ -78,7 +78,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<int>> path = () => x;
             ParameterExpression parameter = Expression.Parameter(typeof(int));
             Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(Expression.Assign(path.Body, parameter), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(-123, f(-123));
             Assert.AreEqual(-123, x);
         }
@@ -89,7 +89,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<string>> path = () => S;
             ParameterExpression parameter = Expression.Parameter(typeof(string));
             Expression<Func<string, string>> exp = Expression.Lambda<Func<string, string>>(Expression.Assign(path.Body, parameter), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual("zzz", f("zzz"));
             Assert.AreEqual("zzz", S);
         }
@@ -100,7 +100,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<bool>> path = () => b;
             Expression<Func<TestClassA, bool>> condition = a => a.X > 0;
             Expression<Func<TestClassA, bool>> exp = Expression.Lambda<Func<TestClassA, bool>>(Expression.Assign(path.Body, condition.Body), condition.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(false, f(null));
             Assert.AreEqual(false, b);
             Assert.AreEqual(false, f(new TestClassA()));
@@ -117,7 +117,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<int>> path = () => x;
             Expression<Func<TestClassA, int>> condition = a => a.Y;
             Expression<Func<TestClassA, int>> exp = Expression.Lambda<Func<TestClassA, int>>(Expression.Assign(path.Body, condition.Body), condition.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(0, f(null));
             Assert.AreEqual(0, x);
             Assert.AreEqual(0, f(new TestClassA()));
@@ -131,7 +131,7 @@ namespace Tests.AssignTests.Assign
         {
             Expression<Func<TestClassA, string>> exp = a => a.B.S;
             Expression<Func<TestClassA, string>> exp2 = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(exp.Body, Expression.Constant("zzz")), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("zzz", f(o));
             Assert.IsNotNull(o.B);
@@ -143,7 +143,7 @@ namespace Tests.AssignTests.Assign
         {
             Expression<Func<TestClassA, string>> exp = a => a.structA.b.S;
             Expression<Func<TestClassA, string>> exp2 = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(exp.Body, Expression.Constant("zzz")), exp.Parameters);
-            var f = LambdaCompiler.Compile(exp2);
+            var f = LambdaCompiler.Compile(exp2, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("zzz", f(o));
             Assert.AreEqual("zzz", o.structA.b.S);
@@ -156,7 +156,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string>> path2 = a => a.B.C.S;
             Expression body = Expression.Block(typeof(string), Expression.Assign(path1.Body, Expression.Constant("zzz")), Expression.Assign(new ParameterReplacer(path2.Parameters[0], path1.Parameters[0]).Visit(path2.Body), Expression.Constant("qxx")));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("qxx", f(o));
             Assert.IsNotNull(o.B);
@@ -172,7 +172,7 @@ namespace Tests.AssignTests.Assign
             Expression<Func<TestClassA, string>> path2 = a => a.B.C.S;
             Expression body = Expression.Block(typeof(void), Expression.Assign(path1.Body, Expression.Constant("zzz")), Expression.Assign(new ParameterReplacer(path2.Parameters[0], path1.Parameters[0]).Visit(path2.Body), Expression.Constant("qxx")));
             Expression<Action<TestClassA>> exp = Expression.Lambda<Action<TestClassA>>(body, path1.Parameters);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             f(o);
             Assert.IsNotNull(o.B);
@@ -188,7 +188,7 @@ namespace Tests.AssignTests.Assign
             ParameterExpression parameter = Expression.Parameter(typeof(TestClassA));
             Expression body = Expression.Block(typeof(string), new[] {path.Parameters[0]}, Expression.Assign(path.Parameters[0], parameter), Expression.Assign(path.Body, Expression.Constant("zzz")));
             Expression<Func<TestClassA, string>> exp = Expression.Lambda<Func<TestClassA, string>>(body, parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var o = new TestClassA();
             Assert.AreEqual("zzz", f(o));
             Assert.IsNotNull(o.B);
@@ -200,7 +200,7 @@ namespace Tests.AssignTests.Assign
         {
             var parameter = Expression.Parameter(typeof(TestClassA));
             var exp = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(Expression.MakeIndex(parameter, typeof(TestClassA).GetProperty("Item"), new[] {Expression.Constant("zzz"), Expression.Constant(1)}), Expression.Constant("qzz")), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var a = new TestClassA();
             a["zzz", 1] = "qxx";
             Assert.AreEqual("qzz", f(a));

@@ -14,7 +14,7 @@ namespace Tests
         public void TestPropertyAccess()
         {
             Expression<Func<TestClassA, string>> exp = o => o.S;
-            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, string> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
             Assert.That(compiledExp(new TestClassA {S = "zzz"}), Is.EqualTo("zzz"));
         }
@@ -23,7 +23,7 @@ namespace Tests
         public void TestFieldAccess()
         {
             Expression<Func<TestClassA, int>> exp = o => o.Y;
-            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp);
+            Func<TestClassA, int> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA {Y = 1}), Is.EqualTo(1));
         }

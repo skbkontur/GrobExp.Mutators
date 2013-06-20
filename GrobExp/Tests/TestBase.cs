@@ -15,12 +15,12 @@ namespace Tests
     [TestFixture]
     public class TestBase
     {
-        protected TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        protected TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
             return LambdaCompiler.Compile(lambda, options);
         }
 
-        protected TDelegate CompileToMethod<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options = CompilerOptions.All) where TDelegate : class
+        protected TDelegate CompileToMethod<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
             var typeBuilder = TestPerformance.Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("lambda", MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());

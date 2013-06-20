@@ -15,7 +15,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(int));
             var exp = Expression.Lambda<Func<int, double?>>(Expression.TypeAs(parameter, typeof(double?)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsNull(f(5));
         }
 
@@ -24,7 +24,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(int));
             var exp = Expression.Lambda<Func<int, int?>>(Expression.TypeAs(parameter, typeof(int?)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(5, f(5));
         }
 
@@ -33,7 +33,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(int));
             var exp = Expression.Lambda<Func<int, object>>(Expression.TypeAs(parameter, typeof(object)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             object res = f(5);
             Assert.AreEqual(5, res);
         }
@@ -43,7 +43,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(TestClassB));
             var exp = Expression.Lambda<Func<TestClassB, TestClassA>>(Expression.TypeAs(parameter, typeof(TestClassA)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var b = new TestClassB();
             TestClassA a = f(b);
             Assert.AreEqual(b, a);
@@ -54,7 +54,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(TestClassA));
             var exp = Expression.Lambda<Func<TestClassA, TestClassB>>(Expression.TypeAs(parameter, typeof(TestClassB)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             var a = new TestClassA();
             TestClassB b = f(a);
             Assert.IsNull(b);
@@ -68,7 +68,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(object));
             var exp = Expression.Lambda<Func<object, int?>>(Expression.TypeAs(parameter, typeof(int?)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(5, f(5));
             Assert.IsNull(f(5.5));
         }
@@ -78,7 +78,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(object));
             var exp = Expression.Lambda<Func<object, TestEnum?>>(Expression.TypeAs(parameter, typeof(TestEnum?)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(TestEnum.One, f(TestEnum.One));
             Assert.IsNull(f(5.5));
         }
@@ -88,7 +88,7 @@ namespace Tests
         {
             var parameter = Expression.Parameter(typeof(TestEnum));
             var exp = Expression.Lambda<Func<TestEnum, Enum>>(Expression.TypeAs(parameter, typeof(Enum)), parameter);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Enum actual = f(TestEnum.One);
             Assert.AreEqual(TestEnum.One, actual);
         }

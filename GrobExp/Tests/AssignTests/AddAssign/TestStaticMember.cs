@@ -84,7 +84,7 @@ namespace Tests.AssignTests.AddAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.AddAssign(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableIntProp")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntProp = 0;
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(0, TestClassA.NullableIntProp);
@@ -134,7 +134,7 @@ namespace Tests.AssignTests.AddAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(int?), "b");
             Expression<Func<int?, int?>> exp = Expression.Lambda<Func<int?, int?>>(Expression.AddAssignChecked(Expression.MakeMemberAccess(null, typeof(TestClassA).GetProperty("NullableIntProp")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableIntProp = 0;
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(0, TestClassA.NullableIntProp);
@@ -179,7 +179,7 @@ namespace Tests.AssignTests.AddAssign
         {
             ParameterExpression b = Expression.Parameter(typeof(uint?), "b");
             Expression<Func<uint?, uint?>> exp = Expression.Lambda<Func<uint?, uint?>>(Expression.AddAssignChecked(Expression.MakeMemberAccess(null, typeof(TestClassA).GetField("NullableUIntField")), b), b);
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             TestClassA.NullableUIntField = 0;
             Assert.AreEqual(0, f(0));
             Assert.AreEqual(0, TestClassA.NullableUIntField);

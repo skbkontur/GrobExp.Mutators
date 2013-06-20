@@ -14,7 +14,7 @@ namespace Tests
         public void TestEnum()
         {
             Expression<Func<Zerg, bool>> exp = zerg => zerg.Flies();
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(Zerg.Mutalisk));
             Assert.IsFalse(f(Zerg.Zergling));
         }
@@ -23,7 +23,7 @@ namespace Tests
         public void TestNullable()
         {
             Expression<Func<Zerg?, bool>> exp = zerg => zerg.AttacksAir();
-            var f = LambdaCompiler.Compile(exp);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.IsTrue(f(Zerg.Mutalisk));
             Assert.IsFalse(f(Zerg.Zergling));
             Assert.IsFalse(f(null));

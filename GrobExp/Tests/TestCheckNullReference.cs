@@ -47,7 +47,7 @@ namespace Tests
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB.Sum(b => b.X);
             Func<TestClassA, int?> compiledExp = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.That(compiledExp(null), Is.EqualTo(null));
-            Assert.That(compiledExp(new TestClassA()), Is.EqualTo(null));
+            Assert.That(compiledExp(new TestClassA()), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB()}}), Is.EqualTo(0));
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {X = 2}}}), Is.EqualTo(2));
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {X = 2}, null}}), Is.EqualTo(2));

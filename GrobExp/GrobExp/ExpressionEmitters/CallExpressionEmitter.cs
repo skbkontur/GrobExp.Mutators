@@ -48,7 +48,20 @@ namespace GrobExp.ExpressionEmitters
                     actualType = actualType.MakeByRefType();
                 }
                 if(context.Options.HasFlag(CompilerOptions.CheckNullReferences) && !actualType.IsValueType)
-                    result |= context.EmitNullChecking(type, returnDefaultValueLabel);
+                {
+                    if(method.DeclaringType != typeof(Enumerable))
+                        result |= context.EmitNullChecking(type, returnDefaultValueLabel);
+                    else
+                    {
+                        var arrIsNotNullLabel = il.DefineLabel("arrIsNotNull");
+                        il.Dup();
+                        il.Brtrue(arrIsNotNullLabel);
+                        il.Pop();
+                        il.Ldc_I4(0);
+                        il.Newarr(GetElementType(type));
+                        il.MarkLabel(arrIsNotNullLabel);
+                    }
+                }
             }
             var parameters = method.GetParameters();
             var argumentsArray = arguments.ToArray();
@@ -56,7 +69,7 @@ namespace GrobExp.ExpressionEmitters
             {
                 var argument = argumentsArray[i];
                 var parameter = parameters[i];
-                if (parameter.ParameterType.IsByRef)
+                if(parameter.ParameterType.IsByRef)
                 {
                     Type argumentType;
                     var options = context.Options;
@@ -75,6 +88,19 @@ namespace GrobExp.ExpressionEmitters
             il.Call(method, type);
             resultType = node.Type;
             return result;
+        }
+
+        private static Type GetElementType(Type type)
+        {
+            if(type.IsInterface && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return type.GetGenericArguments()[0];
+            var interfaces = type.GetInterfaces();
+            foreach(var @interface in interfaces)
+            {
+                if(@interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    return @interface.GetGenericArguments()[0];
+            }
+            throw new InvalidOperationException("Unable to extract element type from type '" + type + "'");
         }
     }
 }

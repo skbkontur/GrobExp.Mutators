@@ -194,7 +194,7 @@
     <Compile Include="TestUnbox.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\GrobExp\GrobExp.csproj">
+    <ProjectReference Include="..\Compiler\GrobExp.csproj">
       <Project>{053A9486-888A-46DB-BE40-EA361A0511BC}</Project>
       <Name>GrobExp</Name>
     </ProjectReference>

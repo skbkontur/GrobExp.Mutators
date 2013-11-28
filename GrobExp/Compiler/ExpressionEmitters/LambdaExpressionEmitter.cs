@@ -6,7 +6,7 @@ using System.Reflection.Emit;
 
 using GrEmit;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class LambdaExpressionEmitter : ExpressionEmitter<LambdaExpression>
     {

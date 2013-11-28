@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
-using GrobExp;
+using GrobExp.Compiler;
 
 using NUnit.Framework;
 

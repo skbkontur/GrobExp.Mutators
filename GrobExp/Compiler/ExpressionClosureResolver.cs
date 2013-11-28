@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal class ExpressionClosureResolver : ExpressionVisitor
     {

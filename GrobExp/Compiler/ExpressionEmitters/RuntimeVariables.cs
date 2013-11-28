@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class RuntimeVariables : IRuntimeVariables
     {

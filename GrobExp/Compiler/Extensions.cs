@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     public static class Extensions
     {

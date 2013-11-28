@@ -4,7 +4,7 @@ using System.Reflection;
 
 using GrEmit;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class ArrayIndexExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {

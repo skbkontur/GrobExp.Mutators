@@ -10,7 +10,7 @@ using System.Threading;
 
 using GrEmit;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal class ExpressionClosureBuilder : ExpressionVisitor
     {

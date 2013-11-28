@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
 
-using GrobExp;
+using GrobExp.Compiler;
 
 using NUnit.Framework;
 

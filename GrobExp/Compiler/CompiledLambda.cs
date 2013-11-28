@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal class CompiledLambda
     {

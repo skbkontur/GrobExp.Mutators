@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using GrobExp;
+using GrobExp.Compiler;
 
 using NUnit.Framework;
 

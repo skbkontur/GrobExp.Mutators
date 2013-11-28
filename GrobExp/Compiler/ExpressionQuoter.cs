@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     public class ExpressionQuoter : ExpressionVisitor
     {

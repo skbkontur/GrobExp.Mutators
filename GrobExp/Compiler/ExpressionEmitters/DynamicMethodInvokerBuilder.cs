@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal static class DynamicMethodInvokerBuilder
     {

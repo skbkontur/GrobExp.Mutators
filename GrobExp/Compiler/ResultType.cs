@@ -1,4 +1,4 @@
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal enum ResultType
     {

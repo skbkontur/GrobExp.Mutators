@@ -1,6 +1,6 @@
 using System;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     [Flags]
     public enum CompilerOptions

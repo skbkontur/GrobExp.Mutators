@@ -3,9 +3,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
-using GrobExp.ExpressionEmitters;
+using GrobExp.Compiler.ExpressionEmitters;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal class LambdaPreparer : ExpressionVisitor
     {

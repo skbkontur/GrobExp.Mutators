@@ -9,7 +9,7 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using GrobExp;
+using GrobExp.Compiler;
 
 using Microsoft.CSharp.RuntimeBinder;
 

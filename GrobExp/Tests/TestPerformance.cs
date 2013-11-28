@@ -9,7 +9,7 @@ using System.Threading;
 
 using GrEmit;
 
-using GrobExp;
+using GrobExp.Compiler;
 
 using NUnit.Framework;
 

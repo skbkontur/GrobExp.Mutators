@@ -8,8 +8,8 @@
     <ProjectGuid>{053A9486-888A-46DB-BE40-EA361A0511BC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GrobExp</RootNamespace>
-    <AssemblyName>GrobExp</AssemblyName>
+    <RootNamespace>GrobExp.Compiler</RootNamespace>
+    <AssemblyName>GrobExp.Compiler</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

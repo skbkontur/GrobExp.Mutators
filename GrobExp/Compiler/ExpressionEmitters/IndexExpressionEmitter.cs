@@ -5,7 +5,7 @@ using System.Reflection;
 
 using GrEmit;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class IndexExpressionEmitter : ExpressionEmitter<IndexExpression>
     {

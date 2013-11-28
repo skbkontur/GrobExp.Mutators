@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal class EmittingContext
     {

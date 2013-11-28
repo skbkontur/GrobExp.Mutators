@@ -4,9 +4,9 @@ using System.Linq.Expressions;
 
 using GrEmit;
 
-using GrobExp.ExpressionEmitters;
+using GrobExp.Compiler.ExpressionEmitters;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     internal static class ExpressionEmittersCollection
     {

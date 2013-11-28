@@ -9,7 +9,7 @@ using System.Text;
 
 using GrEmit;
 
-namespace GrobExp
+namespace GrobExp.Compiler
 {
     public static class LambdaCompiler
     {

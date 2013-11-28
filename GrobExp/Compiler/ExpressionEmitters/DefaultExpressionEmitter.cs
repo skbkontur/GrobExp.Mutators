@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 using GrEmit;
 
-namespace GrobExp.ExpressionEmitters
+namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class DefaultExpressionEmitter : ExpressionEmitter<DefaultExpression>
     {

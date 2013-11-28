@@ -4,7 +4,7 @@ obj
 [Rr]elease
 *.user
 *.suo
-GrobExp.dll
-GrobExp.pdb
+GrobExp.Compiler.dll
+GrobExp.Compiler.pdb
 _ReSharper.GrobExp
 _ReSharper.GrobExp2010

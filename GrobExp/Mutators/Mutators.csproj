@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1C3C7CFA-D8E3-4479-B190-91E8B53AF5D4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GrobExp.Mutators</RootNamespace>
+    <AssemblyName>GrobExp.Mutators</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="GrEmit, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\Assemblies\GrEmit.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Aggregators\AggregatorConfiguration.cs" />
+    <Compile Include="Aggregators\ConditionalAggregatorConfiguration.cs" />
+    <Compile Include="Aggregators\SetSourceArrayConfiguration.cs" />
+    <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
+    <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />
+    <Compile Include="AutoEvaluators\DisableIfConfiguration.cs" />
+    <Compile Include="AutoEvaluators\EqualsToConfiguration.cs" />
+    <Compile Include="AutoEvaluators\HideIfConfiguration.cs" />
+    <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
+    <Compile Include="ComplexMutatorsTree.cs" />
+    <Compile Include="ConverterCollection.cs" />
+    <Compile Include="DataConfiguratorCollectionHelper.cs" />
+    <Compile Include="ExpressionCompiler.cs" />
+    <Compile Include="FormattedValidationResult.cs" />
+    <Compile Include="FormattedValidationResultText.cs" />
+    <Compile Include="IConverterCollection.cs" />
+    <Compile Include="DataConfiguratorCollection.cs" />
+    <Compile Include="Exceptions\FoundCyclicDependencyException.cs" />
+    <Compile Include="Exceptions\FoundExternalDependencyException.cs" />
+    <Compile Include="ExpressionExtensions.cs" />
+    <Compile Include="IConverterCollectionFactory.cs" />
+    <Compile Include="IDataConfiguratorCollection.cs" />
+    <Compile Include="IDataConfiguratorCollectionFactory.cs" />
+    <Compile Include="IPathFormatterCollection.cs" />
+    <Compile Include="MultiLanguages\MultiLanguageTextTypeAttribute.cs" />
+    <Compile Include="PathFormatterAttribute.cs" />
+    <Compile Include="PathFormatterCollection.cs" />
+    <Compile Include="SimpleMutatorsTree.cs" />
+    <Compile Include="ConverterConfigurator.cs" />
+    <Compile Include="ConverterConfiguratorExtensions.cs" />
+    <Compile Include="IPathFormatter.cs" />
+    <Compile Include="ModelConfigurationNode.cs" />
+    <Compile Include="MultiLanguages\MultiLanguagePathText.cs" />
+    <Compile Include="MultiLanguages\MultiLanguageTextBase.cs" />
+    <Compile Include="MultiLanguages\MultiLanguageTextBaseWithPath.cs" />
+    <Compile Include="MultiLanguages\StaticMultiLanguageTextBase.cs" />
+    <Compile Include="MultiLanguages\UnknownLanguageException.cs" />
+    <Compile Include="MutatorsConfigurator.cs" />
+    <Compile Include="MutatorsContext.cs" />
+    <Compile Include="MutatorsHelperFunctions.cs" />
+    <Compile Include="MutatorConfiguration.cs" />
+    <Compile Include="MutatorsTree.cs" />
+    <Compile Include="PathPrefix.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimplePathFormatter.cs" />
+    <Compile Include="SimplePathFormatterText.cs" />
+    <Compile Include="TypeExtensions.cs" />
+    <Compile Include="ValidationResult.cs" />
+    <Compile Include="ValidationResultTreeNode.cs" />
+    <Compile Include="ValidationResultType.cs" />
+    <Compile Include="Validators\InvalidIfConfiguration.cs" />
+    <Compile Include="Validators\StaticValidatorConfiguration.cs" />
+    <Compile Include="Validators\ValidatorConfiguration.cs" />
+    <Compile Include="Visitors\AbstractPathResolver.cs" />
+    <Compile Include="Visitors\AliasesResolver.cs" />
+    <Compile Include="Visitors\ArrayIndexResolver.cs" />
+    <Compile Include="Visitors\EachesResolver.cs" />
+    <Compile Include="Visitors\DependenciesExtractor.cs" />
+    <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
+    <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
+    <Compile Include="Visitors\ExpressionHashCalculator.cs" />
+    <Compile Include="Visitors\ExpressionMerger.cs" />
+    <Compile Include="Visitors\ExpressionNullCheckingExtender.cs" />
+    <Compile Include="Visitors\ExpressionRipper.cs" />
+    <Compile Include="Visitors\ExpressionSimplifier.cs" />
+    <Compile Include="Visitors\ExpressionWrapper.cs" />
+    <Compile Include="Visitors\ExternalExpressionsExtractor.cs" />
+    <Compile Include="Visitors\InterfaceMemberResolver.cs" />
+    <Compile Include="Visitors\IsConstantChecker.cs" />
+    <Compile Include="Visitors\IsNullOrEmptyExtender.cs" />
+    <Compile Include="Visitors\CompositionPerformer.cs" />
+    <Compile Include="Visitors\LambdaExpressionCreator.cs" />
+    <Compile Include="Visitors\MethodReplacer.cs" />
+    <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
+    <Compile Include="Visitors\ParameterExistanceChecker.cs" />
+    <Compile Include="Visitors\ParameterReplacer.cs" />
+    <Compile Include="Visitors\ParametersExtractor.cs" />
+    <Compile Include="Visitors\SelectManyCollectionSelectorExtender.cs" />
+    <Compile Include="Visitors\TextGeneralizer.cs" />
+    <Compile Include="Visitors\ArraysExtractor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Compiler\Compiler.csproj">
+      <Project>{053a9486-888a-46db-be40-ea361a0511bc}</Project>
+      <Name>Compiler</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetDir)$(TargetName).dll $(SolutionDir)..\Assemblies\
+copy $(TargetDir)$(TargetName).pdb $(SolutionDir)..\Assemblies\
+</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

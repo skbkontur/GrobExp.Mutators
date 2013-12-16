@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.SubtractAssign
+namespace Compiler.Tests.AssignTests.SubtractAssign
 {
     [TestFixture]
     public class TestComplexProperty

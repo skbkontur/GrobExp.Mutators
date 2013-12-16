@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.PreIncrementAssign
+namespace Compiler.Tests.AssignTests.PreIncrementAssign
 {
     [TestFixture]
     public class TestStaticMember

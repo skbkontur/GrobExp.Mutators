@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.ExtensionTests
+namespace Compiler.Tests.ExtensionTests
 {
     [TestFixture]
     public class TestForEach

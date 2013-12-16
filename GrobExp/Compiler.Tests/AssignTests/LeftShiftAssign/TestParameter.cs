@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.LeftShiftAssign
+namespace Compiler.Tests.AssignTests.LeftShiftAssign
 {
     [TestFixture]
     public class TestParameter

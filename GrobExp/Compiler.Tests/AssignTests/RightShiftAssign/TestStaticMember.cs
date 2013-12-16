@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.RightShiftAssign
+namespace Compiler.Tests.AssignTests.RightShiftAssign
 {
     [TestFixture]
     public class TestStaticMember

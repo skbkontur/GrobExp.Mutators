@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.DivideAssign
+namespace Compiler.Tests.AssignTests.DivideAssign
 {
     [TestFixture]
     public class TestInstanceMember

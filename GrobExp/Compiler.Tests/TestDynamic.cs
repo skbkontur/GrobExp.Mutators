@@ -7,7 +7,7 @@ using Microsoft.CSharp.RuntimeBinder;
 
 using NUnit.Framework;
 
-namespace Tests
+namespace Compiler.Tests
 {
     [TestFixture]
     public class TestDynamic

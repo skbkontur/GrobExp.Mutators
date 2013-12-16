@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.PowerAssign
+namespace Compiler.Tests.AssignTests.PowerAssign
 {
     [TestFixture]
     public class TestComplexProperty

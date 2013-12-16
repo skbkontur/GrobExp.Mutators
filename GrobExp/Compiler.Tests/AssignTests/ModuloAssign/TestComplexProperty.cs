@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.ModuloAssign
+namespace Compiler.Tests.AssignTests.ModuloAssign
 {
     [TestFixture]
     public class TestComplexProperty

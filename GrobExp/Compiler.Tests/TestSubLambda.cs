@@ -17,7 +17,7 @@ using NUnit.Framework;
 
 using Binder = Microsoft.CSharp.RuntimeBinder.Binder;
 
-namespace Tests
+namespace Compiler.Tests
 {
     public class TestSubLambda : TestBase
     {

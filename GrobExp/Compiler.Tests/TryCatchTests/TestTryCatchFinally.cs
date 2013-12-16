@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.TryCatchTests
+namespace Compiler.Tests.TryCatchTests
 {
     public class TestTryCatchFinally : TestBase
     {

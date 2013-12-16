@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.AndAssign
+namespace Compiler.Tests.AssignTests.AndAssign
 {
     [TestFixture]
     public class TestSimpleArray

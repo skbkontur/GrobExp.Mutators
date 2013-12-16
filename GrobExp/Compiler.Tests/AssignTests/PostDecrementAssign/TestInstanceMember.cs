@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.PostDecrementAssign
+namespace Compiler.Tests.AssignTests.PostDecrementAssign
 {
     [TestFixture]
     public class TestInstanceMember

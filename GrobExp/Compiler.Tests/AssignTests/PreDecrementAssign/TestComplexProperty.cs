@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.PreDecrementAssign
+namespace Compiler.Tests.AssignTests.PreDecrementAssign
 {
     [TestFixture]
     public class TestComplexProperty

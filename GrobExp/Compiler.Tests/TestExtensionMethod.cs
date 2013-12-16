@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 using System.Linq;
 
-namespace Tests
+namespace Compiler.Tests
 {
     [TestFixture]
     public class TestExtensionMethod

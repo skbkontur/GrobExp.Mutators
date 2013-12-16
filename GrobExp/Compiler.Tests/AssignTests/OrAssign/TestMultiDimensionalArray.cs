@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.OrAssign
+namespace Compiler.Tests.AssignTests.OrAssign
 {
     [TestFixture]
     public class TestMultiDimensionalArray

@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace Tests
+namespace Compiler.Tests
 {
     public class ParameterReplacer : ExpressionVisitor
     {

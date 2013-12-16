@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.AssignTests.PostIncrementAssign
+namespace Compiler.Tests.AssignTests.PostIncrementAssign
 {
     [TestFixture]
     public class TestComplexProperty

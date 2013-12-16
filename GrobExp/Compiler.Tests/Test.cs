@@ -10,7 +10,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests
+namespace Compiler.Tests
 {
     [TestFixture]
     public class Test // todo растащить на куски

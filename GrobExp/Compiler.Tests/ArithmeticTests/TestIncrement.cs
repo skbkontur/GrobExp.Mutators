@@ -5,7 +5,7 @@ using GrobExp.Compiler;
 
 using NUnit.Framework;
 
-namespace Tests.ArithmeticTests
+namespace Compiler.Tests.ArithmeticTests
 {
     public class TestIncrement : TestBase
     {

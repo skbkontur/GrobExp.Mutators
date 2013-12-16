@@ -832,13 +832,15 @@ namespace GrobExp.Mutators
                     if(!resolvedArray.Type.IsArray)
                     {
                         // Filtered array
-                        if(resolvedArray.NodeType != ExpressionType.Call)
-                            throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
-                        var methodCallExpression = (MethodCallExpression)resolvedArray;
-                        if(!methodCallExpression.Method.IsWhereMethod())
-                            throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
-                        resolvedArray = methodCallExpression.Arguments[0];
-                        predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                        if(resolvedArray.NodeType == ExpressionType.Call)
+                        {
+                            var methodCallExpression = (MethodCallExpression)resolvedArray;
+                            if(methodCallExpression.Method.IsWhereMethod())
+                            {
+                                resolvedArray = methodCallExpression.Arguments[0];
+                                predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                            }
+                        }
                     }
                     var childValidationResults = new List<Expression>();
                     child.BuildValidator(pathFormatter, root, aliases, result, priority, childValidationResults);
@@ -859,7 +861,6 @@ namespace GrobExp.Mutators
                     }
                 }
             }
-
             public readonly List<KeyValuePair<Expression, List<MutatorConfiguration>>> mutators = new List<KeyValuePair<Expression, List<MutatorConfiguration>>>();
             public readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
 

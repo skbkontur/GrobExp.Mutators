@@ -38,7 +38,8 @@ namespace GrobExp.Mutators.Visitors
                             Expression current = CanBeNull(property.Type) ? Visit(Expression.Equal(property, Expression.Constant(null, property.Type))) : Expression.Equal(property, Expression.Default(property.Type));
                             result = result == null ? current : Expression.AndAlso(result, current);
                         }
-                        if(result == null) result = Expression.Constant(false);
+                        if(result == null)
+                            result = CanBeNull(exp.Type) ? Expression.Equal(exp, Expression.Constant(null, exp.Type)) : Expression.Equal(exp, Expression.Default(exp.Type));
                         if(node.NodeType == ExpressionType.NotEqual)
                             result = Expression.Not(result);
                         return result;

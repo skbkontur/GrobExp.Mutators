@@ -49,7 +49,7 @@ namespace GrobExp.Mutators
             var methodBuilder = typeBuilder.DefineMethod(getMutatorsTreeMethodName, MethodAttributes.Public | MethodAttributes.Virtual, typeof(MutatorsTree<>).MakeGenericType(genericParameters.Last()),
                                                          new[] {typeof(IDataConfiguratorCollectionFactory), typeof(IConverterCollectionFactory), typeof(MutatorsContext[]), typeof(MutatorsContext[])});
             var il = new GroboIL(methodBuilder);
-            il.Ldarg(0); // stack: [dataConfiguratorCollectionFactory]
+            il.Ldarg(1); // stack: [dataConfiguratorCollectionFactory]
             il.Call(getDataConfiguratorCollectionMethod.MakeGenericMethod(genericParameters[0]), typeof(IDataConfiguratorCollectionFactory)); // stack: [dataConfiguratorCollectionFactory.Get<TSource> = collection]
 
             var sourceCollectionIsNullLabel = il.DefineLabel("sourceCollectionIsNull");
@@ -72,7 +72,7 @@ namespace GrobExp.Mutators
             {
                 // First: Migrate tree
                 il.Stloc(current);
-                il.Ldarg(1); // stack: [converterCollectionFactory]
+                il.Ldarg(2); // stack: [converterCollectionFactory]
                 il.Call(getConverterCollectionMethod.MakeGenericMethod(genericParameters[i + 1], genericParameters[i]), typeof(IConverterCollectionFactory)); // stack: [converterCollectionFactory.Get<T_i, T_i+1> = converterCollection]
                 il.Dup(); // stack: [converterCollection, converterCollection]
                 il.Ldloc(current); // stack: [converterCollection, converterCollection, current]
@@ -100,8 +100,8 @@ namespace GrobExp.Mutators
                 il.Call(mergeMethod.MakeGenericMethod(genericParameters[i + 1])); // stack: [validationsTree.Merge(current)]
 
                 // Third: Merge with current mutators tree
-                il.Ldarg(0); // stack: [validationsTree.Merge(current), dataConfiguratorCollectionFactory]
-                il.Call(getDataConfiguratorCollectionMethod.MakeGenericMethod(genericParameters[i + 1])); // stack: [validationsTree.Merge(current), dataConfiguratorCollectionFactory.Get<T_i+1> = collection]
+                il.Ldarg(1); // stack: [validationsTree.Merge(current), dataConfiguratorCollectionFactory]
+                il.Call(getDataConfiguratorCollectionMethod.MakeGenericMethod(genericParameters[i + 1]), typeof(IDataConfiguratorCollectionFactory)); // stack: [validationsTree.Merge(current), dataConfiguratorCollectionFactory.Get<T_i+1> = collection]
 
                 var collectionIsNullLabel = il.DefineLabel("collectionIsNull");
                 il.Dup(); // stack: [validationsTree.Merge(current), collection, collection]

@@ -67,6 +67,7 @@
     <Compile Include="IDataConfiguratorCollectionFactory.cs" />
     <Compile Include="IPathFormatterCollection.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextTypeAttribute.cs" />
+    <Compile Include="MutatorsConfiguratorExtensions.cs" />
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
     <Compile Include="SimpleMutatorsTree.cs" />

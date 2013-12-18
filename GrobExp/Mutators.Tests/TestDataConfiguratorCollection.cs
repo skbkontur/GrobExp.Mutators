@@ -4,7 +4,7 @@ using GrobExp.Mutators;
 
 namespace Mutators.Tests
 {
-    public class TestDataConfiguratorCollection<TData> : DataConfiguratorCollection<TData>
+    public class TestDataConfiguratorCollection<TData> : DataConfiguratorCollectionBase<TData>
     {
         public TestDataConfiguratorCollection(IDataConfiguratorCollectionFactory dataConfiguratorCollectionFactory, IConverterCollectionFactory converterCollectionFactory, IPathFormatterCollection pathFormatterCollection, Action<MutatorsConfigurator<TData>> action)
             : base(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection)

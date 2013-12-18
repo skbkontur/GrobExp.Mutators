@@ -58,7 +58,7 @@
     <Compile Include="FormattedValidationResult.cs" />
     <Compile Include="FormattedValidationResultText.cs" />
     <Compile Include="IConverterCollection.cs" />
-    <Compile Include="DataConfiguratorCollection.cs" />
+    <Compile Include="DataConfiguratorCollectionBase.cs" />
     <Compile Include="Exceptions\FoundCyclicDependencyException.cs" />
     <Compile Include="Exceptions\FoundExternalDependencyException.cs" />
     <Compile Include="ExpressionExtensions.cs" />

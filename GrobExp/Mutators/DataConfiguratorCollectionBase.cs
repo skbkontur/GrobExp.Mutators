@@ -4,9 +4,9 @@ using System.Linq;
 
 namespace GrobExp.Mutators
 {
-    public abstract class DataConfiguratorCollection<TData> : IDataConfiguratorCollection<TData>
+    public abstract class DataConfiguratorCollectionBase<TData> : IDataConfiguratorCollection<TData>
     {
-        protected DataConfiguratorCollection(IDataConfiguratorCollectionFactory dataConfiguratorCollectionFactory, IConverterCollectionFactory converterCollectionFactory, IPathFormatterCollection pathFormatterCollection)
+        protected DataConfiguratorCollectionBase(IDataConfiguratorCollectionFactory dataConfiguratorCollectionFactory, IConverterCollectionFactory converterCollectionFactory, IPathFormatterCollection pathFormatterCollection)
         {
             this.dataConfiguratorCollectionFactory = dataConfiguratorCollectionFactory;
             this.converterCollectionFactory = converterCollectionFactory;

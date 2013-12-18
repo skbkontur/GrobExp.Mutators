@@ -5,11 +5,11 @@ namespace GrobExp.Mutators.MultiLanguages
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class MultiLanguageTextTypeAttribute : Attribute
     {
-        public MultiLanguageTextTypeAttribute(string type)
+        public MultiLanguageTextTypeAttribute(string name)
         {
-            Type = type;
+            Name = name;
         }
 
-        public string Type { get; private set; }
+        public string Name { get; private set; }
     }
 }

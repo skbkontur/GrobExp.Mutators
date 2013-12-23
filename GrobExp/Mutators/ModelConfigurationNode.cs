@@ -916,8 +916,11 @@ namespace GrobExp.Mutators
                     {
                         var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                         Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, priority), cutChains});
-                        Expression condition = Expression.IfThen(Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult))), addValidationResult);
-                        localResults.Add(Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition));
+                        Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
+                        Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
+                        Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
+                        //localResults.Add(Expression.IfThen(Expression.LessThan(resultsCount, maxResults), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition)));
+                        localResults.Add(Expression.Block(new[] { currentValidationResult }, Expression.Assign(currentValidationResult, current), condition));
                     }
                 }
                 if(isDisabled == null)

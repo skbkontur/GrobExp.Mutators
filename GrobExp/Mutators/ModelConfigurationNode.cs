@@ -784,7 +784,6 @@ namespace GrobExp.Mutators
         private ModelConfigurationEdge Edge { get; set; }
         private readonly List<KeyValuePair<Expression, MutatorConfiguration>> mutators;
 
-// ReSharper disable StaticFieldInGenericType
         private static readonly MethodInfo forEachMethod = ((MethodCallExpression)((Expression<Action<bool[]>>)(arr => MutatorsHelperFunctions.ForEach(arr, null))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo forEachReadonlyMethod = ((MethodCallExpression)((Expression<Action<IEnumerable<int>>>)(enumerable => MutatorsHelperFunctions.ForEach(enumerable, null))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<int[], int[]>>)(ints => ints.ToArray())).Body).Method.GetGenericMethodDefinition();
@@ -793,7 +792,6 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo listAddValidationResultMethod = ((MethodCallExpression)((Expression<Action<List<ValidationResult>>>)(list => list.Add(null))).Body).Method;
         private static readonly ConstructorInfo listValidationResultConstructor = ((NewExpression)((Expression<Func<List<ValidationResult>>>)(() => new List<ValidationResult>())).Body).Constructor;
         private static readonly ConstructorInfo formattedValidationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult, FormattedValidationResult>>)(o => new FormattedValidationResult(o, null, null, 0))).Body).Constructor;
-// ReSharper restore StaticFieldInGenericType
 
         private readonly Hashtable children = new Hashtable();
 
@@ -861,6 +859,7 @@ namespace GrobExp.Mutators
                     }
                 }
             }
+
             public readonly List<KeyValuePair<Expression, List<MutatorConfiguration>>> mutators = new List<KeyValuePair<Expression, List<MutatorConfiguration>>>();
             public readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
 
@@ -919,8 +918,7 @@ namespace GrobExp.Mutators
                         Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                         Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                         Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
-                        //localResults.Add(Expression.IfThen(Expression.LessThan(resultsCount, maxResults), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition)));
-                        localResults.Add(Expression.Block(new[] { currentValidationResult }, Expression.Assign(currentValidationResult, current), condition));
+                        localResults.Add(Expression.IfThen(Expression.Not(Expression.Property(result, validationResultTreeNodeExhaustedProperty)), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition)));
                     }
                 }
                 if(isDisabled == null)
@@ -931,6 +929,8 @@ namespace GrobExp.Mutators
                     validationResults.Add(Expression.IfThen(test, Expression.Block(new ParameterExpression[] {}, localResults)));
                 }
             }
+
+            private static readonly PropertyInfo validationResultTreeNodeExhaustedProperty = (PropertyInfo)((MemberExpression)((Expression<Func<ValidationResultTreeNode, bool>>)(node => node.Exhausted)).Body).Member;
         }
     }
 

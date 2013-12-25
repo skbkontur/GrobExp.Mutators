@@ -189,6 +189,15 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestValidationResultsLimit()
+        {
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == null, data => null));
+            var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
+            var o = new TestData {A = new A {B = new B[ValidationResultTreeNode.MaxValidationResults * 2]}};
+            Assert.AreEqual(ValidationResultTreeNode.MaxValidationResults, validator(o).Count());
+        }
+
+        [Test]
         public void TestConvertedStaticValidator()
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();

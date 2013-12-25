@@ -35,7 +35,20 @@ namespace GrobExp.Mutators
             int lcp;
             for(lcp = 0;; ++lcp)
                 if(!paths.All(path => lcp < path.Length && path[lcp] == paths[0][lcp])) break;
-            Traverse(paths[0].Take(lcp)).ValidationResults.Add(validationResult);
+            var node = this;
+            foreach(var edge in paths[0].Take(lcp))
+            {
+                ++node.Count;
+                ValidationResultTreeNode child;
+                if(!node.children.TryGetValue(edge, out child))
+                {
+                    child = new ValidationResultTreeNode();
+                    node.children.Add(edge, child);
+                }
+                node = child;
+            }
+            node.ValidationResults.Add(validationResult);
+            ++node.Count;
         }
 
         public ValidationResultTreeNode Traverse<TRoot, TChild>(Expression<Func<TRoot, TChild>> path)
@@ -72,7 +85,12 @@ namespace GrobExp.Mutators
             return node;
         }
 
+        public bool Exhausted { get { return Count >= MaxValidationResults; } }
+
+        public int Count { get; private set; }
+
         public List<FormattedValidationResult> ValidationResults { get; private set; }
+        public const int MaxValidationResults = 1000;
 
         private IEnumerator<FormattedValidationResult> GetEnumerator(bool returnFirst)
         {
@@ -91,35 +109,6 @@ namespace GrobExp.Mutators
                 var edge = entry.Key;
                 entry.Value.Dfs(string.IsNullOrEmpty(path) ? edge : path + "." + edge, result);
             }
-        }
-
-        private static ValidationResultTreeNode Create(FormattedValidationResult[] validationResults, string[] keys, ValidationResultTreeNode[] values)
-        {
-            var result = new ValidationResultTreeNode();
-            if(validationResults != null)
-                result.ValidationResults.AddRange(validationResults);
-            if(keys != null && values != null)
-            {
-                for(var i = 0; i < keys.Length && i < values.Length; ++i)
-                    result.children.Add(keys[i], values[i]);
-            }
-            return result;
-        }
-
-        private ValidationResultTreeNode Traverse(IEnumerable<string> path)
-        {
-            var node = this;
-            foreach(var edge in path)
-            {
-                ValidationResultTreeNode child;
-                if(!node.children.TryGetValue(edge, out child))
-                {
-                    child = new ValidationResultTreeNode();
-                    node.children.Add(edge, child);
-                }
-                node = child;
-            }
-            return node;
         }
 
         private readonly Dictionary<string, ValidationResultTreeNode> children = new Dictionary<string, ValidationResultTreeNode>();

@@ -68,7 +68,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool IsStandardType(Type type)
         {
-            return type.IsPrimitive || type.IsEnum || type == typeof(string) || (type.IsArray && IsStandardType(type.GetElementType()))
+            return type.IsPrimitive || type.IsEnum || type == typeof(string) || type.IsArray
                    || type == typeof(DateTime) || type == typeof(decimal) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
         }
 

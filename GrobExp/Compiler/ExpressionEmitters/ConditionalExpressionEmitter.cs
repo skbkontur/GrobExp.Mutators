@@ -13,14 +13,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
             Expression ifTrue = node.IfTrue;
             Expression ifFalse = node.IfFalse;
             bool ifTrueBranchIsEmpty = ifTrue.NodeType == ExpressionType.Default && ifTrue.Type == typeof(void);
-            bool ifFalseBranchIsEmpty = ifFalse.NodeType == ExpressionType.Default && ifFalse.Type == typeof(void);
             if(ifTrueBranchIsEmpty)
             {
                 test = Expression.Not(test);
                 Expression temp = ifTrue;
                 ifTrue = ifFalse;
                 ifFalse = temp;
-                ifFalseBranchIsEmpty = true;
             }
             var result = false;
             GroboIL il = context.Il;
@@ -38,9 +36,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var temp = context.DeclareLocal(ifTrueType))
                     il.Stloc(temp);
             }
-            var doneLabel = ifFalseBranchIsEmpty ? null : il.DefineLabel("done");
-            if(!ifFalseBranchIsEmpty)
-                il.Br(doneLabel);
+            var doneLabel = il.DefineLabel("done");
+            il.Br(doneLabel);
             if(testIsNullLabelUsed)
             {
                 il.MarkLabel(testIsNullLabel);
@@ -54,8 +51,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var temp = context.DeclareLocal(ifFalseType))
                     il.Stloc(temp);
             }
-            if(!ifFalseBranchIsEmpty)
-                il.MarkLabel(doneLabel);
+            il.MarkLabel(doneLabel);
             resultType = node.Type;
             return result;
         }

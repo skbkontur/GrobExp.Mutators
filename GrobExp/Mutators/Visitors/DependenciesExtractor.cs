@@ -524,6 +524,8 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression ProcessLinqWhere(MethodInfo method, Expression prefix, Expression[] arguments)
         {
+            if (prefix.Type == typeof (string))
+                return prefix;
             var predicate = (LambdaExpression)arguments.Single();
             var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
             AddSubDependencies(MakeLambda(GotoEach(prefix)), subDependencies);

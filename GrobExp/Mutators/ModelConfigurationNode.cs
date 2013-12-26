@@ -376,7 +376,6 @@ namespace GrobExp.Mutators
         private bool MigrateNode(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, Expression path)
         {
             var performer = new CompositionPerformer(RootType, to, convertationRoot, null);
-            if(performer.GetConditionalSetters(path) == null) return false;
             var parameters = new List<PathPrefix> {new PathPrefix(path, path.ExtractParameters().Single())};
 
             foreach(var mutator in mutators)
@@ -417,11 +416,8 @@ namespace GrobExp.Mutators
                         }
                     }
                 }
-                //var chains = mutatedPath.CutToChains(true, true);
-                //var primaryDependencies = chains.SelectMany(chain => Expression.Lambda(chain, chain.ExtractParameters()).ExtractPrimaryDependencies()).Select(lambda => lambda.Body).ToArray();
-                //var commonPath = primaryDependencies.FindLCP();
             }
-            return true;
+            return performer.GetConditionalSetters(path) != null;
         }
 
         private LambdaExpression BuildTreeMutator(List<ParameterExpression> parameters)
@@ -448,14 +444,6 @@ namespace GrobExp.Mutators
             if(mutators != null && mutators.Count > 0)
             {
                 var shards = path.SmashToSmithereens();
-                var nodeShards = Path.SmashToSmithereens();
-//                var level = 0;
-//                for(var i = shards.Length + 1; i < nodeShards.Length; ++i)
-//                {
-//                    if(nodeShards[i].NodeType == ExpressionType.Call && ((MethodCallExpression)nodeShards[i]).Method.IsEachMethod())
-//                        ++level;
-//                }
-
                 var level = 1;
                 foreach(var shard in shards)
                 {
@@ -466,13 +454,8 @@ namespace GrobExp.Mutators
                 var list = new List<Dictionary<Type, List<Expression>>>();
                 var arraysExtractor = new ArraysExtractor(list);
 
-                foreach(var mutator in mutators)
-                {
+                foreach (var mutator in mutators)
                     mutator.Value.GetArrays(arraysExtractor);
-//                    var equalsToConfiguration = mutator as EqualsToConfiguration;
-//                    if(equalsToConfiguration != null)
-//                        arraysExtractor.GetArrays(equalsToConfiguration.Value, level, arrays);
-                }
 
                 if(list.Count > level)
                 {
@@ -485,29 +468,6 @@ namespace GrobExp.Mutators
                         lizd.AddRange(pair.Value);
                     }
                 }
-//                foreach(var chain in Mutators.SelectMany(mutator => mutator.Chains))
-//                {
-//                    var chainShards = chain.SmashToSmithereens();
-//                    var type = chainShards[0].Type;
-//                    List<Expression> list;
-//                    if(!arrays.TryGetValue(type, out list))
-//                        arrays.Add(type, list = new List<Expression>());
-//                    var l = 0;
-//                    for(var i = chainShards.Length - 1; i >= 0; --i)
-//                    {
-//                        var methodCallExpression = chainShards[i] as MethodCallExpression;
-//                        if(methodCallExpression != null)
-//                        {
-//                            if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
-//                                ++l;
-//                            if(l == level)
-//                            {
-//                                list.Add(chainShards[i - 1]);
-//                                break;
-//                            }
-//                        }
-//                    }
-//                }
             }
             foreach(ModelConfigurationNode child in children.Values)
                 child.GetArrays(path, arrays);
@@ -562,7 +522,7 @@ namespace GrobExp.Mutators
         private void BuildTreeMutator(ModelConfigurationNode root, Expression fullPath, Expression path, List<KeyValuePair<Expression, Expression>> aliases, List<Expression> localResult,
                                       HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult)
         {
-            BuildNodeMutator(root, fullPath, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
+            BuildNodeMutator(root, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
             foreach(DictionaryEntry entry in children)
             {
                 var edge = (ModelConfigurationEdge)entry.Key;
@@ -717,7 +677,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private void BuildNodeMutator(ModelConfigurationNode root, Expression fullPath, Expression path, List<KeyValuePair<Expression, Expression>> aliases,
+        private void BuildNodeMutator(ModelConfigurationNode root, Expression path, List<KeyValuePair<Expression, Expression>> aliases,
                                       List<Expression> localResult, HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult)
         {
             if(visitedNodes.Contains(this))

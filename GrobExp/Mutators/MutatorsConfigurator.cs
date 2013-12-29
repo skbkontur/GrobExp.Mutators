@@ -21,6 +21,11 @@ namespace GrobExp.Mutators
             root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
         }
 
+        public void SetMutator(LambdaExpression pathToValue, MutatorConfiguration mutator)
+        {
+            root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+        }
+
         public MutatorsConfigurator<TRoot, TRoot, TValue> Target<TValue>(Expression<Func<TRoot, TValue>> pathToValue, StaticMultiLanguageTextBase title = null)
         {
             return new MutatorsConfigurator<TRoot, TRoot, TValue>(root, data => data, pathToValue, Condition, title);

@@ -51,10 +51,12 @@ namespace GrobExp.Mutators.Validators
 
         public LambdaExpression GetFullCondition()
         {
+            if(fullCondition != null)
+                return fullCondition;
             Expression condition = Prepare(Expression.Lambda(Expression.Convert(Expression.Equal(Path.Body, Expression.Constant(null, Path.Body.Type)), typeof(bool?)), Path.Parameters)).Body;
             if(Condition != null)
                 condition = Expression.AndAlso(Expression.Equal(Expression.Convert(new ParameterReplacer(Condition.Parameters.Single(), Path.Parameters.Single()).Visit(Condition.Body), typeof(bool?)), Expression.Constant(true, typeof(bool?))), condition);
-            return Expression.Lambda(condition, Path.Parameters);
+            return fullCondition = Expression.Lambda(condition, Path.Parameters);
         }
 
         public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)
@@ -73,8 +75,8 @@ namespace GrobExp.Mutators.Validators
 
         protected override LambdaExpression[] GetDependencies()
         {
-            return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Path == null ? new LambdaExpression[0] : Path.ExtractDependencies())
+            var condition = GetFullCondition();
+            return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
                 .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
                 .Select(grouping => grouping.First())
@@ -83,11 +85,13 @@ namespace GrobExp.Mutators.Validators
 
         protected override Expression GetLCP()
         {
-            return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false))
-                .Concat(Path == null ? new Expression[0] : Path.Body.CutToChains(false, false))
+            var condition = GetFullCondition();
+            return (condition.Body.CutToChains(false, false))
                 .Concat(Message == null ? new Expression[0] : Message.Body.CutToChains(false, false))
                 .FindLCP();
         }
+
+        private LambdaExpression fullCondition;
 
         private readonly ValidationResultType validationResultType;
 

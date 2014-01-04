@@ -55,8 +55,14 @@ namespace GrobExp.Mutators.Validators
                 return fullCondition;
             Expression condition = Prepare(Expression.Lambda(Expression.Convert(Expression.Equal(Path.Body, Expression.Constant(null, Path.Body.Type)), typeof(bool?)), Path.Parameters)).Body;
             if(Condition != null)
-                condition = Expression.AndAlso(Expression.Equal(Expression.Convert(new ParameterReplacer(Condition.Parameters.Single(), Path.Parameters.Single()).Visit(Condition.Body), typeof(bool?)), Expression.Constant(true, typeof(bool?))), condition);
-            return fullCondition = Expression.Lambda(condition, Path.Parameters);
+            {
+                var parameterFromPath = Path.Parameters.Single();
+                var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
+                if(parameterFromCondition != null)
+                    condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
+                condition = Expression.AndAlso(Expression.Equal(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Constant(true, typeof(bool?))), condition);
+            }
+            return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
         public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)

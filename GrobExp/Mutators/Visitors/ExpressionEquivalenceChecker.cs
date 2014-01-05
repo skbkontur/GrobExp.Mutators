@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
     public static class ExpressionEquivalenceChecker
     {
-        public static bool Equivalent(Expression first, Expression second, bool strictly)
+        public static bool Equivalent(Expression first, Expression second, bool strictly, bool distinguishEachAndCurrent)
         {
-            return Equivalent(first, second, new Context {Strictly = strictly, FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(), SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>()});
+            return Equivalent(first, second, new Context
+                {
+                    Strictly = strictly,
+                    DistinguishEachAndCurrent = distinguishEachAndCurrent,
+                    FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                    SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>()
+                });
         }
 
         private static bool Equivalent(IList<Expression> firstList, IList<Expression> secondList, Context context)
@@ -205,9 +212,21 @@ namespace GrobExp.Mutators.Visitors
             return result;
         }
 
+        private static bool IsEachOrCurrentMethod(MethodInfo method)
+        {
+            return method.IsEachMethod() || method.IsCurrentMethod();
+        }
+
+        private static bool EquivalentMethods(MethodInfo first, MethodInfo second, Context context)
+        {
+            if(first == second)
+                return true;
+            return !context.DistinguishEachAndCurrent && IsEachOrCurrentMethod(first) && IsEachOrCurrentMethod(second) && first.GetGenericArguments()[0] == second.GetGenericArguments()[0];
+        }
+
         private static bool EquivalentCall(MethodCallExpression first, MethodCallExpression second, Context context)
         {
-            return first.Method == second.Method && Equivalent(first.Object, second.Object, context.Strictly) && Equivalent(first.Arguments, second.Arguments, context);
+            return EquivalentMethods(first.Method, second.Method, context) && Equivalent(first.Object, second.Object, context.Strictly, context.DistinguishEachAndCurrent) && Equivalent(first.Arguments, second.Arguments, context);
         }
 
         private static bool EquivalentConditional(ConditionalExpression first, ConditionalExpression second, Context context)
@@ -346,6 +365,7 @@ namespace GrobExp.Mutators.Visitors
         private class Context
         {
             public bool Strictly { get; set; }
+            public bool DistinguishEachAndCurrent { get; set; }
             public Dictionary<ParameterExpression, ParameterExpression> FirstParameters { get; set; }
             public Dictionary<ParameterExpression, ParameterExpression> SecondParameters { get; set; }
         }

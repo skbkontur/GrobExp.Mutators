@@ -246,7 +246,7 @@ namespace GrobExp.Mutators
             int i;
             for(i = 0; i < shards1.Length && i < shards2.Length; ++i)
             {
-                if(!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false))
+                if(!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false, true))
                     break;
             }
             return i == 0 ? null : shards1[i - 1];

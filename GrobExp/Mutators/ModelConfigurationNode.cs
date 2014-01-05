@@ -138,7 +138,7 @@ namespace GrobExp.Mutators
             Expression result;
             if(!arrays.TryGetValue(RootType, out result))
                 return null;
-            return ExpressionEquivalenceChecker.Equivalent(result, Path, false) ? null : result;
+            return ExpressionEquivalenceChecker.Equivalent(result, Path, false, true) ? null : result;
         }
 
         public Dictionary<Type, Expression> GetArrays(bool cutTail)

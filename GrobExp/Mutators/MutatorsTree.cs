@@ -120,7 +120,7 @@ namespace GrobExp.Mutators
                     var currentSetSourceArrayConfiguration = (SetSourceArrayConfiguration)mutator.Value;
                     if(setSourceArrayConfiguration == null)
                         setSourceArrayConfiguration = currentSetSourceArrayConfiguration;
-                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false))
+                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false, true))
                         throw new InvalidOperationException("An attempt to set array from different sources: '" + setSourceArrayConfiguration.SourceArray + "' and '" + currentSetSourceArrayConfiguration.SourceArray + "'");
                 }
                 else if(mutator.Value is ConditionalAggregatorConfiguration)

@@ -33,7 +33,7 @@ namespace GrobExp.Mutators
                 var current = tree.GetRawMutators(path);
                 if(current.Key == null)
                     continue;
-                if(abstractPath != null && !ExpressionEquivalenceChecker.Equivalent(abstractPath, current.Key, false))
+                if(abstractPath != null && !ExpressionEquivalenceChecker.Equivalent(abstractPath, current.Key, false, true))
                     throw new InvalidOperationException();
                 abstractPath = current.Key;
                 if(mutators == null)

@@ -25,6 +25,11 @@ namespace GrobExp.Mutators.Validators
             return new RequiredIfConfiguration(typeof(TData), Prepare(condition), Prepare(path), Prepare(message), validationResultType);
         }
 
+        public static RequiredIfConfiguration Create<TData>(LambdaExpression condition, LambdaExpression path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
+        {
+            return new RequiredIfConfiguration(typeof(TData), Prepare(condition), Prepare(path), Prepare(message), validationResultType);
+        }
+
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup

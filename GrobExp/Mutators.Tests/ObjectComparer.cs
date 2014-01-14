@@ -30,12 +30,4 @@ namespace Mutators.Tests
 
         private static readonly ISerializer serializer = new Serializer(new AllFieldsExtractor());
     }
-
-    public class Serializer: SerializerBase
-    {
-        public Serializer(IDataMembersExtractor dataMembersExtractor, IGroBufCustomSerializerCollection customSerializerCollection = null, GroBufOptions options = GroBufOptions.None)
-            : base(dataMembersExtractor, customSerializerCollection, options)
-        {
-        }
-    }
 }

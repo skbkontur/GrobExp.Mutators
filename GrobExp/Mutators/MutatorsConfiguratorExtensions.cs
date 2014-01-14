@@ -296,7 +296,7 @@ namespace GrobExp.Mutators
             return configurator;
         }
 
-        public static MutatorsConfigurator<TRoot, TChild, string> NotLongerThan<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int length, StaticMultiLanguageTextBase title,
+        public static MutatorsConfigurator<TRoot, TChild, string> NotLongerThan<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int length, MultiLanguageTextBase title,
                                                                                                ValidationResultType type = ValidationResultType.Error)
         {
             var pathToValue = (Expression<Func<TRoot, string>>)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(configurator.PathToValue);
@@ -315,7 +315,7 @@ namespace GrobExp.Mutators
             return configurator.NotLongerThan(length, configurator.Title, type);
         }
 
-        public static MutatorsConfigurator<TRoot, TChild, string> LengthInRange<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int fromLength, int toLength, StaticMultiLanguageTextBase title,
+        public static MutatorsConfigurator<TRoot, TChild, string> LengthInRange<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int fromLength, int toLength, MultiLanguageTextBase title,
                                                                                                ValidationResultType type = ValidationResultType.Error)
         {
             var pathToValue = (Expression<Func<TRoot, string>>)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(configurator.PathToValue);
@@ -339,7 +339,7 @@ namespace GrobExp.Mutators
             return configurator.LengthInRange(fromLength, toLength, configurator.Title, type);
         }
 
-        public static MutatorsConfigurator<TRoot, TChild, string> LengthExactly<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int length, StaticMultiLanguageTextBase title,
+        public static MutatorsConfigurator<TRoot, TChild, string> LengthExactly<TRoot, TChild>(this MutatorsConfigurator<TRoot, TChild, string> configurator, int length, MultiLanguageTextBase title,
                                                                                                ValidationResultType type = ValidationResultType.Error)
         {
             var pathToValue = (Expression<Func<TRoot, string>>)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(configurator.PathToValue);

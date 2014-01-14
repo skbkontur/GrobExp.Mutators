@@ -26,7 +26,7 @@ namespace GrobExp.Mutators
             root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
         }
 
-        public MutatorsConfigurator<TRoot, TRoot, TValue> Target<TValue>(Expression<Func<TRoot, TValue>> pathToValue, StaticMultiLanguageTextBase title = null)
+        public MutatorsConfigurator<TRoot, TRoot, TValue> Target<TValue>(Expression<Func<TRoot, TValue>> pathToValue, MultiLanguageTextBase title = null)
         {
             return new MutatorsConfigurator<TRoot, TRoot, TValue>(root, data => data, pathToValue, Condition, title);
         }
@@ -78,7 +78,7 @@ namespace GrobExp.Mutators
 
     public class MutatorsConfigurator<TRoot, TChild, TValue>
     {
-        public MutatorsConfigurator(ModelConfigurationNode root, Expression<Func<TRoot, TChild>> pathToChild, Expression<Func<TRoot, TValue>> pathToValue, LambdaExpression condition, StaticMultiLanguageTextBase title)
+        public MutatorsConfigurator(ModelConfigurationNode root, Expression<Func<TRoot, TChild>> pathToChild, Expression<Func<TRoot, TValue>> pathToValue, LambdaExpression condition, MultiLanguageTextBase title)
         {
             this.root = root;
             Title = title;
@@ -87,7 +87,7 @@ namespace GrobExp.Mutators
             Condition = condition;
         }
 
-        public MutatorsConfigurator(ModelConfigurationNode root, Expression<Func<TRoot, TChild>> pathToChild, Expression<Func<TRoot, TValue[]>> pathToValues, LambdaExpression condition, StaticMultiLanguageTextBase title)
+        public MutatorsConfigurator(ModelConfigurationNode root, Expression<Func<TRoot, TChild>> pathToChild, Expression<Func<TRoot, TValue[]>> pathToValues, LambdaExpression condition, MultiLanguageTextBase title)
         {
             this.root = root;
             Title = title;
@@ -120,7 +120,7 @@ namespace GrobExp.Mutators
             return new MutatorsConfigurator<TRoot, T, T>(root, pathToChild, pathToChild, Condition, Title);
         }
 
-        public MutatorsConfigurator<TRoot, TChild, T> Target<T>(Expression<Func<TValue, T>> path, StaticMultiLanguageTextBase title = null)
+        public MutatorsConfigurator<TRoot, TChild, T> Target<T>(Expression<Func<TValue, T>> path, MultiLanguageTextBase title = null)
         {
             return new MutatorsConfigurator<TRoot, TChild, T>(root, PathToChild, PathToValue.Merge(path), Condition, title);
         }
@@ -140,7 +140,7 @@ namespace GrobExp.Mutators
         public Expression<Func<TRoot, TValue>> PathToValue { get; private set; }
         public Expression<Func<TRoot, TValue[]>> PathToValues { get; private set; }
         public LambdaExpression Condition { get; set; }
-        public StaticMultiLanguageTextBase Title { get; private set; }
+        public MultiLanguageTextBase Title { get; private set; }
         protected readonly ModelConfigurationNode root;
     }
 }

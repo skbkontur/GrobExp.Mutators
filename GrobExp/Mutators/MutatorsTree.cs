@@ -168,6 +168,8 @@ namespace GrobExp.Mutators
                     otherConfigurations.Add(new ConditionalAggregatorConfiguration(type, condition, item.Key));
                 }
             }
+            if(setSourceArrayConfiguration != null)
+                otherConfigurations.Add(setSourceArrayConfiguration);
             return otherConfigurations;
         }
 

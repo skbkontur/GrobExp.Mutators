@@ -14,9 +14,14 @@ namespace GrobExp.Mutators
             this.trees = trees;
         }
 
-        public override MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree)
+        internal override MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree)
         {
             return new ComplexMutatorsTree<T>(trees.Select(tree => tree.Migrate<T>(converterTree)).ToArray());
+        }
+
+        internal override MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
+        {
+            return new ComplexMutatorsTree<TData>(trees.Select(tree => tree.MigratePaths<T>(converterTree)).ToArray());
         }
 
         public override MutatorsTree<TData> Merge(MutatorsTree<TData> other)

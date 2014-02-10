@@ -70,6 +70,7 @@
     <Compile Include="MutatorsConfiguratorExtensions.cs" />
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
+    <Compile Include="PathFormatterWrapper.cs" />
     <Compile Include="SimpleMutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
@@ -123,6 +124,7 @@
     <Compile Include="Visitors\LambdaExpressionCreator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
     <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
+    <Compile Include="Visitors\ParameterCanonizer.cs" />
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />
     <Compile Include="Visitors\ParametersExtractor.cs" />

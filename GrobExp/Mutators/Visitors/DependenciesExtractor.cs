@@ -39,13 +39,18 @@ namespace GrobExp.Mutators.Visitors
                         primaryDependenciez.Add(MakeLambda(dependency));
                     else
                     {
-                        if(parameters.Contains((ParameterExpression)dependency.SmashToSmithereens()[0]))
+                        var root = dependency.SmashToSmithereens()[0];
+                        if(root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root))
                             primaryDependenciez.Add(MakeLambda(dependency));
                     }
                 }
                 primaryDependencies = primaryDependenciez.GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             }
-            additionalDependencies = dependencies.Select(dependency => Expression.Lambda(ClearConverts(dependency.Body), dependency.Parameters)).Where(dependency => parameters.Contains((ParameterExpression)dependency.Body.SmashToSmithereens()[0])).GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+            additionalDependencies = dependencies.Select(dependency => Expression.Lambda(ClearConverts(dependency.Body), dependency.Parameters)).Where(dependency =>
+                {
+                    var root = dependency.Body.SmashToSmithereens()[0];
+                    return root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root);
+                }).GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             var result = new List<LambdaExpression>(additionalDependencies);
             foreach(var primaryDependency in primaryDependencies)
                 Extract(primaryDependency.Body, result);
@@ -524,7 +529,7 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression ProcessLinqWhere(MethodInfo method, Expression prefix, Expression[] arguments)
         {
-            if (prefix.Type == typeof (string))
+            if(prefix.Type == typeof(string))
                 return prefix;
             var predicate = (LambdaExpression)arguments.Single();
             var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));

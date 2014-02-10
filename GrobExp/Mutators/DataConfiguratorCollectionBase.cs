@@ -25,7 +25,7 @@ namespace GrobExp.Mutators
                 {
                     result = (MutatorsTree<TData>)slot.MutatorsTrees[validationsPriority];
                     if(result == null)
-                        slot.MutatorsTrees[validationsPriority] = result = new SimpleMutatorsTree<TData>(slot.Tree, pathFormatterCollection, validationsPriority);
+                        slot.MutatorsTrees[validationsPriority] = result = new SimpleMutatorsTree<TData>(slot.Tree, pathFormatterCollection.GetPathFormatter<TData>(), pathFormatterCollection, validationsPriority);
                 }
             }
             return result;

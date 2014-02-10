@@ -40,6 +40,11 @@ namespace GrobExp.Mutators
             return new ExpressionNullCheckingExtender().Extend(expression);
         }
 
+        public static Expression CanonizeParameters(this Expression expression)
+        {
+            return new ParameterCanonizer().Canonize(expression);
+        }
+
         public static ParameterExpression[] ExtractParameters(this Expression expression)
         {
             return new ParametersExtractor().Extract(expression);

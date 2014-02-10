@@ -21,22 +21,6 @@ namespace GrobExp.Mutators.Visitors
             lambda = Expression.Lambda(parameter, parameter);
         }
 
-        public void PerformAndExtractValidators(Expression expression, out Expression performedExpression, out Expression[] chains, out StaticValidatorConfiguration[] validators)
-        {
-            this.validators.Clear();
-            this.chains.Clear();
-            resolved = true;
-            performedExpression = Visit(expression);
-            chains = this.chains.ToArray();
-            validators = this.validators.ToArray();
-            if(!resolved)
-            {
-                performedExpression = null;
-                chains = new Expression[0];
-                validators = new StaticValidatorConfiguration[0];
-            }
-        }
-
         public Expression Perform(Expression expression)
         {
             resolved = true;
@@ -154,50 +138,45 @@ namespace GrobExp.Mutators.Visitors
                 }
                 return null;
             }
-            if(setters.All(mutator => !(mutator is EqualsToIfConfiguration)))
-            {
-                if(setters.Length > 1)
-                    throw new InvalidOperationException("More than one setter to " + ExpressionCompiler.DebugViewGetter(node));
-                var setter = (EqualsToConfiguration)setters.Single();
-                Expression condition = null;
-                var validator = setter.Validator;
-                if(validator != null)
-                {
-                    validators.Add(validator);
-                    if(aliases != null)
-                    {
-                        var validationResult = validator.Apply(aliases);
-                        if(validationResult != null)
-                        {
-                            validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
-                            condition = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
-                        }
-                    }
-                }
-                return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(Convert(lambda.Merge(Perform(setter.Value)).Body, node.Type), condition)};
-            }
             var result = new List<KeyValuePair<Expression, Expression>>();
-            foreach(var mutator in setters)
+            bool wasUnconditionalSetter = false;
+            for (int index = setters.Length - 1; index >= 0; --index)
             {
-                var setter = mutator as EqualsToIfConfiguration;
-                if(setter == null)
-                    throw new InvalidOperationException("Expected conditional setter to " + ExpressionCompiler.DebugViewGetter(node));
-                var condition = lambda.Merge(Perform(setter.Condition)).Body;
-                var validator = setter.Validator;
+                var mutator = setters[index];
+                LambdaExpression value;
+                Expression condition;
+                StaticValidatorConfiguration validator;
+                var equalsToIfConfiguration = mutator as EqualsToIfConfiguration;
+                if(equalsToIfConfiguration == null)
+                {
+                    if(wasUnconditionalSetter)
+                        continue;
+                    wasUnconditionalSetter = true;
+                    var equalsToConfiguration = (EqualsToConfiguration)mutator;
+                    value = equalsToConfiguration.Value;
+                    condition = null;
+                    validator = equalsToConfiguration.Validator;
+                }
+                else
+                {
+                    value = equalsToIfConfiguration.Value;
+                    condition = lambda.Merge(Perform(equalsToIfConfiguration.Condition)).Body;
+                    validator = equalsToIfConfiguration.Validator;
+                }
                 if(validator != null)
                 {
-                    validators.Add(validator);
                     if(aliases != null)
                     {
                         var validationResult = validator.Apply(aliases);
                         if(validationResult != null)
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
-                            condition = Expression.AndAlso(Convert(condition, typeof(bool)), Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error)));
+                            var valueIsValid = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
+                            condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid);
                         }
                     }
                 }
-                result.Add(new KeyValuePair<Expression, Expression>(lambda.Merge(Perform(setter.Value)).Body, condition));
+                result.Add(new KeyValuePair<Expression, Expression>(lambda.Merge(Perform(value)).Body, condition));
             }
             return result;
         }
@@ -215,7 +194,7 @@ namespace GrobExp.Mutators.Visitors
 
         private LambdaExpression Perform(LambdaExpression lambdaExpression)
         {
-            var body = Visit(lambdaExpression.Body);
+            var body = Visit(lambdaExpression.Body).CanonizeParameters();
             return Expression.Lambda(body, body.ExtractParameters());
         }
 
@@ -249,20 +228,16 @@ namespace GrobExp.Mutators.Visitors
             var conditionalSetters = GetConditionalSetters(node);
             if(conditionalSetters == null)
                 return Expression.Constant(node.Type.GetDefaultValue(), node.Type);
-            if(conditionalSetters.Count == 1 && conditionalSetters[0].Value == null)
-            {
-                var key = conditionalSetters[0].Key;
-                chains.AddRange(key.CutToChains(true, true));
-                return key; //key.Type.IsArray ? key : Expression.Convert(key, node.Type);
-            }
-            Expression result = Expression.Constant(node.Type.GetDefaultValue(), node.Type);
+            var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
+            Expression result = unconditionalSetter.Key ?? Expression.Constant(node.Type.GetDefaultValue(), node.Type);
             foreach(var item in conditionalSetters)
             {
                 var condition = item.Value;
                 var value = item.Key;
+                if(condition == null)
+                    continue;
                 var test = Convert(condition, typeof(bool));
-                result = Expression.Condition(test, /*Expression.Convert(value, node.Type)*/value, result);
-                chains.AddRange(value.CutToChains(true, true));
+                result = Expression.Condition(test, value, result);
             }
             return result;
         }
@@ -299,9 +274,6 @@ namespace GrobExp.Mutators.Visitors
         private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, int[]>>)(enumerable => enumerable.ToArray())).Body).Method.GetGenericMethodDefinition();
         private static readonly MemberInfo validationResultTypeProperty = ((MemberExpression)((Expression<Func<ValidationResult, ValidationResultType>>)(result => result.Type)).Body).Member;
         // ReSharper restore StaticFieldInGenericType
-
-        private readonly List<StaticValidatorConfiguration> validators = new List<StaticValidatorConfiguration>();
-        private readonly List<Expression> chains = new List<Expression>();
 
         private readonly LambdaExpression lambda;
 

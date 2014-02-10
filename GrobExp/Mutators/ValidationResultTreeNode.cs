@@ -30,22 +30,24 @@ namespace GrobExp.Mutators
 
         public void AddValidationResult(FormattedValidationResult validationResult, string[][] paths)
         {
-            paths = paths.Where(path => path.Length > 0).ToArray();
-            if(paths.Length == 0) return;
-            int lcp;
-            for(lcp = 0;; ++lcp)
-                if(!paths.All(path => lcp < path.Length && path[lcp] == paths[0][lcp])) break;
             var node = this;
-            foreach(var edge in paths[0].Take(lcp))
+            paths = paths.Where(path => path.Length > 0).ToArray();
+            if(paths.Length > 0)
             {
-                ++node.Count;
-                ValidationResultTreeNode child;
-                if(!node.children.TryGetValue(edge, out child))
+                int lcp;
+                for(lcp = 0;; ++lcp)
+                    if(!paths.All(path => lcp < path.Length && path[lcp] == paths[0][lcp])) break;
+                foreach(var edge in paths[0].Take(lcp))
                 {
-                    child = new ValidationResultTreeNode();
-                    node.children.Add(edge, child);
+                    ++node.Count;
+                    ValidationResultTreeNode child;
+                    if(!node.children.TryGetValue(edge, out child))
+                    {
+                        child = new ValidationResultTreeNode();
+                        node.children.Add(edge, child);
+                    }
+                    node = child;
                 }
-                node = child;
             }
             node.ValidationResults.Add(validationResult);
             ++node.Count;

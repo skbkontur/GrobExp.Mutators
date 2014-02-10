@@ -395,25 +395,29 @@ namespace GrobExp.Mutators
                 }
                 else
                 {
-                    if(conditionalSetters.Count == 1)
+                    var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
+                    Expression invertedCondition = null;
+                    foreach (var setter in conditionalSetters)
                     {
-                        var mutatedPath = conditionalSetters.Single().Key;
+                        var mutatedPath = setter.Key;
+                        var condition = setter.Value;
+                        if(condition == null)
+                            continue;
+                        Expression currentInvertedCondition = Expression.Not(condition);
+                        invertedCondition = invertedCondition == null ? currentInvertedCondition : Expression.AndAlso(invertedCondition, currentInvertedCondition);
                         var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                         var commonPath = primaryDependencies.FindLCP();
                         var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                        destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator));
+                        destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
                     }
-                    else
                     {
-                        foreach(var setter in conditionalSetters)
-                        {
-                            var mutatedPath = setter.Key;
-                            var condition = setter.Value;
-                            var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
-                            var commonPath = primaryDependencies.FindLCP();
-                            var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                            destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
-                        }
+                        var mutatedPath = unconditionalSetter.Key ?? performer.Perform(resolvedKey);
+                        if (mutatedPath == null)
+                            throw new InvalidOperationException("Unable to migrate node '" + path + "'");
+                        var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
+                        var commonPath = primaryDependencies.FindLCP();
+                        var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
+                        destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, invertedCondition == null ? mutatedMutator : mutatedMutator.If(Expression.Lambda(invertedCondition, invertedCondition.ExtractParameters()))));
                     }
                 }
             }

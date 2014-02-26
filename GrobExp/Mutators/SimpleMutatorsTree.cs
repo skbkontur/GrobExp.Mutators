@@ -35,7 +35,7 @@ namespace GrobExp.Mutators
         {
             var performer = new CompositionPerformer(typeof(TData), typeof(T), converterTree, new List<KeyValuePair<Expression, Expression>>());
             var resolver = new AliasesResolver(ExtractAliases(converterTree, performer), false);
-            return new SimpleMutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), performer, resolver), pathFormatterCollection, priority);
+            return new SimpleMutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection.GetPathFormatter<TData>(), converterTree, performer, resolver), pathFormatterCollection, priority);
         }
 
         protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)

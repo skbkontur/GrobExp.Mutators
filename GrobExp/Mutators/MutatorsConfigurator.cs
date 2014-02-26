@@ -21,9 +21,9 @@ namespace GrobExp.Mutators
             root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
         }
 
-        public void SetMutator(LambdaExpression pathToValue, MutatorConfiguration mutator)
+        public void SetMutator(Expression pathToValue, MutatorConfiguration mutator)
         {
-            root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
         }
 
         public MutatorsConfigurator<TRoot, TRoot, TValue> Target<TValue>(Expression<Func<TRoot, TValue>> pathToValue, MultiLanguageTextBase title = null)
@@ -109,9 +109,14 @@ namespace GrobExp.Mutators
             root.Traverse(PathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(rootMutator.If(Condition));
         }
 
-        public void SetMutator(Expression<Func<TRoot, TValue>> pathToValue, MutatorConfiguration mutator)
+        public void SetMutator(Expression pathToTarget, MutatorConfiguration mutator)
         {
-            root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            root.Traverse(pathToTarget.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+        }
+
+        public void SetMutator(Expression pathToNode, Expression pathToTarget, MutatorConfiguration mutator)
+        {
+            root.Traverse(pathToNode.ResolveInterfaceMembers(), true).AddMutator(pathToTarget, mutator.If(Condition));
         }
 
         public MutatorsConfigurator<TRoot, T, T> GoTo<T>(Expression<Func<TChild, T>> path)

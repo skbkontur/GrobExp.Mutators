@@ -243,7 +243,7 @@ namespace GrobExp.Mutators
             return result.ToArray();
         }
 
-        private static Expression LCP(this Expression exp1, Expression exp2)
+        public static Expression LCP(this Expression exp1, Expression exp2)
         {
             if(exp1 == null || exp2 == null) return null;
             var shards1 = exp1.SmashToSmithereens();

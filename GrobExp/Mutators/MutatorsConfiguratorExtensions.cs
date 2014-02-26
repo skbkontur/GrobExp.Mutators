@@ -88,6 +88,30 @@ namespace GrobExp.Mutators
             return configurator.RequiredIf(condition, child => new ValueRequiredText {Title = configurator.Title}, type);
         }
 
+        public static void FilledExactlyOneOf<TRoot, TChild>(
+            this MutatorsConfigurator<TRoot, TChild, TChild> configurator,
+            Expression<Func<TChild, object[]>> targets,
+            Expression<Func<TChild, MultiLanguageTextBase>> message,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            Expression sum = null;
+            if(targets.Body.NodeType != ExpressionType.NewArrayInit)
+                throw new InvalidOperationException("Expected new array creation");
+            Expression lcp = null;
+            foreach(var expression in ((NewArrayExpression)targets.Body).Expressions)
+            {
+                var target = expression.NodeType == ExpressionType.Convert ? ((UnaryExpression)expression).Operand : expression;
+                if(target.Type.IsValueType && !IsNullable(target.Type))
+                    throw new InvalidOperationException("Type '" + target.Type + "' cannot be null");
+                lcp = lcp == null ? target : lcp.LCP(target);
+                Expression current = Expression.Condition(Expression.Equal(target, Expression.Constant(null, target.Type)), Expression.Constant(0), Expression.Constant(1));
+                sum = sum == null ? current : Expression.Add(sum, current);
+            }
+            if(sum == null) return;
+            Expression condition = Expression.NotEqual(sum, Expression.Constant(1));
+            configurator.SetMutator(configurator.PathToChild.Merge(Expression.Lambda(lcp, targets.Parameters)).Body, configurator.PathToChild.Merge(targets).Body, InvalidIfConfiguration.Create(configurator.PathToChild.Merge(Expression.Lambda<Func<TChild, bool?>>(Expression.Convert(condition, typeof(bool?)), targets.Parameters)), configurator.PathToChild.Merge(message), type));
+        }
+
         public static MutatorsConfigurator<TRoot, TChild, TValue> InvalidIf<TRoot, TChild, TValue>(
             this MutatorsConfigurator<TRoot, TChild, TValue> configurator,
             Expression<Func<TChild, bool?>> condition,
@@ -406,6 +430,11 @@ namespace GrobExp.Mutators
         {
             configurator.SetMutator(EqualsToIfConfiguration.Create(typeof(TChild), condition, value, null));
             return configurator;
+        }
+
+        private static bool IsNullable(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
         private static readonly MemberInfo valueMustBeEqualToTextExpectedValueProperty = ((MemberExpression)((Expression<Func<ValueMustBeEqualToText, object>>)(text => text.ExpectedValue)).Body).Member;

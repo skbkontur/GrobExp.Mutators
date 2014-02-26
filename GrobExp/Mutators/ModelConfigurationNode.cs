@@ -151,6 +151,11 @@ namespace GrobExp.Mutators
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator));
         }
 
+        public void AddMutator(Expression path, MutatorConfiguration mutator)
+        {
+            mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path, mutator));
+        }
+
         public MutatorConfiguration[] GetMutators()
         {
             return mutators.Select(pair => pair.Value).ToArray();
@@ -377,51 +382,140 @@ namespace GrobExp.Mutators
         {
             var performer = new CompositionPerformer(RootType, to, convertationRoot, null);
             var parameters = new List<PathPrefix> {new PathPrefix(path, path.ExtractParameters().Single())};
+            var abstractPathResolver = new AbstractPathResolver(parameters, false);
 
             foreach(var mutator in mutators)
             {
                 var mutatedMutator = mutator.Value.Mutate(to, path, performer);
-                var resolvedKey = new AbstractPathResolver(parameters, false).Resolve(mutator.Key);
+                var resolvedKey = abstractPathResolver.Resolve(mutator.Key);
                 var conditionalSetters = performer.GetConditionalSetters(resolvedKey);
-                if(conditionalSetters == null)
+                if(conditionalSetters != null)
+                    Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
+                else
                 {
-                    var mutatedPath = performer.Perform(resolvedKey);
-                    if(mutatedPath == null)
-                        throw new InvalidOperationException("Unable to migrate node '" + path + "'");
-                    var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
-                    var commonPath = primaryDependencies.FindLCP();
+                    Expression mutatedPath = Expression.Constant(null);
+                    if(resolvedKey.NodeType == ExpressionType.NewArrayInit && resolvedKey.Type == typeof(object[]))
+                    {
+                        var paths = new List<Expression>();
+                        // Mutator is set to a number of nodes
+                        foreach(var item in ((NewArrayExpression)resolvedKey).Expressions)
+                        {
+                            var mutatedItem = performer.Perform(item);
+                            if(mutatedItem.NodeType != ExpressionType.Constant || ((ConstantExpression)mutatedItem).Value != null)
+                                paths.Add(mutatedItem);
+                            else
+                            {
+                                // Mutator is set to a node that is either not a leaf or a leaf that is not convertible
+                                var primaryDependencies = Expression.Lambda(item, item.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).ToArray();
+                                if(primaryDependencies.Length > 1)
+                                    throw new NotSupportedException("More than one primary dependency is not supported while migrating a mutator from a non-leaf node");
+                                var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
+                                if(subRoot != null)
+                                {
+                                    ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                    if(keyLeaf != null)
+                                    {
+                                        var keyLeafPath = abstractPathResolver.Resolve(keyLeaf.Path);
+                                        conditionalSetters = performer.GetConditionalSetters(keyLeafPath);
+                                        if(conditionalSetters != null)
+                                        {
+                                            paths.Add(performer.Perform(keyLeafPath));
+                                            continue;
+                                        }
+                                    }
+                                    // The key leaf is missing or is not convertible - list all convertible subnodes
+                                    var subNodes = new List<ModelConfigurationNode>();
+                                    subRoot.FindSubNodes(subNodes);
+                                    paths.AddRange(subNodes.Select(node => performer.Perform(abstractPathResolver.Resolve(node.Path))));
+                                }
+                            }
+                        }
+                        if(paths.Count > 0)
+                            mutatedPath = Expression.NewArrayInit(typeof(object), paths.Select(exp => Expression.Convert(exp, typeof(object))));
+                    }
+                    else
+                    {
+                        mutatedPath = performer.Perform(resolvedKey);
+                        if(mutatedPath.NodeType == ExpressionType.Constant && ((ConstantExpression)mutatedPath).Value == null)
+                        {
+                            // Mutator is set to a node that is either not a leaf or a leaf that is not convertible
+                            var primaryDependencies = Expression.Lambda(resolvedKey, resolvedKey.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).ToArray();
+                            if(primaryDependencies.Length > 1)
+                                throw new NotSupportedException("More than one primary dependency is not supported while migrating a mutator from a non-leaf node");
+                            var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
+                            if(subRoot != null)
+                            {
+                                ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                if(keyLeaf != null)
+                                    conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
+                                if(conditionalSetters != null)
+                                {
+                                    Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
+                                    continue;
+                                }
+                                // The key leaf is missing or is not convertible - list all convertible subnodes
+                                var subNodes = new List<ModelConfigurationNode>();
+                                subRoot.FindSubNodes(subNodes);
+                                mutatedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(abstractPathResolver.Resolve(node.Path)), typeof(object))));
+                            }
+                        }
+                    }
+                    var commonPath = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).FindLCP();
                     var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
                     destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator));
                 }
-                else
-                {
-                    var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
-                    Expression invertedCondition = null;
-                    foreach (var setter in conditionalSetters)
-                    {
-                        var mutatedPath = setter.Key;
-                        var condition = setter.Value;
-                        if(condition == null)
-                            continue;
-                        Expression currentInvertedCondition = Expression.Not(condition);
-                        invertedCondition = invertedCondition == null ? currentInvertedCondition : Expression.AndAlso(invertedCondition, currentInvertedCondition);
-                        var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
-                        var commonPath = primaryDependencies.FindLCP();
-                        var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                        destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
-                    }
-                    {
-                        var mutatedPath = unconditionalSetter.Key ?? performer.Perform(resolvedKey);
-                        if (mutatedPath == null)
-                            throw new InvalidOperationException("Unable to migrate node '" + path + "'");
-                        var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
-                        var commonPath = primaryDependencies.FindLCP();
-                        var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                        destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, invertedCondition == null ? mutatedMutator : mutatedMutator.If(Expression.Lambda(invertedCondition, invertedCondition.ExtractParameters()))));
-                    }
-                }
             }
             return performer.GetConditionalSetters(path) != null;
+        }
+
+        public void FindSubNodes(List<ModelConfigurationNode> result)
+        {
+            if(children.Count == 0 && mutators.Count > 0)
+                result.Add(this);
+            foreach(var child in Children)
+                child.FindSubNodes(result);
+        }
+
+        public ModelConfigurationNode FindKeyLeaf()
+        {
+            foreach(DictionaryEntry entry in children)
+            {
+                var edge = (ModelConfigurationEdge)entry.Key;
+                var child = (ModelConfigurationNode)entry.Value;
+                var property = edge.Value as PropertyInfo;
+                if(property != null && property.GetCustomAttributes(typeof(KeyLeafAttribute), false).Any() && child.children.Count == 0)
+                    return child;
+                var result = child.FindKeyLeaf();
+                if(result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        private static void Qxx(ModelConfigurationNode destTree, List<KeyValuePair<Expression, Expression>> conditionalSetters, MutatorConfiguration mutatedMutator, CompositionPerformer performer, Expression resolvedKey)
+        {
+            var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
+            Expression invertedCondition = null;
+            foreach(var setter in conditionalSetters)
+            {
+                var mutatedPath = setter.Key;
+                var condition = setter.Value;
+                if(condition == null)
+                    continue;
+                Expression currentInvertedCondition = Expression.Not(condition);
+                invertedCondition = invertedCondition == null ? currentInvertedCondition : Expression.AndAlso(invertedCondition, currentInvertedCondition);
+                var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
+                var commonPath = primaryDependencies.FindLCP();
+                var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
+                destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
+            }
+            {
+                var mutatedPath = unconditionalSetter.Key ?? performer.Perform(resolvedKey);
+                var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
+                var commonPath = primaryDependencies.FindLCP();
+                var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
+                destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, invertedCondition == null ? mutatedMutator : mutatedMutator.If(Expression.Lambda(invertedCondition, invertedCondition.ExtractParameters()))));
+            }
         }
 
         private LambdaExpression BuildTreeMutator(List<ParameterExpression> parameters)

@@ -15,6 +15,19 @@ namespace Compiler.Tests
     [TestFixture]
     public class Test // todo растащить на куски
     {
+        private class Qzz
+        {
+            public int? X { get; set; }
+        }
+
+        [Test]
+        public void TestNullable()
+        {
+            Expression<Func<Qzz, int>> exp = x => x.X.Value;
+            var func = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            func(null);
+        }
+
         [Test]
         public void TestRefParameter()
         {

@@ -19,7 +19,7 @@ namespace GrobExp.Mutators.Visitors
             var other = obj as ExpressionWrapper;
             if(other == null)
                 return false;
-            return ExpressionEquivalenceChecker.Equivalent(expression, other.expression, strictly);
+            return ExpressionEquivalenceChecker.Equivalent(expression, other.expression, strictly, true);
         }
 
         public override int GetHashCode()

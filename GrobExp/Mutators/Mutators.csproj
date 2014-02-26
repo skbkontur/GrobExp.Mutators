@@ -70,6 +70,7 @@
     <Compile Include="MutatorsConfiguratorExtensions.cs" />
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
+    <Compile Include="PathFormatterWrapper.cs" />
     <Compile Include="SimpleMutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
@@ -94,7 +95,13 @@
     <Compile Include="ValidationResultTreeNode.cs" />
     <Compile Include="ValidationResultType.cs" />
     <Compile Include="Validators\InvalidIfConfiguration.cs" />
+    <Compile Include="Validators\RequiredIfConfiguration.cs" />
     <Compile Include="Validators\StaticValidatorConfiguration.cs" />
+    <Compile Include="Validators\Texts\LengthNotExactlyEqualsText.cs" />
+    <Compile Include="Validators\Texts\LengthOutOfRangeText.cs" />
+    <Compile Include="Validators\Texts\ValueMustBeEqualToText.cs" />
+    <Compile Include="Validators\Texts\ValueMustBelongToText.cs" />
+    <Compile Include="Validators\Texts\ValueRequiredText.cs" />
     <Compile Include="Validators\ValidatorConfiguration.cs" />
     <Compile Include="Visitors\AbstractPathResolver.cs" />
     <Compile Include="Visitors\AliasesResolver.cs" />
@@ -117,6 +124,7 @@
     <Compile Include="Visitors\LambdaExpressionCreator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
     <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
+    <Compile Include="Visitors\ParameterCanonizer.cs" />
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />
     <Compile Include="Visitors\ParametersExtractor.cs" />

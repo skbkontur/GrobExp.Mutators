@@ -9,7 +9,7 @@ using GrEmit;
 
 namespace GrobExp.Mutators
 {
-    public static class DataConfiguratorCollectionHelper
+    internal static class DataConfiguratorCollectionHelper
     {
         public static IMutatorsTreeCreator<TData> GetOrCreateMutatorsTreeCreator<TData>(Type[] path)
         {
@@ -33,6 +33,8 @@ namespace GrobExp.Mutators
             if(second == null) return first;
             return first.Merge(second);
         }
+
+        public const string AssemblyName = "MutatorsTreeCreators";
 
         public interface IMutatorsTreeCreator<TData>
         {
@@ -132,7 +134,7 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo getConverterCollectionMethod = ((MethodCallExpression)((Expression<Func<IConverterCollectionFactory, IConverterCollection<int, int>>>)(factory => factory.Get<int, int>())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo mergeMethod = ((MethodCallExpression)((Expression<Func<MutatorsTree<int>, MutatorsTree<int>, MutatorsTree<int>>>)((first, second) => Merge(first, second))).Body).Method.GetGenericMethodDefinition();
 
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(AssemblyName), AssemblyBuilderAccess.Run);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         private static readonly object lockObject = new object();

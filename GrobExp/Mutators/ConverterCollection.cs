@@ -30,7 +30,12 @@ namespace GrobExp.Mutators
 
         public MutatorsTree<TSource> GetValidationsTree(MutatorsContext context, int priority)
         {
-            return new SimpleMutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection, priority);
+            return new SimpleMutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+        }
+
+        public MutatorsTree<TDest> MigratePaths(MutatorsTree<TDest> mutatorsTree, MutatorsContext context)
+        {
+            return mutatorsTree == null ? null : mutatorsTree.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
         }
 
         protected abstract void Configure(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator);

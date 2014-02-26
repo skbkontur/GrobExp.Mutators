@@ -81,7 +81,16 @@ namespace GrobExp.Mutators
             return nodeInfo.TreeMutator;
         }
 
-        public abstract MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree);
+        internal MutatorsTree<T> Migrate<T>(string key, ModelConfigurationNode converterTree)
+        {
+            return GetMigratedTrees<T>(key, converterTree).EntirelyMigrated;
+        }
+
+        internal MutatorsTree<TData> MigratePaths<T>(string key, ModelConfigurationNode converterTree)
+        {
+            return GetMigratedTrees<T>(key, converterTree).PathsMigrated;
+        }
+
         public abstract MutatorsTree<TData> Merge(MutatorsTree<TData> other);
 
         internal Action<TChild, ValidationResultTreeNode> GetValidatorInternal<TChild>(Expression<Func<TData, TChild>> path)
@@ -95,6 +104,9 @@ namespace GrobExp.Mutators
             }
             return nodeInfo.Validator;
         }
+
+        internal abstract MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree);
+        internal abstract MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree);
 
         protected List<MutatorConfiguration> Canonize(IEnumerable<KeyValuePair<int, MutatorConfiguration>> mutators)
         {
@@ -120,7 +132,7 @@ namespace GrobExp.Mutators
                     var currentSetSourceArrayConfiguration = (SetSourceArrayConfiguration)mutator.Value;
                     if(setSourceArrayConfiguration == null)
                         setSourceArrayConfiguration = currentSetSourceArrayConfiguration;
-                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false))
+                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false, true))
                         throw new InvalidOperationException("An attempt to set array from different sources: '" + setSourceArrayConfiguration.SourceArray + "' and '" + currentSetSourceArrayConfiguration.SourceArray + "'");
                 }
                 else if(mutator.Value is ConditionalAggregatorConfiguration)
@@ -179,6 +191,28 @@ namespace GrobExp.Mutators
         protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
         protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
 
+        private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
+        {
+            var tuple = new Tuple<Type, string>(typeof(T), key);
+            var migratedTrees = (MigratedTrees<T>)hashtable[tuple];
+            if(migratedTrees == null)
+            {
+                lock(lockObject)
+                {
+                    migratedTrees = (MigratedTrees<T>)hashtable[tuple];
+                    if(migratedTrees == null)
+                    {
+                        hashtable[tuple] = migratedTrees = new MigratedTrees<T>
+                            {
+                                EntirelyMigrated = Migrate<T>(converterTree),
+                                PathsMigrated = MigratePaths<T>(converterTree)
+                            };
+                    }
+                }
+            }
+            return migratedTrees;
+        }
+
         private NodeInfo<T> GetOrCreateNodeInfo<T>(Expression<Func<TData, T>> path)
         {
             var key = new ExpressionWrapper(path.Body, false);
@@ -205,6 +239,12 @@ namespace GrobExp.Mutators
             public Action<T, ValidationResultTreeNode> Validator { get; set; }
             public Func<T, bool> StaticValidator { get; set; }
             public Action<T> TreeMutator { get; set; }
+        }
+
+        private class MigratedTrees<T>
+        {
+            public MutatorsTree<T> EntirelyMigrated { get; set; }
+            public MutatorsTree<TData> PathsMigrated { get; set; }
         }
     }
 }

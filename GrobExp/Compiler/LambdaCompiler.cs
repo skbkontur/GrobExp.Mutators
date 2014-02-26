@@ -15,45 +15,35 @@ namespace GrobExp.Compiler
     {
         public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
-            string il;
-            return CompileInternal(lambda, null, out il, options);
+            CompiledLambda[] subLambdas;
+            return CompileInternal(lambda, null, out subLambdas, options).Delegate;
         }
 
         public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
-            string il;
-            return CompileInternal(lambda, debugInfoGenerator, out il, options);
-        }
-
-        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options)
-        {
-            return CompileInternal(lambda, debugInfoGenerator, out il, options);
+            CompiledLambda[] subLambdas;
+            return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
         public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
-            string il;
-            return Compile(lambda, null, out il, options);
+            return Compile(lambda, null, options);
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, out string il, CompilerOptions options) where TDelegate : class
+        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options) where TDelegate : class
         {
-            return Compile(lambda, null, out il, options);
+            CompiledLambda[] subLambdas;
+            return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options) where TDelegate : class
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
         {
-            return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out il, options);
+            CompileToMethodInternal(lambda, method, null, options);
         }
 
-        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
-            return CompileToMethodInternal(lambda, method, null, options);
-        }
-
-        public static string CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
-        {
-            return CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
+            CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
         internal static CompiledLambda CompileInternal(
@@ -72,7 +62,7 @@ namespace GrobExp.Compiler
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
             var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            var il = new GroboIL(method);
+            var il = new GroboIL(method, false);
 
             var context = new EmittingContext
                 {
@@ -129,7 +119,7 @@ namespace GrobExp.Compiler
                 };
         }
 
-        internal static string CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, Type closureType, ParameterExpression closureParameter, Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, CompilerOptions options, List<CompiledLambda> compiledLambdas, MethodBuilder method)
+        internal static ILCode CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, Type closureType, ParameterExpression closureParameter, Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, CompilerOptions options, List<CompiledLambda> compiledLambdas, MethodBuilder method)
         {
             var typeBuilder = method.ReflectedType as TypeBuilder;
             if(typeBuilder == null)
@@ -203,7 +193,7 @@ namespace GrobExp.Compiler
             return assemblyBuilder;
         }
 
-        private static Delegate CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out string il, CompilerOptions options)
+        private static CompiledLambda CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out CompiledLambda[] subLambdas, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
@@ -214,23 +204,13 @@ namespace GrobExp.Compiler
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
-            var ilCode = new StringBuilder(compiledLambda.ILCode);
-            for(int i = 0; i < compiledLambdas.Count; ++i)
-            {
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine("delegates[" + i + "]");
-                ilCode.AppendLine(compiledLambdas[i].ILCode);
-            }
-            il = ilCode.ToString();
+            subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0)
                 BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
-            return compiledLambda.Delegate;
+            return compiledLambda;
         }
 
-        private static string CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
+        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
@@ -247,17 +227,7 @@ namespace GrobExp.Compiler
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
-            var ilCode = new StringBuilder(CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method));
-            for(int i = 0; i < compiledLambdas.Count; ++i)
-            {
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine();
-                ilCode.AppendLine("delegates[" + i + "]");
-                ilCode.AppendLine(compiledLambdas[i].ILCode);
-            }
-            return ilCode.ToString();
+            CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
         }
 
         private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)

@@ -5,29 +5,37 @@ using System.Linq.Expressions;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
+using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
     public class SimpleMutatorsTree<TData> : MutatorsTree<TData>
     {
-        public SimpleMutatorsTree(ModelConfigurationNode tree, IPathFormatterCollection pathFormatterCollection, int priority)
+        public SimpleMutatorsTree(ModelConfigurationNode tree, IPathFormatter pathFormatter, IPathFormatterCollection pathFormatterCollection, int priority)
         {
             this.tree = tree;
             this.pathFormatterCollection = pathFormatterCollection;
-            pathFormatter = pathFormatterCollection.GetPathFormatter<TData>();
+            this.pathFormatter = pathFormatter;
             this.priority = priority;
-        }
-
-        public override MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree)
-        {
-            var migratedTree = ModelConfigurationNode.CreateRoot(typeof(T));
-            tree.Migrate(typeof(T), migratedTree, converterTree);
-            return new SimpleMutatorsTree<T>(migratedTree, pathFormatterCollection, priority);
         }
 
         public override MutatorsTree<TData> Merge(MutatorsTree<TData> other)
         {
             return new ComplexMutatorsTree<TData>(new[] {this, other});
+        }
+
+        internal override MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree)
+        {
+            var migratedTree = ModelConfigurationNode.CreateRoot(typeof(T));
+            tree.Migrate(typeof(T), migratedTree, converterTree);
+            return new SimpleMutatorsTree<T>(migratedTree, pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection, priority);
+        }
+
+        internal override MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
+        {
+            var performer = new CompositionPerformer(typeof(TData), typeof(T), converterTree, new List<KeyValuePair<Expression, Expression>>());
+            var resolver = new AliasesResolver(ExtractAliases(converterTree, performer), false);
+            return new SimpleMutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection.GetPathFormatter<TData>(), converterTree, performer, resolver), pathFormatterCollection, priority);
         }
 
         protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
@@ -86,6 +94,63 @@ namespace GrobExp.Mutators
             if(mutator == null)
                 return child => { };
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
+        }
+
+        private static List<KeyValuePair<Expression, Expression>> ExtractAliases(ModelConfigurationNode converterTree, CompositionPerformer performer)
+        {
+            var aliases = new List<KeyValuePair<Expression, Expression>>();
+            ExtractAliases(converterTree, performer, aliases);
+            return aliases;
+        }
+
+        private static bool IsEachOrCurrent(Expression node)
+        {
+            if(node.NodeType != ExpressionType.Call) return false;
+            var method = ((MethodCallExpression)node).Method;
+            return method.IsEachMethod() || method.IsCurrentMethod();
+        }
+
+        private static void ExtractAliases(ModelConfigurationNode node, CompositionPerformer performer, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            if(node.GetMutators().Any())
+            {
+                var conditionalSetters = performer.GetConditionalSetters(node.Path);
+                if(conditionalSetters != null && conditionalSetters.Count == 1)
+                {
+                    var setter = conditionalSetters.Single();
+                    if(setter.Value == null)
+                    {
+                        var chains = setter.Key.CutToChains(true, true);
+                        if(chains.Length == 1)
+                        {
+                            var chain = chains.Single();
+                            aliases.Add(new KeyValuePair<Expression, Expression>(node.Path, chain));
+                            if(IsEachOrCurrent(node.Path))
+                                aliases.Add(new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(node.Path.Type), node.Path), Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(chain.Type), chain)));
+                        }
+                    }
+                }
+            }
+            else if(IsEachOrCurrent(node.Path))
+            {
+                var conditionalSetters = performer.GetConditionalSetters(((MethodCallExpression)node.Path).Arguments.Single());
+                if (conditionalSetters != null && conditionalSetters.Count == 1)
+                {
+                    var setter = conditionalSetters.Single();
+                    if (setter.Value == null)
+                    {
+                        var chains = setter.Key.CutToChains(true, true);
+                        if (chains.Length == 1)
+                        {
+                            var chain = chains.Single();
+                            chain = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(chain.Type.GetItemType()), chain);
+                            aliases.Add(new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(node.Path.Type), node.Path), Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(chain.Type), chain)));
+                        }
+                    }
+                }
+            }
+            foreach(var child in node.Children)
+                ExtractAliases(child, performer, aliases);
         }
 
         private readonly IPathFormatter pathFormatter;

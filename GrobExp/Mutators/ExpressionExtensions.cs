@@ -40,6 +40,11 @@ namespace GrobExp.Mutators
             return new ExpressionNullCheckingExtender().Extend(expression);
         }
 
+        public static Expression CanonizeParameters(this Expression expression)
+        {
+            return new ParameterCanonizer().Canonize(expression);
+        }
+
         public static ParameterExpression[] ExtractParameters(this Expression expression)
         {
             return new ParametersExtractor().Extract(expression);
@@ -238,7 +243,7 @@ namespace GrobExp.Mutators
             return result.ToArray();
         }
 
-        private static Expression LCP(this Expression exp1, Expression exp2)
+        public static Expression LCP(this Expression exp1, Expression exp2)
         {
             if(exp1 == null || exp2 == null) return null;
             var shards1 = exp1.SmashToSmithereens();
@@ -246,7 +251,7 @@ namespace GrobExp.Mutators
             int i;
             for(i = 0; i < shards1.Length && i < shards2.Length; ++i)
             {
-                if(!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false))
+                if(!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false, true))
                     break;
             }
             return i == 0 ? null : shards1[i - 1];

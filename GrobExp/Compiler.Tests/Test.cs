@@ -468,11 +468,8 @@ namespace Compiler.Tests
 
         private void DoTestConstsAreNotFreedWhileRunning(Expression<Func<Guid, bool>> lambda, Guid guid)
         {
-            string il;
-            var func = LambdaCompiler.Compile(lambda, out il, CompilerOptions.None);
+            var func = LambdaCompiler.Compile(lambda, CompilerOptions.None);
             var actual = func(guid);
-            if(!actual)
-                Console.WriteLine(il);
             Assert.IsTrue(actual);
         }
 

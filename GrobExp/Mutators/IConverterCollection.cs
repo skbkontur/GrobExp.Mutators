@@ -9,5 +9,6 @@ namespace GrobExp.Mutators
 
         MutatorsTree<TSource> Migrate(MutatorsTree<TDest> mutatorsTree, MutatorsContext context);
         MutatorsTree<TSource> GetValidationsTree(MutatorsContext context, int priority);
+        MutatorsTree<TDest> MigratePaths(MutatorsTree<TDest> mutatorsTree, MutatorsContext context);
     }
 }

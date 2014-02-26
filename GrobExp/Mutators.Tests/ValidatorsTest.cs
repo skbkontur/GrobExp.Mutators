@@ -309,6 +309,78 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestValidatorFromConverter()
+        {
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var converterCollectionFactory = new TestConverterCollectionFactory();
+            var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
+                configurator => configurator.Target(data => data.X).Set(data2 => data2.S, s => int.Parse(s), s => s == null || s.Length > 9 || s.Any(c => !char.IsDigit(c)) ? new ValidationResult(ValidationResultType.Error, null) : ValidationResult.Ok));
+            var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
+            converterCollectionFactory.Register(converterCollection);
+
+            var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode{ {"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText{Paths = new[] {"S"}}, 2)}});
+            validator(new TestData2{S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode{ {"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText{Paths = new[] {"S"}}, 2)}});
+            validator(new TestData2{S = "123456789123456789"}).AssertEquivalent(new ValidationResultTreeNode{ {"S", FormattedValidationResult.Error(null, "123456789123456789", new SimplePathFormatterText{Paths = new[] {"S"}}, 2)}});
+            validator(new TestData2{S = "123456789"}).AssertEquivalent(new ValidationResultTreeNode());
+        }
+
+        [Test]
+        public void TestConvertedValidatorsMultipleConditionalSetters()
+        {
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var converterCollectionFactory = new TestConverterCollectionFactory();
+            var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.S).If(data => data.X >= 0).Set(data2 => data2.S);
+                    configurator.Target(data => data.S).If(data => data.X < 0).Set(data2 => data2.T.S);
+                });
+            var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
+                configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == null, data => null));
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
+            converterCollectionFactory.Register(converterCollection);
+
+            var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
+            validator(new TestData2 { X = 1 }).AssertEquivalent(new ValidationResultTreeNode { { "S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "S" } }, 0) } });
+            validator(new TestData2 { X = 1, S = "zzz" }).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2 { X = -1 }).AssertEquivalent(new ValidationResultTreeNode { { "T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "T.S" } }, 0) } });
+            validator(new TestData2 { X = -1, T = new T() }).AssertEquivalent(new ValidationResultTreeNode { { "T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "T.S" } }, 0) } });
+            validator(new TestData2 { X = -1, T = new T{ S = "zzz" }}).AssertEquivalent(new ValidationResultTreeNode());
+        }
+
+        [Test]
+        public void TestConvertedValidatorsComplexNode()
+        {
+            var dataConfigurationCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var converterCollectionFactory = new TestConverterCollectionFactory();
+            var converterCollectionFromTestData2ToTestData = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.X).Set(data2 => data2.X + data2.Y));
+            var converterCollectionFromTestData3ToTestData2= new TestConverterCollection<TestData3, TestData2>(pathFormatterCollection, configurator =>
+                                                                                                                                            {
+                                                                                                                                                configurator.Target(data2 => data2.X).Set(data3 => data3.X);
+                                                                                                                                                configurator.Target(data2 => data2.Y).Set(data3 => data3.Y);
+                                                                                                                                            });
+            var testDataConfiguratoCollection = new TestDataConfiguratorCollection<TestData>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection,
+                configurator => configurator.Target(data => data.X).InvalidIf(data => data.X > 100, data => null));
+            var testData2ConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var testData3ConfiguratorCollection = new TestDataConfiguratorCollection<TestData3>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            dataConfigurationCollectionFactory.Register(testDataConfiguratoCollection);
+            dataConfigurationCollectionFactory.Register(testData2ConfiguratorCollection);
+            dataConfigurationCollectionFactory.Register(testData3ConfiguratorCollection);
+            converterCollectionFactory.Register(converterCollectionFromTestData2ToTestData);
+            converterCollectionFactory.Register(converterCollectionFromTestData3ToTestData2);
+
+            var validator = testData3ConfiguratorCollection.GetMutatorsTree(new[] {typeof(TestData), typeof(TestData2)}, new MutatorsContext[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty}, new MutatorsContext[]{MutatorsContext.Empty, MutatorsContext.Empty, }).GetValidator();
+            validator(new TestData3()).AssertEquivalent(new ValidationResultTreeNode());
+            var validationResultTreeNode = validator(new TestData3{X = 50, Y = 60});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode { { "", FormattedValidationResult.Error(null, 110, new SimplePathFormatterText { Paths = new[] { "X", "Y" } }, 0) } });
+        }
+
+        [Test]
         public void TestConvertedValidatorsArray1()
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
@@ -695,6 +767,13 @@ namespace Mutators.Tests
         {
             public string S { get; set; }
             public int X { get; set; }
+        }
+
+        private class TestData3
+        {
+            public string S { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
         }
 
         public class ValueMustBeLessThanText : MultiLanguageTextBase

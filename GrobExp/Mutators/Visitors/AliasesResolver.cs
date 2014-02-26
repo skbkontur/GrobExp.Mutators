@@ -69,17 +69,13 @@ namespace GrobExp.Mutators.Visitors
 
         private bool Fits(Expression abstractPath, Expression aliasPath)
         {
-            var first = replacer.Visit(abstractPath);
-            var second = replacer.Visit(aliasPath);
-            return ExpressionEquivalenceChecker.Equivalent(first, second, strictly);
+            return ExpressionEquivalenceChecker.Equivalent(abstractPath, aliasPath, strictly, false);
         }
 
         private static Expression[] GetArguments(MethodCallExpression methodCallExpression)
         {
             return methodCallExpression.Method.IsExtension() ? methodCallExpression.Arguments.Skip(1).ToArray() : methodCallExpression.Arguments.ToArray();
         }
-
-        private readonly MethodReplacer replacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
 
 //        private static bool IsSimpleLinkOfChain(MethodCallExpression node)
 //        {

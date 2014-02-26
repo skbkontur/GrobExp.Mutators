@@ -21,9 +21,16 @@ namespace GrobExp.Compiler
             }
             if(type.IsNullable())
             {
-                Il.Dup();
-                EmitHasValueAccess(type);
-                Il.Brfalse(objIsNullLabel);
+                using(var temp = DeclareLocal(type.MakeByRefType()))
+                {
+                    Il.Stloc(temp);
+                    Il.Ldnull(typeof(object));
+                    Il.Ldloc(temp);
+                    EmitHasValueAccess(type);
+                    Il.Brfalse(objIsNullLabel);
+                    Il.Pop();
+                    Il.Ldloc(temp);
+                }
                 return true;
             }
             return false;

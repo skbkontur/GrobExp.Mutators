@@ -12,18 +12,11 @@ namespace Mutators.Tests
 {
     public class TreeMutatorsTest : TestBase
     {
-        protected override void SetUp()
-        {
-            base.SetUp();
-            pathFormatterCollection = new PathFormatterCollection();
-            random = new Random();
-        }
-
         [Test]
         public void TestProperty()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).NullifyIf(data => data.A.S != null));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {S = "zzz"}, S = "qxx"};
             mutator(o);
             Assert.IsNullOrEmpty(o.S);
@@ -36,7 +29,7 @@ namespace Mutators.Tests
         public void TestArray()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().S == data.A.S));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "zzz", Z = 1}, new B {S = "qxx", Z = 2}, new B {S = "zzz", Z = 3}}}};
             mutator(o);
             Assert.IsNull(o.A.B[0].Z);
@@ -52,7 +45,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().C.D.Each().S).NullifyIf(data => data.A.B.Each().Z > data.A.B.Each().C.D.Each().Z);
                     configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().Z < 0);
                 });
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData
                 {
                     A = new A
@@ -105,7 +98,7 @@ namespace Mutators.Tests
             Assert.IsNullOrEmpty(o.A.B[1].C.D[1].S);
             Assert.AreEqual("zzz20", o.A.B[2].C.D[0].S);
             Assert.AreEqual("zzz21", o.A.B[2].C.D[1].S);
-            var subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A);
+            Action<A> subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A);
             var a = new A
                 {
                     B = new[]
@@ -161,7 +154,7 @@ namespace Mutators.Tests
         public void TestSelfDependency()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().Z == data.A.Z));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {Z = 1, B = new[] {new B {Z = 1}, new B {Z = 2}, new B {Z = 3}}}};
             mutator(o);
             Assert.IsNull(o.A.B[0].Z);
@@ -196,7 +189,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.Z).Set(data => data.X + data.Y);
                     configurator.Target(data => data.Q).Set(data => data.X * data.Z - data.Y);
                 });
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {X = 1, Y = 2, Z = 1, Q = 2};
             mutator(o);
             Assert.AreEqual(1, o.X);
@@ -209,7 +202,7 @@ namespace Mutators.Tests
         public void TestEqualsToLinq1()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).Set(data => data.A.B.Each().C.D.Sum(d => d.Z)));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData
                 {
                     A = new A
@@ -247,7 +240,7 @@ namespace Mutators.Tests
             mutator(o);
             Assert.AreEqual(5, o.A.B[0].Z);
             Assert.AreEqual(12, o.A.B[1].Z);
-            var subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A.B.Each());
+            Action<B> subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A.B.Each());
             var b = new B
                 {
                     Z = 1,
@@ -268,7 +261,7 @@ namespace Mutators.Tests
         public void TestEqualsToArrayLength()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Length).Set(data => 1));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
             Assert.AreEqual(1, o.A.B.Length);
@@ -283,7 +276,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().X).Set(data => data.A.B.Each().CurrentIndex() + 1);
                     configurator.Target(data => data.A.B.Length).Set(data => 3);
                 });
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
             var expected = new TestData
@@ -308,10 +301,10 @@ namespace Mutators.Tests
             var generator = new IdGenerator();
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data => generator.GetId().Dynamic()));
 
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
-            var id = o.S;
+            string id = o.S;
             Assert.IsNotNullOrEmpty(id);
             mutator(o);
             Assert.AreNotEqual(id, o.S);
@@ -323,7 +316,7 @@ namespace Mutators.Tests
             var generator = new IdGenerator();
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data => generator.GetId().Dynamic()));
 
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {B = new[] {new B(), new B()}}};
             mutator(o);
             Assert.IsNotNullOrEmpty(o.A.B[0].S);
@@ -335,7 +328,7 @@ namespace Mutators.Tests
         public void TestConvertNullableDateTime()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.Date).Set(data2 => data2.Date1 ?? data2.Date2));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {Date1 = new DateTime(2010, 1, 1)};
             converter(from, to);
@@ -357,7 +350,7 @@ namespace Mutators.Tests
         public void TestConvert1()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {S = "zzz"};
             converter(from, to);
@@ -370,7 +363,7 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData2, bool?>> condition = data => data.X == 1;
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).If(condition).Set(data2 => data2.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {S = "zzz"};
             converter(from, to);
@@ -387,7 +380,7 @@ namespace Mutators.Tests
         public void TestConvert3()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.T.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {T = new T {S = "zzz"}};
             converter(from, to);
@@ -403,7 +396,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.S).Set(data2 => data2.T.S);
                     configurator.Target(data => data.F).Set((data2, data) => data.S);
                 });
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {T = new T {S = "zzz"}};
             converter(from, to);
@@ -412,10 +405,58 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestConvertIf1()
+        {
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.If((data2, data) => data2.X + data.Y == 2).Target(data => data.S).Set(data2 => data2.T.S));
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
+            var to = new TestData {Y = 1};
+            var from = new TestData2 {T = new T {S = "zzz"}, X = 1};
+            converter(from, to);
+            var expected = new TestData {S = "zzz", Y = 1};
+            to.AssertEqualsToUsingGrobuf(expected);
+            to = new TestData {Y = 2};
+            from = new TestData2 {T = new T {S = "zzz"}, X = 1};
+            converter(from, to);
+            expected = new TestData {Y = 2};
+            to.AssertEqualsToUsingGrobuf(expected);
+            to = new TestData {Y = 2};
+            from = new TestData2 {T = new T {S = "zzz"}, X = 0};
+            converter(from, to);
+            expected = new TestData {S = "zzz", Y = 2};
+            to.AssertEqualsToUsingGrobuf(expected);
+        }
+
+        [Test]
+        public void TestConvertIf2()
+        {
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                {
+                    ConverterConfigurator<TestData2, T, TestData, A, A> subConfigurator = configurator.GoTo(data => data.A, data2 => data2.T);
+                    subConfigurator.If((data2, data) => data2.Z + data.Z == 2).Target(data => data.S).Set(data2 => data2.S);
+                });
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
+            var to = new TestData {A = new A {Z = 1}};
+            var from = new TestData2 {T = new T {S = "zzz", Z = 1}};
+            converter(from, to);
+            var expected = new TestData {A = new A {S = "zzz", Z = 1}};
+            to.AssertEqualsToUsingGrobuf(expected);
+            to = new TestData {A = new A {Z = 2}};
+            from = new TestData2 {T = new T {S = "zzz", Z = 1}};
+            converter(from, to);
+            expected = new TestData {A = new A {Z = 2}};
+            to.AssertEqualsToUsingGrobuf(expected);
+            to = new TestData {A = new A {Z = 2}};
+            from = new TestData2 {T = new T {S = "zzz", Z = 0}};
+            converter(from, to);
+            expected = new TestData {A = new A {S = "zzz", Z = 2}};
+            to.AssertEqualsToUsingGrobuf(expected);
+        }
+
+        [Test]
         public void TestConvertArray()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -449,7 +490,7 @@ namespace Mutators.Tests
         public void TestConvertArrayWithFilter()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S != null).Each().U.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -482,7 +523,7 @@ namespace Mutators.Tests
         public void TestConvertArrayWithStaticMethod()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray(data2.T.R.Each().U.V.X).Each().W.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -564,7 +605,7 @@ namespace Mutators.Tests
         public void TestConvertArrayWithInstanceMethod()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray2(data2.T.R.Each().U.V.X).Each().W.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -646,7 +687,7 @@ namespace Mutators.Tests
         public void TestConvertArrayCurrentIndex()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().CurrentIndex().ToString()));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -675,7 +716,7 @@ namespace Mutators.Tests
         public void TestConvertSimpleArray()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.Хрень.Each()).Set(data2 => data2.Чужь.Each()));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -693,7 +734,7 @@ namespace Mutators.Tests
         public void TestConvertSimpleArrayInArray()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Хрень.Each()).Set(data2 => data2.T.R.Each().Чужь.Each()));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -717,7 +758,7 @@ namespace Mutators.Tests
         public void TestConvertArrayNull()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -732,7 +773,7 @@ namespace Mutators.Tests
         public void TestConvertDestArrayIsCutToSource()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData
                 {
                     A = new A
@@ -778,7 +819,7 @@ namespace Mutators.Tests
         public void TestConvertDestArrayIsIncreasedToSource()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData
                 {
                     A = new A
@@ -826,7 +867,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B[0].S).Set(data2 => data2.T.R[0].U.S);
                     configurator.Target(data => data.A.B[1].S).Set(data2 => data2.T.R[1].U.S);
                 });
-            var converter = collection.GetMerger(MutatorsContext.Empty);
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
@@ -888,20 +929,27 @@ namespace Mutators.Tests
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => expressions.ForEach(item => SetMutators(configurator, item[0], item[1], item[2], item[3])));
             var o = new TestData {Qxx = new Qxx()};
             expressions.ForEach(item => SetValues(o, 3, 0, 1, 2, item[0], item[1], item[2], item[3]));
-            var mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             mutator(o);
-            for(var index = 0; index < expressions.Count; index++)
+            for(int index = 0; index < expressions.Count; index++)
             {
-                var item = expressions[index];
-                var a = item[0];
-                var b = item[1];
-                var c = item[2];
-                var d = item[3];
+                Expression<Func<TestData, int?>>[] item = expressions[index];
+                Expression<Func<TestData, int?>> a = item[0];
+                Expression<Func<TestData, int?>> b = item[1];
+                Expression<Func<TestData, int?>> c = item[2];
+                Expression<Func<TestData, int?>> d = item[3];
                 Assert.AreEqual(3, a.Compile()(o));
                 Assert.AreEqual(null, b.Compile()(o));
                 Assert.AreEqual(1, c.Compile()(o));
                 Assert.AreEqual(2, d.Compile()(o));
             }
+        }
+
+        protected override void SetUp()
+        {
+            base.SetUp();
+            pathFormatterCollection = new PathFormatterCollection();
+            random = new Random();
         }
 
         private static X[] FilterArray(X[] arr)
@@ -918,23 +966,23 @@ namespace Mutators.Tests
 
         private void SetValues(TestData o, int? aValue, int? bValue, int? cValue, int? dValue, Expression<Func<TestData, int?>> a, Expression<Func<TestData, int?>> b, Expression<Func<TestData, int?>> c, Expression<Func<TestData, int?>> d)
         {
-            var p = Expression.Parameter(typeof(TestData));
+            ParameterExpression p = Expression.Parameter(typeof(TestData));
             a = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(a);
             b = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(b);
             c = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(c);
             d = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(d);
-            var action = Expression.Lambda<Action<TestData>>(Expression.Block(new ParameterExpression[0],
-                                                                              Expression.Assign(a.Body, Expression.Constant(aValue, typeof(int?))),
-                                                                              Expression.Assign(b.Body, Expression.Constant(bValue, typeof(int?))),
-                                                                              Expression.Assign(c.Body, Expression.Constant(cValue, typeof(int?))),
-                                                                              Expression.Assign(d.Body, Expression.Constant(dValue, typeof(int?))),
-                                                                              Expression.Empty()), new[] {p}).Compile();
+            Action<TestData> action = Expression.Lambda<Action<TestData>>(Expression.Block(new ParameterExpression[0],
+                                                                                           Expression.Assign(a.Body, Expression.Constant(aValue, typeof(int?))),
+                                                                                           Expression.Assign(b.Body, Expression.Constant(bValue, typeof(int?))),
+                                                                                           Expression.Assign(c.Body, Expression.Constant(cValue, typeof(int?))),
+                                                                                           Expression.Assign(d.Body, Expression.Constant(dValue, typeof(int?))),
+                                                                                           Expression.Empty()), new[] {p}).Compile();
             action(o);
         }
 
         private void SetMutators(MutatorsConfigurator<TestData> configurator, Expression<Func<TestData, int?>> a, Expression<Func<TestData, int?>> b, Expression<Func<TestData, int?>> c, Expression<Func<TestData, int?>> d)
         {
-            var p = Expression.Parameter(typeof(TestData));
+            ParameterExpression p = Expression.Parameter(typeof(TestData));
             a = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(a);
             b = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(b);
             c = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(c);
@@ -966,11 +1014,12 @@ namespace Mutators.Tests
 
         private class TestMutatorsContext : MutatorsContext
         {
-            public string Key { get; set; }
             public override string GetKey()
             {
                 return Key;
             }
+
+            public string Key { get; set; }
         }
 
         private class TestData

@@ -68,13 +68,16 @@ namespace GrobExp.Mutators
         public static Expression<Func<TRoot, TValue>> Merge<TRoot, T1, T2, TValue>(this Expression<Func<T1, T2, TValue>> path, Expression<Func<TRoot, T1>> path1, Expression<Func<TRoot, T2>> path2)
         {
             return new ExpressionMerger(path1, path2).Merge<Func<TRoot, TValue>>(path);
-            //return LambdaExpressionCreator.Create<Func<TRoot, TValue>>(new ExpressionMerger(path1, path2).Merge(path).Body, path1.Parameters[0]);
         }
 
         public static Expression<Func<TRoot, TValue>> Merge<TRoot, T1, T2, T3, TValue>(this Expression<Func<T1, T2, T3, TValue>> path, Expression<Func<TRoot, T1>> path1, Expression<Func<TRoot, T2>> path2, Expression<Func<TRoot, T3>> path3)
         {
             return new ExpressionMerger(path1, path2, path3).Merge<Func<TRoot, TValue>>(path);
-            //return LambdaExpressionCreator.Create<Func<TRoot, TValue>>(new ExpressionMerger(path1, path2, path3).Merge(path).Body, path1.Parameters[0]);
+        }
+
+        public static Expression<Func<TRoot1, TRoot2, TValue>> MergeFrom2Roots<TRoot1, TRoot2, T1, T2, TValue>(this Expression<Func<T1, T2, TValue>> path, Expression<Func<TRoot1, T1>> path1, Expression<Func<TRoot2, T2>> path2)
+        {
+            return new ExpressionMerger(path1, path2).Merge<Func<TRoot1, TRoot2, TValue>>(path);
         }
 
         public static Expression<Func<TRoot, TValue>> ReplaceParameter<TRoot, TValue>(this Expression<Func<TRoot, TValue>> expression, ParameterExpression newParameter)

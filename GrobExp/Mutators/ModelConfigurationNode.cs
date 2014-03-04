@@ -282,10 +282,10 @@ namespace GrobExp.Mutators
                 return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create);
             case ExpressionType.ArrayLength:
                 {
-                    if(create)
-                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
+//                    if(create)
+//                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
                     var unaryExpression = (UnaryExpression)path;
-                    var result = Traverse(unaryExpression.Operand, subRoot, out child, false);
+                    var result = Traverse(unaryExpression.Operand, subRoot, out child, create);
                     return result || child == subRoot;
                 }
             default:

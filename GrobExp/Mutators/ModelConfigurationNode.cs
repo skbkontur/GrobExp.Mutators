@@ -826,6 +826,8 @@ namespace GrobExp.Mutators
 
             private static readonly PropertyInfo validationResultTreeNodeExhaustedProperty = (PropertyInfo)((MemberExpression)((Expression<Func<ValidationResultTreeNode, bool>>)(node => node.Exhausted)).Body).Member;
         }
+
+        public const int PriorityShift = 1000;
     }
 
     [DebuggerDisplay("{Value}")]

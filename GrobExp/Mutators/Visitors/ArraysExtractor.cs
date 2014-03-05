@@ -6,9 +6,8 @@ namespace GrobExp.Mutators.Visitors
 {
     public class ArraysExtractor
     {
-        public ArraysExtractor( /*int level,*/ List<Dictionary<Type, List<Expression>>> arrays)
+        public ArraysExtractor(List<Dictionary<Type, List<Expression>>> arrays)
         {
-//            this.level = level;
             this.arrays = arrays;
         }
 
@@ -18,7 +17,6 @@ namespace GrobExp.Mutators.Visitors
             new ArraysExtractorVisitor(arrays, false).GetArrays(value, out type);
         }
 
-        //      private readonly int level;
         private readonly List<Dictionary<Type, List<Expression>>> arrays;
     }
 
@@ -93,7 +91,7 @@ namespace GrobExp.Mutators.Visitors
             if(methodCallExpression == null)
                 return false;
             var method = methodCallExpression.Method;
-            return method.IsEachMethod() || method.IsCurrentMethod(); // || (method.DeclaringType == typeof(Enumerable) && (method.Name == "First" || method.Name == "FirstOrDefault" || method.Name == "Single" || method.Name == "SingleOrDefault"));
+            return method.IsEachMethod() || method.IsCurrentMethod();
         }
 
         private int maxLevel;

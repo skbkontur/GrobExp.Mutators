@@ -167,11 +167,36 @@ namespace GrobExp.Mutators
             ExtractValidationsFromConvertersInternal(validationsTree, performer);
         }
 
+        public void FindSubNodes(List<ModelConfigurationNode> result)
+        {
+            if(children.Count == 0 && mutators.Count > 0)
+                result.Add(this);
+            foreach(var child in Children)
+                child.FindSubNodes(result);
+        }
+
+        public ModelConfigurationNode FindKeyLeaf()
+        {
+            foreach(DictionaryEntry entry in children)
+            {
+                var edge = (ModelConfigurationEdge)entry.Key;
+                var child = (ModelConfigurationNode)entry.Value;
+                var property = edge.Value as PropertyInfo;
+                if(property != null && property.GetCustomAttributes(typeof(KeyLeafAttribute), false).Any() && child.children.Count == 0)
+                    return child;
+                var result = child.FindKeyLeaf();
+                if(result != null)
+                    return result;
+            }
+            return null;
+        }
+
         public Expression Path { get; private set; }
         public string PathText { get; private set; }
         public IEnumerable<ModelConfigurationNode> Children { get { return children.Values.Cast<ModelConfigurationNode>(); } }
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
+        public const int PriorityShift = 1000;
 
         private void GetMutators(Dictionary<ExpressionWrapper, List<MutatorConfiguration>> result)
         {
@@ -282,10 +307,10 @@ namespace GrobExp.Mutators
                 return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create);
             case ExpressionType.ArrayLength:
                 {
-                    if(create)
-                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
+//                    if(create)
+//                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
                     var unaryExpression = (UnaryExpression)path;
-                    var result = Traverse(unaryExpression.Operand, subRoot, out child, false);
+                    var result = Traverse(unaryExpression.Operand, subRoot, out child, create);
                     return result || child == subRoot;
                 }
             default:
@@ -466,30 +491,6 @@ namespace GrobExp.Mutators
                 }
             }
             return performer.GetConditionalSetters(path) != null;
-        }
-
-        public void FindSubNodes(List<ModelConfigurationNode> result)
-        {
-            if(children.Count == 0 && mutators.Count > 0)
-                result.Add(this);
-            foreach(var child in Children)
-                child.FindSubNodes(result);
-        }
-
-        public ModelConfigurationNode FindKeyLeaf()
-        {
-            foreach(DictionaryEntry entry in children)
-            {
-                var edge = (ModelConfigurationEdge)entry.Key;
-                var child = (ModelConfigurationNode)entry.Value;
-                var property = edge.Value as PropertyInfo;
-                if(property != null && property.GetCustomAttributes(typeof(KeyLeafAttribute), false).Any() && child.children.Count == 0)
-                    return child;
-                var result = child.FindKeyLeaf();
-                if(result != null)
-                    return result;
-            }
-            return null;
         }
 
         private static void Qxx(ModelConfigurationNode destTree, List<KeyValuePair<Expression, Expression>> conditionalSetters, MutatorConfiguration mutatedMutator, CompositionPerformer performer, Expression resolvedKey)
@@ -900,7 +901,13 @@ namespace GrobExp.Mutators
                     if(current != null)
                     {
                         var currentValidationResult = Expression.Variable(typeof(ValidationResult));
-                        Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, priority), cutChains});
+                        if(validator.Priority < 0)
+                            throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
+                        if(validator.Priority >= PriorityShift)
+                            throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
+                        var validatorPriority = Expression.Constant(validator.Priority);
+                        Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
+                        Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains});
                         Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                         Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                         Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);

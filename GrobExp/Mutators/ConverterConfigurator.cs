@@ -33,6 +33,11 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
         }
 
+        public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, TDest, bool?>> condition)
+        {
+            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+        }
+
         public LambdaExpression Condition { get; private set; }
         private readonly ModelConfigurationNode root;
     }
@@ -81,6 +86,11 @@ namespace GrobExp.Mutators
         public ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> If(Expression<Func<TSourceChild, bool?>> condition)
         {
             return new ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>(root, PathToSourceChild, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(PathToSourceChild.Merge(condition))));
+        }
+
+        public ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> If(Expression<Func<TSourceChild, TDestChild, bool?>> condition)
+        {
+            return new ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>(root, PathToSourceChild, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition.MergeFrom2Roots(PathToSourceChild, PathToChild))));
         }
 
         public Expression<Func<TSourceRoot, TSourceChild>> PathToSourceChild { get; private set; }

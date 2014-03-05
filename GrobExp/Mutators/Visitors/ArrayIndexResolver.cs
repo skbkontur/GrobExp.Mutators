@@ -199,7 +199,14 @@ namespace GrobExp.Mutators.Visitors
                     }
                     break;
                 case ExpressionType.ArrayIndex:
-                    current = Expression.ArrayIndex(current, ((BinaryExpression)shard).Right);
+                    {
+                        var itemType = current.Type.GetItemType();
+                        if(!current.Type.IsArray)
+                            current = Expression.Call(toArrayMethod.MakeGenericMethod(itemType), current);
+                        current = Expression.ArrayIndex(current, ((BinaryExpression)shard).Right);
+                        if(itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(IndexedValue<>))
+                            current = Expression.MakeMemberAccess(current, itemType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance));
+                    }
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)shard;
@@ -364,6 +371,7 @@ namespace GrobExp.Mutators.Visitors
         private static readonly MethodInfo selectWithIndexMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>>>)(arr => arr.Select((i, index) => index))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo concatIntsMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>, IEnumerable<int>>>)((ints1, ints2) => ints1.Concat(ints2))).Body).Method;
         private static readonly MethodInfo listIntsAddRangeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(list => list.AddRange(new int[0]))).Body).Method;
+        private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, int[]>>)(enumerable => enumerable.ToArray())).Body).Method.GetGenericMethodDefinition();
 
         private class TypesWithNamesArray
         {

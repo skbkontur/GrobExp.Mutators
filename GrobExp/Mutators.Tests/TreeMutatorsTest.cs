@@ -405,6 +405,22 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestConvertZzz()
+        {
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                {
+                    var subConfigurator = configurator.GoTo(x => x.A.B.Each(), x => GroupZzz(x.T.R.Where(r => r.U.S == "zzz").Select(r => r.U.V.X).FirstOrDefault()).Current());
+                    subConfigurator.Target(b => b.X).Set(xs => xs.Sum(x => x.W.Z ?? 0));
+                });
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
+        }
+
+        private X[][] GroupZzz(IEnumerable<X> enumerable)
+        {
+            return enumerable.GroupBy(x => x.S).Select(xs => xs.ToArray()).ToArray();
+        }
+
+        [Test]
         public void TestConvertIf1()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.If((data2, data) => data2.X + data.Y == 2).Target(data => data.S).Set(data2 => data2.T.S));

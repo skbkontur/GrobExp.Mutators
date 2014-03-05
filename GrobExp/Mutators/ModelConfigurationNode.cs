@@ -802,7 +802,13 @@ namespace GrobExp.Mutators
                     if(current != null)
                     {
                         var currentValidationResult = Expression.Variable(typeof(ValidationResult));
-                        Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, priority), cutChains});
+                        if (validator.Priority < 0)
+                            throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
+                        if (validator.Priority >= PriorityShift)
+                            throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
+                        var validatorPriority = Expression.Constant(validator.Priority);
+                        Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
+                        Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] { Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains });
                         Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                         Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                         Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);

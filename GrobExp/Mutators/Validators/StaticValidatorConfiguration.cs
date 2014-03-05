@@ -9,8 +9,8 @@ namespace GrobExp.Mutators.Validators
 {
     public class StaticValidatorConfiguration : ValidatorConfiguration
     {
-        protected StaticValidatorConfiguration(Type type, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
-            : base(type)
+        protected StaticValidatorConfiguration(Type type, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
+            : base(type, priority)
         {
             Condition = condition;
             Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
@@ -19,24 +19,24 @@ namespace GrobExp.Mutators.Validators
             validatorFromRoot = path.Merge(validator);
         }
 
-        public static StaticValidatorConfiguration Create<TData, TValue>(Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TValue, ValidationResult>> validator)
+        public static StaticValidatorConfiguration Create<TData, TValue>(int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TValue, ValidationResult>> validator)
         {
-            return new StaticValidatorConfiguration(typeof(TData), Prepare(condition), Prepare(path), validator);
+            return new StaticValidatorConfiguration(typeof(TData), priority, Prepare(condition), Prepare(path), validator);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
-            return new StaticValidatorConfiguration(path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Path), validator);
+            return new StaticValidatorConfiguration(path.Parameters.Single().Type, Priority, path.Merge(Condition), path.Merge(Path), validator);
         }
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new StaticValidatorConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Path), validator);
+            return new StaticValidatorConfiguration(to, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Path), validator);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new StaticValidatorConfiguration(Type, Prepare(condition).AndAlso(Condition), Path, validator);
+            return new StaticValidatorConfiguration(Type, Priority, Prepare(condition).AndAlso(Condition), Path, validator);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

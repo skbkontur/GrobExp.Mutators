@@ -309,9 +309,14 @@ namespace GrobExp.Mutators.Visitors
             throw new NotImplementedException();
         }
 
+        private static bool MembersEqual(MemberInfo first, MemberInfo second)
+        {
+            return first.Module == second.Module && first.MetadataToken == second.MetadataToken;
+        }
+
         private static bool EquivalentMemberAccess(MemberExpression first, MemberExpression second, Context context)
         {
-            return first.Member == second.Member && Equivalent(first.Expression, second.Expression, context);
+            return MembersEqual(first.Member, second.Member) && Equivalent(first.Expression, second.Expression, context);
         }
 
         private static bool EquivalentMemberInit(MemberInitExpression first, MemberInitExpression second, Context context)
@@ -325,7 +330,7 @@ namespace GrobExp.Mutators.Visitors
                 var firstAssignment = (MemberAssignment)first.Bindings[i];
                 var secondAssignment = (MemberAssignment)second.Bindings[i];
                 if(firstAssignment.BindingType != secondAssignment.BindingType
-                   || firstAssignment.Member != secondAssignment.Member
+                   || !MembersEqual(firstAssignment.Member, secondAssignment.Member)
                    || !Equivalent(firstAssignment.Expression, secondAssignment.Expression, context))
                     return false;
             }

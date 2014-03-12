@@ -43,7 +43,7 @@ namespace GrobExp.Mutators
 
         public void Migrate(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
         {
-            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType), false);
+            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType));
         }
 
         public LambdaExpression BuildTreeValidator(IPathFormatter pathFormatter)
@@ -363,9 +363,9 @@ namespace GrobExp.Mutators
                 child.ExtractValidationsFromConvertersInternal(validationsTree, performer);
         }
 
-        private void MigrateTree(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path, bool mapsSomewhereAbove)
+        private void MigrateTree(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path)
         {
-            mapsSomewhereAbove |= MigrateNode(to, destTree, convertationRoot, path);
+            MigrateNode(to, destTree, convertationRoot, path);
             foreach(DictionaryEntry entry in children)
             {
                 var edge = (ModelConfigurationEdge)entry.Key;
@@ -375,18 +375,16 @@ namespace GrobExp.Mutators
                 {
                     if(convertationChild == null)
                         convertationChild = convertationNode == null ? null : (ModelConfigurationNode)convertationNode.children[ModelConfigurationEdge.Each];
-                    if(mapsSomewhereAbove || convertationChild != null)
-                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)), mapsSomewhereAbove);
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)));
                 }
                 else if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
                 {
-                    if(mapsSomewhereAbove || convertationChild != null)
-                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.MakeMemberAccess(path, (MemberInfo)edge.Value), mapsSomewhereAbove);
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.MakeMemberAccess(path, (MemberInfo)edge.Value));
                 }
                 else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
                 {
-                    if(mapsSomewhereAbove || convertationChild != null)
-                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {path}), mapsSomewhereAbove);
+                    if(convertationChild != null)
+                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {path}));
                     else if(convertationNode != null)
                     {
                         foreach(DictionaryEntry dictionaryEntry in convertationNode.children)
@@ -394,7 +392,7 @@ namespace GrobExp.Mutators
                             var configurationEdge = (ModelConfigurationEdge)dictionaryEntry.Key;
                             if(!(configurationEdge.Value is int)) continue;
                             var index = (int)configurationEdge.Value;
-                            child.MigrateTree(to, destTree, convertationRoot, (ModelConfigurationNode)dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)), false);
+                            child.MigrateTree(to, destTree, convertationRoot, (ModelConfigurationNode)dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)));
                         }
                     }
                 }
@@ -403,7 +401,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private bool MigrateNode(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, Expression path)
+        private void MigrateNode(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, Expression path)
         {
             var performer = new CompositionPerformer(RootType, to, convertationRoot, null);
             var parameters = new List<PathPrefix> {new PathPrefix(path, path.ExtractParameters().Single())};
@@ -490,7 +488,6 @@ namespace GrobExp.Mutators
                     destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator));
                 }
             }
-            return performer.GetConditionalSetters(path) != null;
         }
 
         private static void Qxx(ModelConfigurationNode destTree, List<KeyValuePair<Expression, Expression>> conditionalSetters, MutatorConfiguration mutatedMutator, CompositionPerformer performer, Expression resolvedKey)

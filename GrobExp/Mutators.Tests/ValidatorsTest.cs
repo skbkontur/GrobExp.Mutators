@@ -4,6 +4,7 @@ using System.Linq;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.Validators.Texts;
 
 using NUnit.Framework;
 
@@ -205,6 +206,19 @@ namespace Mutators.Tests
             validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "123", new SimplePathFormatterText {Paths = new[] {"S"}}, 2)}});
             validator(new TestData {S = "z23"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "z23", new SimplePathFormatterText {Paths = new[] {"S"}}, 1)}});
             validator(new TestData {S = "zz3"}).AssertEquivalent(new ValidationResultTreeNode());
+        }
+
+        [Test]
+        public void TestRegex1()
+        {
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).IsLike("\\d+"));
+            var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
+            validator(new TestData()).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData{S = ""}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode());
+            ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "x123"});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
+            validator(new TestData{S = "123x"}).AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
         }
 
         [Test]

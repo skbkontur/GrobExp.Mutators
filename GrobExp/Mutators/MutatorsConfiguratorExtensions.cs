@@ -96,6 +96,49 @@ namespace GrobExp.Mutators
             return configurator.RequiredIf(condition, child => new ValueRequiredText {Title = configurator.Title}, priority, type);
         }
 
+        public static MutatorsConfigurator<TRoot, TChild, string> IsLike<TRoot, TChild>(
+            this MutatorsConfigurator<TRoot, TChild, string> configurator,
+            string pattern,
+            Expression<Func<TChild, MultiLanguageTextBase>> message,
+            int priority = 0,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            var pathToValue = (Expression<Func<TRoot, string>>)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(configurator.PathToValue);
+            configurator.SetMutator(RegexValidatorConfiguration.Create(priority, pathToValue, null, configurator.PathToChild.Merge(message), pattern, type));
+            return configurator;
+        }
+
+        public static MutatorsConfigurator<TRoot, TChild, string> IsLike<TRoot, TChild>(
+            this MutatorsConfigurator<TRoot, TChild, string> configurator,
+            string pattern,
+            Expression<Func<TChild, string, MultiLanguageTextBase>> message,
+            int priority = 0,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            var pathToValue = (Expression<Func<TRoot, string>>)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(configurator.PathToValue);
+            configurator.SetMutator(RegexValidatorConfiguration.Create(priority, pathToValue, null, message.Merge(configurator.PathToChild, pathToValue), pattern, type));
+            return configurator;
+        }
+
+        public static MutatorsConfigurator<TRoot, TChild, string> IsLike<TRoot, TChild>(
+            this MutatorsConfigurator<TRoot, TChild, string> configurator,
+            string pattern,
+            StaticMultiLanguageTextBase title,
+            int priority = 0,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            return configurator.IsLike(pattern, child => new ValueShouldMatchPatternText {Title = title, Pattern = pattern}, priority, type);
+        }
+
+        public static MutatorsConfigurator<TRoot, TChild, string> IsLike<TRoot, TChild>(
+            this MutatorsConfigurator<TRoot, TChild, string> configurator,
+            string pattern,
+            int priority = 0,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            return configurator.IsLike(pattern, child => new ValueShouldMatchPatternText {Title = configurator.Title, Pattern = pattern}, priority, type);
+        }
+
         public static void FilledExactlyOneOf<TRoot, TChild>(
             this MutatorsConfigurator<TRoot, TChild, TChild> configurator,
             Expression<Func<TChild, object[]>> targets,

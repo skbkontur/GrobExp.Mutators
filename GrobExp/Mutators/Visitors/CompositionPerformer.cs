@@ -223,17 +223,24 @@ namespace GrobExp.Mutators.Visitors
             return exp;
         }
 
+        private static Expression ConvertToNullable(Expression expression, Type type)
+        {
+            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return Expression.Convert(expression, type);
+            return expression;
+        }
+
         private Expression ResolveChain(Expression node)
         {
             var conditionalSetters = GetConditionalSetters(node);
             if(conditionalSetters == null)
                 return Expression.Constant(node.Type.GetDefaultValue(), node.Type);
             var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
-            Expression result = unconditionalSetter.Key ?? Expression.Constant(node.Type.GetDefaultValue(), node.Type);
+            Expression result = ConvertToNullable(unconditionalSetter.Key ?? Expression.Constant(node.Type.GetDefaultValue(), node.Type), node.Type);
             foreach(var item in conditionalSetters)
             {
                 var condition = item.Value;
-                var value = item.Key;
+                var value = ConvertToNullable(item.Key, node.Type);
                 if(condition == null)
                     continue;
                 var test = Convert(condition, typeof(bool));

@@ -505,14 +505,21 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayWithFilter()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S != null).Each().U.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                {
+                    //configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S != null).Each().U.S)
+                    var subConfigurator = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Where(r => r.S != null).Each().U);
+                    subConfigurator.Target(b => b.S).Set(u => u.S);
+                    var subConfigurator2 = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Each().U);
+                    subConfigurator2.Target(b => b.S).Set(u => u.S);
+                });
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
                 {
                     T = new T
                         {
-                            R = new[]
+                            Rz = new[]
                                 {
                                     new R {S = "qxx", U = new U {S = "zzz1"}},
                                     new R {U = new U {S = "zzz2"}},
@@ -1108,6 +1115,7 @@ namespace Mutators.Tests
         private class T
         {
             public R[] R { get; set; }
+            public IEnumerable<R> Rz { get; set; }
             public int? Z { get; set; }
             public string S;
         }

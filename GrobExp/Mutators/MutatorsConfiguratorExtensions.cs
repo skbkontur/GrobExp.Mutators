@@ -515,6 +515,12 @@ namespace GrobExp.Mutators
             return configurator;
         }
 
+        public static MutatorsConfigurator<TRoot, TChild, TValue[]> SetArrayLength<TRoot, TChild, TValue>(this MutatorsConfigurator<TRoot, TChild, TValue[]> configurator, Expression<Func<TChild, int>> length)
+        {
+            configurator.SetMutator(SetArrayLengthConfiguration.Create(null, configurator.PathToChild.Merge(length)));
+            return configurator;
+        }
+
         private static bool IsNullable(Type type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);

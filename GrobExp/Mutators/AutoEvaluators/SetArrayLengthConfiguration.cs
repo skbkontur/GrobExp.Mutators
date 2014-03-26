@@ -1,0 +1,82 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+
+using GrobExp.Mutators.Visitors;
+
+namespace GrobExp.Mutators.AutoEvaluators
+{
+    public class SetArrayLengthConfiguration : AutoEvaluatorConfiguration
+    {
+        public SetArrayLengthConfiguration(Type type, LambdaExpression condition, LambdaExpression length)
+            : base(type)
+        {
+            Condition = condition;
+            Length = length;
+        }
+
+        public override void GetArrays(ArraysExtractor arraysExtractor)
+        {
+            arraysExtractor.GetArrays(Condition);
+            arraysExtractor.GetArrays(Length);
+        }
+
+        public static SetArrayLengthConfiguration Create(Type type, LambdaExpression condition, LambdaExpression length)
+        {
+            return new SetArrayLengthConfiguration(type, Prepare(condition), Prepare(length));
+        }
+
+        public static SetArrayLengthConfiguration Create<TData>(Expression<Func<TData, bool?>> condition, Expression<Func<TData, int>> length)
+        {
+            return new SetArrayLengthConfiguration(typeof(TData), Prepare(condition), Prepare(length));
+        }
+
+        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        {
+            // ReSharper disable ConvertClosureToMethodGroup
+            return new SetArrayLengthConfiguration(path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Length));
+            // ReSharper restore ConvertClosureToMethodGroup
+        }
+
+        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        {
+            return new SetArrayLengthConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Length));
+        }
+
+        public override MutatorConfiguration If(LambdaExpression condition)
+        {
+            return new SetArrayLengthConfiguration(Type, Prepare(condition).AndAlso(Condition), Length);
+        }
+
+        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            var resize = Expression.Call(arrayResizeMethod, PrepareForAssign(path), Length.Body.ResolveAliases(aliases));
+            if(Condition == null)
+                return resize;
+            var condition = Condition.Body;
+            condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
+            return Expression.IfThen(condition, resize);
+        }
+
+        public LambdaExpression Condition { get; private set; }
+        public LambdaExpression Length { get; set; }
+
+        protected override LambdaExpression[] GetDependencies()
+        {
+            return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
+                .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
+        }
+
+        protected override Expression GetLCP()
+        {
+            return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false)).Concat(Length == null ? new Expression[0] : Length.Body.CutToChains(false, false)).FindLCP();
+        }
+
+        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 1))).Body).Method;
+    }
+}

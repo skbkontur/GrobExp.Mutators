@@ -52,12 +52,14 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            var resize = Expression.Call(arrayResizeMethod, PrepareForAssign(path), Length.Body.ResolveAliases(aliases));
+            var temp = Expression.Variable(path.Type);
+            var resize = Expression.Call(arrayResizeMethod, temp, Length.Body.ResolveAliases(aliases));
+            var block = Expression.Block(new[] {temp}, Expression.Assign(temp, path), resize, Expression.Assign(PrepareForAssign(path), temp));
             if(Condition == null)
-                return resize;
+                return block;
             var condition = Condition.Body;
             condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
-            return Expression.IfThen(condition, resize);
+            return Expression.IfThen(condition, block);
         }
 
         public LambdaExpression Condition { get; private set; }

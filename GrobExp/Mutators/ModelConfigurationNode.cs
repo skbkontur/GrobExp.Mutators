@@ -378,9 +378,7 @@ namespace GrobExp.Mutators
                     child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)));
                 }
                 else if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
-                {
                     child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.MakeMemberAccess(path, (MemberInfo)edge.Value));
-                }
                 else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
                 {
                     if(convertationChild != null)
@@ -696,8 +694,20 @@ namespace GrobExp.Mutators
             else
             {
                 BuildNodeMutator(root, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
-                foreach(DictionaryEntry entry in children)
-                    BuildTreeMutator((ModelConfigurationEdge)entry.Key, edges, root, fullPath, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
+                if(children[ModelConfigurationEdge.Each] == null)
+                {
+                    foreach(DictionaryEntry entry in children)
+                        BuildTreeMutator((ModelConfigurationEdge)entry.Key, edges, root, fullPath, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
+                }
+                else
+                {
+                    foreach(DictionaryEntry entry in children)
+                    {
+                        if(!entry.Key.Equals(ModelConfigurationEdge.Each))
+                            BuildTreeMutator((ModelConfigurationEdge)entry.Key, edges, root, fullPath, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
+                    }
+                    BuildTreeMutator(ModelConfigurationEdge.Each, edges, root, fullPath, path, aliases, localResult, visitedNodes, processedNodes, globalResult);
+                }
             }
         }
 

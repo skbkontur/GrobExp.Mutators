@@ -503,6 +503,28 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestConvertArrayCycleRightPartMissing()
+        {
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.A.B[0].S).Set(data2 => data2.S);
+                    configurator.Target(data => data.A.B[1].S).Set(data2 => data2.T.S);
+                    configurator.GoTo(data => data.A.B.Each()).If((x, b) => b.S == "zzz").Target(b => b.S).Set(data2 => "qxx");
+                });
+            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
+            var to = new TestData();
+            var from = new TestData2 { T = new T { S = "qzz" }, S = "zzz" };
+            converter(from, to);
+            var expected = new TestData { A = new A { B = new[] { new B {S = "qxx"}, new B {S = "qzz"}, } } };
+            to.AssertEqualsToUsingGrobuf(expected);
+            to = new TestData();
+            from = new TestData2 { T = new T { S = "zzz" }, S = "qzz" };
+            converter(from, to);
+            expected = new TestData { A = new A { B = new[] { new B {S = "qzz"}, new B {S = "qxx"}, } } };
+            to.AssertEqualsToUsingGrobuf(expected);
+        }
+
+        [Test]
         public void TestConvertArrayWithFilter()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>

@@ -65,7 +65,7 @@ namespace GrobExp.Mutators.Validators
                 var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
                 if(parameterFromCondition != null)
                     condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
-                condition = Expression.AndAlso(Expression.Equal(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Constant(true, typeof(bool?))), condition);
+                condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
             }
             return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }

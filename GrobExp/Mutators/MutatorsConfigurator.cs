@@ -41,6 +41,11 @@ namespace GrobExp.Mutators
             return new MutatorsConfigurator<TRoot, TChild, TChild>(root, pathToChild, pathToChild, Condition, null);
         }
 
+        public MutatorsConfigurator<TRoot> If(LambdaExpression condition)
+        {
+            return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+        }
+
         public MutatorsConfigurator<TRoot> If(Expression<Func<TRoot, bool?>> condition)
         {
             return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));

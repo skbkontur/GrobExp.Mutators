@@ -62,10 +62,10 @@ namespace GrobExp.Mutators
             throw new InvalidOperationException();
         }
 
-        public static void ForEach<T>(T[] arr, Func<T, int, T> func)
+        public static void ForEach<T>(IList<T> arr, Func<T, int, T> func)
         {
             if(arr == null) return;
-            for(int index = 0; index < arr.Length; ++index)
+            for(int index = 0; index < arr.Count; ++index)
                 arr[index] = func(arr[index], index);
         }
 

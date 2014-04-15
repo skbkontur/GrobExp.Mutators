@@ -28,6 +28,11 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSource, TSourceChild, TDest, TDestChild, TDestChild>(root, pathToSourceChild, pathToDestChild, pathToDestChild, Condition);
         }
 
+        public ConverterConfigurator<TSource, TDest> If(LambdaExpression condition)
+        {
+            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+        }
+
         public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, bool?>> condition)
         {
             return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));

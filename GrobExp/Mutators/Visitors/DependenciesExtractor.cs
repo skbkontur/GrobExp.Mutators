@@ -124,7 +124,14 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitInvocation(InvocationExpression node)
         {
-            throw new NotSupportedException();
+            var primaryDependencies = new List<Expression>();
+            foreach (var argument in node.Arguments)
+            {
+                var arg = Visit(argument);
+                if (arg != null)
+                    primaryDependencies.AddRange(((NewArrayExpression)arg).Expressions);
+            }
+            return Expression.NewArrayInit(typeof(object), primaryDependencies);
         }
 
         protected override LabelTarget VisitLabelTarget(LabelTarget node)

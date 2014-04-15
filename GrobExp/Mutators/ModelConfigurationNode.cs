@@ -129,7 +129,7 @@ namespace GrobExp.Mutators
 
         public ModelConfigurationNode GotoEachArrayElement(bool create)
         {
-            return GetChild(ModelConfigurationEdge.Each, NodeType.GetElementType(), create);
+            return GetChild(ModelConfigurationEdge.Each, NodeType.GetItemType(), create);
         }
 
         public Expression GetAlienArray()
@@ -342,7 +342,7 @@ namespace GrobExp.Mutators
 
         private ModelConfigurationNode GotoArrayElement(int index, bool create)
         {
-            return GetChild(new ModelConfigurationEdge(index), NodeType.GetElementType(), create);
+            return GetChild(new ModelConfigurationEdge(index), NodeType.GetItemType(), create);
         }
 
         private void ExtractValidationsFromConvertersInternal(ModelConfigurationNode validationsTree, CompositionPerformer performer)
@@ -664,19 +664,33 @@ namespace GrobExp.Mutators
                     {
                         Expression assign = Expression.Assign(arrayParameter, Expression.Call(toArrayMethod.MakeGenericMethod(itemType), new[] {array}));
                         Expression destArrayIsNull = Expression.ReferenceEqual(path, Expression.Constant(null, path.Type));
-                        Expression lengthsAreDifferent = Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter));
-                        var temp = Expression.Parameter(path.Type);
-                        Expression resizeIfNeeded = Expression.IfThen(
-                            lengthsAreDifferent,
-                            Expression.IfThenElse(destArrayIsNull,
-                                                  Expression.Assign(path, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
-                                                  Expression.Block(new[] {temp}, new Expression[]
-                                                      {
-                                                          Expression.Assign(temp, path),
-                                                          Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)),
-                                                          Expression.Assign(path, temp)
-                                                      })
-                                ));
+                        Expression resizeIfNeeded;
+                        if(path.Type.IsArray)
+                        {
+                            Expression lengthsAreDifferent = Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter));
+                            var temp = Expression.Parameter(path.Type);
+                            resizeIfNeeded = Expression.IfThen(
+                                lengthsAreDifferent,
+                                Expression.IfThenElse(destArrayIsNull,
+                                                      Expression.Assign(path, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
+                                                      Expression.Block(new[] {temp}, new Expression[]
+                                                          {
+                                                              Expression.Assign(temp, path),
+                                                              Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)),
+                                                              Expression.Assign(path, temp)
+                                                          })
+                                    ));
+                        }
+                        else if(path.Type.IsGenericType && path.Type.GetGenericTypeDefinition() == typeof(List<>))
+                        {
+                            Expression lengthsAreDifferent = Expression.NotEqual(Expression.Property(path, "Count"), Expression.ArrayLength(arrayParameter));
+                            var expressions = new List<Expression>();
+                            if(path.NodeType == ExpressionType.MemberAccess && CanWrite(((MemberExpression)path).Member))
+                                expressions.Add(Expression.IfThen(destArrayIsNull, Expression.Assign(path, Expression.New(path.Type.GetConstructor(new[] {typeof(int)}), Expression.ArrayLength(arrayParameter)))));
+                            expressions.Add(Expression.Call(listResizeMethod.MakeGenericMethod(child.NodeType), path, Expression.ArrayLength(arrayParameter)));
+                            resizeIfNeeded = Expression.IfThen(lengthsAreDifferent, Expression.Block(expressions));
+                        }
+                        else throw new NotSupportedException("Enumeration over '" + path.Type + "' is not supported");
                         current = Expression.Block(new[] {arrayParameter}, new[] {assign, resizeIfNeeded, forEach});
                     }
                     localResult.Add(current);
@@ -684,6 +698,11 @@ namespace GrobExp.Mutators
             }
             else
                 throw new InvalidOperationException();
+        }
+
+        private static bool CanWrite(MemberInfo member)
+        {
+            return member.MemberType == MemberTypes.Field || (member.MemberType == MemberTypes.Property && ((PropertyInfo)member).CanWrite);
         }
 
         private void BuildTreeMutator(Stack<ModelConfigurationEdge> edges, ModelConfigurationNode root, Expression fullPath, Expression path, List<KeyValuePair<Expression, Expression>> aliases, List<Expression> localResult,
@@ -773,6 +792,21 @@ namespace GrobExp.Mutators
             return child;
         }
 
+        private static void Resize<T>(List<T> list, int size)
+        {
+            // todo emit
+            if(list.Count > size)
+            {
+                while(list.Count > size)
+                    list.RemoveAt(list.Count - 1);
+            }
+            else
+            {
+                while(list.Count < size)
+                    list.Add(default(T));
+            }
+        }
+
         private ModelConfigurationNode Root { get; set; }
         private ModelConfigurationNode Parent { get; set; }
         private ModelConfigurationEdge Edge { get; set; }
@@ -782,6 +816,7 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo forEachReadonlyMethod = ((MethodCallExpression)((Expression<Action<IEnumerable<int>>>)(enumerable => MutatorsHelperFunctions.ForEach(enumerable, null))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<int[], int[]>>)(ints => ints.ToArray())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 5))).Body).Method.GetGenericMethodDefinition();
+        private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(list => Resize(list, 5))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo treeAddValidationResultMethod = ((MethodCallExpression)((Expression<Action<ValidationResultTreeNode>>)(tree => tree.AddValidationResult(null, null))).Body).Method;
         private static readonly MethodInfo listAddValidationResultMethod = ((MethodCallExpression)((Expression<Action<List<ValidationResult>>>)(list => list.Add(null))).Body).Method;
         private static readonly ConstructorInfo listValidationResultConstructor = ((NewExpression)((Expression<Func<List<ValidationResult>>>)(() => new List<ValidationResult>())).Body).Constructor;

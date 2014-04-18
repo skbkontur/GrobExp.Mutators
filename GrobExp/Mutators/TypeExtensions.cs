@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace GrobExp.Mutators
 {
@@ -39,11 +38,6 @@ namespace GrobExp.Mutators
                     return t.GetGenericArguments().Single();
             }
             throw new ArgumentException("Unable to extract item type of '" + type + "'");
-        }
-
-        public static bool IsExtension(this MethodInfo method)
-        {
-            return method.GetCustomAttributes(typeof(ExtensionAttribute), false).Any();
         }
 
         public static bool IsAnonymousType(this Type type)

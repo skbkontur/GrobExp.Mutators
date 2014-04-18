@@ -85,6 +85,22 @@ namespace GrobExp.Mutators
                         GetText(methodCallExpression.Arguments[0], current, ref result);
                         break;
                     }
+                    if(methodCallExpression.Method.IsIndexerGetter())
+                    {
+                        GetText(methodCallExpression.Object, current, ref result);
+                        current.Append("[");
+                        for (int i = 0; i < methodCallExpression.Arguments.Count; ++i)
+                        {
+                            if(i > 0)
+                                current.Append(", ");
+                            current.Append(((ConstantExpression)methodCallExpression.Arguments[i]).Value);
+                        }
+                        current.Append("]");
+                        Expression cur = Expression.Constant(current.ToString());
+                        result = result == null ? cur : Expression.Add(result, cur, stringConcatMethod);
+                        current.Clear();
+                        break;
+                    }
                     throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
                 }
             default:

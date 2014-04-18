@@ -297,11 +297,21 @@ namespace GrobExp.Mutators
             case ExpressionType.Call:
                 {
                     var methodCallExpression = (MethodCallExpression)path;
-                    if(!(methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod()))
-                        throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
-                    var result = Traverse(methodCallExpression.Arguments[0], subRoot, out child, create);
-                    child = child == null ? null : child.GotoEachArrayElement(create);
-                    return result || child == subRoot;
+                    var method = methodCallExpression.Method;
+                    if(method.IsEachMethod() || method.IsCurrentMethod())
+                    {
+                        var result = Traverse(methodCallExpression.Arguments[0], subRoot, out child, create);
+                        child = child == null ? null : child.GotoEachArrayElement(create);
+                        return result || child == subRoot;
+                    }
+                    if(method.IsIndexerGetter())
+                    {
+                        var parameters = methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray();
+                        var result = Traverse(methodCallExpression.Object, subRoot, out child, create);
+                        child = child == null ? null : child.GotoIndexer(parameters, create);
+                        return result || child == subRoot;
+                    }
+                    throw new NotSupportedException("Method " + method + " is not supported");
                 }
             case ExpressionType.Convert:
                 return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create);
@@ -338,6 +348,17 @@ namespace GrobExp.Mutators
             default:
                 throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
             }
+        }
+
+        private ModelConfigurationNode GotoIndexer(object[] parameters, bool create)
+        {
+            var edge = new ModelConfigurationEdge(parameters);
+            var property = NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            if(property == null)
+                throw new InvalidOperationException("Type '" + NodeType + "' doesn't contain indexer");
+            if(!property.CanRead || !property.CanWrite)
+                throw new InvalidOperationException("Type '" + NodeType + "' has indexer that doesn't contain either getter or setter");
+            return GetChild(edge, property.GetGetMethod().ReturnType, create);
         }
 
         private ModelConfigurationNode GotoArrayElement(int index, bool create)
@@ -782,8 +803,13 @@ namespace GrobExp.Mutators
                             path = Expression.MakeMemberAccess(Path, (MemberInfo)edge.Value);
                         else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
                             path = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(childType), new[] {Path});
-                        else
-                            throw new InvalidOperationException();
+                        else if(edge.Value is object[])
+                        {
+                            var method = NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+                            var parameters = method.GetParameters();
+                            path = Expression.Call(Path, method, (edge.Value as object[]).Select((o, i) => Expression.Constant(o, parameters[i].ParameterType)));
+                        }
+                        else throw new InvalidOperationException();
                         child = new ModelConfigurationNode(RootType, childType, Root, this, edge, path);
                         children[edge] = child;
                     }
@@ -979,9 +1005,7 @@ namespace GrobExp.Mutators
 
         public override int GetHashCode()
         {
-            if(Value is int)
-                return (int)Value;
-            return ((MemberInfo)Value).MetadataToken;
+            return GetHashCode(Value);
         }
 
         public override bool Equals(object obj)
@@ -993,14 +1017,57 @@ namespace GrobExp.Mutators
             var other = obj as ModelConfigurationEdge;
             if(ReferenceEquals(other, null))
                 return false;
-            if(Value is int || other.Value is int)
-                return Value is int && other.Value is int && (int)Value == (int)other.Value;
-            if(((MemberInfo)Value).Module != ((MemberInfo)(other.Value)).Module)
-                return false;
-            return ((MemberInfo)Value).MetadataToken == ((MemberInfo)other.Value).MetadataToken;
+            return Compare(Value, other.Value);
         }
 
         public object Value { get; private set; }
         public static readonly ModelConfigurationEdge Each = new ModelConfigurationEdge(MutatorsHelperFunctions.EachMethod);
+
+        private static int GetHashCode(object value)
+        {
+            var arr = value as object[];
+            if(arr == null)
+            {
+                if(value is int)
+                    return (int)value;
+                if(value is string)
+                    return value.GetHashCode();
+                var memberInfo = (MemberInfo)value;
+                unchecked
+                {
+                    return memberInfo.Module.MetadataToken * 397 + memberInfo.MetadataToken;
+                }
+            }
+            var result = 0;
+            foreach(var item in arr)
+            {
+                unchecked
+                {
+                    result = result * 397 + GetHashCode(item);
+                }
+            }
+            return result;
+        }
+
+        private static bool Compare(object left, object right)
+        {
+            var leftAsArray = left as object[];
+            var rightAsArray = right as object[];
+            if(leftAsArray != null || rightAsArray != null)
+            {
+                if(leftAsArray == null || rightAsArray == null)
+                    return false;
+                if(leftAsArray.Length != rightAsArray.Length)
+                    return false;
+                return !leftAsArray.Where((t, i) => !Compare(t, rightAsArray[i])).Any();
+            }
+            if(left is int || right is int)
+                return left is int && right is int && (int)left == (int)right;
+            if(left is string || right is string)
+                return left is string && right is string && (string)left == (string)right;
+            if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
+                return false;
+            return ((MemberInfo)left).MetadataToken == ((MemberInfo)right).MetadataToken;
+        }
     }
 }

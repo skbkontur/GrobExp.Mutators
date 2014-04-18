@@ -1,5 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+
+using GrEmit;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
@@ -219,6 +224,15 @@ namespace Mutators.Tests
             ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "x123"});
             validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
             validator(new TestData{S = "123x"}).AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
+        }
+
+        [Test]
+        public void TestIndexer()
+        {
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.Dict["Zzz"]).Required());
+            var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode { { "Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText { Paths = new[] { "Dict[Zzz]" } }) } });
+            validator(new TestData { Dict = new Dictionary<string, string> { { "Zzz", "qxx" } } }).AssertEquivalent(new ValidationResultTreeNode());
         }
 
         [Test]
@@ -627,6 +641,7 @@ namespace Mutators.Tests
             validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC {S = "zzz"}}}}}}}).AssertEquivalent(new ValidationResultTreeNode());
         }
 
+        [MultiLanguageTextType("ValueMustBeLessThanText")]
         public class ValueMustBeLessThanText : MultiLanguageTextBase
         {
             public object Threshold { get; set; }
@@ -638,6 +653,7 @@ namespace Mutators.Tests
             }
         }
 
+        [MultiLanguageTextType("ValueMustBeGreaterThanText")]
         public class ValueMustBeGreaterThanText : MultiLanguageTextBase
         {
             public object Threshold { get; set; }
@@ -714,6 +730,8 @@ namespace Mutators.Tests
             public int Y { get; set; }
             public int? Z { get; set; }
             public int Q { get; set; }
+
+            public Dictionary<string, string> Dict { get; set; }
         }
 
         private class A

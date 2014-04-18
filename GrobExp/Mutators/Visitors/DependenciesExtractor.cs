@@ -451,7 +451,14 @@ namespace GrobExp.Mutators.Visitors
                     return null;
                 }
             }
+            if(method.IsIndexerGetter())
+                return ProcessIndexer;
             return DefaultMethodProcessor;
+        }
+
+        private Expression ProcessIndexer(MethodInfo method, Expression prefix, Expression[] arguments)
+        {
+            return Expression.Call(prefix, method, arguments);
         }
 
         private Expression DefaultMethodProcessor(MethodInfo method, Expression prefix, Expression[] arguments)

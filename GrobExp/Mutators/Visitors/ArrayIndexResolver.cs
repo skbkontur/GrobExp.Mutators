@@ -59,6 +59,8 @@ namespace GrobExp.Mutators.Visitors
                             result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
                             ++k;
                         }
+                        else if(methodCallExpression.Method.IsIndexerGetter())
+                            result.AddRange(methodCallExpression.Arguments);
                         else
                             throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
                         break;
@@ -283,6 +285,8 @@ namespace GrobExp.Mutators.Visitors
                             throw new NotSupportedException("Method '" + methodCallExpression.Method + "' is not supported");
                         }
                     }
+                    else if(method.IsIndexerGetter())
+                        current = Expression.Call(current, method, methodCallExpression.Arguments);
                     else
                         throw new NotSupportedException("Method '" + methodCallExpression.Method + "' is not supported");
                     break;

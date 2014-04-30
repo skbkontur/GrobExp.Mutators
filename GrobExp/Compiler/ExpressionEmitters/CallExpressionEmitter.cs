@@ -38,6 +38,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
             {
                 Type actualType;
                 result |= ExpressionEmittersCollection.Emit(obj, context, returnDefaultValueLabel, isStatic ? ResultType.Value : ResultType.ByRefValueTypesOnly, extend, out actualType); // stack: [obj]
+                if(actualType == typeof(void))
+                    throw new InvalidOperationException("Unable to call method on void");
                 if(actualType.IsValueType && !isStatic)
                 {
                     using(var temp = context.DeclareLocal(actualType))

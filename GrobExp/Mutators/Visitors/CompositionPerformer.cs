@@ -45,8 +45,8 @@ namespace GrobExp.Mutators.Visitors
                 if(conditionalSetters.Count == 1 && conditionalSetters[0].Value == null)
                 {
                     var key = conditionalSetters[0].Key;
-                    if(key.Type != shards[i].Type)
-                        continue;
+//                    if(key.Type != shards[i].Type)
+//                        continue;
                     return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(Merge(key, shards.Skip(i + 1)), null)};
                 }
                 return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(Merge(item.Key, shards.Skip(i + 1)), item.Value)).ToList();
@@ -60,6 +60,17 @@ namespace GrobExp.Mutators.Visitors
             if(IsSimpleLinkOfChain(node, out type))
                 return type == From ? ResolveChain(node) : node;
             return base.Visit(node);
+        }
+
+        protected override Expression VisitBinary(BinaryExpression node)
+        {
+            var left = Visit(node.Left);
+            var right = Visit(node.Right);
+            if(left.Type != node.Left.Type)
+                left = Expression.Convert(left, node.Left.Type);
+            if(right.Type != node.Right.Type)
+                right = Expression.Convert(right, node.Right.Type);
+            return node.Update(left, (LambdaExpression)Visit(node.Conversion), right);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -113,11 +124,49 @@ namespace GrobExp.Mutators.Visitors
         {
             var convertationNode = convertationTree.Traverse(node, false);
             if(convertationNode == null)
-                return null;
+            {
+                Expression left;
+                if(node.NodeType == ExpressionType.ArrayIndex)
+                    left = ((BinaryExpression)node).Left;
+                else if(node.NodeType == ExpressionType.Call && ((MethodCallExpression)node).Method.IsIndexerGetter())
+                    left = ((MethodCallExpression)node).Object;
+                else
+                    return null;
+                convertationNode = convertationTree.Traverse(left, false);
+                if(convertationNode == null) return null;
+                var arrays = convertationNode.GetArrays(true);
+                Expression array;
+                if(arrays.TryGetValue(To, out array) && array != null)
+                {
+                    var itemType = array.Type.GetItemType();
+                    var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
+                    var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
+                    Expression rezult;
+                    if(node.NodeType == ExpressionType.ArrayIndex)
+                        rezult = Expression.ArrayIndex(array, ((BinaryExpression)node).Right);
+                    else
+                    {
+                        if(itemConvertationNode != null)
+                            itemConvertationNode = itemConvertationNode.GotoMember(left.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
+                        rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)node).Arguments);
+                    }
+                    if(itemConvertationNode != null)
+                    {
+                        var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
+                        if(setter != null)
+                        {
+                            var parameter = Expression.Parameter(node.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
+                            var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
+                            rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
+                        }
+                    }
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(rezult, null)};
+                }
+            }
             var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
             if(setters.Length == 0)
             {
-                if(node.Type.IsArray)
+                if(node.Type.IsArray || node.Type.IsDictionary())
                 {
                     var arrays = convertationNode.GetArrays(true);
                     Expression array;
@@ -140,7 +189,7 @@ namespace GrobExp.Mutators.Visitors
             }
             var result = new List<KeyValuePair<Expression, Expression>>();
             bool wasUnconditionalSetter = false;
-            for (int index = setters.Length - 1; index >= 0; --index)
+            for(int index = setters.Length - 1; index >= 0; --index)
             {
                 var mutator = setters[index];
                 LambdaExpression value;
@@ -214,6 +263,8 @@ namespace GrobExp.Mutators.Visitors
                     var methodCallExpression = (MethodCallExpression)shard;
                     if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsTemplateIndexMethod())
                         exp = Expression.Call(methodCallExpression.Method.GetGenericMethodDefinition().MakeGenericMethod(exp.Type.GetItemType()), exp);
+                    else if(methodCallExpression.Method.IsIndexerGetter())
+                        exp = Expression.Call(exp, exp.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), methodCallExpression.Arguments);
                     else throw new NotSupportedException("Method '" + methodCallExpression.Method + "' is not supported");
                     break;
                 default:
@@ -252,7 +303,8 @@ namespace GrobExp.Mutators.Visitors
         private static bool IsSimpleLinkOfChain(MethodCallExpression node, out Type type)
         {
             type = null;
-            return node != null && (node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod()) && IsSimpleLinkOfChain(node.Arguments.Single(), out type);
+            return node != null && (((node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod()) && IsSimpleLinkOfChain(node.Arguments.Single(), out type))
+                                    || (node.Method.IsIndexerGetter() && IsSimpleLinkOfChain(node.Object, out type)));
         }
 
         private static bool IsSimpleLinkOfChain(MemberExpression node, out Type type)

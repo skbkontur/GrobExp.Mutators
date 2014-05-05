@@ -45,6 +45,11 @@ namespace GrobExp.Mutators
             return type.Name.StartsWith("<>f__AnonymousType");
         }
 
+        public static bool IsDictionary(this Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
+        }
+
         private static T Default<T>()
         {
             return default(T);

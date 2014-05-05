@@ -60,7 +60,7 @@ namespace GrobExp.Mutators
                     if(slot == null)
                     {
                         var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
-                        Configure(context, new ConverterConfigurator<TSource, TDest>(tree));
+                        ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
                         var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
                         var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
@@ -88,6 +88,11 @@ namespace GrobExp.Mutators
                 }
             }
             return slot;
+        }
+
+        private void ConfigureInternal(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator)
+        {
+            Configure(context, configurator);
         }
 
         private readonly IPathFormatterCollection pathFormatterCollection;

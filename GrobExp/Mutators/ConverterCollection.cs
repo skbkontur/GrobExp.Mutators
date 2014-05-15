@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.AutoEvaluators;
+using GrobExp.Mutators.CustomFields;
 
 namespace GrobExp.Mutators
 {
@@ -90,8 +94,77 @@ namespace GrobExp.Mutators
             return slot;
         }
 
+        private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
+        {
+            var sourceProperties = typeof(TSource).GetProperties();
+            var destProperties = typeof(TDest).GetProperties();
+            var sourceCustomFieldsContainer = sourceProperties.SingleOrDefault(prop => prop.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any());
+            var sourceCustomFields = sourceProperties.Where(prop => prop.GetCustomAttributes(typeof(CustomFieldAttribute), false).Any()).ToArray();
+            var destCustomFieldsContainer = destProperties.SingleOrDefault(prop => prop.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any());
+            var destCustomFields = destProperties.Where(prop => prop.GetCustomAttributes(typeof(CustomFieldAttribute), false).Any()).ToArray();
+            if(sourceCustomFields.Length > 0)
+            {
+                if(destCustomFields.Length > 0 || sourceCustomFieldsContainer != null)
+                    throw new InvalidOperationException();
+                if(destCustomFieldsContainer == null)
+                    return;
+                var destParameter = Expression.Parameter(typeof(TDest));
+                var sourceParameter = Expression.Parameter(typeof(TSource));
+                var pathToDestContainer = Expression.Property(destParameter, destCustomFieldsContainer);
+                var indexerGetter = destCustomFieldsContainer.PropertyType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+                foreach(var customField in sourceCustomFields)
+                {
+                    Expression pathToTarget = Expression.Call(pathToDestContainer, indexerGetter, Expression.Constant(customField.Name));
+                    if(pathToTarget.Type == typeof(CustomFieldValue))
+                        pathToTarget = Expression.Property(pathToTarget, "Value");
+                    var value = Expression.Property(sourceParameter, customField);
+                    configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
+                }
+            }
+            else if(destCustomFields.Length > 0)
+            {
+                if(destCustomFieldsContainer != null)
+                    throw new InvalidOperationException();
+                if(sourceCustomFieldsContainer == null)
+                    return;
+                var destParameter = Expression.Parameter(typeof(TDest));
+                var sourceParameter = Expression.Parameter(typeof(TSource));
+                var pathToSourceContainer = Expression.Property(sourceParameter, sourceCustomFieldsContainer);
+                var indexerGetter = sourceCustomFieldsContainer.PropertyType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+                foreach(var customField in destCustomFields)
+                {
+                    Expression pathToTarget = Expression.Property(destParameter, customField);
+                    Expression value = Expression.Call(pathToSourceContainer, indexerGetter, Expression.Constant(customField.Name));
+                    if(value.Type == typeof(CustomFieldValue))
+                        value = Expression.Property(value, "Value");
+                    value = Expression.Convert(value, pathToTarget.Type);
+                    configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
+                }
+            }
+            else
+            {
+                if(sourceCustomFieldsContainer == null || destCustomFieldsContainer == null)
+                    return;
+                var destParameter = Expression.Parameter(typeof(TDest));
+                var sourceParameter = Expression.Parameter(typeof(TSource));
+                Expression pathToDestCustomContainer = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(destCustomFieldsContainer.PropertyType.GetItemType()), Expression.Property(destParameter, destCustomFieldsContainer));
+                Expression pathToSourceCustomContainer = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(sourceCustomFieldsContainer.PropertyType.GetItemType()), Expression.Property(sourceParameter, sourceCustomFieldsContainer));
+                Expression pathToTarget = Expression.Property(pathToDestCustomContainer, "Key");
+                Expression value = Expression.Property(pathToSourceCustomContainer, "Key");
+                configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
+                pathToTarget = Expression.Property(pathToDestCustomContainer, "Value");
+                value = Expression.Property(pathToSourceCustomContainer, "Value");
+                if(pathToTarget.Type == typeof(CustomFieldValue))
+                    pathToTarget = Expression.Property(pathToTarget, "Value");
+                if(value.Type == typeof(CustomFieldValue))
+                    value = Expression.Property(value, "Value");
+                configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
+            }
+        }
+
         private void ConfigureInternal(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator)
         {
+            ConfigureCustomFields(configurator);
             Configure(context, configurator);
         }
 

@@ -13,6 +13,12 @@ namespace GrobExp.Mutators
             this.root = root;
         }
 
+        public void SetMutator(Expression pathToTarget, MutatorConfiguration mutator)
+        {
+            root.Traverse(pathToTarget.ResolveInterfaceMembers(), true).AddMutator(Condition == null ? mutator : mutator.If(Condition));
+        }
+
+
         public ConverterConfigurator<TSource, TSource, TDest, TDest, TValue> Target<TValue>(Expression<Func<TDest, TValue>> pathToValue)
         {
             return new ConverterConfigurator<TSource, TSource, TDest, TDest, TValue>(root, source => source, dest => dest, pathToValue, Condition);

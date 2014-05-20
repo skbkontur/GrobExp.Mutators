@@ -641,6 +641,136 @@ namespace Mutators.Tests
             validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC {S = "zzz"}}}}}}}).AssertEquivalent(new ValidationResultTreeNode());
         }
 
+        [Test]
+        public void TestConvertedValidatorsConvertWithFilter()
+        {
+            var webDataToInnerDataConverterCollection = new TestConverterCollection<WebData, InnerData>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.InnerItems.Each().InnerS).Set(data => data.WebItems.Where(item => item.WebIsRemoved == false).Current().WebS);
+                    configurator.Target(data => data.InnerItems.Each().InnerItemz.Each().InnerZ).Set(data => data.WebItems.Where(item => item.WebIsRemoved == false).Current().WebItemz.Where(item => item.WebIzRemoved == false).Current().WebZ);
+                });
+            var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.WebItems.Each().WebS).Set(data => data.ModelItems.Current().ModelS);
+                    configurator.Target(data => data.WebItems.Each().WebIsRemoved).Set(data => data.ModelItems.Current().ModelX > data.ModelItems.Current().ModelY);
+                    configurator.Target(data => data.WebItems.Each().WebItemz.Each().WebZ).Set(data => data.ModelItems.Current().ModelItemz.Current().ModelZ);
+                    configurator.Target(data => data.WebItems.Each().WebItemz.Each().WebIzRemoved).Set(data => data.ModelItems.Current().ModelItemz.Current().ModelA > data.ModelItems.Current().ModelItemz.Current().ModelB);
+                });
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var converterCollectionFactory = new TestConverterCollectionFactory();
+            var innerDataConfiguratorCollection = new TestDataConfiguratorCollection<InnerData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.InnerItems.Each().InnerItemz.Each().InnerZ).Required();
+                });
+            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
+            converterCollectionFactory.Register(webDataToInnerDataConverterCollection);
+            dataConfiguratorCollectionFactory.Register(innerDataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
+
+            var validator = modelDataConfiguratorCollection.GetMutatorsTree(new[] {typeof(InnerData), typeof(WebData)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty,}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetValidator();
+
+            var validationResultTreeNode = validator(new ModelData
+                {
+                    ModelItems = new[]
+                        {
+                            new ModelData1stLevel
+                                {
+                                    ModelX = 1, ModelY = 2, ModelItemz = new[]
+                                        {
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 2, ModelB = 1
+                                                },
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 1, ModelB = 2
+                                                },
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 2, ModelB = 1, ModelZ = "zzz"
+                                                },
+                                        }
+                                },
+                            new ModelData1stLevel
+                                {
+                                    ModelX = 2, ModelY = 1, ModelItemz = new[]
+                                        {
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 1, ModelB = 2
+                                                },
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 2, ModelB = 1
+                                                },
+                                            new ModelData2ndLevel
+                                                {
+                                                    ModelA = 1, ModelB = 2, ModelZ = "zzz"
+                                                },
+                                        }
+                                },
+                        }
+                });
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"ModelItems.0.ModelItemz.1.ModelZ", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"ModelItems[0].ModelItemz[1].ModelZ"}})}});
+        }
+
+        private class InnerData2ndLevel
+        {
+            public string InnerZ { get; set; }
+        }
+
+        private class InnerData1stLevel
+        {
+            public string InnerS { get; set; }
+            public InnerData2ndLevel[] InnerItemz { get; set; }
+        }
+
+        private class InnerData
+        {
+            public InnerData1stLevel[] InnerItems { get; set; }
+        }
+
+        private class WebData2ndLevel
+        {
+            public bool WebIzRemoved { get; set; }
+            public string WebZ { get; set; }
+        }
+
+        private class WebData1stLevel
+        {
+            public bool WebIsRemoved { get; set; }
+            public string WebS { get; set; }
+            public WebData2ndLevel[] WebItemz { get; set; }
+        }
+
+        private class WebData
+        {
+            public WebData1stLevel[] WebItems { get; set; }
+        }
+
+        private class ModelData2ndLevel
+        {
+            public int ModelA { get; set; }
+            public int ModelB { get; set; }
+            public string ModelZ { get; set; }
+        }
+
+        private class ModelData1stLevel
+        {
+            public int ModelX { get; set; }
+            public int ModelY { get; set; }
+            public string ModelS { get; set; }
+            public ModelData2ndLevel[] ModelItemz { get; set; }
+        }
+
+        private class ModelData
+        {
+            public ModelData1stLevel[] ModelItems { get; set; }
+        }
+
         [MultiLanguageTextType("ValueMustBeLessThanText")]
         public class ValueMustBeLessThanText : MultiLanguageTextBase
         {

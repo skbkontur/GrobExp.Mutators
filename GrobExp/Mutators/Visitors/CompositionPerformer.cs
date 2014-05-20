@@ -28,12 +28,103 @@ namespace GrobExp.Mutators.Visitors
             return resolved ? result : null;
         }
 
+        private static Expression CleanFilters(Expression node, List<LambdaExpression> filters)
+        {
+            var shards = node.SmashToSmithereens();
+            Expression result = shards[0];
+            int i = 0;
+            while(i + 1 < shards.Length)
+            {
+                ++i;
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
+                    {
+                        result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
+                        filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
+                        ++i;
+                    }
+                    else
+                    {
+                        if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                            filters.Add(null);
+                        result = methodCallExpression.Method.IsStatic
+                                     ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                                     : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                }
+            }
+            return result;
+        }
+
+        private Expression ApplyFilters(Expression node, List<LambdaExpression> filters)
+        {
+            if(filters.All(exp => exp == null))
+                return node;
+            var shards = node.SmashToSmithereens();
+            var result = shards[0];
+            int index = 0;
+            for(int i = 1; i < shards.Length; ++i)
+            {
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                    {
+                        var filter = filters[index++];
+                        if(filter != null)
+                        {
+//                            var performedShard = Perform(shard);
+                            var performedFilter = Perform(filter.Body);
+                            var parameter = Expression.Parameter(result.Type.GetItemType());
+                            var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, methodCallExpression)};
+                            var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
+                            result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
+                            result = Expression.Call(methodCallExpression.Method, result);
+                            break;
+                        }
+                    }
+                    result = methodCallExpression.Method.IsStatic
+                                    ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                                    : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
+                    break;
+                default:
+                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                }
+            }
+            return result;
+        }
+
         public List<KeyValuePair<Expression, Expression>> GetConditionalSetters(Expression node)
         {
             Type type;
             if(!IsSimpleLinkOfChain(node, out type))
                 return null;
             if(type != From) return null;
+
+            var filters = new List<LambdaExpression>();
+            node = CleanFilters(node, filters);
+
             var shards = node.SmashToSmithereens();
             for(var i = shards.Length - 1; i >= 0; --i)
             {
@@ -41,15 +132,15 @@ namespace GrobExp.Mutators.Visitors
                 if(conditionalSetters == null)
                     continue;
                 if(i == shards.Length - 1)
-                    return conditionalSetters;
+                    return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(ApplyFilters(item.Key, filters), item.Value)).ToList();
                 if(conditionalSetters.Count == 1 && conditionalSetters[0].Value == null)
                 {
                     var key = conditionalSetters[0].Key;
 //                    if(key.Type != shards[i].Type)
 //                        continue;
-                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(Merge(key, shards.Skip(i + 1)), null)};
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(key, shards.Skip(i + 1)), filters), null)};
                 }
-                return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(Merge(item.Key, shards.Skip(i + 1)), item.Value)).ToList();
+                return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(item.Key, shards.Skip(i + 1)), filters), item.Value)).ToList();
             }
             return null;
         }
@@ -303,7 +394,7 @@ namespace GrobExp.Mutators.Visitors
         private static bool IsSimpleLinkOfChain(MethodCallExpression node, out Type type)
         {
             type = null;
-            return node != null && (((node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod()) && IsSimpleLinkOfChain(node.Arguments.Single(), out type))
+            return node != null && ((node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod() || node.Method.IsWhereMethod()) && IsSimpleLinkOfChain(node.Arguments.First(), out type)
                                     || (node.Method.IsIndexerGetter() && IsSimpleLinkOfChain(node.Object, out type)));
         }
 
@@ -332,6 +423,7 @@ namespace GrobExp.Mutators.Visitors
         private static readonly MemberInfo stringLengthProperty = ((MemberExpression)((Expression<Func<string, int>>)(s => s.Length)).Body).Member;
         private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, int[]>>)(enumerable => enumerable.ToArray())).Body).Method.GetGenericMethodDefinition();
         private static readonly MemberInfo validationResultTypeProperty = ((MemberExpression)((Expression<Func<ValidationResult, ValidationResultType>>)(result => result.Type)).Body).Member;
+        private static readonly MethodInfo whereMethod = ((MethodCallExpression)((Expression<Func<int[], IEnumerable<int>>>)(ints => ints.Where(x => x == 0))).Body).Method.GetGenericMethodDefinition();
         // ReSharper restore StaticFieldInGenericType
 
         private readonly LambdaExpression lambda;

@@ -484,21 +484,24 @@ namespace GrobExp.Mutators
                             var primaryDependencies = Expression.Lambda(resolvedKey, resolvedKey.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).ToArray();
                             if(primaryDependencies.Length > 1)
                                 throw new NotSupportedException("More than one primary dependency is not supported while migrating a mutator from a non-leaf node");
-                            var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
-                            if(subRoot != null)
+                            if(primaryDependencies.Length > 0)
                             {
-                                ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
-                                if(keyLeaf != null)
-                                    conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
-                                if(conditionalSetters != null)
+                                var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
+                                if(subRoot != null)
                                 {
-                                    Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
-                                    continue;
+                                    ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                    if(keyLeaf != null)
+                                        conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
+                                    if(conditionalSetters != null)
+                                    {
+                                        Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
+                                        continue;
+                                    }
+                                    // The key leaf is missing or is not convertible - list all convertible subnodes
+                                    var subNodes = new List<ModelConfigurationNode>();
+                                    subRoot.FindSubNodes(subNodes);
+                                    mutatedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(abstractPathResolver.Resolve(node.Path)), typeof(object))));
                                 }
-                                // The key leaf is missing or is not convertible - list all convertible subnodes
-                                var subNodes = new List<ModelConfigurationNode>();
-                                subRoot.FindSubNodes(subNodes);
-                                mutatedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(abstractPathResolver.Resolve(node.Path)), typeof(object))));
                             }
                         }
                     }

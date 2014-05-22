@@ -6,16 +6,20 @@ namespace GrobExp.Mutators.CustomFields
 {
     public class CustomFieldValue
     {
+        public CustomFieldValue()
+        {
+        }
+
         public CustomFieldValue(ICustomFieldsConverter converter, TypeCode typeCode)
         {
-            this.converter = converter;
+            Converter = converter;
             this.typeCode = typeCode;
         }
 
         public void SetValue(string value)
         {
             StringValue = value;
-            this.value = converter.ConvertFromString(value, typeCode);
+            this.value = Converter.ConvertFromString(value, typeCode);
         }
 
         public object Value
@@ -26,24 +30,28 @@ namespace GrobExp.Mutators.CustomFields
                 if(value != null)
                 {
                     var curTypeCode = GetTypeCode(value.GetType());
-                    if(curTypeCode != typeCode)
-                        throw new InvalidOperationException();
+                    if(typeCode == System.TypeCode.Empty)
+                        typeCode = curTypeCode;
+                    else if(curTypeCode != typeCode)
+                        throw new InvalidOperationException("Cannot change typecode");
                 }
                 this.value = value;
-                StringValue = value == null ? null : converter.ConvertToString(value);
+                StringValue = value == null ? null : Converter.ConvertToString(value);
             }
         }
 
         public string StringValue { get; private set; }
+
         public int TypeCode { get { return (int)typeCode; } }
+
+        public ICustomFieldsConverter Converter { get; set; }
 
         private static TypeCode GetTypeCode(Type type)
         {
             return type.IsNullable() ? GetTypeCode(type.GetGenericArguments()[0]) : Type.GetTypeCode(type);
         }
 
-        private readonly ICustomFieldsConverter converter;
         private object value;
-        private readonly TypeCode typeCode;
+        private TypeCode typeCode;
     }
 }

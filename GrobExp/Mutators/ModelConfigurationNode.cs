@@ -670,7 +670,7 @@ namespace GrobExp.Mutators
             else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
             {
                 var path = fullPath.ResolveAliases(aliases);
-                if(!NodeType.IsDictionary())
+                if(!NodeType.IsDictionary() && !NodeType.IsCustomFiledsContainer())
                 {
                     var childParameter = Expression.Parameter(child.NodeType);
                     var indexParameter = Expression.Parameter(typeof(int));
@@ -747,7 +747,7 @@ namespace GrobExp.Mutators
                 }
                 else
                 {
-                    // Dictionary
+                    // Dictionary or CustomFieldContainer
                     var arguments = child.NodeType.GetGenericArguments();
                     var destKeyType = arguments[0];
                     var destValueType = arguments[1];

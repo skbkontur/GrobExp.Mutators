@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
@@ -49,7 +50,28 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
-            return Expression.Assign(PrepareForAssign(path), Convert(Value.Body.ResolveAliases(aliases), path.Type));
+            var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
+            Expression assignment;
+            if(path.NodeType != ExpressionType.Call)
+                assignment = Expression.Assign(PrepareForAssign(path), value);
+            else
+            {
+                var methodCallExpression = (MethodCallExpression)path;
+                var method = methodCallExpression.Method;
+                if(!method.IsIndexerGetter())
+                    throw new InvalidOperationException("Cannot assign to " + path);
+                if(methodCallExpression.Object.Type.IsDictionary())
+                    assignment = methodCallExpression.Object.AddToDictionary(methodCallExpression.Arguments.Single(), value);
+                else
+                {
+                    var setter = methodCallExpression.Object.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetSetMethod();
+                    assignment = Expression.Call(methodCallExpression.Object, setter, methodCallExpression.Arguments.Concat(new[] {value}));
+                }
+                assignment = Expression.Block(
+                    Expression.IfThen(Expression.Equal(methodCallExpression.Object, Expression.Constant(null, methodCallExpression.Object.Type)), Expression.Assign(methodCallExpression.Object, Expression.New(methodCallExpression.Object.Type))),
+                    assignment);
+            }
+            return assignment;
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

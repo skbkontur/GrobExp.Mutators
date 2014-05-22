@@ -60,8 +60,16 @@ namespace GrobExp.Mutators.AutoEvaluators
                 var method = methodCallExpression.Method;
                 if(!method.IsIndexerGetter())
                     throw new InvalidOperationException("Cannot assign to " + path);
-                var setter = methodCallExpression.Object.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetSetMethod();
-                assignment = Expression.Call(methodCallExpression.Object, setter, methodCallExpression.Arguments.Concat(new[] {value}));
+                if(methodCallExpression.Object.Type.IsDictionary())
+                    assignment = methodCallExpression.Object.AddToDictionary(methodCallExpression.Arguments.Single(), value);
+                else
+                {
+                    var setter = methodCallExpression.Object.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetSetMethod();
+                    assignment = Expression.Call(methodCallExpression.Object, setter, methodCallExpression.Arguments.Concat(new[] {value}));
+                }
+                assignment = Expression.Block(
+                    Expression.IfThen(Expression.Equal(methodCallExpression.Object, Expression.Constant(null, methodCallExpression.Object.Type)), Expression.Assign(methodCallExpression.Object, Expression.New(methodCallExpression.Object.Type))),
+                    assignment);
             }
             if(Condition == null)
                 return assignment;

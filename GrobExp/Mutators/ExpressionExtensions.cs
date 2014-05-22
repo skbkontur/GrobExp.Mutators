@@ -30,6 +30,14 @@ namespace GrobExp.Mutators
             return node.NodeType == ExpressionType.Constant && ((ConstantExpression)node).Value == null;
         }
 
+        public static Expression AddToDictionary(this Expression exp, Expression key, Expression value)
+        {
+            return Expression.IfThenElse(
+                Expression.Call(exp, "ContainsKey", null, key),
+                Expression.Call(exp, exp.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetSetMethod(), key, value),
+                Expression.Call(exp, "Add", null, key, value));
+        }
+
         public static Expression ExtendSelectMany(this Expression expression)
         {
             return new SelectManyCollectionSelectorExtender().Visit(expression);

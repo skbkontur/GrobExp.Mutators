@@ -327,7 +327,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertNullableDateTime()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.Date).Set(data2 => data2.Date1 ?? data2.Date2));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.Date).Set(data2 => data2.Date1 ?? data2.Date2));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {Date1 = new DateTime(2010, 1, 1)};
@@ -349,7 +349,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvert1()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.S).Set(data2 => data2.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {S = "zzz"};
@@ -362,7 +362,7 @@ namespace Mutators.Tests
         public void TestConvert2()
         {
             Expression<Func<TestData2, bool?>> condition = data => data.X == 1;
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).If(condition).Set(data2 => data2.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.S).If(condition).Set(data2 => data2.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {S = "zzz"};
@@ -379,7 +379,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvert3()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.T.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.S).Set(data2 => data2.T.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {T = new T {S = "zzz"}};
@@ -391,7 +391,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvert4()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     configurator.Target(data => data.S).Set(data2 => data2.T.S);
                     configurator.Target(data => data.F).Set((data2, data) => data.S);
@@ -407,7 +407,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertZzz()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     var subConfigurator = configurator.GoTo(x => x.A.B.Each(), x => GroupZzz(x.T.R.Where(r => r.U.S == "zzz").Select(r => r.U.V.X).FirstOrDefault()).Current());
                     subConfigurator.Target(b => b.X).Set(xs => xs.Sum(x => x.W.Z ?? 0));
@@ -423,7 +423,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertIf1()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.If((data2, data) => data2.X + data.Y == 2).Target(data => data.S).Set(data2 => data2.T.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.If((data2, data) => data2.X + data.Y == 2).Target(data => data.S).Set(data2 => data2.T.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData {Y = 1};
             var from = new TestData2 {T = new T {S = "zzz"}, X = 1};
@@ -445,7 +445,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertIf2()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     ConverterConfigurator<TestData2, T, TestData, A, A> subConfigurator = configurator.GoTo(data => data.A, data2 => data2.T);
                     subConfigurator.If((data2, data) => data2.Z + data.Z == 2).Target(data => data.S).Set(data2 => data2.S);
@@ -471,7 +471,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArray()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -505,7 +505,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayCycleRightPartMissing()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     configurator.Target(data => data.A.B[0].S).Set(data2 => data2.S);
                     configurator.Target(data => data.A.B[1].S).Set(data2 => data2.T.S);
@@ -527,7 +527,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayWithFilter()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     //configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S != null).Each().U.S)
                     var subConfigurator = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Where(r => r.S != null).Each().U);
@@ -567,7 +567,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayWithStaticMethod()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray(data2.T.R.Each().U.V.X).Each().W.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray(data2.T.R.Each().U.V.X).Each().W.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -649,7 +649,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayWithInstanceMethod()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray2(data2.T.R.Each().U.V.X).Each().W.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray2(data2.T.R.Each().U.V.X).Each().W.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -731,7 +731,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayCurrentIndex()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().CurrentIndex().ToString()));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().CurrentIndex().ToString()));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -760,7 +760,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertSimpleArray()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.Хрень.Each()).Set(data2 => data2.Чужь.Each()));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.Хрень.Each()).Set(data2 => data2.Чужь.Each()));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -778,7 +778,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertSimpleArrayInArray()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Хрень.Each()).Set(data2 => data2.T.R.Each().Чужь.Each()));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().Хрень.Each()).Set(data2 => data2.T.R.Each().Чужь.Each()));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -802,7 +802,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayNull()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2
@@ -817,7 +817,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertDestArrayIsCutToSource()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData
                 {
@@ -863,7 +863,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertDestArrayIsIncreasedToSource()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData
                 {
@@ -907,7 +907,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvertArrayExactIndexes()
         {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, customFieldsConverter, configurator =>
                 {
                     configurator.Target(data => data.A.B[0].S).Set(data2 => data2.T.R[0].U.S);
                     configurator.Target(data => data.A.B[1].S).Set(data2 => data2.T.R[1].U.S);
@@ -994,6 +994,7 @@ namespace Mutators.Tests
         {
             base.SetUp();
             pathFormatterCollection = new PathFormatterCollection();
+            customFieldsConverter = new TestCustomFieldConverter();
             random = new Random();
         }
 
@@ -1048,6 +1049,7 @@ namespace Mutators.Tests
 
         private Random random;
         private IPathFormatterCollection pathFormatterCollection;
+        private TestCustomFieldConverter customFieldsConverter;
 
         private class IdGenerator
         {

@@ -38,14 +38,15 @@ namespace Mutators.Tests
         {
             converterCollectionFactory = new TestConverterCollectionFactory();
             pathFormatterCollection = new PathFormatterCollection();
-            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator => { }
+            customFieldConverter = new TestCustomFieldConverter();
+            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, customFieldConverter, configurator => { }
 /*                {
                     configurator.Target(data => data.X).Set(webData => (int)webData.CustomFields["X"]);
                     configurator.Target(data => data.Y).Set(webData => (int)webData.CustomFields["Y"]);
                     configurator.Target(data => data.Z).Set(webData => (int)webData.CustomFields["Z"]);
                     configurator.Target(data => data.S).Set(webData => (string)webData.CustomFields["S"]);
                 }*/);
-            var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, configurator => { }
+            var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, customFieldConverter, configurator => { }
                 /*{
                     configurator.Target(webData => webData.CustomFields.Each().Key).Set(modelData => modelData.CustomFields.Current().Key);
                     configurator.Target(webData => webData.CustomFields.Each().Value).Set(modelData => modelData.CustomFields.Current().Value.Value);
@@ -103,14 +104,14 @@ namespace Mutators.Tests
             dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
             dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
             var modelMutator = modelDataConfiguratorCollection.GetMutatorsTree(new[] {typeof(Data), typeof(WebData)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty,}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetTreeMutator();
-            var converter = new TestCustomFieldConverter();
-            var modelData = new ModelData {CustomFields = new CustomFieldsContainer {{"X", new CustomFieldValue(converter, TypeCode.Int32) {Value = 0}}, {"Y", new CustomFieldValue(converter, TypeCode.Int32) {Value = 1}}, {"Z", new CustomFieldValue(converter, TypeCode.Int32) {Value = 2}}}};
+            var modelData = new ModelData {CustomFields = new CustomFieldsContainer {{"X", new CustomFieldValue(customFieldConverter, TypeCode.Int32) {Value = 0}}, {"Y", new CustomFieldValue(customFieldConverter, TypeCode.Int32) {Value = 1}}, {"Z", new CustomFieldValue(customFieldConverter, TypeCode.Int32) {Value = 2}}}};
             modelMutator(modelData);
             Assert.AreEqual(3, modelData.CustomFields["X"].Value);
         }
 
         private TestConverterCollectionFactory converterCollectionFactory;
         private PathFormatterCollection pathFormatterCollection;
+        private TestCustomFieldConverter customFieldConverter;
 
         private class Data
         {

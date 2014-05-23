@@ -12,7 +12,7 @@ namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
     {
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, ICustomFieldsConverter customFieldsConverter, ICustomFieldsConverter customFieldsConverter)
+        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, ICustomFieldsConverter customFieldsConverter)
         {
             this.pathFormatterCollection = pathFormatterCollection;
             this.customFieldsConverter = customFieldsConverter;

@@ -45,6 +45,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new SetArrayLengthConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Length));
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new SetArrayLengthConfiguration(Type, (LambdaExpression)resolver.Visit(Condition), Length);
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new SetArrayLengthConfiguration(Type, Prepare(condition).AndAlso(Condition), Length);

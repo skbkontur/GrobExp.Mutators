@@ -42,6 +42,11 @@ namespace GrobExp.Mutators.Validators
             return new RequiredIfConfiguration(to, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Path), Resolve(path, performer, Message), validationResultType);
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new RequiredIfConfiguration(Type, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Path), (LambdaExpression)resolver.Visit(Message), validationResultType);
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new RequiredIfConfiguration(Type, Priority, Prepare(condition).AndAlso(Condition), Path, Message, validationResultType);

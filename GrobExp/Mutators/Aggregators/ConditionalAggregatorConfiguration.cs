@@ -40,6 +40,11 @@ namespace GrobExp.Mutators.Aggregators
             return new ConditionalAggregatorConfiguration(to, Resolve(path, performer, Condition), Name);
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new ConditionalAggregatorConfiguration(Type, (LambdaExpression)resolver.Visit(Condition), Name);
+        }
+
         public LambdaExpression Condition { get; private set; }
         public string Name { get; private set; }
 

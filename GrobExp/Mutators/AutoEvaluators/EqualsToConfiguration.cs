@@ -41,6 +41,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToConfiguration(to, Resolve(path, performer, Value), Validator);
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new EqualsToConfiguration(Type, (LambdaExpression)resolver.Visit(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new EqualsToIfConfiguration(Type, Prepare(condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));

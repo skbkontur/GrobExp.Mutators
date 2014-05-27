@@ -28,13 +28,7 @@ namespace GrobExp.Mutators.CustomFields
             set
             {
                 if(value != null)
-                {
-                    var curTypeCode = GetTypeCode(value.GetType());
-                    if(typeCode == System.TypeCode.Empty)
-                        typeCode = curTypeCode;
-                    else if(curTypeCode != typeCode)
-                        throw new InvalidOperationException("Cannot change typecode");
-                }
+                    TypeCode = GetTypeCode(value.GetType());
                 this.value = value;
                 StringValue = value == null ? null : Converter.ConvertToString(value);
             }
@@ -42,7 +36,17 @@ namespace GrobExp.Mutators.CustomFields
 
         public string StringValue { get; private set; }
 
-        public int TypeCode { get { return (int)typeCode; } }
+        public TypeCode TypeCode
+        {
+            get { return typeCode; }
+            set
+            {
+                if(typeCode == TypeCode.Empty)
+                    typeCode = value;
+                else if(value != typeCode)
+                    throw new InvalidOperationException("Cannot change typecode");
+            }
+        }
 
         public ICustomFieldsConverter Converter { get; set; }
 

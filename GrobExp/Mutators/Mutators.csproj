@@ -59,6 +59,7 @@
     <Compile Include="CustomFields\CustomFieldsContainer.cs" />
     <Compile Include="CustomFields\CustomFieldValue.cs" />
     <Compile Include="CustomFields\ICustomFieldsConverter.cs" />
+    <Compile Include="CustomFields\TypedObject.cs" />
     <Compile Include="DataConfiguratorCollectionHelper.cs" />
     <Compile Include="Exceptions\PriorityOutOfRangeException.cs" />
     <Compile Include="ExpressionCompiler.cs" />

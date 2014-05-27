@@ -36,8 +36,15 @@ namespace GrobExp.Mutators
 
         public ModelConfigurationNode Traverse(Expression path, bool create)
         {
+            List<KeyValuePair<Expression, Expression>> arrayAliases;
+            return Traverse(path, create, out arrayAliases);
+        }
+
+        public ModelConfigurationNode Traverse(Expression path, bool create, out List<KeyValuePair<Expression, Expression>> arrayAliases)
+        {
             ModelConfigurationNode result;
-            Traverse(path, null, out result, create);
+            arrayAliases = new List<KeyValuePair<Expression, Expression>>();
+            Traverse(path, null, out result, create, arrayAliases);
             return result;
         }
 
@@ -191,6 +198,20 @@ namespace GrobExp.Mutators
             return null;
         }
 
+        public ModelConfigurationNode GotoMember(MemberInfo member, bool create)
+        {
+            var edge = new ModelConfigurationEdge(member);
+            switch(member.MemberType)
+            {
+            case MemberTypes.Field:
+                return GetChild(edge, ((FieldInfo)member).FieldType, create);
+            case MemberTypes.Property:
+                return GetChild(edge, ((PropertyInfo)member).PropertyType, create);
+            default:
+                throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
+            }
+        }
+
         public Expression Path { get; private set; }
         public string PathText { get; private set; }
         public IEnumerable<ModelConfigurationNode> Children { get { return children.Values.Cast<ModelConfigurationNode>(); } }
@@ -268,6 +289,11 @@ namespace GrobExp.Mutators
 
         private bool Traverse(Expression path, ModelConfigurationNode subRoot, out ModelConfigurationNode child, bool create)
         {
+            return Traverse(path, subRoot, out child, create, new List<KeyValuePair<Expression, Expression>>());
+        }
+
+        private bool Traverse(Expression path, ModelConfigurationNode subRoot, out ModelConfigurationNode child, bool create, List<KeyValuePair<Expression, Expression>> arrayAliases)
+        {
             switch(path.NodeType)
             {
             case ExpressionType.Parameter:
@@ -283,15 +309,32 @@ namespace GrobExp.Mutators
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)path;
-                    var result = Traverse(memberExpression.Expression, subRoot, out child, create);
+                    var result = Traverse(memberExpression.Expression, subRoot, out child, create, arrayAliases);
                     child = child == null ? null : child.GotoMember(memberExpression.Member, create);
                     return result || child == subRoot;
                 }
             case ExpressionType.ArrayIndex:
                 {
                     var binaryExpression = (BinaryExpression)path;
-                    var result = Traverse(binaryExpression.Left, subRoot, out child, create);
-                    child = child == null ? null : (child.GotoArrayElement(GetIndex(binaryExpression.Right), create) ?? child.GotoEachArrayElement(false));
+                    var result = Traverse(binaryExpression.Left, subRoot, out child, create, arrayAliases);
+                    if(child != null)
+                    {
+                        var newChild = child.GotoArrayElement(GetIndex(binaryExpression.Right), create);
+                        if(newChild == null)
+                        {
+                            newChild = child.GotoEachArrayElement(false);
+                            var arrays = child.GetArrays(true);
+                            var array = arrays.FirstOrDefault(pair => pair.Key != RootType).Value;
+                            if(array != null)
+                            {
+                                arrayAliases.Add(new KeyValuePair<Expression, Expression>(
+                                                     Expression.ArrayIndex(array, binaryExpression.Right),
+                                                     Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(array.Type.GetItemType()), array))
+                                    );
+                            }
+                        }
+                        child = newChild;
+                    }
                     return result || child == subRoot;
                 }
             case ExpressionType.Call:
@@ -300,27 +343,48 @@ namespace GrobExp.Mutators
                     var method = methodCallExpression.Method;
                     if(method.IsEachMethod() || method.IsCurrentMethod())
                     {
-                        var result = Traverse(methodCallExpression.Arguments[0], subRoot, out child, create);
+                        var result = Traverse(methodCallExpression.Arguments[0], subRoot, out child, create, arrayAliases);
                         child = child == null ? null : child.GotoEachArrayElement(create);
                         return result || child == subRoot;
                     }
                     if(method.IsIndexerGetter())
                     {
                         var parameters = methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray();
-                        var result = Traverse(methodCallExpression.Object, subRoot, out child, create);
-                        child = child == null ? null : child.GotoIndexer(parameters, create);
+                        var result = Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
+                        if(child != null)
+                        {
+                            var newChild = child.GotoIndexer(parameters, create);
+                            if(newChild == null)
+                            {
+                                newChild = child.GotoEachArrayElement(false);
+                                if(newChild != null)
+                                {
+                                    newChild = newChild.GotoMember(newChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), false);
+                                    var arrays = child.GetArrays(true);
+                                    var array = arrays.FirstOrDefault(pair => pair.Key != RootType).Value;
+                                    if(array != null)
+                                    {
+                                        arrayAliases.Add(new KeyValuePair<Expression, Expression>(
+                                                             Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), methodCallExpression.Arguments),
+                                                             Expression.Property(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(array.Type.GetItemType()), array), "Value"))
+                                            );
+                                    }
+                                }
+                            }
+                            child = newChild;
+                        }
                         return result || child == subRoot;
                     }
                     throw new NotSupportedException("Method " + method + " is not supported");
                 }
             case ExpressionType.Convert:
-                return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create);
+                return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create, arrayAliases);
             case ExpressionType.ArrayLength:
                 {
 //                    if(create)
 //                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
                     var unaryExpression = (UnaryExpression)path;
-                    var result = Traverse(unaryExpression.Operand, subRoot, out child, create);
+                    var result = Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
                     return result || child == subRoot;
                 }
             default:
@@ -334,20 +398,6 @@ namespace GrobExp.Mutators
             if(exp.NodeType == ExpressionType.Constant)
                 return (int)((ConstantExpression)exp).Value;
             return Expression.Lambda<Func<int>>(Expression.Convert(exp, typeof(int))).Compile()();
-        }
-
-        public ModelConfigurationNode GotoMember(MemberInfo member, bool create)
-        {
-            var edge = new ModelConfigurationEdge(member);
-            switch(member.MemberType)
-            {
-            case MemberTypes.Field:
-                return GetChild(edge, ((FieldInfo)member).FieldType, create);
-            case MemberTypes.Property:
-                return GetChild(edge, ((PropertyInfo)member).PropertyType, create);
-            default:
-                throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
-            }
         }
 
         private ModelConfigurationNode GotoIndexer(object[] parameters, bool create)

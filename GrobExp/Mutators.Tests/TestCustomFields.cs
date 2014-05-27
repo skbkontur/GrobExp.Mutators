@@ -64,7 +64,7 @@ namespace Mutators.Tests
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
             var webValidator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
-            webValidator(new WebData {CustomFields = new Dictionary<string, object> {{"S", null}}}).AssertEquivalent(new ValidationResultTreeNode {{"CustomFields.S", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S]"}}, 0)}});
+            webValidator(new WebData {CustomFields = new Dictionary<string, TypedObject> {{"S", new TypedObject{TypeCode = TypeCode.String}}}}).AssertEquivalent(new ValidationResultTreeNode {{"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)}});
         }
 
         [Test]
@@ -89,9 +89,17 @@ namespace Mutators.Tests
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
             var webMutator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetTreeMutator();
-            var webData = new WebData {CustomFields = new Dictionary<string, object> {{"X", 0}, {"Y", 1}, {"Z", 2}}};
+            var webData = new WebData
+                {
+                    CustomFields = new Dictionary<string, TypedObject>
+                        {
+                            {"X", new TypedObject{TypeCode = TypeCode.Int32, Value = 0}},
+                            {"Y", new TypedObject{TypeCode = TypeCode.Int32, Value = 1}},
+                            {"Z", new TypedObject{TypeCode = TypeCode.Int32, Value = 2}}
+                        }
+                };
             webMutator(webData);
-            Assert.AreEqual(3, webData.CustomFields["X"]);
+            Assert.AreEqual(3, webData.CustomFields["X"].Value);
         }
 
         [Test]
@@ -131,7 +139,7 @@ namespace Mutators.Tests
         private class WebData
         {
             [CustomFieldsContainer]
-            public Dictionary<string, object> CustomFields { get; set; }
+            public Dictionary<string, TypedObject> CustomFields { get; set; }
         }
 
         private class ModelData

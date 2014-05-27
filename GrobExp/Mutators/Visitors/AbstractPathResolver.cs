@@ -52,7 +52,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool IsSimpleLinkOfChain(MethodCallExpression node)
         {
-            return node != null && (node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod());
+            return node != null && (((node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod()) && IsSimpleLinkOfChain(node.Arguments[0]))
+                                    || ((node.Method.IsIndexerGetter()) && (IsSimpleLinkOfChain(node.Object))));
         }
 
         private static bool IsSimpleLinkOfChain(MemberExpression node)
@@ -114,7 +115,29 @@ namespace GrobExp.Mutators.Visitors
                         }
                         break;
                     case ExpressionType.Call:
-                        if(abstractShard.NodeType == ExpressionType.Call)
+                        if(((MethodCallExpression)shard).Method.IsIndexerGetter())
+                        {
+                            if(abstractShard.NodeType == ExpressionType.Call && (((MethodCallExpression)abstractShard).Method.IsCurrentMethod() || ((MethodCallExpression)abstractShard).Method.IsEachMethod()))
+                            {
+                                end = false;
+                                ++i;
+                                if(i >= abstractPathShards.Length || abstractPathShards[i].NodeType != ExpressionType.MemberAccess || (((MemberExpression)abstractPathShards[i])).Member.Name != "Value")
+                                    throw new InvalidOperationException();
+                            }
+                            if(abstractShard.NodeType == ExpressionType.Call)
+                            {
+                                var methodCallExpression = (MethodCallExpression)abstractShard;
+                                if(methodCallExpression.Method.IsIndexerGetter())
+                                {
+                                    var shardArgs = ((MethodCallExpression)shard).Arguments.ToArray();
+                                    var abstractShardArgs = methodCallExpression.Arguments.ToArray();
+                                    if(shardArgs.Length == abstractShardArgs.Length)
+                                        if(!shardArgs.Where((t, k) => ((ConstantExpression)t).Value != ((ConstantExpression)abstractShardArgs[k]).Value).Any())
+                                            end = false;
+                                }
+                            }
+                        }
+                        else if(abstractShard.NodeType == ExpressionType.Call)
                         {
                             var method = ((MethodCallExpression)shard).Method;
                             var abstractMethod = ((MethodCallExpression)abstractShard).Method;
@@ -143,7 +166,9 @@ namespace GrobExp.Mutators.Visitors
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)abstractShard;
-                    result = Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)));
+                    result = methodCallExpression.Method.IsStatic
+                        ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                        : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
                     break;
                 case ExpressionType.Convert:
                     result = Expression.Convert(result, abstractShard.Type);

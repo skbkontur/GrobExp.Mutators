@@ -117,14 +117,10 @@ namespace GrobExp.Mutators
                 {
                     var value = Expression.Property(sourceParameter, customField);
                     Expression pathToTarget = Expression.Call(pathToDestContainer, indexerGetter, Expression.Constant(customField.Name));
-                    if(pathToTarget.Type != typeof(CustomFieldValue))
-                        configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
-                    else
-                    {
-                        configurator = configurator.If(Expression.Lambda(Expression.NotEqual(value, Expression.Constant(null, value.Type)), sourceParameter));
+                    configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(Type.GetTypeCode(customField.PropertyType)))));
+                    configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
+                    if(pathToTarget.Type == typeof(CustomFieldValue))
                         configurator.SetMutator(Expression.Property(pathToTarget, "Converter"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(customFieldsConverter))));
-                        configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
-                    }
                 }
             }
             else if(destCustomFields.Length > 0)
@@ -141,9 +137,7 @@ namespace GrobExp.Mutators
                 {
                     Expression pathToTarget = Expression.Property(destParameter, customField);
                     Expression value = Expression.Call(pathToSourceContainer, indexerGetter, Expression.Constant(customField.Name));
-                    if(value.Type == typeof(CustomFieldValue))
-                        value = Expression.Property(value, "Value");
-                    value = Expression.Convert(value, pathToTarget.Type);
+                    value = Expression.Convert(Expression.Property(value, "Value"), pathToTarget.Type);
                     configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
                 }
             }
@@ -159,17 +153,11 @@ namespace GrobExp.Mutators
                 Expression value = Expression.Property(pathToSourceCustomContainer, "Key");
                 configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
                 value = Expression.Property(pathToSourceCustomContainer, "Value");
-                if(value.Type == typeof(CustomFieldValue))
-                    value = Expression.Property(value, "Value");
                 pathToTarget = Expression.Property(pathToDestCustomContainer, "Value");
-                if(pathToTarget.Type != typeof(CustomFieldValue))
-                    configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
-                else
-                {
-                    configurator = configurator.If(Expression.Lambda(Expression.NotEqual(value, Expression.Constant(null, value.Type)), sourceParameter));
+                configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Property(value, "TypeCode"), sourceParameter)));
+                configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Property(value, "Value"), sourceParameter)));
+                if(pathToTarget.Type == typeof(CustomFieldValue))
                     configurator.SetMutator(Expression.Property(pathToTarget, "Converter"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(customFieldsConverter))));
-                    configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
-                }
             }
         }
 

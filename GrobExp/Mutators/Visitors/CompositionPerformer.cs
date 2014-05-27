@@ -28,93 +28,6 @@ namespace GrobExp.Mutators.Visitors
             return resolved ? result : null;
         }
 
-        private static Expression CleanFilters(Expression node, List<LambdaExpression> filters)
-        {
-            var shards = node.SmashToSmithereens();
-            Expression result = shards[0];
-            int i = 0;
-            while(i + 1 < shards.Length)
-            {
-                ++i;
-                var shard = shards[i];
-                switch(shard.NodeType)
-                {
-                case ExpressionType.MemberAccess:
-                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
-                    break;
-                case ExpressionType.ArrayIndex:
-                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
-                    break;
-                case ExpressionType.Call:
-                    var methodCallExpression = (MethodCallExpression)shard;
-                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
-                    {
-                        result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
-                        filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
-                        ++i;
-                    }
-                    else
-                    {
-                        if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
-                            filters.Add(null);
-                        result = methodCallExpression.Method.IsStatic
-                                     ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
-                                     : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
-                    }
-                    break;
-                default:
-                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
-                }
-            }
-            return result;
-        }
-
-        private Expression ApplyFilters(Expression node, List<LambdaExpression> filters)
-        {
-            if(filters.All(exp => exp == null))
-                return node;
-            var shards = node.SmashToSmithereens();
-            var result = shards[0];
-            int index = 0;
-            for(int i = 1; i < shards.Length; ++i)
-            {
-                var shard = shards[i];
-                switch(shard.NodeType)
-                {
-                case ExpressionType.MemberAccess:
-                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
-                    break;
-                case ExpressionType.ArrayIndex:
-                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
-                    break;
-                case ExpressionType.Call:
-                    var methodCallExpression = (MethodCallExpression)shard;
-                    if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
-                    {
-                        var filter = filters[index++];
-                        if(filter != null)
-                        {
-//                            var performedShard = Perform(shard);
-                            var performedFilter = Perform(filter.Body);
-                            var parameter = Expression.Parameter(result.Type.GetItemType());
-                            var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, methodCallExpression)};
-                            var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
-                            result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
-                            result = Expression.Call(methodCallExpression.Method, result);
-                            break;
-                        }
-                    }
-                    result = methodCallExpression.Method.IsStatic
-                                    ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
-                                    : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
-                    break;
-                default:
-                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
-                }
-            }
-            return result;
-        }
-
         public List<KeyValuePair<Expression, Expression>> GetConditionalSetters(Expression node)
         {
             Type type;
@@ -206,58 +119,197 @@ namespace GrobExp.Mutators.Visitors
             return Expression.Call(method.MakeGenericMethod(new[] {visitedObj.Type.GetItemType()}.Concat(node.Method.GetGenericArguments().Skip(1)).ToArray()), new[] {visitedObj}.Concat(visitedArguments));
         }
 
+        private static Expression CleanFilters(Expression node, List<LambdaExpression> filters)
+        {
+            var shards = node.SmashToSmithereens();
+            Expression result = shards[0];
+            int i = 0;
+            while(i + 1 < shards.Length)
+            {
+                ++i;
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
+                    {
+                        result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
+                        filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
+                        ++i;
+                    }
+                    else
+                    {
+                        if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                            filters.Add(null);
+                        result = methodCallExpression.Method.IsStatic
+                                     ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                                     : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                }
+            }
+            return result;
+        }
+
+        private Expression ApplyFilters(Expression node, List<LambdaExpression> filters)
+        {
+            if(filters.All(exp => exp == null))
+                return node;
+            var shards = node.SmashToSmithereens();
+            var result = shards[0];
+            int index = 0;
+            for(int i = 1; i < shards.Length; ++i)
+            {
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                    {
+                        var filter = filters[index++];
+                        if(filter != null)
+                        {
+                            var performedFilter = Perform(filter.Body);
+                            var parameter = Expression.Parameter(result.Type.GetItemType());
+                            var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, methodCallExpression)};
+                            var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
+                            result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
+                            result = Expression.Call(methodCallExpression.Method, result);
+                            break;
+                        }
+                    }
+                    result = methodCallExpression.Method.IsStatic
+                                 ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                                 : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
+                    break;
+                default:
+                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                }
+            }
+            return result;
+        }
+
         private Expression Convert(Expression operand, Type type)
         {
             return operand.Type == type ? operand : Expression.Convert(operand, type);
         }
 
+//        private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternalNew(Expression node)
+//        {
+//            var shards = node.SmashToSmithereens();
+//            for(int i = shards.Length - 1; i > 0; --i)
+//            {
+//                var shard = shards[i];
+//                var convertationNode = convertationTree.Traverse(shard, false);
+//                if(convertationNode == null)
+//                    continue;
+//                var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
+//                if(setters.Length == 0)
+//                {
+//                    if(shard.Type.IsArray || shard.Type.IsDictionary())
+//                    {
+//                        var arrays = convertationNode.GetArrays(true);
+//                        Expression array;
+//                        if(arrays.TryGetValue(To, out array) && array != null)
+//                        {
+//                            var itemType = array.Type.GetItemType();
+//                            var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
+//                            var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
+//                            Expression rezult;
+//                            if(shard.NodeType == ExpressionType.ArrayIndex)
+//                                rezult = Expression.ArrayIndex(array, ((BinaryExpression)shard).Right);
+//                            else
+//                            {
+//                                if(itemConvertationNode != null)
+//                                    itemConvertationNode = itemConvertationNode.GotoMember(shard.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
+//                                rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)shard).Arguments);
+//                            }
+//                            if(itemConvertationNode != null)
+//                            {
+//                                var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
+//                                if(setter != null)
+//                                {
+//                                    var parameter = Expression.Parameter(shard.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
+//                                    var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, shard.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
+//                                    rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
+//                                }
+//                            }
+//                            return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(rezult, null)};
+//                        }
+//                    }
+//                    return null;
+//                }
+//                var result = new List<KeyValuePair<Expression, Expression>>();
+//                bool wasUnconditionalSetter = false;
+//                for(int index = setters.Length - 1; index >= 0; --index)
+//                {
+//                    var mutator = setters[index];
+//                    LambdaExpression value;
+//                    Expression condition;
+//                    StaticValidatorConfiguration validator;
+//                    var equalsToIfConfiguration = mutator as EqualsToIfConfiguration;
+//                    if(equalsToIfConfiguration == null)
+//                    {
+//                        if(wasUnconditionalSetter)
+//                            continue;
+//                        wasUnconditionalSetter = true;
+//                        var equalsToConfiguration = (EqualsToConfiguration)mutator;
+//                        value = equalsToConfiguration.Value;
+//                        condition = null;
+//                        validator = equalsToConfiguration.Validator;
+//                    }
+//                    else
+//                    {
+//                        value = equalsToIfConfiguration.Value;
+//                        condition = lambda.Merge(Perform(equalsToIfConfiguration.Condition)).Body;
+//                        validator = equalsToIfConfiguration.Validator;
+//                    }
+//                    if(validator != null)
+//                    {
+//                        if(aliases != null)
+//                        {
+//                            var validationResult = validator.Apply(aliases);
+//                            if(validationResult != null)
+//                            {
+//                                validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
+//                                var valueIsValid = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
+//                                condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid);
+//                            }
+//                        }
+//                    }
+//                    result.Add(new KeyValuePair<Expression, Expression>(lambda.Merge(Perform(value)).Body, condition));
+//                }
+//                return result;
+//
+//            }
+//        }
+
         private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node)
         {
-            var convertationNode = convertationTree.Traverse(node, false);
-            if(convertationNode == null)
-            {
-                Expression left;
-                if(node.NodeType == ExpressionType.ArrayIndex)
-                    left = ((BinaryExpression)node).Left;
-                else if(node.NodeType == ExpressionType.Call && ((MethodCallExpression)node).Method.IsIndexerGetter())
-                    left = ((MethodCallExpression)node).Object;
-                else
-                    return null;
-                convertationNode = convertationTree.Traverse(left, false);
-                if(convertationNode == null) return null;
-                var arrays = convertationNode.GetArrays(true);
-                Expression array;
-                if(arrays.TryGetValue(To, out array) && array != null)
-                {
-                    var itemType = array.Type.GetItemType();
-                    var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
-                    var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
-                    Expression rezult;
-                    if(node.NodeType == ExpressionType.ArrayIndex)
-                        rezult = Expression.ArrayIndex(array, ((BinaryExpression)node).Right);
-                    else
-                    {
-                        if(itemConvertationNode != null)
-                            itemConvertationNode = itemConvertationNode.GotoMember(left.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
-                        rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)node).Arguments);
-                    }
-                    if(itemConvertationNode != null)
-                    {
-                        var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
-                        if(setter != null)
-                        {
-                            var parameter = Expression.Parameter(node.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
-                            var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
-                            rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
-                        }
-                    }
-                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(rezult, null)};
-                }
-            }
+            List<KeyValuePair<Expression, Expression>> arrayAliases;
+            var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
+            if(convertationNode == null) return null;
+            var resolver = new AliasesResolver(arrayAliases, false);
             var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
             if(setters.Length == 0)
             {
-                if(node.Type.IsArray || node.Type.IsDictionary())
+                if(node.Type.IsArray/* || node.Type.IsDictionary()*/)
                 {
                     var arrays = convertationNode.GetArrays(true);
                     Expression array;
@@ -276,6 +328,37 @@ namespace GrobExp.Mutators.Visitors
                         return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(array, null)};
                     }
                 }
+//                if(node.Type.IsArray || node.Type.IsDictionary())
+//                {
+//                    var arrays = convertationNode.GetArrays(true);
+//                    Expression array;
+//                    if(arrays.TryGetValue(To, out array) && array != null)
+//                    {
+//                        var itemType = array.Type.GetItemType();
+//                        var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
+//                        var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
+//                        Expression rezult;
+//                        if(node.NodeType == ExpressionType.ArrayIndex)
+//                            rezult = Expression.ArrayIndex(array, ((BinaryExpression)node).Right);
+//                        else
+//                        {
+//                            if(itemConvertationNode != null)
+//                                itemConvertationNode = itemConvertationNode.GotoMember(node.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
+//                            rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)node).Arguments);
+//                        }
+//                        if(itemConvertationNode != null)
+//                        {
+//                            var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
+//                            if(setter != null)
+//                            {
+//                                var parameter = Expression.Parameter(node.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
+//                                var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
+//                                rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
+//                            }
+//                        }
+//                        return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(resolver.Visit(rezult), null)};
+//                    }
+//                }
                 return null;
             }
             var result = new List<KeyValuePair<Expression, Expression>>();
@@ -305,9 +388,9 @@ namespace GrobExp.Mutators.Visitors
                 }
                 if(validator != null)
                 {
-                    if(aliases != null)
+                    if(arrayAliases != null)
                     {
-                        var validationResult = validator.Apply(aliases);
+                        var validationResult = validator.Apply(arrayAliases);
                         if(validationResult != null)
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
@@ -316,7 +399,7 @@ namespace GrobExp.Mutators.Visitors
                         }
                     }
                 }
-                result.Add(new KeyValuePair<Expression, Expression>(lambda.Merge(Perform(value)).Body, condition));
+                result.Add(new KeyValuePair<Expression, Expression>(resolver.Visit(lambda.Merge(Perform(value)).Body), resolver.Visit(condition)));
             }
             return result;
         }

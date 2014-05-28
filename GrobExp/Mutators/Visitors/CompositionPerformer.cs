@@ -138,11 +138,16 @@ namespace GrobExp.Mutators.Visitors
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)shard;
-                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
+                    if(methodCallExpression.Method.IsWhereMethod() && (i + 1 == shards.Length || (i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))))
                     {
-                        result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
-                        filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
-                        ++i;
+                        if(i + 1 == shards.Length)
+                            filters.Add(Expression.Lambda(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(result.Type.GetItemType()), result), (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
+                        else
+                        {
+                            result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
+                            filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
+                            ++i;
+                        }
                     }
                     else
                     {
@@ -202,6 +207,17 @@ namespace GrobExp.Mutators.Visitors
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
             }
+            if(index < filters.Count)
+            {
+                var filter = filters[index++];
+                var performedFilter = Perform(filter.Body);
+                var parameter = Expression.Parameter(result.Type.GetItemType());
+                var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node))};
+                var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
+                result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
+            }
+            if(index < filters.Count)
+                throw new InvalidOperationException("Too many filters to apply");
             return result;
         }
 

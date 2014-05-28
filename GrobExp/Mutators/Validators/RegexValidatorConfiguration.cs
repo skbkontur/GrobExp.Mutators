@@ -45,6 +45,11 @@ namespace GrobExp.Mutators.Validators
             return new RegexValidatorConfiguration(to, Priority, Resolve(path, performer, Path), Resolve(path, performer, Condition), Resolve(path, performer, Message), Pattern, regex, validationResultType);
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new RegexValidatorConfiguration(Type, Priority, Path, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), Pattern, regex, validationResultType);
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new RegexValidatorConfiguration(Type, Priority, Path, Prepare(condition).AndAlso(Condition), Message, Pattern, regex, validationResultType);

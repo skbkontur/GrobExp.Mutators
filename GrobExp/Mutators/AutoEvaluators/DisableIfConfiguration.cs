@@ -38,6 +38,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new DisableIfConfiguration(to, Resolve(path, performer, Condition));
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new DisableIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition));
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new DisableIfConfiguration(Type, Prepare(condition).AndAlso(Condition));

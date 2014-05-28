@@ -145,7 +145,7 @@ namespace GrobExp.Mutators
             Expression result;
             if(!arrays.TryGetValue(RootType, out result))
                 return null;
-            return ExpressionEquivalenceChecker.Equivalent(result, Path, false, true) ? null : result;
+            return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, Path, false, true) ? null : result;
         }
 
         public Dictionary<Type, Expression> GetArrays(bool cutTail)
@@ -552,21 +552,24 @@ namespace GrobExp.Mutators
                             var primaryDependencies = Expression.Lambda(resolvedKey, resolvedKey.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).ToArray();
                             if(primaryDependencies.Length > 1)
                                 throw new NotSupportedException("More than one primary dependency is not supported while migrating a mutator from a non-leaf node");
-                            var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
-                            if(subRoot != null)
+                            if(primaryDependencies.Length > 0)
                             {
-                                ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
-                                if(keyLeaf != null)
-                                    conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
-                                if(conditionalSetters != null)
+                                var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
+                                if(subRoot != null)
                                 {
-                                    Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
-                                    continue;
+                                    ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                    if(keyLeaf != null)
+                                        conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
+                                    if(conditionalSetters != null)
+                                    {
+                                        Qxx(destTree, conditionalSetters, mutatedMutator, performer, resolvedKey);
+                                        continue;
+                                    }
+                                    // The key leaf is missing or is not convertible - list all convertible subnodes
+                                    var subNodes = new List<ModelConfigurationNode>();
+                                    subRoot.FindSubNodes(subNodes);
+                                    mutatedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(abstractPathResolver.Resolve(node.Path)), typeof(object))));
                                 }
-                                // The key leaf is missing or is not convertible - list all convertible subnodes
-                                var subNodes = new List<ModelConfigurationNode>();
-                                subRoot.FindSubNodes(subNodes);
-                                mutatedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(abstractPathResolver.Resolve(node.Path)), typeof(object))));
                             }
                         }
                     }
@@ -575,6 +578,36 @@ namespace GrobExp.Mutators
                     destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator));
                 }
             }
+        }
+
+        private static KeyValuePair<Expression, MutatorConfiguration> PurgeFilters(Expression path, MutatorConfiguration mutator)
+        {
+            var filters = new List<LambdaExpression>();
+            var cleanedPath = path.CleanFilters(filters);
+            if(filters.Any(filter => filter != null))
+            {
+                var shards = path.SmashToSmithereens();
+                var cleanedShards = cleanedPath.SmashToSmithereens();
+                var aliases = new List<KeyValuePair<Expression, Expression>>();
+                int i = 0;
+                int j = 0;
+                LambdaExpression condition = null;
+                foreach(LambdaExpression filter in filters)
+                {
+                    while(!(shards[i].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i]).Method.IsEachMethod())))
+                        ++i;
+                    while(!(cleanedShards[j].NodeType == ExpressionType.Call && (((MethodCallExpression)cleanedShards[j]).Method.IsCurrentMethod() || ((MethodCallExpression)cleanedShards[j]).Method.IsEachMethod())))
+                        ++j;
+                    if(filter == null)
+                        continue;
+                    aliases.Add(new KeyValuePair<Expression, Expression>(cleanedShards[j], shards[i]));
+                    condition = condition == null ? filter : condition.AndAlso(filter, false);
+                    ++i;
+                    ++j;
+                }
+                mutator = mutator.ResolveAliases(new AliasesResolver(aliases, false)).If(condition);
+            }
+            return new KeyValuePair<Expression, MutatorConfiguration>(cleanedPath, mutator);
         }
 
         private static void Qxx(ModelConfigurationNode destTree, List<KeyValuePair<Expression, Expression>> conditionalSetters, MutatorConfiguration mutatedMutator, CompositionPerformer performer, Expression resolvedKey)
@@ -592,14 +625,14 @@ namespace GrobExp.Mutators
                 var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                 var commonPath = primaryDependencies.FindLCP();
                 var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
+                destNode.mutators.Add(PurgeFilters(mutatedPath, mutatedMutator.If(Expression.Lambda(condition, condition.ExtractParameters()))));
             }
             {
                 var mutatedPath = unconditionalSetter.Key ?? performer.Perform(resolvedKey);
                 var primaryDependencies = Expression.Lambda(mutatedPath, mutatedPath.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                 var commonPath = primaryDependencies.FindLCP();
                 var destNode = commonPath == null ? destTree : destTree.Traverse(commonPath, true);
-                destNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(mutatedPath, invertedCondition == null ? mutatedMutator : mutatedMutator.If(Expression.Lambda(invertedCondition, invertedCondition.ExtractParameters()))));
+                destNode.mutators.Add(PurgeFilters(mutatedPath, invertedCondition == null ? mutatedMutator : mutatedMutator.If(Expression.Lambda(invertedCondition, invertedCondition.ExtractParameters()))));
             }
         }
 

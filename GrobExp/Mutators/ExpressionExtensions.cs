@@ -170,6 +170,47 @@ namespace GrobExp.Mutators
             return lambda == null ? new LambdaExpression[0] : new DependenciesExtractor(lambda, parametersArray).Extract(out primaryDependencies, out additionalDependencies);
         }
 
+        public static Expression CleanFilters(this Expression node, List<LambdaExpression> filters)
+        {
+            var shards = node.SmashToSmithereens();
+            Expression result = shards[0];
+            int i = 0;
+            while(i + 1 < shards.Length)
+            {
+                ++i;
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
+                    {
+                        result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
+                        filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
+                        ++i;
+                    }
+                    else
+                    {
+                        if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                            filters.Add(null);
+                        result = methodCallExpression.Method.IsStatic
+                                     ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
+                                     : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                }
+            }
+            return result;
+        }
+
         public static Expression[] CutToChains(this Expression expression, bool rootOnlyParameter, bool hard)
         {
             return new ExpressionRipper().Cut(expression, rootOnlyParameter, hard);

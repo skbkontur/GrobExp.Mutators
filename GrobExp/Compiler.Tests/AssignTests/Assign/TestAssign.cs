@@ -207,6 +207,35 @@ namespace Compiler.Tests.AssignTests.Assign
             Assert.AreEqual("qzz", a["zzz", 1]);
         }
 
+        [Test]
+        public void TestAssignToDictionary1()
+        {
+            var parameter = Expression.Parameter(typeof(TestClassA));
+            var exp = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(Expression.Property(Expression.MakeIndex(Expression.Property(parameter, "Dict"), typeof(Dictionary<string, TestClassB>).GetProperty("Item"), new[] {Expression.Constant("zzz")}), "S"), Expression.Constant("2")), parameter);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            var a = new TestClassA{Dict = new Dictionary<string, TestClassB>{{"zzz", new TestClassB{S = "1"}}}};
+            Assert.AreEqual("2", f(a));
+            Assert.AreEqual("2", a.Dict["zzz"].S);
+            a = new TestClassA();
+            Assert.AreEqual("2", f(a));
+            Assert.AreEqual("2", a.Dict["zzz"].S);
+        }
+
+        [Test]
+        public void TestAssignToDictionary2()
+        {
+            var parameter = Expression.Parameter(typeof(TestClassA));
+            var exp = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(Expression.Property(Expression.Call(Expression.Property(parameter, "Dict"), typeof(Dictionary<string, TestClassB>).GetProperty("Item").GetGetMethod(), new[] {Expression.Constant("zzz")}), "S"), Expression.Constant("2")), parameter);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            var a = new TestClassA{Dict = new Dictionary<string, TestClassB>{{"zzz", new TestClassB{S = "1"}}}};
+            Assert.AreEqual("2", f(a));
+            Assert.AreEqual("2", a.Dict["zzz"].S);
+            a = new TestClassA();
+            Assert.AreEqual("2", f(a));
+            Assert.AreEqual("2", a.Dict["zzz"].S);
+
+        }
+
         private static string S { get; set; }
 
         private static int x;
@@ -218,6 +247,8 @@ namespace Compiler.Tests.AssignTests.Assign
             {
                 return b ? 1 : 0;
             }
+
+            public Dictionary<string, TestClassB> Dict { get; set; }
 
             public string S { get; set; }
             public TestClassA A { get; set; }

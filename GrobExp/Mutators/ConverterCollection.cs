@@ -12,10 +12,9 @@ namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
     {
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, ICustomFieldsConverter customFieldsConverter)
+        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection)
         {
             this.pathFormatterCollection = pathFormatterCollection;
-            this.customFieldsConverter = customFieldsConverter;
         }
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
@@ -95,6 +94,11 @@ namespace GrobExp.Mutators
             return slot;
         }
 
+        private static TypeCode GetTypeCode(Type type)
+        {
+            return type.IsNullable() ? GetTypeCode(type.GetGenericArguments()[0]) : Type.GetTypeCode(type);
+        }
+
         private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {
             var sourceProperties = typeof(TSource).GetProperties();
@@ -117,10 +121,11 @@ namespace GrobExp.Mutators
                 {
                     var value = Expression.Property(sourceParameter, customField);
                     Expression pathToTarget = Expression.Call(pathToDestContainer, indexerGetter, Expression.Constant(customField.Name));
-                    configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(Type.GetTypeCode(customField.PropertyType)))));
+                    configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(GetTypeCode(customField.PropertyType)))));
                     configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(value, sourceParameter)));
-                    if(pathToTarget.Type == typeof(CustomFieldValue))
-                        configurator.SetMutator(Expression.Property(pathToTarget, "Converter"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(customFieldsConverter))));
+                    var titleAttribute = customField.GetCustomAttributes(typeof(CustomFieldAttribute), false).SingleOrDefault() as CustomFieldAttribute;
+                    if(titleAttribute != null)
+                        configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(titleAttribute.TitleType))));
                 }
             }
             else if(destCustomFields.Length > 0)
@@ -156,8 +161,7 @@ namespace GrobExp.Mutators
                 pathToTarget = Expression.Property(pathToDestCustomContainer, "Value");
                 configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Property(value, "TypeCode"), sourceParameter)));
                 configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Property(value, "Value"), sourceParameter)));
-                if(pathToTarget.Type == typeof(CustomFieldValue))
-                    configurator.SetMutator(Expression.Property(pathToTarget, "Converter"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(customFieldsConverter))));
+                configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Property(value, "Title"), sourceParameter)));
             }
         }
 
@@ -168,7 +172,6 @@ namespace GrobExp.Mutators
         }
 
         private readonly IPathFormatterCollection pathFormatterCollection;
-        private readonly ICustomFieldsConverter customFieldsConverter;
 
         private readonly object lockObject = new object();
 

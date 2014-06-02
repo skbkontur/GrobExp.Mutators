@@ -753,7 +753,7 @@ namespace GrobExp.Mutators
             else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
             {
                 var path = fullPath.ResolveAliases(aliases);
-                if(!NodeType.IsDictionary() && !NodeType.IsCustomFiledsContainer())
+                if(!NodeType.IsDictionary())
                 {
                     var childParameter = Expression.Parameter(child.NodeType);
                     var indexParameter = Expression.Parameter(typeof(int));

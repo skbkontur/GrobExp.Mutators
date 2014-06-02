@@ -62,7 +62,7 @@ namespace GrobExp.Compiler
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
             var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            var il = new GroboIL(method, false);
+            var il = new GroboIL(method, true);
 
             var context = new EmittingContext
                 {

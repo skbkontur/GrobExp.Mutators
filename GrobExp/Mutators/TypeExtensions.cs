@@ -5,8 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-using GrobExp.Mutators.CustomFields;
-
 namespace GrobExp.Mutators
 {
     public static class TypeExtensions
@@ -50,11 +48,6 @@ namespace GrobExp.Mutators
         public static bool IsDictionary(this Type type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
-        }
-
-        public static bool IsCustomFiledsContainer(this Type type)
-        {
-            return type == typeof(CustomFieldsContainer);
         }
 
         private static T Default<T>()

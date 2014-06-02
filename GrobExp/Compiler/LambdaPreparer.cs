@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 using GrobExp.Compiler.ExpressionEmitters;
@@ -49,6 +50,16 @@ namespace GrobExp.Compiler
                 return node.Update(left, (LambdaExpression)Visit(node.Conversion), right);
             }
             return base.VisitBinary(node);
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if(node.Object == null)
+                return base.VisitMethodCall(node);
+            var indexer = node.Object.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
+            if(indexer != null && indexer.GetGetMethod(true) == node.Method)
+                return Expression.MakeIndex(node.Object, indexer, node.Arguments);
+            return base.VisitMethodCall(node);
         }
     }
 }

@@ -54,12 +54,10 @@
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ComplexMutatorsTree.cs" />
     <Compile Include="ConverterCollection.cs" />
-    <Compile Include="CustomFieldAttribute.cs" />
+    <Compile Include="CustomFields\CustomFieldAttribute.cs" />
     <Compile Include="CustomFieldsContainerAttribute.cs" />
-    <Compile Include="CustomFields\CustomFieldsContainer.cs" />
-    <Compile Include="CustomFields\CustomFieldValue.cs" />
     <Compile Include="CustomFields\ICustomFieldsConverter.cs" />
-    <Compile Include="CustomFields\TypedObject.cs" />
+    <Compile Include="CustomFields\CustomFieldValue.cs" />
     <Compile Include="DataConfiguratorCollectionHelper.cs" />
     <Compile Include="Exceptions\PriorityOutOfRangeException.cs" />
     <Compile Include="ExpressionCompiler.cs" />

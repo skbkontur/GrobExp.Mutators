@@ -28,13 +28,14 @@ namespace GrobExp.Mutators.Visitors
                 var array = Visit(path);
                 if(!array.Type.IsArray)
                 {
-                    // Filtered array
-                    if(array.NodeType != ExpressionType.Call)
-                        throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
-                    var methodCallExpression = (MethodCallExpression)array;
-                    if(!methodCallExpression.Method.IsWhereMethod())
-                        throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
-                    array = methodCallExpression.Arguments[0];
+//                    // Filtered array
+//                    if(array.NodeType != ExpressionType.Call)
+//                        throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
+//                    var methodCallExpression = (MethodCallExpression)array;
+////                    if(!methodCallExpression.Method.IsWhereMethod())
+////                        throw new NotSupportedException("Expected an array member access or a filtered with Enumerable.Where array member access");
+//                    array = methodCallExpression.Arguments[0];
+                    array = Expression.Call(typeof(Enumerable), "ToArray", new[] {array.Type.GetItemType()}, array);
                 }
                 return Expression.ArrayIndex(array, index);
             }

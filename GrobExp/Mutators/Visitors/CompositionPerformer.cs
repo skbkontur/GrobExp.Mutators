@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -41,7 +42,9 @@ namespace GrobExp.Mutators.Visitors
             var shards = node.SmashToSmithereens();
             for(var i = shards.Length - 1; i >= 0; --i)
             {
-                var conditionalSetters = GetConditionalSettersInternal(shards[i]);
+                bool onlyLeavesAreConvertible;
+                var conditionalSetters = GetConditionalSettersInternal(shards[i], out onlyLeavesAreConvertible);
+                if(onlyLeavesAreConvertible) return null;
                 if(conditionalSetters == null)
                     continue;
                 if(i == shards.Length - 1)
@@ -49,8 +52,6 @@ namespace GrobExp.Mutators.Visitors
                 if(conditionalSetters.Count == 1 && conditionalSetters[0].Value == null)
                 {
                     var key = conditionalSetters[0].Key;
-//                    if(key.Type != shards[i].Type)
-//                        continue;
                     return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(key, shards.Skip(i + 1)), filters), null)};
                 }
                 return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(item.Key, shards.Skip(i + 1)), filters), item.Value)).ToList();
@@ -316,8 +317,83 @@ namespace GrobExp.Mutators.Visitors
 //            }
 //        }
 
-        private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node)
+        private Type GetMemberType(MemberInfo member)
         {
+            switch(member.MemberType)
+            {
+            case MemberTypes.Field:
+                return ((FieldInfo)member).FieldType;
+            case MemberTypes.Property:
+                return ((PropertyInfo)member).PropertyType;
+            default:
+                throw new NotSupportedException("Member type '" + member.MemberType + "' is not supported");
+            }
+        }
+
+        private Expression Construct(Type type, Hashtable node)
+        {
+            if(!type.IsArray)
+            {
+                return Expression.MemberInit(Expression.New(type),
+                                             (from DictionaryEntry entry in node
+                                              let member = (MemberInfo)entry.Key
+                                              select Expression.Bind(member, entry.Value is Hashtable
+                                                                                 ? Construct(GetMemberType(member), (Hashtable)entry.Value)
+                                                                                 : (Expression)entry.Value)).Cast<MemberBinding>().ToList());
+            }
+            var maxIndex = node.Keys.Cast<int>().Max();
+            var elementType = type.GetElementType();
+            return Expression.NewArrayInit(elementType, new int[maxIndex + 1].Select((x, i) =>
+                {
+                    var item = node[i];
+                    return item == null ? Expression.Default(elementType) : Construct(elementType, (Hashtable)item);
+                }));
+        }
+
+        private Expression ConstructByLeaves(Expression path, IEnumerable<KeyValuePair<Expression, Expression>> leaves)
+        {
+            ParameterExpression parameter = Expression.Parameter(path.Type);
+            var resolver = new AliasesResolver(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, path)}, false);
+            var tree = new Hashtable();
+            foreach(var leaf in leaves)
+            {
+                var pathToLeaf = resolver.Visit(leaf.Key);
+                var shards = pathToLeaf.SmashToSmithereens();
+                var node = tree;
+                for(int i = 1; i < shards.Length; ++i)
+                {
+                    var shard = shards[i];
+                    object key;
+                    switch(shard.NodeType)
+                    {
+                    case ExpressionType.MemberAccess:
+                        key = ((MemberExpression)shard).Member;
+                        break;
+                    case ExpressionType.ArrayIndex:
+                        var index = ((BinaryExpression)shard).Right;
+                        if(index.NodeType != ExpressionType.Constant)
+                            throw new NotSupportedException("Node type '" + index.NodeType + "' is not supported");
+                        key = ((ConstantExpression)index).Value;
+                        break;
+                    default:
+                        throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                    }
+                    if(i == shards.Length - 1)
+                        node[key] = leaf.Value;
+                    else
+                    {
+                        if(node[key] == null)
+                            node[key] = new Hashtable();
+                        node = (Hashtable)node[key];
+                    }
+                }
+            }
+            return Construct(path.Type, tree);
+        }
+
+        private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node, out bool onlyLeavesAreConvertible)
+        {
+            onlyLeavesAreConvertible = false;
             List<KeyValuePair<Expression, Expression>> arrayAliases;
             var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
             if(convertationNode == null) return null;
@@ -325,7 +401,7 @@ namespace GrobExp.Mutators.Visitors
             var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
             if(setters.Length == 0)
             {
-                if(node.Type.IsArray/* || node.Type.IsDictionary()*/)
+                if(node.Type.IsArray /* || node.Type.IsDictionary()*/)
                 {
                     var arrays = convertationNode.GetArrays(true);
                     Expression array;
@@ -344,6 +420,22 @@ namespace GrobExp.Mutators.Visitors
                         return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(array, null)};
                     }
                 }
+                var children = new List<ModelConfigurationNode>();
+                convertationNode.FindSubNodes(children);
+                children = children.Where(child => child.GetMutators().Any(mutator => mutator is EqualsToConfiguration)).ToList();
+                if(children.Count > 0)
+                {
+                    var leaves = new List<KeyValuePair<Expression, Expression>>();
+                    foreach(var child in children)
+                    {
+                        var leaf = Perform(child.Path);
+                        if(leaf != null)
+                            leaves.Add(new KeyValuePair<Expression, Expression>(child.Path, leaf));
+                    }
+                    onlyLeavesAreConvertible = true;
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ConstructByLeaves(node, leaves), null)};
+                }
+
 //                if(node.Type.IsArray || node.Type.IsDictionary())
 //                {
 //                    var arrays = convertationNode.GetArrays(true);

@@ -96,6 +96,14 @@ namespace GrobExp.Mutators
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
         }
 
+        protected override void GetAllMutators(List<MutatorConfiguration> mutators)
+        {
+            var subNodes = new List<ModelConfigurationNode>();
+            tree.FindSubNodes(subNodes);
+            foreach(var node in subNodes)
+                mutators.AddRange(node.GetMutators());
+        }
+
         private static List<KeyValuePair<Expression, Expression>> ExtractAliases(ModelConfigurationNode converterTree, CompositionPerformer performer)
         {
             var aliases = new List<KeyValuePair<Expression, Expression>>();

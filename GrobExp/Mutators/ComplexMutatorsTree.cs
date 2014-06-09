@@ -81,6 +81,12 @@ namespace GrobExp.Mutators
                 };
         }
 
+        protected override void GetAllMutators(List<MutatorConfiguration> mutators)
+        {
+            foreach(var tree in trees)
+                mutators.AddRange(tree.GetAllMutators());
+        }
+
         private readonly MutatorsTree<TData>[] trees;
     }
 }

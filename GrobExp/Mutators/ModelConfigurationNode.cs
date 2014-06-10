@@ -377,7 +377,9 @@ namespace GrobExp.Mutators
                     var primaryDependencies = path.ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                     var commonPath = primaryDependencies.FindLCP();
                     var node = commonPath == null ? validationsTree : validationsTree.Traverse(commonPath, true);
-                    node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path.Body, equalsToConfiguration.Validator.Mutate(RootType, commonPath, performer)));
+                    var mutatedValidator = equalsToConfiguration.Validator.Mutate(RootType, commonPath, performer);
+                    if(mutatedValidator != null)
+                        node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path.Body, mutatedValidator));
                 }
             }
             foreach(var child in Children)
@@ -429,6 +431,8 @@ namespace GrobExp.Mutators
             foreach(var mutator in mutators)
             {
                 var mutatedMutator = mutator.Value.Mutate(to, path, performer);
+                if(mutatedMutator == null)
+                    continue;
                 var resolvedKey = abstractPathResolver.Resolve(mutator.Key);
                 var conditionalSetters = performer.GetConditionalSetters(resolvedKey);
                 if(conditionalSetters != null)

@@ -16,6 +16,8 @@ namespace GrobExp.Mutators.Validators
         {
             Condition = condition;
             Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
+            if(Path.Body.NodeType == ExpressionType.Constant)
+                throw new ArgumentNullException("path");
             Message = message;
             this.validationResultType = validationResultType;
         }
@@ -39,7 +41,10 @@ namespace GrobExp.Mutators.Validators
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new RequiredIfConfiguration(to, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Path), Resolve(path, performer, Message), validationResultType);
+            var resolvedPath = Resolve(path, performer, Path);
+            if(resolvedPath.Body.NodeType == ExpressionType.Constant)
+                return null;
+            return new RequiredIfConfiguration(to, Priority, Resolve(path, performer, Condition), resolvedPath, Resolve(path, performer, Message), validationResultType);
         }
 
         public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)

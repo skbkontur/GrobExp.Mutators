@@ -52,7 +52,7 @@ namespace GrobExp.Mutators
         protected static LambdaExpression Resolve(Expression path, CompositionPerformer performer, LambdaExpression lambda)
         {
             if(lambda == null) return null;
-            var body = performer.Perform(ExpressionExtensions.ResolveAbstractPath(Expression.Lambda(path, path.ExtractParameters()), lambda).Body);
+            var body = performer.Perform(ExpressionExtensions.ResolveAbstractPath(Expression.Lambda(path, path.ExtractParameters()), lambda).Body).CanonizeParameters();
             return body == null ? null : Expression.Lambda(body, body.ExtractParameters());
         }
 

@@ -426,12 +426,19 @@ namespace GrobExp.Mutators.Visitors
                 if(children.Count > 0)
                 {
                     var leaves = new List<KeyValuePair<Expression, Expression>>();
+                    bool ok = true;
                     foreach(var child in children)
                     {
+                        if(child.Path.SmashToSmithereens().Any(expression => expression.NodeType == ExpressionType.Call))
+                        {
+                            ok = false;
+                            break;
+                        }
                         var leaf = Perform(child.Path);
                         if(leaf != null)
                             leaves.Add(new KeyValuePair<Expression, Expression>(child.Path, leaf));
                     }
+                    if(!ok) return null;
                     onlyLeavesAreConvertible = true;
                     return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ConstructByLeaves(node, leaves), null)};
                 }

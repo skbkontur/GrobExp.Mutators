@@ -376,7 +376,7 @@ namespace GrobExp.Mutators.Visitors
                         key = ((ConstantExpression)index).Value;
                         break;
                     default:
-                        throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+                        return null;
                     }
                     if(i == shards.Length - 1)
                         node[key] = leaf.Value;
@@ -426,21 +426,16 @@ namespace GrobExp.Mutators.Visitors
                 if(children.Count > 0)
                 {
                     var leaves = new List<KeyValuePair<Expression, Expression>>();
-                    bool ok = true;
                     foreach(var child in children)
                     {
-                        if(child.Path.SmashToSmithereens().Any(expression => expression.NodeType == ExpressionType.Call))
-                        {
-                            ok = false;
-                            break;
-                        }
                         var leaf = Perform(child.Path);
                         if(leaf != null)
                             leaves.Add(new KeyValuePair<Expression, Expression>(child.Path, leaf));
                     }
-                    if(!ok) return null;
+                    var constructedByLeaves = ConstructByLeaves(node, leaves);
+                    if(constructedByLeaves == null) return null;
                     onlyLeavesAreConvertible = true;
-                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ConstructByLeaves(node, leaves), null)};
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(constructedByLeaves, null)};
                 }
 
 //                if(node.Type.IsArray || node.Type.IsDictionary())
@@ -510,7 +505,7 @@ namespace GrobExp.Mutators.Visitors
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
                             var valueIsValid = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
-                            condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid);
+                            condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid).CanonizeParameters();
                         }
                     }
                 }

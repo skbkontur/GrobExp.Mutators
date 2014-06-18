@@ -25,6 +25,11 @@ namespace GrobExp.Mutators.Validators
             return new StaticValidatorConfiguration(typeof(TData), name, priority, Prepare(condition), Prepare(path), validator);
         }
 
+        public static StaticValidatorConfiguration Create<TData>(string name, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
+        {
+            return new StaticValidatorConfiguration(typeof(TData), name, priority, Prepare(condition), Prepare(path), validator);
+        }
+
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new StaticValidatorConfiguration(path.Parameters.Single().Type, Name, Priority, path.Merge(Condition), path.Merge(Path), validator);

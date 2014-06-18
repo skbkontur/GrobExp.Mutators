@@ -263,7 +263,7 @@ namespace GrobExp.Mutators.Visitors
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
                             var valueIsValid = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
-                            condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid);
+                            condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid).CanonizeParameters();
                         }
                     }
                 }

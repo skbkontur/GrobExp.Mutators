@@ -44,7 +44,7 @@ namespace GrobExp.Mutators.Visitors
             {
                 bool onlyLeavesAreConvertible;
                 var conditionalSetters = GetConditionalSettersInternal(shards[i], out onlyLeavesAreConvertible);
-                if(onlyLeavesAreConvertible) return null;
+                if(i < shards.Length - 1 && onlyLeavesAreConvertible) return null;
                 if(conditionalSetters == null)
                     continue;
                 if(i == shards.Length - 1)
@@ -401,6 +401,7 @@ namespace GrobExp.Mutators.Visitors
             var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
             if(setters.Length == 0)
             {
+                onlyLeavesAreConvertible = true;
                 if(node.Type.IsArray /* || node.Type.IsDictionary()*/)
                 {
                     var arrays = convertationNode.GetArrays(true);
@@ -434,7 +435,6 @@ namespace GrobExp.Mutators.Visitors
                     }
                     var constructedByLeaves = ConstructByLeaves(node, leaves);
                     if(constructedByLeaves == null) return null;
-                    onlyLeavesAreConvertible = true;
                     return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(constructedByLeaves, null)};
                 }
 

@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.MultiLanguages;

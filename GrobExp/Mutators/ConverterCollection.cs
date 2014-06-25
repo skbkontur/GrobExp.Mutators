@@ -103,8 +103,8 @@ namespace GrobExp.Mutators
         {
             var sourceChildType = pathToSourceChild.Body.Type;
             var destChildType = pathToDestChild.Body.Type;
-            var sourceProperties = sourceChildType.GetProperties();
-            var destProperties = destChildType.GetProperties();
+            var sourceProperties = sourceChildType.GetOrderedProperties();
+            var destProperties = destChildType.GetOrderedProperties();
             var sourceCustomFieldsContainer = sourceProperties.SingleOrDefault(prop => prop.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any());
             var sourceCustomFields = sourceProperties.Where(prop => prop.GetCustomAttributes(typeof(CustomFieldAttribute), false).Any()).ToArray();
             var destCustomFieldsContainer = destProperties.SingleOrDefault(prop => prop.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any());

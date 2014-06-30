@@ -44,7 +44,8 @@ namespace GrobExp.Mutators.Visitors
             {
                 bool onlyLeavesAreConvertible;
                 var conditionalSetters = GetConditionalSettersInternal(shards[i], out onlyLeavesAreConvertible);
-                if(i < shards.Length - 1 && onlyLeavesAreConvertible) return null;
+                if(onlyLeavesAreConvertible && (i < shards.Length - 1 || !shards[i].Type.IsArray))
+                    return null;
                 if(conditionalSetters == null)
                     continue;
                 if(i == shards.Length - 1)

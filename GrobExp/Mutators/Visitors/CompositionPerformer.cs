@@ -60,6 +60,18 @@ namespace GrobExp.Mutators.Visitors
             return null;
         }
 
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            if(node.Member == stringLengthProperty)
+            {
+                var expression = Visit(node.Expression);
+                if(expression.Type != typeof(string))
+                    expression = Expression.Convert(expression, typeof(string));
+                return node.Update(expression);
+            }
+            return base.VisitMember(node);
+        }
+
         public override Expression Visit(Expression node)
         {
             Type type;

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
@@ -26,7 +25,6 @@ namespace GrobExp.Mutators
             Parent = parent;
             Edge = edge;
             Path = path;
-            PathText = ExtractText(path);
             mutators = new List<KeyValuePair<Expression, MutatorConfiguration>>();
         }
 
@@ -56,11 +54,11 @@ namespace GrobExp.Mutators
 
         public LambdaExpression BuildTreeValidator(IPathFormatter pathFormatter)
         {
-            var mutators = new Dictionary<ExpressionWrapper, List<MutatorConfiguration>>();
-            GetMutators(mutators);
+            var allMutators = new Dictionary<ExpressionWrapper, List<MutatorConfiguration>>();
+            GetMutators(allMutators);
 
             var root = new ZzzNode();
-            foreach(var pair in mutators)
+            foreach(var pair in allMutators)
             {
                 var arrays = GetArrays(RootType, pair.Key.Expression, pair.Value);
                 var node = arrays.Aggregate(root, (current, array) => current.Traverse(array));
@@ -90,6 +88,7 @@ namespace GrobExp.Mutators
                 body = Expression.Block(validationResults);
                 break;
             }
+            body = CacheExternalExpressions(body, expression => expression, parameter, result, priority);
             var lambda = Expression.Lambda(body.ExtendSelectMany(), parameter, result, priority);
             return lambda;
         }
@@ -214,7 +213,6 @@ namespace GrobExp.Mutators
         }
 
         public Expression Path { get; private set; }
-        public string PathText { get; private set; }
         public IEnumerable<ModelConfigurationNode> Children { get { return children.Values.Cast<ModelConfigurationNode>(); } }
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
@@ -260,32 +258,6 @@ namespace GrobExp.Mutators
                 result.Add(arraysOfCurrentLevel[0]);
             }
             return result;
-        }
-
-        private static string ExtractText(Expression path)
-        {
-            var result = new StringBuilder("root");
-            var shards = path.SmashToSmithereens();
-            for(var i = 1; i < shards.Length; ++i)
-            {
-                result.Append('.');
-                var shard = shards[i];
-                switch(shard.NodeType)
-                {
-                case ExpressionType.MemberAccess:
-                    result.Append(((MemberExpression)shard).Member.Name);
-                    break;
-                case ExpressionType.ArrayIndex:
-                    result.Append(((ConstantExpression)((BinaryExpression)shard).Right).Value);
-                    break;
-                case ExpressionType.Call:
-                    result.Append("Each()");
-                    break;
-                default:
-                    throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not valid at this point");
-                }
-            }
-            return result.ToString();
         }
 
         private bool Traverse(Expression path, ModelConfigurationNode subRoot, out ModelConfigurationNode child, bool create)
@@ -597,7 +569,7 @@ namespace GrobExp.Mutators
                 int i = 0;
                 int j = 0;
                 LambdaExpression condition = null;
-                foreach(LambdaExpression filter in filters)
+                foreach(var filter in filters)
                 {
                     while(!(shards[i].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i]).Method.IsEachMethod())))
                         ++i;
@@ -650,6 +622,7 @@ namespace GrobExp.Mutators
             BuildTreeMutator(null, this, Path, aliases, mutators, visitedNodes, processedNodes, mutators);
             mutators.Add(Expression.Empty());
             Expression body = Expression.Block(mutators);
+            CacheExternalExpressions(body, expression => expression, parameters);
             foreach(var actualParameter in body.ExtractParameters())
             {
                 var expectedParameter = parameters.Single(p => p.Type == actualParameter.Type);
@@ -707,6 +680,11 @@ namespace GrobExp.Mutators
         }
 
         private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, params ParameterExpression[] internalParameters)
+        {
+            return CacheExternalExpressions(expression, resultSelector, (IEnumerable<ParameterExpression>)internalParameters);
+        }
+
+        private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, IEnumerable<ParameterExpression> internalParameters)
         {
             Expression result;
             var externalExpressions = new ExternalExpressionsExtractor(internalParameters).Extract(expression);

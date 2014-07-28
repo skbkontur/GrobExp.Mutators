@@ -12,12 +12,11 @@ namespace GrobExp.Mutators.Visitors
 {
     public class CompositionPerformer : ExpressionVisitor
     {
-        public CompositionPerformer(Type from, Type to, ModelConfigurationNode convertationTree, List<KeyValuePair<Expression, Expression>> aliases)
+        public CompositionPerformer(Type from, Type to, ModelConfigurationNode convertationTree)
         {
             From = from;
             To = to;
             this.convertationTree = convertationTree;
-            this.aliases = aliases;
             var parameter = Expression.Parameter(to);
             lambda = Expression.Lambda(parameter, parameter);
         }
@@ -51,13 +50,18 @@ namespace GrobExp.Mutators.Visitors
                 if(i == shards.Length - 1)
                     return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(ApplyFilters(item.Key, filters), item.Value)).ToList();
                 if(conditionalSetters.Count == 1 && conditionalSetters[0].Value == null)
-                {
-                    var key = conditionalSetters[0].Key;
-                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(key, shards.Skip(i + 1)), filters), null)};
-                }
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(conditionalSetters[0].Key, shards.Skip(i + 1)), filters), null)};
                 return conditionalSetters.Select(item => new KeyValuePair<Expression, Expression>(ApplyFilters(Merge(item.Key, shards.Skip(i + 1)), filters), item.Value)).ToList();
             }
             return null;
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            Type type;
+            if(IsSimpleLinkOfChain(node, out type))
+                return type == From ? ResolveChain(node) : node;
+            return base.Visit(node);
         }
 
         protected override Expression VisitMember(MemberExpression node)
@@ -70,14 +74,6 @@ namespace GrobExp.Mutators.Visitors
                 return node.Update(expression);
             }
             return base.VisitMember(node);
-        }
-
-        public override Expression Visit(Expression node)
-        {
-            Type type;
-            if(IsSimpleLinkOfChain(node, out type))
-                return type == From ? ResolveChain(node) : node;
-            return base.Visit(node);
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
@@ -240,96 +236,6 @@ namespace GrobExp.Mutators.Visitors
             return operand.Type == type ? operand : Expression.Convert(operand, type);
         }
 
-//        private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternalNew(Expression node)
-//        {
-//            var shards = node.SmashToSmithereens();
-//            for(int i = shards.Length - 1; i > 0; --i)
-//            {
-//                var shard = shards[i];
-//                var convertationNode = convertationTree.Traverse(shard, false);
-//                if(convertationNode == null)
-//                    continue;
-//                var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
-//                if(setters.Length == 0)
-//                {
-//                    if(shard.Type.IsArray || shard.Type.IsDictionary())
-//                    {
-//                        var arrays = convertationNode.GetArrays(true);
-//                        Expression array;
-//                        if(arrays.TryGetValue(To, out array) && array != null)
-//                        {
-//                            var itemType = array.Type.GetItemType();
-//                            var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
-//                            var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
-//                            Expression rezult;
-//                            if(shard.NodeType == ExpressionType.ArrayIndex)
-//                                rezult = Expression.ArrayIndex(array, ((BinaryExpression)shard).Right);
-//                            else
-//                            {
-//                                if(itemConvertationNode != null)
-//                                    itemConvertationNode = itemConvertationNode.GotoMember(shard.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
-//                                rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)shard).Arguments);
-//                            }
-//                            if(itemConvertationNode != null)
-//                            {
-//                                var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
-//                                if(setter != null)
-//                                {
-//                                    var parameter = Expression.Parameter(shard.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
-//                                    var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, shard.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
-//                                    rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
-//                                }
-//                            }
-//                            return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(rezult, null)};
-//                        }
-//                    }
-//                    return null;
-//                }
-//                var result = new List<KeyValuePair<Expression, Expression>>();
-//                bool wasUnconditionalSetter = false;
-//                for(int index = setters.Length - 1; index >= 0; --index)
-//                {
-//                    var mutator = setters[index];
-//                    LambdaExpression value;
-//                    Expression condition;
-//                    StaticValidatorConfiguration validator;
-//                    var equalsToIfConfiguration = mutator as EqualsToIfConfiguration;
-//                    if(equalsToIfConfiguration == null)
-//                    {
-//                        if(wasUnconditionalSetter)
-//                            continue;
-//                        wasUnconditionalSetter = true;
-//                        var equalsToConfiguration = (EqualsToConfiguration)mutator;
-//                        value = equalsToConfiguration.Value;
-//                        condition = null;
-//                        validator = equalsToConfiguration.Validator;
-//                    }
-//                    else
-//                    {
-//                        value = equalsToIfConfiguration.Value;
-//                        condition = lambda.Merge(Perform(equalsToIfConfiguration.Condition)).Body;
-//                        validator = equalsToIfConfiguration.Validator;
-//                    }
-//                    if(validator != null)
-//                    {
-//                        if(aliases != null)
-//                        {
-//                            var validationResult = validator.Apply(aliases);
-//                            if(validationResult != null)
-//                            {
-//                                validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));
-//                                var valueIsValid = Expression.NotEqual(Expression.MakeMemberAccess(validationResult, validationResultTypeProperty), Expression.Constant(ValidationResultType.Error));
-//                                condition = condition == null ? valueIsValid : Expression.AndAlso(Convert(condition, typeof(bool)), valueIsValid);
-//                            }
-//                        }
-//                    }
-//                    result.Add(new KeyValuePair<Expression, Expression>(lambda.Merge(Perform(value)).Body, condition));
-//                }
-//                return result;
-//
-//            }
-//        }
-
         private Type GetMemberType(MemberInfo member)
         {
             switch(member.MemberType)
@@ -450,38 +356,6 @@ namespace GrobExp.Mutators.Visitors
                     if(constructedByLeaves == null) return null;
                     return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(constructedByLeaves, null)};
                 }
-
-//                if(node.Type.IsArray || node.Type.IsDictionary())
-//                {
-//                    var arrays = convertationNode.GetArrays(true);
-//                    Expression array;
-//                    if(arrays.TryGetValue(To, out array) && array != null)
-//                    {
-//                        var itemType = array.Type.GetItemType();
-//                        var arrayEach = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(itemType), array);
-//                        var itemConvertationNode = convertationNode.GotoEachArrayElement(false);
-//                        Expression rezult;
-//                        if(node.NodeType == ExpressionType.ArrayIndex)
-//                            rezult = Expression.ArrayIndex(array, ((BinaryExpression)node).Right);
-//                        else
-//                        {
-//                            if(itemConvertationNode != null)
-//                                itemConvertationNode = itemConvertationNode.GotoMember(node.Type.GetItemType().GetMember("Value", BindingFlags.Public | BindingFlags.Instance).Single(), false);
-//                            rezult = Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), ((MethodCallExpression)node).Arguments);
-//                        }
-//                        if(itemConvertationNode != null)
-//                        {
-//                            var setter = (EqualsToConfiguration)itemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
-//                            if(setter != null)
-//                            {
-//                                var parameter = Expression.Parameter(node.NodeType == ExpressionType.ArrayIndex ? itemType : itemType.GetGenericArguments()[1]);
-//                                var expression = setter.Value.Body.ResolveAliases(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.NodeType == ExpressionType.ArrayIndex ? array : Expression.Property(arrayEach, "Value"))});
-//                                rezult = Expression.Lambda(rezult, rezult.ExtractParameters()).Merge(Expression.Lambda(expression, parameter)).Body;
-//                            }
-//                        }
-//                        return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(resolver.Visit(rezult), null)};
-//                    }
-//                }
                 return null;
             }
             var result = new List<KeyValuePair<Expression, Expression>>();
@@ -636,6 +510,5 @@ namespace GrobExp.Mutators.Visitors
 
         private bool resolved;
         private readonly ModelConfigurationNode convertationTree;
-        private readonly List<KeyValuePair<Expression, Expression>> aliases;
     }
 }

@@ -132,6 +132,7 @@
     <Compile Include="Visitors\IsNullOrEmptyExtender.cs" />
     <Compile Include="Visitors\CompositionPerformer.cs" />
     <Compile Include="Visitors\LambdaExpressionCreator.cs" />
+    <Compile Include="Visitors\LinqEliminator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
     <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
     <Compile Include="Visitors\ParameterCanonizer.cs" />

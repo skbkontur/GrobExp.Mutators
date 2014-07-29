@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
@@ -41,6 +42,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToConfiguration(to, Resolve(path, performer, Value), Validator);
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new EqualsToConfiguration(Type, (LambdaExpression)resolver.Visit(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
+        }
+
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new EqualsToIfConfiguration(Type, Prepare(condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
@@ -49,7 +55,8 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
-            return Expression.Assign(PrepareForAssign(path), Convert(Value.Body.ResolveAliases(aliases), path.Type));
+            var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
+            return Expression.Assign(PrepareForAssign(path), value);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

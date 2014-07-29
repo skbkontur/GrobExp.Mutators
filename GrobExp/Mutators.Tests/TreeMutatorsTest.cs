@@ -532,8 +532,8 @@ namespace Mutators.Tests
                     //configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S != null).Each().U.S)
                     var subConfigurator = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Where(r => r.S != null).Each().U);
                     subConfigurator.Target(b => b.S).Set(u => u.S);
-                    var subConfigurator2 = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Each().U);
-                    subConfigurator2.Target(b => b.S).Set(u => u.S);
+//                    var subConfigurator2 = configurator.GoTo(data => data.A.B.Each(), data2 => data2.T.Rz.Each().U);
+//                    subConfigurator2.Target(b => b.S).Set(u => u.S);
                 });
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();

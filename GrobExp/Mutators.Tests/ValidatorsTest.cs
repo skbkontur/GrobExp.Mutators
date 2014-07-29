@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
-
-using GrEmit;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
@@ -219,11 +214,11 @@ namespace Mutators.Tests
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).IsLike("\\d+"));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
             validator(new TestData()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData{S = ""}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {S = ""}).AssertEquivalent(new ValidationResultTreeNode());
             validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode());
             ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "x123"});
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
-            validator(new TestData{S = "123x"}).AssertEquivalent(new ValidationResultTreeNode{{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText{Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
+            validator(new TestData {S = "123x"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
         }
 
         [Test]
@@ -231,8 +226,8 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.Dict["Zzz"]).Required());
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode { { "Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText { Paths = new[] { "Dict[Zzz]" } }) } });
-            validator(new TestData { Dict = new Dictionary<string, string> { { "Zzz", "qxx" } } }).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode {{"Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Dict[Zzz]"}})}});
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", "qxx"}}}).AssertEquivalent(new ValidationResultTreeNode());
         }
 
         [Test]
@@ -658,10 +653,7 @@ namespace Mutators.Tests
                 });
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var converterCollectionFactory = new TestConverterCollectionFactory();
-            var innerDataConfiguratorCollection = new TestDataConfiguratorCollection<InnerData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
-                {
-                    configurator.Target(data => data.InnerItems.Each().InnerItemz.Each().InnerZ).Required();
-                });
+            var innerDataConfiguratorCollection = new TestDataConfiguratorCollection<InnerData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { configurator.Target(data => data.InnerItems.Each().InnerItemz.Each().InnerZ).Required(); });
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
@@ -717,6 +709,55 @@ namespace Mutators.Tests
             validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"ModelItems.0.ModelItemz.1.ModelZ", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"ModelItems[0].ModelItemz[1].ModelZ"}})}});
         }
 
+        [MultiLanguageTextType("ValueMustBeLessThanText")]
+        public class ValueMustBeLessThanText : MultiLanguageTextBase
+        {
+            public object Threshold { get; set; }
+
+            protected override void Register()
+            {
+                Register("RU", () => "Поле должно быть меньше " + Threshold);
+                Register("EN", () => "The field must be less than " + Threshold);
+            }
+        }
+
+        [MultiLanguageTextType("ValueMustBeGreaterThanText")]
+        public class ValueMustBeGreaterThanText : MultiLanguageTextBase
+        {
+            public object Threshold { get; set; }
+
+            protected override void Register()
+            {
+                Register("RU", () => "Поле должно быть больше " + Threshold);
+                Register("EN", () => "The field must be greater than " + Threshold);
+            }
+        }
+
+        protected override void SetUp()
+        {
+            base.SetUp();
+            pathFormatterCollection = new PathFormatterCollection();
+        }
+
+        private static int[] BuildCounts(string[] keys)
+        {
+            if(keys == null)
+                return null;
+            var counts = new Dictionary<string, int>();
+            foreach(var key in keys)
+            {
+                if(string.IsNullOrEmpty(key))
+                    continue;
+                if(counts.ContainsKey(key))
+                    counts[key] = counts[key] + 1;
+                else
+                    counts[key] = 1;
+            }
+            return keys.Select(key => counts[key]).ToArray();
+        }
+
+        private IPathFormatterCollection pathFormatterCollection;
+
         private class InnerData2ndLevel
         {
             public string InnerZ { get; set; }
@@ -770,55 +811,6 @@ namespace Mutators.Tests
         {
             public ModelData1stLevel[] ModelItems { get; set; }
         }
-
-        [MultiLanguageTextType("ValueMustBeLessThanText")]
-        public class ValueMustBeLessThanText : MultiLanguageTextBase
-        {
-            public object Threshold { get; set; }
-
-            protected override void Register()
-            {
-                Register("RU", () => "Поле должно быть меньше " + Threshold);
-                Register("EN", () => "The field must be less than " + Threshold);
-            }
-        }
-
-        [MultiLanguageTextType("ValueMustBeGreaterThanText")]
-        public class ValueMustBeGreaterThanText : MultiLanguageTextBase
-        {
-            public object Threshold { get; set; }
-
-            protected override void Register()
-            {
-                Register("RU", () => "Поле должно быть больше " + Threshold);
-                Register("EN", () => "The field must be greater than " + Threshold);
-            }
-        }
-
-        protected override void SetUp()
-        {
-            base.SetUp();
-            pathFormatterCollection = new PathFormatterCollection();
-        }
-
-        private static int[] BuildCounts(string[] keys)
-        {
-            if(keys == null)
-                return null;
-            var counts = new Dictionary<string, int>();
-            foreach(var key in keys)
-            {
-                if(string.IsNullOrEmpty(key))
-                    continue;
-                if(counts.ContainsKey(key))
-                    counts[key] = counts[key] + 1;
-                else
-                    counts[key] = 1;
-            }
-            return keys.Select(key => counts[key]).ToArray();
-        }
-
-        private IPathFormatterCollection pathFormatterCollection;
 
         private class TestMutatorsContext : MutatorsContext
         {

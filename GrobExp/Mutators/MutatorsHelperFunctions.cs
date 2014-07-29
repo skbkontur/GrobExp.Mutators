@@ -77,6 +77,23 @@ namespace GrobExp.Mutators
                 action(item, index++);
         }
 
+        public static void ForEach<TSourceKey, TDestKey, TSourceValue, TDestValue>(
+            IDictionary<TSourceKey, TSourceValue> source,
+            IDictionary<TDestKey, TDestValue> dest,
+            Func<TSourceKey, TDestKey> keySelector,
+            Func<TSourceValue, TDestValue, TDestValue> valueSelector)
+        {
+            if(source == null) return;
+            foreach(var pair in source)
+            {
+                var key = keySelector(pair.Key);
+                TDestValue value;
+                if(!dest.TryGetValue(key, out value))
+                    dest.Add(key, value = default(TDestValue));
+                dest[key] = valueSelector(pair.Value, value);
+            }
+        }
+
         public static string JoinIgnoreEmpty(this string[] strings, string separator)
         {
             return string.Join(separator, strings.Where(s => !string.IsNullOrEmpty(s)));

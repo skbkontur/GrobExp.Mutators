@@ -28,6 +28,15 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Labels.Add(node.BreakLabel, breakLabel = context.Il.DefineLabel(string.IsNullOrEmpty(node.BreakLabel.Name) ? "break" : node.BreakLabel.Name));
             }
             ExpressionEmittersCollection.Emit(node.Body, context, out resultType);
+            if(resultType != typeof(void))
+            {
+                if(resultType.IsStruct())
+                {
+                    using(var temp = context.DeclareLocal(resultType))
+                        context.Il.Stloc(temp);
+                }
+                else context.Il.Pop();
+            }
             il.Br(continueLabel);
             if(breakLabel != null)
                 il.MarkLabel(breakLabel);

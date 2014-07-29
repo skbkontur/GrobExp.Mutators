@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GrobExp.Compiler
@@ -13,6 +14,11 @@ namespace GrobExp.Compiler
         public static bool IsStruct(this Type type)
         {
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
+        }
+
+        public static bool IsDictionary(this Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>);
         }
 
         public static Type GetDelegateType(Type[] parameterTypes, Type returnType)

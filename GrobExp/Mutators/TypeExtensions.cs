@@ -45,6 +45,27 @@ namespace GrobExp.Mutators
             return type.Name.StartsWith("<>f__AnonymousType");
         }
 
+        public static PropertyInfo[] GetOrderedProperties(this Type type, BindingFlags flags = BindingFlags.Public | BindingFlags.Instance)
+        {
+            var result = new List<PropertyInfo>();
+            GetProperties(type, flags, result);
+            result.Sort((first, second) =>
+                {
+                    if(first.Module.MetadataToken != second.Module.MetadataToken)
+                        return first.Module.MetadataToken - second.Module.MetadataToken;
+                    return first.MetadataToken - second.MetadataToken;
+                });
+            return result.ToArray();
+        }
+
+        private static void GetProperties(Type type, BindingFlags flags, List<PropertyInfo> list)
+        {
+            if(type == null || type == typeof(object))
+                return;
+            list.AddRange(type.GetProperties(flags));
+            GetProperties(type.BaseType, flags, list);
+        }
+
         private static T Default<T>()
         {
             return default(T);

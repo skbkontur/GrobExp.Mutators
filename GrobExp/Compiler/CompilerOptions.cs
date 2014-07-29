@@ -10,6 +10,7 @@ namespace GrobExp.Compiler
         CheckArrayIndexes = 2,
         ExtendOnAssign = 4,
         UseTernaryLogic = 8,
-        All = CheckNullReferences | CheckArrayIndexes | ExtendOnAssign | UseTernaryLogic
+        CheckDictionaryKeys = 16,
+        All = CheckNullReferences | CheckArrayIndexes | ExtendOnAssign | UseTernaryLogic | CheckDictionaryKeys
     }
 }

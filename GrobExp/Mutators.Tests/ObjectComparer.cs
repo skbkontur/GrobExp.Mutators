@@ -26,12 +26,12 @@ namespace Mutators.Tests
 
         public static void AssertEqualsExpression(this Expression actual, Expression expected)
         {
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(actual.Simplify()), ExpressionCompiler.DebugViewGetter(expected.Simplify()));
+            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
         }
 
         public static void AssertEqualsExpression<T>(this Expression<T> actual, Expression<T> expected)
         {
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(actual.Simplify()), ExpressionCompiler.DebugViewGetter(expected.Simplify()));
+            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
         }
 
         private static readonly ISerializer serializer = new Serializer(new AllFieldsExtractor(), new TestGroBufCustomSerializerCollection());

@@ -14,6 +14,7 @@ namespace GrobExp.Mutators
 
         public abstract MutatorConfiguration ToRoot(LambdaExpression path);
         public abstract MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer);
+        public abstract MutatorConfiguration ResolveAliases(AliasesResolver resolver);
         public abstract MutatorConfiguration If(LambdaExpression condition);
         public abstract void GetArrays(ArraysExtractor arraysExtractor);
 

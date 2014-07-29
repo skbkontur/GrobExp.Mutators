@@ -34,7 +34,63 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 MethodInfo getter = node.Indexer.GetGetMethod(context.SkipVisibility);
                 if(getter == null)
                     throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "get_" + node.Indexer.Name);
-                context.Il.Call(getter, node.Object.Type);
+                GroboIL.Label doneLabel = null;
+                if(node.Object.Type.IsDictionary())
+                {
+                    var valueType = node.Object.Type.GetGenericArguments()[1];
+                    ConstructorInfo constructor = valueType.GetConstructor(Type.EmptyTypes);
+                    extend &= (valueType.IsClass && constructor != null) || valueType.IsArray || valueType.IsValueType;
+                    doneLabel = context.Il.DefineLabel("done");
+                    using(var dict = context.DeclareLocal(node.Object.Type))
+                    using(var key = context.DeclareLocal(node.Arguments.Single().Type))
+                    using(var value = context.DeclareLocal(valueType))
+                    {
+                        context.Il.Stloc(key); // key = arg0; stack: [dict]
+                        context.Il.Dup(); // stack: [dict, dict]
+                        context.Il.Stloc(dict); // stack: [dict]
+                        context.Il.Ldloc(key); // stack: [dict, key]
+                        context.Il.Ldloca(value); // stack: [dict, key, ref value]
+                        var tryGetValueMethod = node.Object.Type.GetMethod("TryGetValue", BindingFlags.Public | BindingFlags.Instance);
+                        if(tryGetValueMethod == null)
+                            throw new MissingMethodException(node.Object.Type.Name, "TryGetValue");
+                        context.Il.Call(tryGetValueMethod, node.Object.Type); // stack: [dict.TryGetValue(key, out value)]
+                        var loadResultLabel = context.Il.DefineLabel("loadResult");
+                        context.Il.Brtrue(loadResultLabel); // if(dict.TryGetValue(key, out result)) goto loadResult; stack: []
+                        if(valueType.IsValueType)
+                        {
+                            context.Il.Ldloca(value);
+                            context.Il.Initobj(valueType); // value = default(valueType)
+                            context.Il.Ldloc(value); // stack: [default(valueType)]
+                        }
+                        else
+                        {
+                            if(!valueType.IsArray)
+                                context.Il.Newobj(constructor); // stack: [new valueType()]
+                            else
+                            {
+                                context.Il.Ldc_I4(0);
+                                context.Il.Newarr(valueType.GetElementType());  // stack: [new valueType[0]]
+                            }
+                        }
+                        context.Il.Stloc(value);
+                        if(extend)
+                        {
+                            context.Il.Ldloc(dict); // stack: [dict]
+                            context.Il.Ldloc(key); // stack: [dict, key]
+                            context.Il.Ldloc(value); // stack: [dict, key, value]
+                            var setter = node.Indexer.GetSetMethod(context.SkipVisibility);
+                            if(setter == null)
+                                throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "set_" + node.Indexer.Name);
+                            context.Il.Call(setter, node.Object.Type); // dict.set_Item(key, default(valueType)); stack: []
+                        }
+                        context.Il.MarkLabel(loadResultLabel);
+                        context.Il.Ldloc(value);
+                    }
+                }
+                if(doneLabel != null)
+                    context.Il.MarkLabel(doneLabel);
+                else
+                    context.Il.Call(getter, node.Object.Type);
             }
             else
             {

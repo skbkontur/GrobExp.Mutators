@@ -81,6 +81,13 @@ namespace GrobExp.Mutators
             return nodeInfo.TreeMutator;
         }
 
+        public MutatorConfiguration[] GetAllMutators()
+        {
+            var result = new List<MutatorConfiguration>();
+            GetAllMutators(result);
+            return result.ToArray();
+        }
+
         internal MutatorsTree<T> Migrate<T>(string key, ModelConfigurationNode converterTree)
         {
             return GetMigratedTrees<T>(key, converterTree).EntirelyMigrated;
@@ -190,6 +197,7 @@ namespace GrobExp.Mutators
         protected abstract Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path);
         protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
         protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
+        protected abstract void GetAllMutators(List<MutatorConfiguration> mutators);
 
         private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
         {

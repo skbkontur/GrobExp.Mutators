@@ -297,7 +297,8 @@ namespace GrobExp.Mutators
                         {
                             newChild = child.GotoEachArrayElement(false);
                             var arrays = child.GetArrays(true);
-                            var array = arrays.FirstOrDefault(pair => pair.Key != RootType).Value;
+                            var childPath = new ExpressionWrapper(child.Path, false);
+                            var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(childPath)).Value;
                             if(array != null)
                             {
                                 arrayAliases.Add(new KeyValuePair<Expression, Expression>(
@@ -334,7 +335,8 @@ namespace GrobExp.Mutators
                                 {
                                     newChild = newChild.GotoMember(newChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), false);
                                     var arrays = child.GetArrays(true);
-                                    var array = arrays.FirstOrDefault(pair => pair.Key != RootType).Value;
+                                    var childPath = new ExpressionWrapper(child.Path, false);
+                                    var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(childPath)).Value;
                                     if(array != null)
                                     {
                                         arrayAliases.Add(new KeyValuePair<Expression, Expression>(

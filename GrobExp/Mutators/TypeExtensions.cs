@@ -55,7 +55,15 @@ namespace GrobExp.Mutators
                         return first.Module.MetadataToken - second.Module.MetadataToken;
                     return first.MetadataToken - second.MetadataToken;
                 });
-            return result.ToArray();
+            var unique = new List<PropertyInfo>();
+            if(result.Count > 0)
+                unique.Add(result[0]);
+            for(int i = 1; i < result.Count; ++i)
+            {
+                if(result[i - 1].Module.MetadataToken != result[i].Module.MetadataToken || result[i - 1].MetadataToken != result[i].MetadataToken)
+                    unique.Add(result[i]);
+            }
+            return unique.ToArray();
         }
 
         private static void GetProperties(Type type, BindingFlags flags, List<PropertyInfo> list)

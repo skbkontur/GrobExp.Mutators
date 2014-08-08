@@ -200,23 +200,38 @@ namespace GrobExp.Mutators
 
         private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {
-            var tree = configurator.GetTree();
             var sourceParameter = Expression.Parameter(typeof(TSource));
             var destParameter = Expression.Parameter(typeof(TDest));
             ConfigureCustomFields(configurator, Expression.Lambda(sourceParameter, sourceParameter), Expression.Lambda(destParameter, destParameter));
-            foreach(var property in typeof(TDest).GetProperties().Where(property => property.PropertyType.IsArray))
+            ConfigureCustomFieldsForArrays(configurator, typeof(TDest), Expression.Lambda(destParameter, destParameter));
+        }
+
+        private void ConfigureCustomFieldsForArrays(ConverterConfigurator<TSource, TDest> configurator, Type type, LambdaExpression pathToDestChild)
+        {
+            if(type == null || type.IsPrimitive || type == typeof(string) || type.IsValueType)
+                return;
+            var tree = configurator.GetTree();
+            var properties = type.GetOrderedProperties();
+            var parameter = Expression.Parameter(type);
+            foreach(var property in properties)
             {
-                var pathToDestArray = Expression.Property(destParameter, property);
-                var node = tree.Traverse(pathToDestArray, false);
-                if(node == null)
-                    continue;
-                var arrays = node.GetArrays(true);
-                Expression pathToSourceArray;
-                if(!arrays.TryGetValue(typeof(TSource), out pathToSourceArray))
-                    continue;
-                var pathToDestArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToDestArray.Type.GetItemType()), pathToDestArray);
-                var pathToSourceArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToSourceArray.Type.GetItemType()), pathToSourceArray);
-                ConfigureCustomFields(configurator, Expression.Lambda(pathToSourceArrayItem, pathToSourceArray.ExtractParameters()), Expression.Lambda(pathToDestArrayItem, pathToDestArray.ExtractParameters()));
+                var pathToNextDestChild = pathToDestChild.Merge(Expression.Lambda(Expression.Property(parameter, property), parameter));
+                if(!property.PropertyType.IsArray)
+                    ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild);
+                else
+                {
+                    var pathToDestArray = pathToNextDestChild.Body;
+                    var node = tree.Traverse(pathToDestArray, false);
+                    if(node == null)
+                        continue;
+                    var arrays = node.GetArrays(true);
+                    Expression pathToSourceArray;
+                    if(!arrays.TryGetValue(typeof(TSource), out pathToSourceArray))
+                        continue;
+                    var pathToDestArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToDestArray.Type.GetItemType()), pathToDestArray);
+                    var pathToSourceArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToSourceArray.Type.GetItemType()), pathToSourceArray);
+                    ConfigureCustomFields(configurator, Expression.Lambda(pathToSourceArrayItem, pathToSourceArray.ExtractParameters()), Expression.Lambda(pathToDestArrayItem, pathToDestArray.ExtractParameters()));
+                }
             }
         }
 

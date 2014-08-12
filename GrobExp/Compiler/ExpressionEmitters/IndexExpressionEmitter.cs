@@ -39,7 +39,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 {
                     var valueType = node.Object.Type.GetGenericArguments()[1];
                     ConstructorInfo constructor = valueType.GetConstructor(Type.EmptyTypes);
-                    extend &= (valueType.IsClass && constructor != null) || valueType.IsArray || valueType.IsValueType;
+                    extend &= (valueType.IsClass && constructor != null) || valueType.IsArray || valueType.IsValueType || valueType == typeof(string);
                     doneLabel = context.Il.DefineLabel("done");
                     using(var dict = context.DeclareLocal(node.Object.Type))
                     using(var key = context.DeclareLocal(node.Arguments.Single().Type))
@@ -62,6 +62,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             context.Il.Initobj(valueType); // value = default(valueType)
                             context.Il.Ldloc(value); // stack: [default(valueType)]
                         }
+                        else if(valueType == typeof(string))
+                            context.Il.Ldstr("");
                         else
                         {
                             if(!valueType.IsArray)

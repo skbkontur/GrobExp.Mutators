@@ -745,7 +745,8 @@ namespace GrobExp.Mutators
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {fullPath});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(child.NodeType), new Expression[] {item});
                     // todo ich: почему только первый?
-                    var array = GetArrays(fullPath, true).FirstOrDefault(pair => pair.Key != RootType).Value;
+                    var arrays = GetArrays(fullPath, true);
+                    var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(fullPath, false))).Value;
                     if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
                         return;
                     ParameterExpression arrayParameter = null;

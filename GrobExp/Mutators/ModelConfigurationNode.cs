@@ -786,7 +786,7 @@ namespace GrobExp.Mutators
                             Expression resizeIfNeeded;
                             if(path.Type.IsArray)
                             {
-                                Expression lengthsAreDifferent = Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter));
+                                Expression lengthsAreDifferent = Expression.OrElse(destArrayIsNull, Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter)));
                                 var temp = Expression.Parameter(path.Type);
                                 resizeIfNeeded = Expression.IfThen(
                                     lengthsAreDifferent,

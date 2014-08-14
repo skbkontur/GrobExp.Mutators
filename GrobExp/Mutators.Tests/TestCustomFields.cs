@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Reflection;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Validators.Texts;
 
 using NUnit.Framework;
+
+using System.Linq;
 
 namespace Mutators.Tests
 {
@@ -48,6 +53,43 @@ namespace Mutators.Tests
                 });
             converterCollectionFactory.Register(webDataToDataConverterCollection);
             converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
+        }
+
+        [Test]
+        public void TestWebDataToDataConverter()
+        {
+            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator => configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id));
+            var converter = webDataToDataConverterCollection.GetConverter(MutatorsContext.Empty);
+            var data = converter(new WebData
+                {
+                    CustomFields = new Dictionary<string, CustomFieldValue>
+                        {
+                            {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
+                            {"ComplexField_X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
+                        }
+                });
+            Assert.AreEqual("zzz", data.S);
+            Assert.IsNotNull(data.ComplexField);
+            Assert.AreEqual(123, data.ComplexField.X);
+        }
+
+        [Test]
+        public void TestDataToWebDataConverter()
+        {
+            var dataToWebDataConverterCollection = new TestConverterCollection<Data, WebData>(pathFormatterCollection, configurator => configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id));
+            var converter = dataToWebDataConverterCollection.GetConverter(MutatorsContext.Empty);
+            var data = converter(new Data
+                {
+                    S = "zzz",
+                    ComplexField = new ComplexCustomField{ X = 123}
+                });
+            Assert.IsNotNull(data.CustomFields);
+            Assert.That(data.CustomFields.ContainsKey("S"));
+            Assert.IsNotNull(data.CustomFields["S"]);
+            Assert.AreEqual("zzz", data.CustomFields["S"].Value);
+            Assert.That(data.CustomFields.ContainsKey("ComplexField_X"));
+            Assert.IsNotNull(data.CustomFields["ComplexField_X"]);
+            Assert.AreEqual(123, data.CustomFields["ComplexField_X"].Value);
         }
 
         [Test]
@@ -207,6 +249,12 @@ namespace Mutators.Tests
         private TestConverterCollectionFactory converterCollectionFactory;
         private PathFormatterCollection pathFormatterCollection;
 
+        private class ComplexCustomField
+        {
+            [CustomField()]
+            public int X { get; set; }
+        }
+
         private class DataItem
         {
             public string Id { get; set; }
@@ -237,6 +285,9 @@ namespace Mutators.Tests
 
             [CustomField]
             public string S { get; set; }
+
+            [CustomField()]
+            public ComplexCustomField ComplexField { get; set; }
 
             public DataItem[] Items { get; set; }
         }

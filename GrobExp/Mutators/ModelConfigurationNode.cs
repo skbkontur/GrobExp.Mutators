@@ -831,9 +831,7 @@ namespace GrobExp.Mutators
                     aliases.Add(new KeyValuePair<Expression, Expression>(destKeyParameter, destKey));
 
                     // todo ich: почему только первый?
-                    var array = GetArrays(fullPath, true).FirstOrDefault(pair => pair.Key != RootType).Value;
-                    if(array == null)
-                        throw new NotSupportedException();
+                    var array = GetArrays(fullPath, true).Single().Value;
                     var itemType = array.Type.GetItemType();
                     arguments = itemType.GetGenericArguments();
                     var sourceKeyType = arguments[0];

@@ -269,6 +269,9 @@ namespace Mutators.Tests
                 },
             };
             mutator(data);
+            Assert.AreEqual(0, data.CustomFieldsCopy["X"].Value);
+            Assert.AreEqual(1, data.CustomFieldsCopy["Y"].Value);
+            Assert.AreEqual(2, data.CustomFieldsCopy["Z"].Value);
         }
 
         private TestConverterCollectionFactory converterCollectionFactory;

@@ -246,6 +246,31 @@ namespace Mutators.Tests
             Assert.AreEqual(3, modelData.Items[0].CustomFields["X"].Value);
         }
 
+        [Test]
+        public void TestCustomFieldsContainerCopy()
+        {
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var dataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
+            {
+                configurator.Target(x => x.CustomFieldsCopy.Each().Key).Set(x => x.CustomFields.Current().Key);
+                configurator.Target(x => x.CustomFieldsCopy.Each().Value.Value).Set(x => x.CustomFields.Current().Value.Value);
+                configurator.Target(x => x.CustomFieldsCopy.Each().Value.TypeCode).Set(x => x.CustomFields.Current().Value.TypeCode);
+                configurator.Target(x => x.CustomFieldsCopy.Each().Value.Title).Set(x => x.CustomFields.Current().Value.Title);
+            });
+
+            var mutator = dataConfiguratorCollection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            var data = new WebData
+            {
+                CustomFields = new Dictionary<string, CustomFieldValue>
+                {
+                    {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
+                    {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
+                    {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
+                },
+            };
+            mutator(data);
+        }
+
         private TestConverterCollectionFactory converterCollectionFactory;
         private PathFormatterCollection pathFormatterCollection;
 
@@ -306,6 +331,7 @@ namespace Mutators.Tests
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }
 
             public WebDataItem[] Items { get; set; }
+            public Dictionary<string, CustomFieldValue> CustomFieldsCopy { get; set; }
         }
 
         private class ModelDataItem

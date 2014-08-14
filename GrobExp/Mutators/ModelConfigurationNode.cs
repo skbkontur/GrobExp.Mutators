@@ -744,11 +744,13 @@ namespace GrobExp.Mutators
                     var indexParameter = Expression.Parameter(typeof(int));
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {fullPath});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(child.NodeType), new Expression[] {item});
-                    aliases.Add(new KeyValuePair<Expression, Expression>(childParameter, item));
-                    aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, index));
                     // todo ich: почему только первый?
                     var array = GetArrays(fullPath, true).FirstOrDefault(pair => pair.Key != RootType).Value;
+                    if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
+                        return;
                     ParameterExpression arrayParameter = null;
+                    aliases.Add(new KeyValuePair<Expression, Expression>(childParameter, item));
+                    aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, index));
                     var itemType = array == null ? null : array.Type.GetItemType();
                     if(array != null)
                     {

@@ -144,7 +144,7 @@ namespace GrobExp.Mutators
             foreach(var property in properties)
             {
                 var nextCurrent = Expression.Property(current, property);
-                var nextPath = string.IsNullOrEmpty(path) ? property.Name : path + "_" + property.Name;
+                var nextPath = string.IsNullOrEmpty(path) ? property.Name : path + "ё" + property.Name;
                 if(string.IsNullOrEmpty(path))
                     rootProperty = property;
                 if(IsALeaf(property.PropertyType))

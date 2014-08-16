@@ -65,7 +65,7 @@ namespace Mutators.Tests
                     CustomFields = new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
-                            {"ComplexField_X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
+                            {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                         }
                 });
             Assert.AreEqual("zzz", data.S);
@@ -87,9 +87,9 @@ namespace Mutators.Tests
             Assert.That(data.CustomFields.ContainsKey("S"));
             Assert.IsNotNull(data.CustomFields["S"]);
             Assert.AreEqual("zzz", data.CustomFields["S"].Value);
-            Assert.That(data.CustomFields.ContainsKey("ComplexField_X"));
-            Assert.IsNotNull(data.CustomFields["ComplexField_X"]);
-            Assert.AreEqual(123, data.CustomFields["ComplexField_X"].Value);
+            Assert.That(data.CustomFields.ContainsKey("ComplexFieldёX"));
+            Assert.IsNotNull(data.CustomFields["ComplexFieldёX"]);
+            Assert.AreEqual(123, data.CustomFields["ComplexFieldёX"].Value);
         }
 
         [Test]

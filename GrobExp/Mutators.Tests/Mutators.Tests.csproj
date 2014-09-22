@@ -60,6 +60,7 @@
     <Compile Include="ExpressionNullCheckingExtenderTest.cs" />
     <Compile Include="ExpressionSimplifierTest.cs" />
     <Compile Include="IsNullOrEmptyExtenderTest.cs" />
+    <Compile Include="LinqEliminatorTest.cs" />
     <Compile Include="ObjectComparer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestBase.cs" />

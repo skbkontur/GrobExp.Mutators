@@ -223,6 +223,18 @@ namespace GrobExp.Mutators.Visitors
                 {
                     var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
                     collectionSelector = Expression.Lambda(new ParameterReplacer(collectionSelector.Parameters.Single(), current).Visit(collectionSelector.Body), current);
+
+
+                    /*var localVariables = new List<ParameterExpression>();
+                    var newIndex = CreateParameter(typeof(int), "index");
+                    variables.Add(newIndex);
+                    var localExpressions = new List<Expression> {Expression.PreIncrementAssign(newIndex)};
+                    ProcessMethodsChain(smithereens, from + 1, to, current, localExpressions, localVariables, cycleIndexes, result, found, indexesCopy, newIndex, breakLabel);
+                    expressions.Add(Expression.Assign(newIndex, Expression.Constant(-1)));
+                    expressions.Add(Expression.IfThen(Visit(predicate.Body), Expression.Block(localVariables, localExpressions)));*/
+
+
+
                     var collection = Visit(collectionSelector.Body);
 
                     var collectionKind = GetCollectionKind(collection.Type);

@@ -1102,16 +1102,19 @@ namespace GrobExp.Mutators
                     if(current != null)
                         isDisabled = isDisabled == null ? current : Expression.OrElse(current, isDisabled);
                 }
-                Expression value = Expression.Convert(path.ResolveAliases(aliases), typeof(object));
+
 
                 var firstAlias = new List<KeyValuePair<Expression, Expression>> {aliases.First()};
                 var aliasesInTermsOfFirst = aliases.Count > 1 ? aliases.Skip(1).ToList() : new List<KeyValuePair<Expression, Expression>>();
                 aliasesInTermsOfFirst = aliasesInTermsOfFirst.Select(pair => new KeyValuePair<Expression, Expression>(pair.Key, pair.Value.ResolveAliases(firstAlias))).ToList();
 
-                var indexes = new Expression[aliasesInTermsOfFirst.Count / 2];
-                for(var i = 0; i < indexes.Length; ++i)
-                    indexes[i] = aliasesInTermsOfFirst[i * 2 + 1].Key;
-                var eachesResolver = new EachesResolver(indexes);
+                var eachesResolver = new EachesResolver(new int[aliasesInTermsOfFirst.Count / 2].Select((x, i) => aliasesInTermsOfFirst[i * 2 + 1].Key).ToArray());
+
+
+                // Replace LINQ methods with cycles to obtain indexes
+                ParameterExpression[] indexes;
+                Expression value = Expression.Convert(new LinqEliminator().Eliminate(eachesResolver.Visit(path), out indexes), typeof(object));
+
                 var chains = path.CutToChains(true, true).GroupBy(exp => new ExpressionWrapper(exp, false)).Select(grouping => grouping.Key.Expression.ResolveAliases(firstAlias)).ToArray();
                 Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
                 Expression formattedChains;

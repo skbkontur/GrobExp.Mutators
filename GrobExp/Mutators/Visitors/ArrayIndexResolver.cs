@@ -15,65 +15,71 @@ namespace GrobExp.Mutators.Visitors
         // todo ich: слишком медленный монстр, убить
         public Expression Resolve(Expression exp)
         {
-            //return Expression.Constant(new[] {"root"}, typeof(string[]));
-            var resolveInternal = ResolveInternal(exp, false);
-            var extendNulls = resolveInternal;
-            ParameterExpression indexes = Expression.Variable(typeof(int[]));
-            Expression indexesInit = Expression.Assign(indexes, Expression.MakeMemberAccess(extendNulls, extendNulls.Type.GetProperty("Indexes", BindingFlags.Public | BindingFlags.Instance)));
-            var spine = Expression.Lambda(exp, exp.ExtractParameters()).ExtractPrimaryDependencies().Single().Body;
-            var result = new List<Expression>();
-            var shards = spine.SmashToSmithereens();
-            int k = 0;
-            for(int i = 1; i < shards.Length; ++i)
-            {
-                var shard = shards[i];
-                switch(shard.NodeType)
-                {
-                case ExpressionType.Convert:
-                    break;
-                case ExpressionType.MemberAccess:
-                    {
-                        var memberExpression = (MemberExpression)shard;
-                        result.Add(Expression.Constant(memberExpression.Member.Name));
-                        break;
-                    }
-                case ExpressionType.ArrayIndex:
-                    {
-                        var binaryExpression = (BinaryExpression)shard;
-                        result.Add(Expression.Call(binaryExpression.Right, "ToString", Type.EmptyTypes));
-                        break;
-                    }
-                case ExpressionType.Call:
-                    {
-                        var methodCallExpression = (MethodCallExpression)shard;
-                        /*if(methodCallExpression.Method.IsCurrentMethod())
-                        {
-//                            Expression array = methodCallExpression.Arguments.Single();
-//                            Type elementType = array.Type.GetElementType();
-//                            Expression index = Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(elementType), Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(elementType), array));
-                            result.Add(Expression.Call(globalIndexes[l++], "ToString", Type.EmptyTypes));
-                        }
-                        else*/
-                        if(methodCallExpression.Method.IsEachMethod())
-                        {
-                            result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
-                            ++k;
-                        }
-                        else if(methodCallExpression.Method.IsIndexerGetter())
-                            result.AddRange(methodCallExpression.Arguments);
-                        else
-                            throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
-                        break;
-                    }
-                default:
-                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
-                }
-            }
 
-//            Expression writeExp = Expression.Call(consoleWriteLineMethod, new[] {Expression.Constant(exp.ToString())});
-//            Expression writeIndexes = Expression.Call(consoleWriteLineMethod, new[] {Expression.Call(stringJoinMethod, new Expression[] {Expression.Constant(", "), indexes})});
+            ParameterExpression[] indexes;
+            var withoutLinq = new LinqEliminator().Eliminate(exp, out indexes);
+            var paths = ExpressionPathsBuilder.BuildPaths(exp, indexes);
+            return Expression.Block(indexes, withoutLinq, paths);
 
-            return Expression.Block(typeof(string[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(string), result));
+//            //return Expression.Constant(new[] {"root"}, typeof(string[]));
+//            var resolveInternal = ResolveInternal(exp, false);
+//            var extendNulls = resolveInternal;
+//            ParameterExpression indexes = Expression.Variable(typeof(int[]));
+//            Expression indexesInit = Expression.Assign(indexes, Expression.MakeMemberAccess(extendNulls, extendNulls.Type.GetProperty("Indexes", BindingFlags.Public | BindingFlags.Instance)));
+//            var spine = Expression.Lambda(exp, exp.ExtractParameters()).ExtractPrimaryDependencies().Single().Body;
+//            var result = new List<Expression>();
+//            var shards = spine.SmashToSmithereens();
+//            int k = 0;
+//            for(int i = 1; i < shards.Length; ++i)
+//            {
+//                var shard = shards[i];
+//                switch(shard.NodeType)
+//                {
+//                case ExpressionType.Convert:
+//                    break;
+//                case ExpressionType.MemberAccess:
+//                    {
+//                        var memberExpression = (MemberExpression)shard;
+//                        result.Add(Expression.Constant(memberExpression.Member.Name));
+//                        break;
+//                    }
+//                case ExpressionType.ArrayIndex:
+//                    {
+//                        var binaryExpression = (BinaryExpression)shard;
+//                        result.Add(Expression.Call(binaryExpression.Right, "ToString", Type.EmptyTypes));
+//                        break;
+//                    }
+//                case ExpressionType.Call:
+//                    {
+//                        var methodCallExpression = (MethodCallExpression)shard;
+//                        /*if(methodCallExpression.Method.IsCurrentMethod())
+//                        {
+////                            Expression array = methodCallExpression.Arguments.Single();
+////                            Type elementType = array.Type.GetElementType();
+////                            Expression index = Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(elementType), Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(elementType), array));
+//                            result.Add(Expression.Call(globalIndexes[l++], "ToString", Type.EmptyTypes));
+//                        }
+//                        else*/
+//                        if(methodCallExpression.Method.IsEachMethod())
+//                        {
+//                            result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
+//                            ++k;
+//                        }
+//                        else if(methodCallExpression.Method.IsIndexerGetter())
+//                            result.AddRange(methodCallExpression.Arguments);
+//                        else
+//                            throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
+//                        break;
+//                    }
+//                default:
+//                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
+//                }
+//            }
+//
+////            Expression writeExp = Expression.Call(consoleWriteLineMethod, new[] {Expression.Constant(exp.ToString())});
+////            Expression writeIndexes = Expression.Call(consoleWriteLineMethod, new[] {Expression.Call(stringJoinMethod, new Expression[] {Expression.Constant(", "), indexes})});
+//
+//            return Expression.Block(typeof(string[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(string), result));
         }
 
         //private static readonly MethodInfo consoleWriteLineMethod = ((MethodCallExpression)((Expression<Action<string>>)(s => Console.WriteLine(s))).Body).Method;

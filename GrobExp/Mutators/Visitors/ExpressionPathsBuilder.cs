@@ -203,6 +203,7 @@ namespace GrobExp.Mutators.Visitors
                         {
                             var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
                             var parameter = collectionSelector.Parameters.Single();
+                            var startPaths = paths;
                             context.parameters.Add(parameter, paths);
                             paths = BuildPaths(collectionSelector.Body, context);
                             context.parameters.Remove(parameter);
@@ -211,6 +212,15 @@ namespace GrobExp.Mutators.Visitors
                                 foreach(var path in paths)
                                     path.Add(context.indexes[context.index]);
                                 context.index++;
+                            }
+                            if(methodCallExpression.Arguments.Count > 2)
+                            {
+                                var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
+                                context.parameters.Add(resultSelector.Parameters[0], startPaths);
+                                context.parameters.Add(resultSelector.Parameters[1], paths);
+                                paths = BuildPaths(resultSelector.Body, context);
+                                context.parameters.Remove(resultSelector.Parameters[1]);
+                                context.parameters.Remove(resultSelector.Parameters[0]);
                             }
                         }
                         break;

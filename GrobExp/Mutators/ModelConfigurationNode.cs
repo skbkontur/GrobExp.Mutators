@@ -744,11 +744,14 @@ namespace GrobExp.Mutators
                     var indexParameter = Expression.Parameter(typeof(int));
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {fullPath});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(child.NodeType), new Expression[] {item});
+                    // todo ich: почему только первый?
+                    var arrays = GetArrays(fullPath, true);
+                    var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(fullPath, false))).Value;
+                    if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
+                        return;
+                    ParameterExpression arrayParameter = null;
                     aliases.Add(new KeyValuePair<Expression, Expression>(childParameter, item));
                     aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, index));
-                    // todo ich: почему только первый?
-                    var array = GetArrays(fullPath, true).FirstOrDefault(pair => pair.Key != RootType).Value;
-                    ParameterExpression arrayParameter = null;
                     var itemType = array == null ? null : array.Type.GetItemType();
                     if(array != null)
                     {
@@ -784,7 +787,7 @@ namespace GrobExp.Mutators
                             Expression resizeIfNeeded;
                             if(path.Type.IsArray)
                             {
-                                Expression lengthsAreDifferent = Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter));
+                                Expression lengthsAreDifferent = Expression.OrElse(destArrayIsNull, Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter)));
                                 var temp = Expression.Parameter(path.Type);
                                 resizeIfNeeded = Expression.IfThen(
                                     lengthsAreDifferent,
@@ -829,9 +832,7 @@ namespace GrobExp.Mutators
                     aliases.Add(new KeyValuePair<Expression, Expression>(destKeyParameter, destKey));
 
                     // todo ich: почему только первый?
-                    var array = GetArrays(fullPath, true).FirstOrDefault(pair => pair.Key != RootType).Value;
-                    if(array == null)
-                        throw new NotSupportedException();
+                    var array = GetArrays(fullPath, true).Single().Value;
                     var itemType = array.Type.GetItemType();
                     arguments = itemType.GetGenericArguments();
                     var sourceKeyType = arguments[0];

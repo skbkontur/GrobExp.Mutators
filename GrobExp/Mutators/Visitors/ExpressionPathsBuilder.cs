@@ -11,7 +11,7 @@ namespace GrobExp.Mutators.Visitors
         public static Expression BuildPaths(Expression node, ParameterExpression[] indexes)
         {
             var context = new Context(indexes);
-            var paths = BuildPaths(node, context);
+            var paths = ((SinglePaths)BuildPaths(node, context)).paths;
             paths.AddRange(context.paths);
             var result = new List<Expression>();
             foreach(var path in paths)
@@ -24,18 +24,24 @@ namespace GrobExp.Mutators.Visitors
             return Expression.NewArrayInit(typeof(string[]), result);
         }
 
-        private static List<List<Expression>> BuildPaths(IEnumerable<Expression> list, Context context)
+        private static Paths BuildPaths(IEnumerable<Expression> list, Context context)
         {
-            var result = new List<List<Expression>>();
+            Paths result = null;
             foreach(var exp in list)
-                result.AddRange(BuildPaths(exp, context));
+            {
+                var current = BuildPaths(exp, context);
+                if(result == null)
+                    result = current;
+                else
+                    result.MergeWith(current);
+            }
             return result;
         }
 
-        private static List<List<Expression>> BuildPaths(Expression node, Context context)
+        private static Paths BuildPaths(Expression node, Context context)
         {
             if(node == null)
-                return new List<List<Expression>>();
+                return new SinglePaths {paths = new List<List<Expression>>()};
             if(node.IsLinkOfChain(true, true))
                 return BuildPathsForChain(node, context);
             switch(node.NodeType)
@@ -156,12 +162,12 @@ namespace GrobExp.Mutators.Visitors
             }
         }
 
-        private static List<List<Expression>> BuildPathsForChain(Expression node, Context context)
+        private static Paths BuildPathsForChain(Expression node, Context context)
         {
             var smithereens = node.SmashToSmithereens();
-            List<List<Expression>> paths;
+            Paths paths;
             if(!context.parameters.TryGetValue((ParameterExpression)smithereens[0], out paths))
-                paths = new List<List<Expression>>{new List<Expression>()};
+                paths = new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
             for(int i = 1; i < smithereens.Length; ++i)
             {
                 var shard = smithereens[i];
@@ -171,8 +177,7 @@ namespace GrobExp.Mutators.Visitors
                     var method = methodCallExpression.Method;
                     if(!IsLinqCall(smithereens[i - 1]))
                     {
-                        foreach(var path in paths)
-                            path.Add(context.indexes[context.index]);
+                        paths.Add(context.indexes[context.index]);
                         context.index++;
                     }
                     switch(method.Name)
@@ -209,8 +214,7 @@ namespace GrobExp.Mutators.Visitors
                             context.parameters.Remove(parameter);
                             if(!IsLinqCall(collectionSelector.Body))
                             {
-                                foreach(var path in paths)
-                                    path.Add(context.indexes[context.index]);
+                                paths.Add(context.indexes[context.index]);
                                 context.index++;
                             }
                             if(methodCallExpression.Arguments.Count > 2)
@@ -233,12 +237,17 @@ namespace GrobExp.Mutators.Visitors
                     switch(shard.NodeType)
                     {
                     case ExpressionType.MemberAccess:
-                        foreach(var path in paths)
-                            path.Add(Expression.Constant(((MemberExpression)shard).Member.Name));
+                        paths = AddMember(paths, ((MemberExpression)shard).Member);
                         break;
                     case ExpressionType.ArrayIndex:
-                        foreach(var path in paths)
-                            path.Add(((BinaryExpression)shard).Right);
+                        paths.Add(((BinaryExpression)shard).Right);
+                        break;
+                    case ExpressionType.Call:
+                        var methodCallExpression = (MethodCallExpression)shard;
+                        if(!methodCallExpression.Method.IsIndexerGetter())
+                            throw new InvalidOperationException("Method '" + methodCallExpression.Method + "' is not valid at this point");
+                        foreach(var argument in methodCallExpression.Arguments)
+                            paths.Add(argument);
                         break;
                     default:
                         throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not valid at this point");
@@ -260,147 +269,221 @@ namespace GrobExp.Mutators.Visitors
             return method.DeclaringType == typeof(Enumerable);
         }
 
-        private static List<List<Expression>> BuildPathsUnary(UnaryExpression node, Context context)
+        private static Paths BuildPathsUnary(UnaryExpression node, Context context)
         {
             return BuildPaths(node.Operand, context);
         }
 
-        private static List<List<Expression>> BuildPathsBinary(BinaryExpression node, Context context)
+        private static Paths BuildPathsBinary(BinaryExpression node, Context context)
         {
             var result = BuildPaths(node.Left, context);
-            result.AddRange(BuildPaths(node.Right, context));
+            result.MergeWith(BuildPaths(node.Right, context));
             return result;
         }
 
-        private static List<List<Expression>> BuildPathsBlock(BlockExpression node, Context context)
+        private static Paths BuildPathsBlock(BlockExpression node, Context context)
         {
             return BuildPaths(node.Expressions, context);
         }
 
-        private static List<List<Expression>> BuildPathsCall(MethodCallExpression node, Context context)
+        private static Paths BuildPathsCall(MethodCallExpression node, Context context)
         {
             var result = BuildPaths(node.Object, context);
-            result.AddRange(BuildPaths(node.Arguments, context));
+            result.MergeWith(BuildPaths(node.Arguments, context));
             return result;
         }
 
-        private static List<List<Expression>> BuildPathsConditional(ConditionalExpression node, Context context)
+        private static Paths BuildPathsConditional(ConditionalExpression node, Context context)
         {
             BuildPaths(node.Test, context);
             var result = BuildPaths(node.IfTrue, context);
-            result.AddRange(BuildPaths(node.IfFalse, context));
+            result.MergeWith(BuildPaths(node.IfFalse, context));
             return result;
         }
 
-        private static List<List<Expression>> BuildPathsConstant(ConstantExpression node, Context context)
+        private static Paths BuildPathsConstant(ConstantExpression node, Context context)
         {
-            return new List<List<Expression>>();
+            return new SinglePaths {paths = new List<List<Expression>>()};
         }
 
-        private static List<List<Expression>> BuildPathsParameter(ParameterExpression node, Context context)
+        private static Paths BuildPathsParameter(ParameterExpression node, Context context)
         {
-            List<List<Expression>> result;
+            Paths result;
             if(!context.parameters.TryGetValue(node, out result))
-                result = new List<List<Expression>>();
+                result = new SinglePaths {paths = new List<List<Expression>>()};
             return result;
         }
 
-        private static List<List<Expression>> BuildPathsMemberAccess(MemberExpression node, Context context)
+        private static Paths AddMember(Paths paths, MemberInfo member)
         {
-            var result = BuildPaths(node.Expression, context);
-            foreach(var path in result)
-                path.Add(Expression.Constant(node.Member.Name));
-            return result;
+            var multiplePaths = paths as MultiplePaths;
+            if(multiplePaths != null)
+            {
+                List<List<Expression>> list;
+                if(multiplePaths.paths.TryGetValue(member, out list))
+                    return new SinglePaths {paths = list};
+            }
+            paths.Add(Expression.Constant(member.Name));
+            return paths;
         }
 
-        private static List<List<Expression>> BuildPathsDebugInfo(DebugInfoExpression node, Context context)
+        private static Paths BuildPathsMemberAccess(MemberExpression node, Context context)
+        {
+            return AddMember(BuildPaths(node.Expression, context), node.Member);
+        }
+
+        private static Paths BuildPathsDebugInfo(DebugInfoExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsDefault(DefaultExpression node, Context context)
+        private static Paths BuildPathsDefault(DefaultExpression node, Context context)
         {
-            return new List<List<Expression>>();
+            return new SinglePaths {paths = new List<List<Expression>>()};
         }
 
-        private static List<List<Expression>> BuildPathsDynamic(DynamicExpression node, Context context)
+        private static Paths BuildPathsDynamic(DynamicExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsExtension(Expression node, Context context)
+        private static Paths BuildPathsExtension(Expression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsGoto(GotoExpression node, Context context)
+        private static Paths BuildPathsGoto(GotoExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsIndex(IndexExpression node, Context context)
+        private static Paths BuildPathsIndex(IndexExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsInvoke(InvocationExpression node, Context context)
+        private static Paths BuildPathsInvoke(InvocationExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsLabel(LabelExpression node, Context context)
+        private static Paths BuildPathsLabel(LabelExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsLambda(LambdaExpression node, Context context)
+        private static Paths BuildPathsLambda(LambdaExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsListInit(ListInitExpression node, Context context)
+        private static Paths BuildPathsListInit(ListInitExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsLoop(LoopExpression node, Context context)
+        private static Paths BuildPathsLoop(LoopExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsMemberInit(MemberInitExpression node, Context context)
+        private static Paths BuildPathsMemberInit(MemberInitExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsNew(NewExpression node, Context context)
+        private static Paths BuildPathsNew(NewExpression node, Context context)
+        {
+            if(node.Type.IsAnonymousType())
+            {
+                var paths = new Dictionary<MemberInfo, List<List<Expression>>>();
+                var properties = node.Type.GetProperties();
+                for(int i = 0; i < properties.Length; ++i)
+                {
+                    var arg = BuildPaths(node.Arguments[i], context);
+                    var singlePath = arg as SinglePaths;
+                    if(singlePath == null)
+                        throw new NotSupportedException();
+                    paths.Add(properties[i], singlePath.paths);
+                }
+                return new MultiplePaths{paths = paths};
+            }
+            throw new NotSupportedException();
+        }
+
+        private static Paths BuildPathsNewArray(NewArrayExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsNewArray(NewArrayExpression node, Context context)
+        private static Paths BuildPathsRuntimeVariables(RuntimeVariablesExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsRuntimeVariables(RuntimeVariablesExpression node, Context context)
+        private static Paths BuildPathsSwitch(SwitchExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsSwitch(SwitchExpression node, Context context)
+        private static Paths BuildPathsTry(TryExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsTry(TryExpression node, Context context)
+        private static Paths BuildPathsTypeBinary(TypeBinaryExpression node, Context context)
         {
             throw new NotImplementedException();
         }
 
-        private static List<List<Expression>> BuildPathsTypeBinary(TypeBinaryExpression node, Context context)
+        private abstract class Paths
         {
-            throw new NotImplementedException();
+            public abstract void Add(Expression piece);
+            public abstract void MergeWith(Paths other);
+        }
+
+        private class SinglePaths: Paths
+        {
+            public List<List<Expression>> paths;
+
+            public override void Add(Expression piece)
+            {
+                foreach(var path in paths)
+                    path.Add(piece);
+            }
+
+            public override void MergeWith(Paths other)
+            {
+                var singlePaths = other as SinglePaths;
+                if(singlePaths == null)
+                    throw new InvalidOperationException();
+                paths.AddRange(singlePaths.paths);
+            }
+        }
+
+        private class MultiplePaths: Paths
+        {
+            public Dictionary<MemberInfo, List<List<Expression>>> paths;
+
+            public override void Add(Expression piece)
+            {
+                foreach(var path in paths.Values.SelectMany(path => path))
+                    path.Add(piece);
+            }
+
+            public override void MergeWith(Paths other)
+            {
+                var multiplePaths = other as MultiplePaths;
+                if(multiplePaths == null)
+                    throw new InvalidOperationException();
+                foreach(var pair in multiplePaths.paths)
+                {
+                    List<List<Expression>> list;
+                    if(!paths.TryGetValue(pair.Key, out list))
+                        paths.Add(pair.Key, list = new List<List<Expression>>());
+                    list.AddRange(pair.Value);
+                }
+            }
         }
 
         private class Context
@@ -413,7 +496,7 @@ namespace GrobExp.Mutators.Visitors
             public readonly ParameterExpression[] indexes;
             public readonly List<List<Expression>> paths = new List<List<Expression>>();
             public int index;
-            public readonly Dictionary<ParameterExpression, List<List<Expression>>> parameters = new Dictionary<ParameterExpression, List<List<Expression>>>();
+            public readonly Dictionary<ParameterExpression, Paths> parameters = new Dictionary<ParameterExpression, Paths>();
         }
     }
 }

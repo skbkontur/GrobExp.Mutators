@@ -1113,10 +1113,13 @@ namespace GrobExp.Mutators
 
                 // Replace LINQ methods with cycles to obtain indexes
                 ParameterExpression[] indexes;
-                Expression value = Expression.Convert(new LinqEliminator().Eliminate(eachesResolver.Visit(path), out indexes), typeof(object));
+                var resolvedPath = eachesResolver.Visit(path.ResolveAliases(firstAlias));
+                Expression value = Expression.Convert(new LinqEliminator().Eliminate(resolvedPath, out indexes), typeof(object));
+                Expression cutChains = ExpressionPathsBuilder.BuildPaths(resolvedPath, indexes);
 
                 var chains = path.CutToChains(true, true).GroupBy(exp => new ExpressionWrapper(exp, false)).Select(grouping => grouping.Key.Expression.ResolveAliases(firstAlias)).ToArray();
-                Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
+                //Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
+
                 Expression formattedChains;
 
                 if(pathFormatter == null)
@@ -1140,7 +1143,7 @@ namespace GrobExp.Mutators
                         throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
                     var validatorPriority = Expression.Constant(validator.Priority);
                     Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
-                    Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains});
+                    Expression addValidationResult = Expression.Block(indexes, Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains}));
                     Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);

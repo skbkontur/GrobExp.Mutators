@@ -26,10 +26,10 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            return node.IsLinkOfChain(false, false) ? VisitChain(DefaultFinishAction, null, null, null, node) : base.Visit(node);
+            return node.IsLinkOfChain(false, false) ? VisitChain(DefaultFinishAction, null, node) : base.Visit(node);
         }
 
-        private Expression VisitChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, List<Expression> expressions, List<ParameterExpression> variables, Expression node)
+        private Expression VisitChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, Expression node)
         {
             var smithereens = node.SmashToSmithereens();
             int i;
@@ -52,7 +52,7 @@ namespace GrobExp.Mutators.Visitors
                     }
                     if(j < smithereens.Length && IsEndOfMethodsChain((MethodCallExpression)smithereens[j]))
                         ++j;
-                    node = ProcessMethodsChain(finishAction, parentContext, expressions, variables, node, smithereens, i, j);
+                    node = ProcessMethodsChain(finishAction, parentContext, node, smithereens, i, j);
                     i = j;
                 }
                 else
@@ -93,7 +93,7 @@ namespace GrobExp.Mutators.Visitors
                 expressions.Add(Expression.Call(result, "Add", Type.EmptyTypes, current));
         }
 
-        private Expression ProcessMethodsChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, List<Expression> expressions, List<ParameterExpression> variables, Expression collection, Expression[] smithereens, int @from, int to)
+        private Expression ProcessMethodsChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, Expression collection, Expression[] smithereens, int @from, int to)
         {
             Type resultType;
             var lastType = smithereens[to - 1].Type;
@@ -117,16 +117,13 @@ namespace GrobExp.Mutators.Visitors
             var indexesCopy = needGlobalIndexes && (lastMethod.Name == "Single" || lastMethod.Name == "SingleOrDefault")
                                   ? CreateParameter(typeof(int[]), "indexes")
                                   : null;
-            if(expressions == null)
-                expressions = new List<Expression>();
+            var expressions = new List<Expression>();
             if(found != null)
                 expressions.Add(Expression.Assign(found, Expression.Constant(false)));
             expressions.Add(Expression.Assign(result, resultIsCollection
                                                           ? (Expression)Expression.New(resultType)
                                                           : Expression.Default(result.Type)));
-            if(variables == null)
-                variables = new List<ParameterExpression>();
-            variables.Add(result);
+            var variables = new List<ParameterExpression> {result};
             if(found != null)
                 variables.Add(found);
             if(indexesCopy != null)
@@ -283,7 +280,7 @@ namespace GrobExp.Mutators.Visitors
                                             ekspressions.Add(Expression.Assign(kurrent, Visit(resultSelector.Body)));
                                         }
                                         ProcessMethodsChain(contekst.parentContext, smithereens, from + 1, to, DefaultFinishAction, kurrent, newIndex, ekspressions, variablez);
-                                    }, context, null, null, Expression.Call(selectMethod.MakeGenericMethod(itemType, itemType), collectionSelector.Body, selector)));
+                                    }, context, Expression.Call(selectMethod.MakeGenericMethod(itemType, itemType), collectionSelector.Body, selector)));
                     }
                     else
                     {

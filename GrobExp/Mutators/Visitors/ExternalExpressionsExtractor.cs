@@ -25,7 +25,7 @@ namespace GrobExp.Mutators.Visitors
             if(node == null || node.NodeType == ExpressionType.Constant || node.NodeType == ExpressionType.Parameter || node.NodeType == ExpressionType.Default || IsDynamicMethodCall(node as MethodCallExpression))
                 return node;
             var parameters = parametersExtractor.Extract(node);
-            if(parameters.Any(parameter => internalVariables.Contains(parameter)) || objectCreationSearcher.ContainsObjectCreation(node))
+            if(node.Type == typeof(void) || parameters.Any(parameter => internalVariables.Contains(parameter)) || objectCreationSearcher.ContainsObjectCreation(node))
                 return base.Visit(node);
             externalExpressions.Add(node);
             return node;

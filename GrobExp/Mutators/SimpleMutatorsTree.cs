@@ -33,7 +33,7 @@ namespace GrobExp.Mutators
 
         internal override MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
         {
-            var performer = new CompositionPerformer(typeof(TData), typeof(T), converterTree, new List<KeyValuePair<Expression, Expression>>());
+            var performer = new CompositionPerformer(typeof(TData), typeof(T), converterTree);
             var resolver = new AliasesResolver(ExtractAliases(converterTree, performer), false);
             return new SimpleMutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection.GetPathFormatter<TData>(), converterTree, performer, resolver), pathFormatterCollection, priority);
         }

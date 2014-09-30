@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -184,10 +183,10 @@ namespace GrobExp.Mutators
 
         public ModelConfigurationNode FindKeyLeaf()
         {
-            foreach(DictionaryEntry entry in children)
+            foreach(var entry in children)
             {
-                var edge = (ModelConfigurationEdge)entry.Key;
-                var child = (ModelConfigurationNode)entry.Value;
+                var edge = entry.Key;
+                var child = entry.Value;
                 var property = edge.Value as PropertyInfo;
                 if(property != null && property.GetCustomAttributes(typeof(KeyLeafAttribute), false).Any() && child.children.Count == 0)
                     return child;
@@ -411,24 +410,32 @@ namespace GrobExp.Mutators
                 child.ExtractValidationsFromConvertersInternal(validationsTree, performer);
         }
 
+        private static ModelConfigurationNode GoTo(ModelConfigurationNode node, ModelConfigurationEdge edge)
+        {
+            if(node == null)
+                return null;
+            ModelConfigurationNode result;
+            return node.children.TryGetValue(edge, out result) ? result : null;
+        }
+
         private void MigrateTree(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path)
         {
             MigrateNode(to, destTree, convertationRoot, path);
-            foreach(DictionaryEntry entry in children)
+            foreach(var entry in children)
             {
-                var edge = (ModelConfigurationEdge)entry.Key;
-                var child = (ModelConfigurationNode)entry.Value;
-                var convertationChild = convertationNode == null ? null : (ModelConfigurationNode)convertationNode.children[edge];
+                var edge = entry.Key;
+                var child = entry.Value;
+                var convertationChild = GoTo(convertationNode, edge);
                 if(edge.Value is int)
                 {
                     if(convertationChild == null)
-                        convertationChild = convertationNode == null ? null : (ModelConfigurationNode)convertationNode.children[ModelConfigurationEdge.Each];
+                        convertationChild = GoTo(convertationNode, ModelConfigurationEdge.Each);
                     child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)));
                 }
                 else if(edge.Value is object[])
                 {
                     if(convertationChild == null)
-                        convertationChild = convertationNode == null ? null : (ModelConfigurationNode)convertationNode.children[ModelConfigurationEdge.Each];
+                        convertationChild = GoTo(convertationNode, ModelConfigurationEdge.Each);
                     var indexes = (object[])edge.Value;
                     var method = path.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                     var parameters = method.GetParameters();
@@ -442,20 +449,20 @@ namespace GrobExp.Mutators
                         child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {path}));
                     else if(convertationNode != null)
                     {
-                        foreach(DictionaryEntry dictionaryEntry in convertationNode.children)
+                        foreach(var dictionaryEntry in convertationNode.children)
                         {
-                            var configurationEdge = (ModelConfigurationEdge)dictionaryEntry.Key;
+                            var configurationEdge = dictionaryEntry.Key;
                             if(configurationEdge.Value is int)
                             {
                                 var index = (int)configurationEdge.Value;
-                                child.MigrateTree(to, destTree, convertationRoot, (ModelConfigurationNode)dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)));
+                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)));
                             }
                             else if(configurationEdge.Value is object[])
                             {
                                 var indexes = (object[])configurationEdge.Value;
                                 var method = path.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                                 var parameters = method.GetParameters();
-                                child.MigrateTree(to, destTree, convertationRoot, (ModelConfigurationNode)dictionaryEntry.Value, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))));
+                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))));
                             }
                         }
                     }
@@ -665,7 +672,7 @@ namespace GrobExp.Mutators
                     }
                 }
             }
-            foreach(ModelConfigurationNode child in children.Values)
+            foreach(var child in children.Values)
                 child.GetArrays(path, arrays);
         }
 
@@ -723,7 +730,7 @@ namespace GrobExp.Mutators
         private void BuildTreeMutator(ModelConfigurationEdge edge, Stack<ModelConfigurationEdge> edges, ModelConfigurationNode root, Expression fullPath, List<KeyValuePair<Expression, Expression>> aliases, List<Expression> localResult,
                                       HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult)
         {
-            var child = (ModelConfigurationNode)children[edge];
+            var child = children[edge];
             if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
                 child.BuildTreeMutator(edges, root, Expression.MakeMemberAccess(fullPath, (MemberInfo)edge.Value), aliases, localResult, visitedNodes, processedNodes, globalResult);
             else if(edge.Value is int)
@@ -901,8 +908,8 @@ namespace GrobExp.Mutators
                 if(children[ModelConfigurationEdge.Each] == null)
                 {
 */
-                    foreach(DictionaryEntry entry in children)
-                        BuildTreeMutator((ModelConfigurationEdge)entry.Key, edges, root, fullPath, aliases, localResult, visitedNodes, processedNodes, globalResult);
+                foreach(var entry in children)
+                    BuildTreeMutator(entry.Key, edges, root, fullPath, aliases, localResult, visitedNodes, processedNodes, globalResult);
 /*
                 }
                 else
@@ -955,32 +962,26 @@ namespace GrobExp.Mutators
 
         private ModelConfigurationNode GetChild(ModelConfigurationEdge edge, Type childType, bool create)
         {
-            var child = (ModelConfigurationNode)children[edge];
-            if(child == null && create)
+
+            ModelConfigurationNode child;
+            if(!children.TryGetValue(edge, out child) && create)
             {
-                lock(childrenLock)
+                Expression path;
+                if(edge.Value is int)
+                    path = Expression.ArrayIndex(Path, Expression.Constant((int)edge.Value));
+                else if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
+                    path = Expression.MakeMemberAccess(Path, (MemberInfo)edge.Value);
+                else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
+                    path = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(childType), new[] {Path});
+                else if(edge.Value is object[])
                 {
-                    child = (ModelConfigurationNode)children[edge];
-                    if(child == null)
-                    {
-                        Expression path;
-                        if(edge.Value is int)
-                            path = Expression.ArrayIndex(Path, Expression.Constant((int)edge.Value));
-                        else if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
-                            path = Expression.MakeMemberAccess(Path, (MemberInfo)edge.Value);
-                        else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
-                            path = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(childType), new[] {Path});
-                        else if(edge.Value is object[])
-                        {
-                            var method = NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
-                            var parameters = method.GetParameters();
-                            path = Expression.Call(Path, method, (edge.Value as object[]).Select((o, i) => Expression.Constant(o, parameters[i].ParameterType)));
-                        }
-                        else throw new InvalidOperationException();
-                        child = new ModelConfigurationNode(RootType, childType, Root, this, edge, path);
-                        children[edge] = child;
-                    }
+                    var method = NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
+                    var parameters = method.GetParameters();
+                    path = Expression.Call(Path, method, (edge.Value as object[]).Select((o, i) => Expression.Constant(o, parameters[i].ParameterType)));
                 }
+                else throw new InvalidOperationException();
+                child = new ModelConfigurationNode(RootType, childType, Root, this, edge, path);
+                children.Add(edge, child);
             }
             return child;
         }
@@ -1016,9 +1017,7 @@ namespace GrobExp.Mutators
         private static readonly ConstructorInfo listValidationResultConstructor = ((NewExpression)((Expression<Func<List<ValidationResult>>>)(() => new List<ValidationResult>())).Body).Constructor;
         private static readonly ConstructorInfo formattedValidationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult, FormattedValidationResult>>)(o => new FormattedValidationResult(o, null, null, 0))).Body).Constructor;
 
-        private readonly Hashtable children = new Hashtable();
-
-        private readonly object childrenLock = new object();
+        private readonly Dictionary<ModelConfigurationEdge, ModelConfigurationNode> children = new Dictionary<ModelConfigurationEdge, ModelConfigurationNode>();
 
         private class ZzzNode
         {
@@ -1149,7 +1148,7 @@ namespace GrobExp.Mutators
                     localResults.Add(
                         Expression.IfThen(
                             Expression.Not(Expression.Property(result, validationResultTreeNodeExhaustedProperty)),
-                            Expression.Block(new[] { currentValidationResult }, Expression.Assign(currentValidationResult, current), condition)));
+                            Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition)));
                 }
                 if(isDisabled == null)
                     validationResults.AddRange(localResults);

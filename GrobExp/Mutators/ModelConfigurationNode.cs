@@ -747,8 +747,8 @@ namespace GrobExp.Mutators
                     // todo ich: почему только первый?
                     var arrays = GetArrays(fullPath, true);
                     var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(fullPath, false))).Value;
-                    if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
-                        return;
+//                    if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
+//                        return;
                     ParameterExpression arrayParameter = null;
                     aliases.Add(new KeyValuePair<Expression, Expression>(childParameter, item));
                     aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, index));
@@ -897,10 +897,13 @@ namespace GrobExp.Mutators
             else
             {
                 BuildNodeMutator(root, fullPath.ResolveAliases(aliases), aliases, localResult, visitedNodes, processedNodes, globalResult);
+/*
                 if(children[ModelConfigurationEdge.Each] == null)
                 {
+*/
                     foreach(DictionaryEntry entry in children)
                         BuildTreeMutator((ModelConfigurationEdge)entry.Key, edges, root, fullPath, aliases, localResult, visitedNodes, processedNodes, globalResult);
+/*
                 }
                 else
                 {
@@ -911,6 +914,7 @@ namespace GrobExp.Mutators
                     }
                     BuildTreeMutator(ModelConfigurationEdge.Each, edges, root, fullPath, aliases, localResult, visitedNodes, processedNodes, globalResult);
                 }
+*/
             }
         }
 

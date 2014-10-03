@@ -35,7 +35,7 @@ namespace GrobExp.Mutators.Visitors
                 else
                     result.MergeWith(current);
             }
-            return result;
+            return result ?? new SinglePaths {paths = new List<List<Expression>>()};
         }
 
         private static Paths BuildPaths(Expression node, Context context)
@@ -389,7 +389,10 @@ namespace GrobExp.Mutators.Visitors
 
         private static Paths BuildPathsMemberInit(MemberInitExpression node, Context context)
         {
-            throw new NotImplementedException();
+            var result = BuildPaths(node.NewExpression, context);
+            foreach(MemberAssignment binding in node.Bindings)
+                result.MergeWith(BuildPaths(binding.Expression, context));
+            return result;
         }
 
         private static Paths BuildPathsNew(NewExpression node, Context context)
@@ -408,12 +411,12 @@ namespace GrobExp.Mutators.Visitors
                 }
                 return new MultiplePaths{paths = paths};
             }
-            throw new NotSupportedException();
+            return BuildPaths(node.Arguments, context);
         }
 
         private static Paths BuildPathsNewArray(NewArrayExpression node, Context context)
         {
-            throw new NotImplementedException();
+            return BuildPaths(node.Expressions, context);
         }
 
         private static Paths BuildPathsRuntimeVariables(RuntimeVariablesExpression node, Context context)

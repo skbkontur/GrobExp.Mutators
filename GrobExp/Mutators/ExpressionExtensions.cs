@@ -21,7 +21,7 @@ namespace GrobExp.Mutators
                    (node.NodeType == ExpressionType.Parameter
                     || (node.NodeType == ExpressionType.Constant && !rootOnlyParameter)
                     || IsLinkOfChain(node as MemberExpression, rootOnlyParameter, hard)
-                    || node.NodeType == ExpressionType.ArrayIndex
+                    || IsLinkOfChain(node as BinaryExpression, rootOnlyParameter, hard)
                     || IsLinkOfChain(node as MethodCallExpression, rootOnlyParameter, hard));
         }
 
@@ -352,11 +352,23 @@ namespace GrobExp.Mutators
             return node != null && node.Expression != null;
         }
 
+        private static bool IsExtension(MethodInfo method)
+        {
+            return method.IsExtension() && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
+        }
+
         private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)
         {
             if(hard)
-                return node != null && ((node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (node.Method.IsExtension() && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true)));
-            return node != null && (node.Object != null || node.Method.IsExtension());
+                return node != null && ((node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (IsExtension(node.Method) && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true)));
+            return node != null && (node.Object != null || IsExtension(node.Method));
+        }
+
+        private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)
+        {
+            if(hard)
+                return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, rootOnlyParameter, true);
+            return node != null && node.NodeType == ExpressionType.ArrayIndex;
         }
 
         private static readonly MemberInfo stringLengthProperty = ((MemberExpression)((Expression<Func<string, int>>)(s => s.Length)).Body).Member;

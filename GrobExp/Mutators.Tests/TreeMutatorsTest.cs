@@ -793,7 +793,7 @@ namespace Mutators.Tests
                 {
                     A = new A
                         {
-                            B = new[] {new B {Хрень = new[] {"zzz1", "zzz2", "zzz3"}}, null, new B {Хрень = new[] {"qxx1", "qxx2", "qxx3"}}}
+                            B = new[] {new B {Хрень = new[] {"zzz1", "zzz2", "zzz3"}}, new B(), new B {Хрень = new[] {"qxx1", "qxx2", "qxx3"}}}
                         }
                 };
             to.AssertEqualsToUsingGrobuf(expected);

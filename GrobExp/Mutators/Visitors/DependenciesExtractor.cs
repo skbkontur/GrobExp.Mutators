@@ -376,8 +376,8 @@ namespace GrobExp.Mutators.Visitors
                             prefix = Expression.MakeMemberAccess(prefix, member);
                         else
                         {
-                            if(!prefix.IsAnonymousTypeCreation())
-                                throw new NotSupportedException("An anonymous type creation expected but was " + ExpressionCompiler.DebugViewGetter(prefix));
+                            if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
+                                throw new NotSupportedException("An anonymous type or a tuple creation expected but was " + ExpressionCompiler.DebugViewGetter(prefix));
                             var newExpression = (NewExpression)prefix;
                             var type = newExpression.Type;
                             MemberInfo[] members;
@@ -401,7 +401,15 @@ namespace GrobExp.Mutators.Visitors
 
             var primaryDependencies = new List<Expression>();
             if(prefix is NewExpression)
-                primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
+            {
+                if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
+                    primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
+                else
+                {
+                    foreach(var expression in ((NewExpression)prefix).Arguments.Select(ClearConverts))
+                        primaryDependencies.AddRange(((NewArrayExpression)expression).Expressions.Select(ClearConverts));
+                }
+            }
             else if(prefix is NewArrayExpression)
                 primaryDependencies.AddRange(((NewArrayExpression)prefix).Expressions.Select(ClearConverts));
             else if(IsPrimary(smithereens.Last()))

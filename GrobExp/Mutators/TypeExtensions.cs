@@ -45,6 +45,19 @@ namespace GrobExp.Mutators
             return type.Name.StartsWith("<>f__AnonymousType");
         }
 
+        public static bool IsTuple(this Type type)
+        {
+            if(!type.IsGenericType) return false;
+            type = type.GetGenericTypeDefinition();
+            return type == typeof(Tuple<>)
+                   || type == typeof(Tuple<,>)
+                   || type == typeof(Tuple<,,>)
+                   || type == typeof(Tuple<,,,>)
+                   || type == typeof(Tuple<,,,,>)
+                   || type == typeof(Tuple<,,,,,>)
+                   || type == typeof(Tuple<,,,,,,>);
+        }
+
         public static PropertyInfo[] GetOrderedProperties(this Type type, BindingFlags flags = BindingFlags.Public | BindingFlags.Instance)
         {
             var result = new List<PropertyInfo>();

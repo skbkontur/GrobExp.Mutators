@@ -216,9 +216,9 @@ namespace Mutators.Tests
             validator(new TestData()).AssertEquivalent(new ValidationResultTreeNode());
             validator(new TestData {S = ""}).AssertEquivalent(new ValidationResultTreeNode());
             validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode());
-            ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "x123"});
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
-            validator(new TestData {S = "123x"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, null, null)}});
+            ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "z123"});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, "z123", new SimplePathFormatterText {Paths = new[] {"S"}})}});
+            validator(new TestData {S = "123x"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "123x"}, "123x", new SimplePathFormatterText {Paths = new[] {"S"}})}});
         }
 
         [Test]

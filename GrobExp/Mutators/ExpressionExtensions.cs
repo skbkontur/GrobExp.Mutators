@@ -15,6 +15,11 @@ namespace GrobExp.Mutators
             return node != null && node.NodeType == ExpressionType.New && node.Type.IsAnonymousType();
         }
 
+        public static bool IsTupleCreation(this Expression node)
+        {
+            return node != null && node.NodeType == ExpressionType.New && node.Type.IsTuple();
+        }
+
         public static bool IsLinkOfChain(this Expression node, bool rootOnlyParameter, bool hard)
         {
             return node != null &&

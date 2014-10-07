@@ -587,6 +587,8 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression ProcessCurrent(MethodInfo method, Expression prefix, Expression[] arguments)
         {
+            if(prefix.IsAnonymousTypeCreation() || prefix.IsTupleCreation())
+                return prefix;
             return Expression.Call( /*method.MakeGenericMethod(prefix.Type.GetElementType())*/method, prefix);
         }
 

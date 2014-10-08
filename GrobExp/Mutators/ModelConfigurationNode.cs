@@ -943,6 +943,21 @@ namespace GrobExp.Mutators
                     ModelConfigurationNode child;
                     if(!Root.Traverse(dependency.Body, root, out child, false))
                         throw new FoundExternalDependencyException("Unable to build mutator for the subtree '" + Path + "' due to the external dependency '" + dependency + "'");
+                    if(child == null)
+                    {
+                        bool found = false;
+                        var shards = dependency.Body.SmashToSmithereens();
+                        for(int i = shards.Length - 1; i >= 0; --i)
+                        {
+                            Root.Traverse(shards[i], root, out child, false);
+                            if(child != null && child.mutators.Any(pair => pair.Value is EqualsToConfiguration))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if(!found) child = null;
+                    }
                     if(child != null && child != this)
                     {
                         var edges = new Stack<ModelConfigurationEdge>();

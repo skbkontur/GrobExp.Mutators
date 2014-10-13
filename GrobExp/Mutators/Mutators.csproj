@@ -122,7 +122,6 @@
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
     <Compile Include="Visitors\ExpressionHashCalculator.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
-    <Compile Include="Visitors\ExpressionNullCheckingExtender.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
     <Compile Include="Visitors\ExpressionWrapper.cs" />

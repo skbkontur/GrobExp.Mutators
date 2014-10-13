@@ -48,7 +48,7 @@ namespace GrobExp.Mutators
 
         public void Migrate(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
         {
-            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType));
+            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType), false);
         }
 
         public LambdaExpression BuildTreeValidator(IPathFormatter pathFormatter)
@@ -197,6 +197,12 @@ namespace GrobExp.Mutators
             return null;
         }
 
+        public ModelConfigurationNode GotoConvertation(Type type, bool create)
+        {
+            var edge = new ModelConfigurationEdge(type);
+            return GetChild(edge, type, create);
+        }
+
         public ModelConfigurationNode GotoMember(MemberInfo member, bool create)
         {
             var edge = new ModelConfigurationEdge(member);
@@ -278,6 +284,13 @@ namespace GrobExp.Mutators
                     child = this;
                     return subRoot == this;
                 }
+            case ExpressionType.Convert:
+                {
+                    var unaryExpression = (UnaryExpression)path;
+                    var result = Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
+                    child = child == null ? null : child.GotoConvertation(unaryExpression.Type, create);
+                    return result || child == subRoot;
+                }
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)path;
@@ -351,8 +364,6 @@ namespace GrobExp.Mutators
                     }
                     throw new NotSupportedException("Method " + method + " is not supported");
                 }
-            case ExpressionType.Convert:
-                return Traverse(((UnaryExpression)path).Operand, subRoot, out child, create, arrayAliases);
             case ExpressionType.ArrayLength:
                 {
 //                    if(create)
@@ -418,9 +429,11 @@ namespace GrobExp.Mutators
             return node.children.TryGetValue(edge, out result) ? result : null;
         }
 
-        private void MigrateTree(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path)
+        private void MigrateTree(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path, bool zzz)
         {
             MigrateNode(to, destTree, convertationRoot, path);
+            if(!zzz && convertationNode != null && convertationNode.mutators.Any(pair => pair.Value is EqualsToConfiguration))
+                zzz = true;
             foreach(var entry in children)
             {
                 var edge = entry.Key;
@@ -430,23 +443,29 @@ namespace GrobExp.Mutators
                 {
                     if(convertationChild == null)
                         convertationChild = GoTo(convertationNode, ModelConfigurationEdge.Each);
-                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)));
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.ArrayIndex(path, Expression.Constant((int)edge.Value)), zzz);
                 }
                 else if(edge.Value is object[])
                 {
                     if(convertationChild == null)
+                    {
                         convertationChild = GoTo(convertationNode, ModelConfigurationEdge.Each);
+                        if(convertationChild != null)
+                            convertationChild = convertationChild.GotoMember(convertationChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), false);
+                    }
                     var indexes = (object[])edge.Value;
                     var method = path.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                     var parameters = method.GetParameters();
-                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))));
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))), zzz);
                 }
                 else if(edge.Value is PropertyInfo || edge.Value is FieldInfo)
-                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.MakeMemberAccess(path, (MemberInfo)edge.Value));
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.MakeMemberAccess(path, (MemberInfo)edge.Value), zzz);
+                else if(edge.Value is Type)
+                    child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Convert(path, (Type)edge.Value), zzz);
                 else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
                 {
-                    if(convertationChild != null)
-                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {path}));
+                    if(convertationChild != null || zzz)
+                        child.MigrateTree(to, destTree, convertationRoot, convertationChild, Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {path}), zzz);
                     else if(convertationNode != null)
                     {
                         foreach(var dictionaryEntry in convertationNode.children)
@@ -455,14 +474,14 @@ namespace GrobExp.Mutators
                             if(configurationEdge.Value is int)
                             {
                                 var index = (int)configurationEdge.Value;
-                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)));
+                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.ArrayIndex(path, Expression.Constant(index)), zzz);
                             }
                             else if(configurationEdge.Value is object[])
                             {
                                 var indexes = (object[])configurationEdge.Value;
                                 var method = path.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                                 var parameters = method.GetParameters();
-                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))));
+                                child.MigrateTree(to, destTree, convertationRoot, dictionaryEntry.Value, Expression.Call(path, method, indexes.Select((o, i) => Expression.Constant(o, parameters[i].ParameterType))), zzz);
                             }
                         }
                     }
@@ -988,6 +1007,8 @@ namespace GrobExp.Mutators
                     path = Expression.MakeMemberAccess(Path, (MemberInfo)edge.Value);
                 else if(ReferenceEquals(edge.Value, MutatorsHelperFunctions.EachMethod))
                     path = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(childType), new[] {Path});
+                else if(edge.Value is Type)
+                    path = Expression.Convert(Path, (Type)edge.Value);
                 else if(edge.Value is object[])
                 {
                     var method = NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
@@ -1215,6 +1236,14 @@ namespace GrobExp.Mutators
                     return (int)value;
                 if(value is string)
                     return value.GetHashCode();
+                var type = value as Type;
+                if(type != null)
+                {
+                    unchecked
+                    {
+                        return type.Module.MetadataToken * 397 + type.MetadataToken;
+                    }
+                }
                 var memberInfo = (MemberInfo)value;
                 unchecked
                 {
@@ -1248,6 +1277,14 @@ namespace GrobExp.Mutators
                 return left is int && right is int && (int)left == (int)right;
             if(left is string || right is string)
                 return left is string && right is string && (string)left == (string)right;
+            if(left is Type || right is Type)
+            {
+                if(!(left is Type && right is Type))
+                    return false;
+                if(((Type)left).Module != ((Type)right).Module)
+                    return false;
+                return ((Type)left).MetadataToken == ((Type)right).MetadataToken;
+            }
             if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
                 return false;
             return ((MemberInfo)left).MetadataToken == ((MemberInfo)right).MetadataToken;

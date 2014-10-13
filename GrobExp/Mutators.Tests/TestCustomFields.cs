@@ -65,12 +65,17 @@ namespace Mutators.Tests
                     CustomFields = new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
+                            {"StrArr", new CustomFieldValue{TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                         }
                 });
             Assert.AreEqual("zzz", data.S);
             Assert.IsNotNull(data.ComplexField);
             Assert.AreEqual(123, data.ComplexField.X);
+            Assert.IsNotNull(data.StrArr);
+            Assert.AreEqual(2, data.StrArr.Length);
+            Assert.AreEqual("zzz", data.StrArr[0]);
+            Assert.AreEqual("qxx", data.StrArr[1]);
         }
 
         [Test]
@@ -81,6 +86,7 @@ namespace Mutators.Tests
             var data = converter(new Data
                 {
                     S = "zzz",
+                    StrArr = new [] {"zzz", "qxx"},
                     ComplexField = new ComplexCustomField{ X = 123}
                 });
             Assert.IsNotNull(data.CustomFields);
@@ -90,6 +96,12 @@ namespace Mutators.Tests
             Assert.That(data.CustomFields.ContainsKey("ComplexFieldёX"));
             Assert.IsNotNull(data.CustomFields["ComplexFieldёX"]);
             Assert.AreEqual(123, data.CustomFields["ComplexFieldёX"].Value);
+            Assert.That(data.CustomFields.ContainsKey("StrArr"));
+            var arr = data.CustomFields["StrArr"].Value as string[];
+            Assert.IsNotNull(arr);
+            Assert.AreEqual(2, arr.Length);
+            Assert.AreEqual("zzz", arr[0]);
+            Assert.AreEqual("qxx", arr[1]);
         }
 
         [Test]
@@ -100,6 +112,7 @@ namespace Mutators.Tests
                 configurator =>
                     {
                         configurator.Target(data => data.S).Required();
+                        configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                         configurator.Target(data => data.Items.Each().S).Required();
                     }
             );
@@ -107,21 +120,25 @@ namespace Mutators.Tests
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
             var webValidator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
-            webValidator(
-                new WebData
-                    {
-                        CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue{TypeCode = TypeCode.String}}},
-                        Items = new[]
-                            {
-                                new WebDataItem
-                                    {
-                                        CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue{TypeCode = TypeCode.String}}},
-                                    }, 
-                            }
-                    }).AssertEquivalent(
+            webValidator(new WebData
+                {
+                    CustomFields = new Dictionary<string, CustomFieldValue>
+                        {
+                            {"S", new CustomFieldValue {TypeCode = TypeCode.String}},
+                            {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
+                        },
+                    Items = new[]
+                        {
+                            new WebDataItem
+                                {
+                                    CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue {TypeCode = TypeCode.String}}},
+                                },
+                        }
+                }).AssertEquivalent(
                 new ValidationResultTreeNode
                     {
                         {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)},
+                        {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields[StrArr].Value[1]"}}, 0)},
                         {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields[S].Value"}}, 0)},
                     }
             );
@@ -135,6 +152,7 @@ namespace Mutators.Tests
                 configurator =>
                     {
                         configurator.Target(data => data.S).Required();
+                        configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                         configurator.Target(data => data.Items.Each().S).Required();
                     }
             );
@@ -143,21 +161,25 @@ namespace Mutators.Tests
             dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
             dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
             var modelValidator = modelDataConfiguratorCollection.GetMutatorsTree(new[] {typeof(Data), typeof(WebData)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty,}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetValidator();
-            modelValidator(
-                new ModelData
-                    {
-                        CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue{TypeCode = TypeCode.String}}},
-                        Items = new[]
-                            {
-                                new ModelDataItem
-                                    {
-                                        CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue{TypeCode = TypeCode.String}}},
-                                    }, 
-                            }
-                    }).AssertEquivalent(
+            var validationResultTreeNode = modelValidator(new ModelData
+                {
+                    CustomFields = new Dictionary<string, CustomFieldValue>
+                        {
+                            {"S", new CustomFieldValue {TypeCode = TypeCode.String}}, {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
+                        },
+                    Items = new[]
+                        {
+                            new ModelDataItem
+                                {
+                                    CustomFields = new Dictionary<string, CustomFieldValue> {{"S", new CustomFieldValue {TypeCode = TypeCode.String}}},
+                                },
+                        }
+                });
+            validationResultTreeNode.AssertEquivalent(
                 new ValidationResultTreeNode
                     {
                         {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)},
+                        {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields[StrArr].Value[1]"}}, 0)},
                         {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields[S].Value"}}, 0)},
                     }
             );
@@ -316,6 +338,9 @@ namespace Mutators.Tests
 
             [CustomField()]
             public ComplexCustomField ComplexField { get; set; }
+
+            [CustomField]
+            public string[] StrArr { get; set; }
 
             public DataItem[] Items { get; set; }
         }

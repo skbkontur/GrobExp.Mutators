@@ -26,6 +26,7 @@ namespace GrobExp.Mutators
                    (node.NodeType == ExpressionType.Parameter
                     || (node.NodeType == ExpressionType.Constant && !rootOnlyParameter)
                     || IsLinkOfChain(node as MemberExpression, rootOnlyParameter, hard)
+                    || IsLinkOfChain(node as UnaryExpression, rootOnlyParameter, hard)
                     || node.NodeType == ExpressionType.ArrayIndex
                     || IsLinkOfChain(node as MethodCallExpression, rootOnlyParameter, hard));
         }
@@ -46,11 +47,6 @@ namespace GrobExp.Mutators
         public static Expression ExtendSelectMany(this Expression expression)
         {
             return new SelectManyCollectionSelectorExtender().Visit(expression);
-        }
-
-        public static Expression ExtendNulls(this Expression expression)
-        {
-            return new ExpressionNullCheckingExtender().Extend(expression);
         }
 
         public static Expression CanonizeParameters(this Expression expression)
@@ -209,6 +205,9 @@ namespace GrobExp.Mutators
                                      : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
                     }
                     break;
+                case ExpressionType.Convert:
+                    result = Expression.Convert(result, shard.Type);
+                    break;
                 default:
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
@@ -348,6 +347,13 @@ namespace GrobExp.Mutators
                     rightBody = new ParameterReplacer(parameter, leftParameters[parameter.Type]).Visit(rightBody);
             }
             parameters = leftParameters.Values.ToArray();
+        }
+
+        private static bool IsLinkOfChain(UnaryExpression node, bool rootOnlyParameter, bool hard)
+        {
+            if(hard)
+                return node != null && node.NodeType == ExpressionType.Convert && IsLinkOfChain(node.Operand, rootOnlyParameter, true);
+            return node != null && node.NodeType == ExpressionType.Convert;
         }
 
         private static bool IsLinkOfChain(MemberExpression node, bool rootOnlyParameter, bool hard)

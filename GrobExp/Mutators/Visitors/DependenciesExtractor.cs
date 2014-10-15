@@ -82,7 +82,7 @@ namespace GrobExp.Mutators.Visitors
             if(test != null)
             {
                 foreach(var dependency in ((NewArrayExpression)test).Expressions)
-                    dependencies.Add(Expression.Lambda(dependency, parameters));
+                    dependencies.Add(MakeLambda(dependency));
             }
             IEnumerable<Expression> expressions = new Expression[0];
             if(ifTrue != null)

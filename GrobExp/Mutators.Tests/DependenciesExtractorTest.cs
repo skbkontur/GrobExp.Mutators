@@ -220,6 +220,13 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSelectManyWithTuple3()
+        {
+            Expression<Func<A, string>> expression = a => a.B.C.SelectMany(c => c.D.E, (c, e) => new Tuple<int?, string>(c.S == "zzz" ? c.X : null, e.F)).FirstOrDefault(tuple => tuple.Item1 > 0).Item2;
+            DoTest(expression, a => a.B.C.Each().S, a => a.B.C.Each().D.E.Each().F);
+        }
+
+        [Test]
         public void TestSelectMany1()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E).Where(e => e.F == "qxx").Sum(e => e.X);

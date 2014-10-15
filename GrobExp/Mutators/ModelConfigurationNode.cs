@@ -333,6 +333,30 @@ namespace GrobExp.Mutators
                         child = child == null ? null : child.GotoEachArrayElement(create);
                         return result || child == subRoot;
                     }
+                    if(method.IsArrayIndexer())
+                    {
+                        var result = Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
+                        if(child != null)
+                        {
+                            var newChild = child.GotoArrayElement(GetIndex(methodCallExpression.Arguments[0]), create);
+                            if(newChild == null)
+                            {
+                                newChild = child.GotoEachArrayElement(false);
+                                var arrays = child.GetArrays(true);
+                                var childPath = new ExpressionWrapper(child.Path, false);
+                                var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(childPath)).Value;
+                                if(array != null)
+                                {
+                                    arrayAliases.Add(new KeyValuePair<Expression, Expression>(
+                                                         Expression.ArrayIndex(array, methodCallExpression.Arguments[0]),
+                                                         Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(array.Type.GetItemType()), array))
+                                        );
+                                }
+                            }
+                        child = newChild;
+                        }
+                        return result || child == subRoot;
+                    }
                     if(method.IsIndexerGetter())
                     {
                         var parameters = methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray();

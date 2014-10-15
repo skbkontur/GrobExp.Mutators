@@ -33,6 +33,19 @@ namespace Mutators.Tests
                 throw new NotSupportedException();
             }
         }
+
+        public Type GetType(TypeCode typeCode)
+        {
+            switch(typeCode)
+            {
+            case TypeCode.Int32:
+                return typeof(int);
+            case TypeCode.String:
+                return typeof(string);
+            default:
+                throw new NotSupportedException();
+            }
+        }
     }
 
     [TestFixture]

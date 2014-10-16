@@ -41,6 +41,8 @@ namespace GrobExp.Mutators
                 var binaryExpression = (BinaryExpression)path;
                 return Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
             }
+            if(path.NodeType == ExpressionType.Convert)
+                return ((UnaryExpression)path).Operand;
             return path;
         }
 

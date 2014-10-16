@@ -778,6 +778,8 @@ namespace GrobExp.Mutators
                 child.BuildTreeMutator(edges, root, Expression.MakeMemberAccess(fullPath, (MemberInfo)edge.Value), aliases, localResult, visitedNodes, processedNodes, globalResult);
             else if(edge.Value is int)
                 child.BuildTreeMutator(edges, root, Expression.ArrayIndex(fullPath, Expression.Constant((int)edge.Value)), aliases, localResult, visitedNodes, processedNodes, globalResult);
+            else if(edge.Value is Type)
+                child.BuildTreeMutator(edges, root, Expression.Convert(fullPath, (Type)edge.Value), aliases, localResult, visitedNodes, processedNodes, globalResult);
             else if(edge.Value is object[])
             {
                 var indexes = (object[])edge.Value;

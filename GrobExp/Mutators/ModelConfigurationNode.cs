@@ -359,6 +359,7 @@ namespace GrobExp.Mutators
 //                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
                     var unaryExpression = (UnaryExpression)path;
                     var result = Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
+                    child = child == null ? null : child.GotoMember(ModelConfigurationEdge.ArrayLengthProperty, create);
                     return result || child == subRoot;
                 }
             default:
@@ -977,7 +978,6 @@ namespace GrobExp.Mutators
 
         private ModelConfigurationNode GetChild(ModelConfigurationEdge edge, Type childType, bool create)
         {
-
             ModelConfigurationNode child;
             if(!children.TryGetValue(edge, out child) && create)
             {
@@ -1204,7 +1204,11 @@ namespace GrobExp.Mutators
         }
 
         public object Value { get; private set; }
+
+        public static readonly PropertyInfo ArrayLengthProperty = (PropertyInfo)((MemberExpression)((Expression<Func<Array, int>>)(arr => arr.Length)).Body).Member;
+
         public static readonly ModelConfigurationEdge Each = new ModelConfigurationEdge(MutatorsHelperFunctions.EachMethod);
+        public static readonly ModelConfigurationEdge ArrayLength = new ModelConfigurationEdge(ArrayLengthProperty);
 
         private static int GetHashCode(object value)
         {

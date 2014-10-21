@@ -257,7 +257,7 @@ namespace Mutators.Tests
             Assert.AreEqual(5, b.Z);
         }
 
-        [Test, Ignore]
+        [Test]
         public void TestEqualsToArrayLength()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Length).Set(data => 1));
@@ -267,7 +267,7 @@ namespace Mutators.Tests
             Assert.AreEqual(1, o.A.B.Length);
         }
 
-        [Test, Ignore]
+        [Test]
         public void TestEqualsToArrayLengthCurrentIndex()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>

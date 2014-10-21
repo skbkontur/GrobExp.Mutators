@@ -57,7 +57,24 @@ namespace GrobExp.Mutators.AutoEvaluators
             if(Value == null) return null;
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            return Expression.Assign(path, value);
+            return MakeAssignment(path, value);
+        }
+
+        protected static Expression MakeAssignment(Expression path, Expression value)
+        {
+            if(path.NodeType == ExpressionType.MemberAccess)
+            {
+                var memberExpression = (MemberExpression)path;
+                if(memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
+                {
+                    var temp = Expression.Variable(memberExpression.Expression.Type);
+                    return Expression.Block(new[] {temp},
+                                            Expression.Assign(temp, memberExpression.Expression),
+                                            Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
+                                            Expression.Assign(memberExpression.Expression, temp));
+                }
+            }
+            return Expression.Assign(PrepareForAssign(path), value);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -78,5 +95,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return Value == null ? null : Value.Body.CutToChains(false, false).FindLCP();
         }
+
+        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
     }
 }

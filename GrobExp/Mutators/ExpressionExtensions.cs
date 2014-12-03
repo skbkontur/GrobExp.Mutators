@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -43,6 +44,46 @@ namespace GrobExp.Mutators
                 Expression.Call(exp, exp.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetSetMethod(), key, value),
                 Expression.Call(exp, "Add", null, key, value));
         }
+
+        public static Expression Assign(this Expression path, Expression value)
+        {
+            if(path.NodeType == ExpressionType.Convert)
+                path = ((UnaryExpression)path).Operand;
+            switch(path.NodeType)
+            {
+            case ExpressionType.ArrayIndex:
+                var binaryExpression = (BinaryExpression)path;
+                path = Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
+                break;
+            case ExpressionType.MemberAccess:
+                {
+                    var memberExpression = (MemberExpression)path;
+                    if(memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
+                    {
+                        var temp = Expression.Variable(memberExpression.Expression.Type);
+                        return Expression.Block(new[] {temp},
+                                                Expression.Assign(temp, memberExpression.Expression),
+                                                Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
+                                                Expression.Assign(memberExpression.Expression, temp));
+                    }
+                }
+                break;
+            case ExpressionType.Call:
+                var methodCallExpression = (MethodCallExpression)path;
+                if(methodCallExpression.Method.IsIndexerGetter())
+                {
+                    var temp = Expression.Variable(methodCallExpression.Object.Type);
+                    return Expression.Block(new[] {temp},
+                        Expression.Assign(temp, methodCallExpression.Object),
+                        Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
+                        Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
+                }
+                break;
+            }
+            return Expression.Assign(path, value);
+        }
+
+        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
 
         public static Expression ExtendSelectMany(this Expression expression)
         {

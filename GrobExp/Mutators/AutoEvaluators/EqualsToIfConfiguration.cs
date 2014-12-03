@@ -52,7 +52,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             if(Value == null) return null;
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            var assignment = MakeAssignment(path, value);
+            var assignment = path.Assign(value);
             if(Condition == null)
                 return assignment;
             var condition = Condition.Body;

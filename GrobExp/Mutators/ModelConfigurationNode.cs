@@ -845,12 +845,12 @@ namespace GrobExp.Mutators
                                 resizeIfNeeded = Expression.IfThen(
                                     lengthsAreDifferent,
                                     Expression.IfThenElse(destArrayIsNull,
-                                                          Expression.Assign(path, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
+                                                          path.Assign(Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
                                                           Expression.Block(new[] {temp}, new Expression[]
                                                               {
                                                                   Expression.Assign(temp, path),
                                                                   Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)),
-                                                                  Expression.Assign(path, temp)
+                                                                  path.Assign(temp)
                                                               })
                                         ));
                             }

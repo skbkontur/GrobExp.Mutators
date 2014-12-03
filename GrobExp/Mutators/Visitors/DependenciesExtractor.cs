@@ -395,6 +395,12 @@ namespace GrobExp.Mutators.Visitors
                 case ExpressionType.ArrayIndex:
                     prefix = Expression.MakeBinary(ExpressionType.ArrayIndex, prefix, ((BinaryExpression)shard).Right);
                     break;
+                case ExpressionType.Convert:
+                    if(prefix.Type == typeof(object))
+                        prefix = Expression.Convert(prefix, shard.Type);
+                    break;
+                default:
+                    throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not supported");
                 }
                 ++index;
             }

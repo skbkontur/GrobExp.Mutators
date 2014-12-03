@@ -15,9 +15,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 return ExpressionEmittersCollection.Emit(Expression.ArrayIndex(node.Object, node.Arguments.Single()), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
             if(node.Object == null)
                 throw new InvalidOperationException("Indexing of null object is invalid");
-            bool result = false;
             Type objectType;
-            result = ExpressionEmittersCollection.Emit(node.Object, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out objectType);
+            bool result = ExpressionEmittersCollection.Emit(node.Object, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out objectType);
             if(objectType.IsValueType)
             {
                 using(var temp = context.DeclareLocal(objectType))
@@ -71,7 +70,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             else
                             {
                                 context.Il.Ldc_I4(0);
-                                context.Il.Newarr(valueType.GetElementType());  // stack: [new valueType[0]]
+                                context.Il.Newarr(valueType.GetElementType()); // stack: [new valueType[0]]
                             }
                         }
                         context.Il.Stloc(value);

@@ -103,6 +103,9 @@ namespace GrobExp.Mutators
                     }
                     throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
                 }
+            case ExpressionType.Convert:
+                GetText(((UnaryExpression)path).Operand, current, ref result);
+                break;
             default:
                 throw new NotSupportedException("Node type '" + path.NodeType + "' is not supported");
             }

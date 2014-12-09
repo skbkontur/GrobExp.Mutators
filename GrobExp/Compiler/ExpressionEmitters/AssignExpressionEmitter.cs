@@ -94,8 +94,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 }
                 assigneeType = assigneeType.MakeByRefType();
             }
-            if(assigneeIsNullLabelUsed)
-                context.EmitReturnDefaultValue(assigneeType, assigneeIsNullLabel, il.DefineLabel("assigneeIsNotNull"));
+//            if(assigneeIsNullLabelUsed)
+//                context.EmitReturnDefaultValue(assigneeType, assigneeIsNullLabel, il.DefineLabel("assigneeIsNotNull"));
 
             if(node.NodeType == ExpressionType.Assign)
             {
@@ -197,6 +197,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 }
             }
             resultType = whatReturn == ResultType.Void ? typeof(void) : left.Type;
+            if(assigneeIsNullLabelUsed)
+                context.EmitReturnDefaultValue(resultType, assigneeIsNullLabel, il.DefineLabel("assigneeIsNotNull"));
             return result;
         }
 

@@ -94,8 +94,6 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 }
                 assigneeType = assigneeType.MakeByRefType();
             }
-//            if(assigneeIsNullLabelUsed)
-//                context.EmitReturnDefaultValue(assigneeType, assigneeIsNullLabel, il.DefineLabel("assigneeIsNotNull"));
 
             if(node.NodeType == ExpressionType.Assign)
             {

@@ -57,7 +57,6 @@
     <Compile Include="ExpressionCompilerTest.cs" />
     <Compile Include="ExpressionHashCalculatorTest.cs" />
     <Compile Include="ExpressionMergerTests.cs" />
-    <Compile Include="ExpressionNullCheckingExtenderTest.cs" />
     <Compile Include="ExpressionSimplifierTest.cs" />
     <Compile Include="IsNullOrEmptyExtenderTest.cs" />
     <Compile Include="ObjectComparer.cs" />

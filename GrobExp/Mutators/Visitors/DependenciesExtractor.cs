@@ -82,7 +82,7 @@ namespace GrobExp.Mutators.Visitors
             if(test != null)
             {
                 foreach(var dependency in ((NewArrayExpression)test).Expressions)
-                    dependencies.Add(Expression.Lambda(dependency, parameters));
+                    dependencies.Add(MakeLambda(dependency));
             }
             IEnumerable<Expression> expressions = new Expression[0];
             if(ifTrue != null)
@@ -376,8 +376,8 @@ namespace GrobExp.Mutators.Visitors
                             prefix = Expression.MakeMemberAccess(prefix, member);
                         else
                         {
-                            if(!prefix.IsAnonymousTypeCreation())
-                                throw new NotSupportedException("An anonymous type creation expected but was " + ExpressionCompiler.DebugViewGetter(prefix));
+                            if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
+                                throw new NotSupportedException("An anonymous type or a tuple creation expected but was " + ExpressionCompiler.DebugViewGetter(prefix));
                             var newExpression = (NewExpression)prefix;
                             var type = newExpression.Type;
                             MemberInfo[] members;
@@ -395,13 +395,27 @@ namespace GrobExp.Mutators.Visitors
                 case ExpressionType.ArrayIndex:
                     prefix = Expression.MakeBinary(ExpressionType.ArrayIndex, prefix, ((BinaryExpression)shard).Right);
                     break;
+                case ExpressionType.Convert:
+                    if(prefix.Type == typeof(object))
+                        prefix = Expression.Convert(prefix, shard.Type);
+                    break;
+                default:
+                    throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not supported");
                 }
                 ++index;
             }
 
             var primaryDependencies = new List<Expression>();
             if(prefix is NewExpression)
-                primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
+            {
+                if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
+                    primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
+                else
+                {
+                    foreach(var expression in ((NewExpression)prefix).Arguments.Select(ClearConverts))
+                        primaryDependencies.AddRange(((NewArrayExpression)expression).Expressions.Select(ClearConverts));
+                }
+            }
             else if(prefix is NewArrayExpression)
                 primaryDependencies.AddRange(((NewArrayExpression)prefix).Expressions.Select(ClearConverts));
             else if(IsPrimary(smithereens.Last()))
@@ -579,6 +593,8 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression ProcessCurrent(MethodInfo method, Expression prefix, Expression[] arguments)
         {
+            if(prefix.IsAnonymousTypeCreation() || prefix.IsTupleCreation())
+                return prefix;
             return Expression.Call( /*method.MakeGenericMethod(prefix.Type.GetElementType())*/method, prefix);
         }
 

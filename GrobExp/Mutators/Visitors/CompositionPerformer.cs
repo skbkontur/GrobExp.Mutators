@@ -258,7 +258,7 @@ namespace GrobExp.Mutators.Visitors
                                               let member = (MemberInfo)entry.Key
                                               select Expression.Bind(member, entry.Value is Hashtable
                                                                                  ? Construct(GetMemberType(member), (Hashtable)entry.Value)
-                                                                                 : (Expression)entry.Value)).Cast<MemberBinding>().ToList());
+                                                                                 : Expression.Convert((Expression)entry.Value, GetMemberType(member)))).Cast<MemberBinding>().ToList());
             }
             var maxIndex = node.Keys.Cast<int>().Max();
             var elementType = type.GetElementType();

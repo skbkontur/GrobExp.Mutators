@@ -29,8 +29,8 @@ namespace GrobExp.Mutators
         protected static LambdaExpression Prepare(LambdaExpression expression)
         {
             if(expression == null) return null;
-            if(expression.Body.NodeType == ExpressionType.Convert)
-                expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
+//            if(expression.Body.NodeType == ExpressionType.Convert)
+  //              expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
             return (LambdaExpression)new IsNullOrEmptyExtender().Visit(expression.Simplify().RemoveLinqFirstAndSingle().ResolveInterfaceMembers());
         }
 
@@ -41,6 +41,8 @@ namespace GrobExp.Mutators
                 var binaryExpression = (BinaryExpression)path;
                 return Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
             }
+            if(path.NodeType == ExpressionType.Convert)
+                return ((UnaryExpression)path).Operand;
             return path;
         }
 

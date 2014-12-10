@@ -28,7 +28,15 @@ namespace Mutators.Tests
         [Test]
         public void TestArray()
         {
-            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().S == data.A.S));
+            //var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().S == data.A.S));
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().S == data.A.S);
+/*
+                    configurator.Array(data => data.A.B).PushBack().Target(b >= b.S).Set(data => data.S);
+                    configurator.Array(data => data.A.B).PushRange(data => data.A.B).Target(b => b.S).Set(b => b.S);
+*/
+                });
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "zzz", Z = 1}, new B {S = "qxx", Z = 2}, new B {S = "zzz", Z = 3}}}};
             mutator(o);
@@ -257,7 +265,7 @@ namespace Mutators.Tests
             Assert.AreEqual(5, b.Z);
         }
 
-        [Test, Ignore]
+        [Test]
         public void TestEqualsToArrayLength()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Length).Set(data => 1));
@@ -267,7 +275,7 @@ namespace Mutators.Tests
             Assert.AreEqual(1, o.A.B.Length);
         }
 
-        [Test, Ignore]
+        [Test]
         public void TestEqualsToArrayLengthCurrentIndex()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
@@ -793,7 +801,7 @@ namespace Mutators.Tests
                 {
                     A = new A
                         {
-                            B = new[] {new B {Хрень = new[] {"zzz1", "zzz2", "zzz3"}}, null, new B {Хрень = new[] {"qxx1", "qxx2", "qxx3"}}}
+                            B = new[] {new B {Хрень = new[] {"zzz1", "zzz2", "zzz3"}}, new B(), new B {Хрень = new[] {"qxx1", "qxx2", "qxx3"}}}
                         }
                 };
             to.AssertEqualsToUsingGrobuf(expected);

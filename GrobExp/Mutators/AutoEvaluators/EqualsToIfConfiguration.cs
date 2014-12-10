@@ -50,8 +50,9 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            Expression assignment = Expression.Assign(PrepareForAssign(path), value);
+            var assignment = path.Assign(value);
             if(Condition == null)
                 return assignment;
             var condition = Condition.Body;

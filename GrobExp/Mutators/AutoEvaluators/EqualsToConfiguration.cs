@@ -7,6 +7,8 @@ using System.Reflection;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
+using GrobExp.Compiler;
+
 namespace GrobExp.Mutators.AutoEvaluators
 {
     public class EqualsToConfiguration : AutoEvaluatorConfiguration
@@ -55,8 +57,9 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            return Expression.Assign(PrepareForAssign(path), value);
+            return path.Assign(value);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -77,5 +80,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return Value == null ? null : Value.Body.CutToChains(false, false).FindLCP();
         }
+
+        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
     }
 }

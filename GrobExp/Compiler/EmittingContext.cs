@@ -244,6 +244,8 @@ namespace GrobExp.Compiler
 
         public void EmitLoadDefaultValue(Type type)
         {
+            if(type == typeof(void))
+                return;
             if(!type.IsValueType)
                 Il.Ldnull(type);
             else

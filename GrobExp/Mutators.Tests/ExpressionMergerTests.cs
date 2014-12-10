@@ -47,7 +47,7 @@ namespace Mutators.Tests
             merged1.AssertEqualsExpression(a => a.B.C.TemplateIndex().D.E.TemplateIndex().X);
         }
 
-        [Test]
+        [Test(Description = "А как правильно должно работать: объединять параметры одного типа в один или нет?")]
         public void TestMergeTwoParameters()
         {
             Expression<Func<D, E, string>> exp = (d, e) => d.E[0].F + e.Z;

@@ -47,6 +47,11 @@ namespace GrobExp.Mutators
             throw new InvalidOperationException("Method " + TemplateIndexMethod + " cannot be invoked");
         }
 
+        public static object TemplateIndex(this Array arr)
+        {
+            throw new InvalidOperationException("Method " + NonGenericTemplateIndexMethod + " cannot be invoked");
+        }
+
         public static T NotNull<T>(this T value)
         {
             throw new InvalidOperationException("Method " + NotNullMethod + " cannot be invoked");
@@ -116,7 +121,7 @@ namespace GrobExp.Mutators
 
         public static bool IsCurrentMethod(this MethodInfo methodInfo)
         {
-            return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == CurrentMethod;
+            return methodInfo == NonGenericTemplateIndexMethod || (methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == CurrentMethod);
         }
 
         public static bool IsStringIsNullOrEmptyMethod(this MethodInfo methodInfo)
@@ -131,7 +136,7 @@ namespace GrobExp.Mutators
 
         public static bool IsTemplateIndexMethod(this MethodInfo methodInfo)
         {
-            return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == TemplateIndexMethod;
+            return methodInfo == NonGenericTemplateIndexMethod || (methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == TemplateIndexMethod);
         }
 
         public static bool IsNotNullMethod(this MethodInfo methodInfo)
@@ -180,6 +185,8 @@ namespace GrobExp.Mutators
         public static readonly MethodInfo CurrentIndexMethod = ((MethodCallExpression)((Expression<Func<int, int>>)(i => i.CurrentIndex())).Body).Method.GetGenericMethodDefinition();
 
         public static readonly MethodInfo TemplateIndexMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.TemplateIndex())).Body).Method.GetGenericMethodDefinition();
+
+        public static readonly MethodInfo NonGenericTemplateIndexMethod = ((MethodCallExpression)((Expression<Func<Array, object>>)(arr => arr.TemplateIndex())).Body).Method;
 
         public static readonly MethodInfo NotNullMethod = ((MethodCallExpression)((Expression<Func<int, int>>)(i => i.NotNull())).Body).Method.GetGenericMethodDefinition();
 

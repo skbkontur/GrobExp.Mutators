@@ -48,9 +48,9 @@
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />
-    <Compile Include="AutoEvaluators\DisableIfConfiguration.cs" />
+    <Compile Include="Aggregators\DisableIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToConfiguration.cs" />
-    <Compile Include="AutoEvaluators\HideIfConfiguration.cs" />
+    <Compile Include="Aggregators\HideIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ComplexMutatorsTree.cs" />
     <Compile Include="ConverterCollection.cs" />

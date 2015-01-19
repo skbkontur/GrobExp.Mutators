@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.Aggregators;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.MultiLanguages;
@@ -799,7 +800,7 @@ namespace GrobExp.Mutators
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(child.NodeType), new Expression[] {item});
                     // todo ich: почему только первый?
                     var arrays = GetArrays(fullPath, true);
-                    var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(fullPath, false))).Value;
+                    var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(fullPath), false))).Value;
 //                    if(array != null && children.Keys.Cast<ModelConfigurationEdge>().Any(key => key.Value is int))
 //                        return;
                     ParameterExpression arrayParameter = null;
@@ -981,9 +982,11 @@ namespace GrobExp.Mutators
                 return;
             }
             visitedNodes.Add(this);
-            var mutators = this.mutators.Where(mutator => mutator.Value is AutoEvaluatorConfiguration).OrderBy(mutator => mutator.Value is DisableIfConfiguration ? 1 : 0).ToArray();
+            var selfDependentMutators = new List<AutoEvaluatorConfiguration>();
+            var otherMutators = new List<AutoEvaluatorConfiguration>();
             foreach(var mutator in mutators)
             {
+                var selfDependent = false;
                 foreach(var dependency in mutator.Value.Dependencies ?? new LambdaExpression[0])
                 {
                     ModelConfigurationNode child;
@@ -1015,9 +1018,11 @@ namespace GrobExp.Mutators
                         }
                         root.BuildTreeMutator(edges, root, aliases.First().Value, new List<KeyValuePair<Expression, Expression>> {aliases.First()}, globalResult, visitedNodes, processedNodes, globalResult);
                     }
+                    selfDependent |= child == this;
                 }
+                (selfDependent ? selfDependentMutators : otherMutators).Add((AutoEvaluatorConfiguration)mutator.Value);
             }
-            localResult.AddRange(mutators.Select(mutator => ((AutoEvaluatorConfiguration)mutator.Value).Apply(path, aliases)).Where(expression => expression != null));
+            localResult.AddRange(otherMutators.Concat(selfDependentMutators).Select(mutator => mutator.Apply(path, aliases)).Where(expression => expression != null));
             processedNodes.Add(this);
         }
 

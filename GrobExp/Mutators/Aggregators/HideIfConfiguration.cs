@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 using GrobExp.Mutators.Visitors;
 
-namespace GrobExp.Mutators.Aggregators
+namespace GrobExp.Mutators.AutoEvaluators
 {
     public class HideIfConfiguration : DisableIfConfiguration
     {

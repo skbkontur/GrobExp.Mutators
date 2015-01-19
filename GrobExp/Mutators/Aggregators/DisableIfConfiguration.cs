@@ -5,9 +5,9 @@ using System.Linq.Expressions;
 
 using GrobExp.Mutators.Visitors;
 
-namespace GrobExp.Mutators.Aggregators
+namespace GrobExp.Mutators.AutoEvaluators
 {
-    public class DisableIfConfiguration : AggregatorConfiguration
+    public class DisableIfConfiguration : AutoEvaluatorConfiguration
     {
         public DisableIfConfiguration(Type type, LambdaExpression condition)
             : base(type)
@@ -46,6 +46,11 @@ namespace GrobExp.Mutators.Aggregators
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new DisableIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
+        }
+
+        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            return null;
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

@@ -984,7 +984,7 @@ namespace GrobExp.Mutators
             visitedNodes.Add(this);
             var selfDependentMutators = new List<AutoEvaluatorConfiguration>();
             var otherMutators = new List<AutoEvaluatorConfiguration>();
-            foreach(var mutator in mutators)
+            foreach(var mutator in mutators.Where(mutator => mutator.Value is AutoEvaluatorConfiguration))
             {
                 var selfDependent = false;
                 foreach(var dependency in mutator.Value.Dependencies ?? new LambdaExpression[0])

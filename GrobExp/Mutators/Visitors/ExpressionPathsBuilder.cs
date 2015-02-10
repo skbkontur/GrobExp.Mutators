@@ -249,6 +249,8 @@ namespace GrobExp.Mutators.Visitors
                         foreach(var argument in methodCallExpression.Arguments)
                             paths.Add(argument);
                         break;
+                    case ExpressionType.Convert:
+                        break;
                     default:
                         throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not valid at this point");
                     }

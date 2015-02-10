@@ -16,7 +16,7 @@ namespace GrobExp.Compiler
                 return base.VisitInvocation(node);
             var lambda = (LambdaExpression)node.Expression;
             var expressions = lambda.Parameters.Select((t, i) => Expression.Assign(t, Visit(node.Arguments[i]))).Cast<Expression>().ToList();
-            expressions.Add(Visit(lambda.Body));
+            expressions.Add(Visit(new LabelsCloner().Visit(lambda.Body)));
             return Expression.Block(lambda.Body.Type, lambda.Parameters, expressions);
         }
 

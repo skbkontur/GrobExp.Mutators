@@ -71,6 +71,12 @@ namespace GrobExp.Mutators.Visitors
             return result;
         }
 
+        protected override Expression VisitInvocation(InvocationExpression node)
+        {
+            result = true;
+            return base.VisitInvocation(node);
+        }
+
         protected override Expression VisitNewArray(NewArrayExpression node)
         {
             result = true;

@@ -158,6 +158,11 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>(root, PathToSourceChild, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition.MergeFrom2Roots(PathToSourceChild, PathToChild))));
         }
 
+        public ConverterConfigurator<TSourceRoot, TDestRoot> ToRoot()
+        {
+            return new ConverterConfigurator<TSourceRoot, TDestRoot>(root, Condition);
+        }
+
         public Expression<Func<TSourceRoot, TSourceChild>> PathToSourceChild { get; private set; }
         public Expression<Func<TDestRoot, TDestChild>> PathToChild { get; private set; }
         public Expression<Func<TDestRoot, TDestValue>> PathToValue { get; private set; }

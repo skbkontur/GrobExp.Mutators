@@ -48,9 +48,9 @@
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />
-    <Compile Include="AutoEvaluators\DisableIfConfiguration.cs" />
+    <Compile Include="Aggregators\DisableIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToConfiguration.cs" />
-    <Compile Include="AutoEvaluators\HideIfConfiguration.cs" />
+    <Compile Include="Aggregators\HideIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ComplexMutatorsTree.cs" />
     <Compile Include="ConverterCollection.cs" />
@@ -123,7 +123,6 @@
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
     <Compile Include="Visitors\ExpressionHashCalculator.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
-    <Compile Include="Visitors\ExpressionNullCheckingExtender.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
     <Compile Include="Visitors\ExpressionWrapper.cs" />

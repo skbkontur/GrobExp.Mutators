@@ -177,6 +177,7 @@ namespace GrobExp.Mutators.Visitors
                 switch(shard.NodeType)
                 {
                 case ExpressionType.Convert:
+                    current = Expression.Convert(current, shard.Type);
                     break;
                 case ExpressionType.MemberAccess:
                     var member = ((MemberExpression)shard).Member;

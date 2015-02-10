@@ -40,6 +40,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             var condition = GetCondition(aliases);
             if(condition == null) return null;
+            path = PrepareForAssign(path);
             return Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)));
         }
     }

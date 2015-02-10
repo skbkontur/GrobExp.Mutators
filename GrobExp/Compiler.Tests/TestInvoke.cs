@@ -29,5 +29,16 @@ namespace Compiler.Tests
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(3, f(1, 2));
         }
+
+        [Test]
+        public void TestWithLabels1()
+        {
+            var target = Expression.Label(typeof(int));
+            Expression body = Expression.Block(Expression.Goto(target, Expression.Constant(1)), Expression.Label(target, Expression.Constant(2)));
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(body);
+            Expression<Func<int>> exp = Expression.Lambda<Func<int>>(Expression.Block(Expression.Invoke(lambda), Expression.Invoke(lambda)));
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            Assert.AreEqual(1, f());
+        }
     }
 }

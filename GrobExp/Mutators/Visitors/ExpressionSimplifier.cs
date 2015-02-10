@@ -20,7 +20,7 @@ namespace GrobExp.Mutators.Visitors
                 return null;
             if(exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsDynamicMethod())
                 return exp;
-            if(exp.NodeType != ExpressionType.Lambda && exp.NodeType != ExpressionType.Goto && exp.NodeType != ExpressionType.Default && exp.NodeType != ExpressionType.New && exp.NodeType != ExpressionType.MemberInit && exp.NodeType != ExpressionType.Constant && IsConstant(exp)) // todo ich: очень странная вещь.. надо как-то получше сделать
+            if(exp.NodeType != ExpressionType.Lambda && exp.NodeType != ExpressionType.Goto && exp.NodeType != ExpressionType.Label && exp.NodeType != ExpressionType.Default && exp.NodeType != ExpressionType.New && exp.NodeType != ExpressionType.MemberInit && exp.NodeType != ExpressionType.Constant && IsConstant(exp)) // todo ich: очень странная вещь.. надо как-то получше сделать
             {
                 if(exp.NodeType == ExpressionType.Convert)
                 {

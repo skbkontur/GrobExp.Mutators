@@ -21,6 +21,11 @@ namespace GrobExp.Mutators
             root.Traverse(pathToTarget.ResolveInterfaceMembers(), true).AddMutator(Condition == null ? mutator : mutator.If(Condition));
         }
 
+        public ConverterConfigurator<TSource, TDest> WithoutCondition()
+        {
+            return new ConverterConfigurator<TSource, TDest>(root);
+        }
+
         public ConverterConfigurator<TSource, TSource, TDest, TDest, TValue> Target<TValue>(Expression<Func<TDest, TValue>> pathToValue)
         {
             return new ConverterConfigurator<TSource, TSource, TDest, TDest, TValue>(root, source => source, dest => dest, pathToValue, Condition);
@@ -129,6 +134,11 @@ namespace GrobExp.Mutators
                 foreach(var pathToValue in PathsToValue)
                     root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(Condition == null ? rootMutator : rootMutator.If(Condition));
             }
+        }
+
+        public ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> WithoutCondition()
+        {
+            return new ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>(root, PathToSourceChild, PathToChild, PathToValue, null);
         }
 
         public ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, T> Target<T>(Expression<Func<TDestValue, T>> pathToValue)

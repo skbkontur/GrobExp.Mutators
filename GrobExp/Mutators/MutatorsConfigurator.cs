@@ -28,6 +28,11 @@ namespace GrobExp.Mutators
             root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
         }
 
+        public MutatorsConfigurator<TRoot> WithoutCondition()
+        {
+            return new MutatorsConfigurator<TRoot>(root);
+        }
+
         public MutatorsConfigurator<TRoot, TRoot, TValue> Target<TValue>(Expression<Func<TRoot, TValue>> pathToValue, MultiLanguageTextBase title = null)
         {
             return new MutatorsConfigurator<TRoot, TRoot, TValue>(root, data => data, pathToValue, Condition, title);
@@ -130,6 +135,11 @@ namespace GrobExp.Mutators
         public void SetMutator(Expression pathToNode, Expression pathToTarget, MutatorConfiguration mutator)
         {
             root.Traverse(pathToNode.ResolveInterfaceMembers(), true).AddMutator(pathToTarget, mutator.If(Condition));
+        }
+
+        public MutatorsConfigurator<TRoot, TChild, TValue> WithoutCondition()
+        {
+            return new MutatorsConfigurator<TRoot, TChild, TValue>(root, PathToChild, PathToValue, null, Title);
         }
 
         public MutatorsConfigurator<TRoot, T, T> GoTo<T>(Expression<Func<TChild, T>> path)

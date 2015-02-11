@@ -47,6 +47,16 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(Type, Prepare(condition).AndAlso(Condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new EqualsToIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
+        }
+
+        protected override Expression GetLCP()
+        {
+             return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false)).Concat(Value == null ? new Expression[0] : Value.Body.CutToChains(false, false)).FindLCP();
+       }
+
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;

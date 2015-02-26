@@ -316,6 +316,18 @@ namespace Compiler.Tests
             Assert.Throws<NullReferenceException>(() => f(new TestClassA()));
         }
 
+        [Test]
+        public void TestNullableDecimal()
+        {
+            decimal? x = 1.0m;
+            Assert.AreEqual(1.0, Convert<decimal?, double?>(x));
+            var parameter = Expression.Parameter(typeof(object));
+            var body = Expression.Convert(Expression.Convert(Expression.Convert(parameter, typeof(int)), typeof(decimal?)), typeof(object));
+            var exp = Expression.Lambda<Func<object, object>>(body, parameter);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            Assert.AreEqual(1.0m, f(1));
+        }
+
         private T ConvertFromDecimal<T>(Expression<Func<decimal, T>> exp, decimal value)
         {
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);

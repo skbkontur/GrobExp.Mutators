@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using GrEmit;
 
@@ -46,6 +45,8 @@ namespace GrobExp.Compiler
             CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
+        public static bool AnalyzeILStack = false;
+
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
             DebugInfoGenerator debugInfoGenerator,
@@ -62,7 +63,7 @@ namespace GrobExp.Compiler
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
             var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            var il = new GroboIL(method, false);
+            var il = new GroboIL(method, AnalyzeILStack);
 
             var context = new EmittingContext
                 {
@@ -119,13 +120,21 @@ namespace GrobExp.Compiler
                 };
         }
 
-        internal static ILCode CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, Type closureType, ParameterExpression closureParameter, Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, CompilerOptions options, List<CompiledLambda> compiledLambdas, MethodBuilder method)
+        internal static ILCode CompileInternal(
+            LambdaExpression lambda,
+            DebugInfoGenerator debugInfoGenerator,
+            Type closureType,
+            ParameterExpression closureParameter,
+            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
+            CompilerOptions options,
+            List<CompiledLambda> compiledLambdas,
+            MethodBuilder method)
         {
             var typeBuilder = method.ReflectedType as TypeBuilder;
             if(typeBuilder == null)
                 throw new ArgumentException("Unable to obtain type builder of the method", "method");
             Type returnType = lambda.ReturnType;
-            var il = new GroboIL(method);
+            var il = new GroboIL(method, AnalyzeILStack);
 
             var context = new EmittingContext
                 {

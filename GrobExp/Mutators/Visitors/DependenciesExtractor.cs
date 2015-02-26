@@ -431,7 +431,7 @@ namespace GrobExp.Mutators.Visitors
             var method = ((MethodCallExpression)node).Method;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
-            return method.DeclaringType != typeof(Enumerable) || method.Name != "Any";
+            return method.DeclaringType != typeof(Enumerable) || (method.Name != "Any" && method.Name != "All");
         }
 
         private MethodProcessor GetMethodProcessor(MethodInfo method)
@@ -454,6 +454,7 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqFirst;
                 case "Where":
                 case "Any":
+                case "All":
                     return ProcessLinqWhere;
                 case "Select":
                     return ProcessLinqSelect;

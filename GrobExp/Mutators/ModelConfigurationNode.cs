@@ -153,13 +153,36 @@ namespace GrobExp.Mutators
             return GetArrays(Path, cutTail);
         }
 
+        private static bool IsUncoditionalSetter(MutatorConfiguration mutator)
+        {
+            return mutator is EqualsToConfiguration && !(mutator is EqualsToIfConfiguration);
+        }
+
         public void AddMutator(MutatorConfiguration mutator)
         {
+            if(IsUncoditionalSetter(mutator))
+            {
+                for(int i = 0; i < mutators.Count; ++i)
+                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(Path, mutators[i].Key, false, false))
+                    {
+                        mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator);
+                        return;
+                    }
+            }
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator));
         }
 
         public void AddMutator(Expression path, MutatorConfiguration mutator)
         {
+            if(IsUncoditionalSetter(mutator))
+            {
+                for(int i = 0; i < mutators.Count; ++i)
+                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(path, mutators[i].Key, false, false))
+                    {
+                        mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(path, mutator);
+                        return;
+                    }
+            }
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path, mutator));
         }
 
@@ -702,6 +725,19 @@ namespace GrobExp.Mutators
                 var list = new List<Dictionary<Type, List<Expression>>>();
                 var arraysExtractor = new ArraysExtractor(list);
 
+//                var wasUncoditionalSetter = false;
+//
+//                for(int i = mutators.Count - 1; i >= 0; --i)
+//                {
+//                    var mutator = mutators[i];
+//                    if((mutator.Value is EqualsToConfiguration) && !(mutator.Value is EqualsToIfConfiguration))
+//                    {
+//                        if(wasUncoditionalSetter)
+//                            continue;
+//                        wasUncoditionalSetter = true;
+//                        mutator.Value.GetArrays(arraysExtractor);
+//                    }
+//                }
                 foreach(var mutator in mutators)
                     mutator.Value.GetArrays(arraysExtractor);
 

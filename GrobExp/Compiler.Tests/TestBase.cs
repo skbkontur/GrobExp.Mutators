@@ -27,11 +27,13 @@ namespace Compiler.Tests
             LambdaCompiler.CompileToMethod(lambda, method, options);
             var type = typeBuilder.CreateType();
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, typeof(TDelegate), null, TestPerformance.Module, true);
-            var il = new GroboIL(dynamicMethod);
-            il.Ldnull(typeof(object));
-            il.Ldftn(type.GetMethod("lambda"));
-            il.Newobj(typeof(TDelegate).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldnull(typeof(object));
+                il.Ldftn(type.GetMethod("lambda"));
+                il.Newobj(typeof(TDelegate).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
+                il.Ret();
+            }
             return ((Func<TDelegate>)dynamicMethod.CreateDelegate(typeof(Func<TDelegate>)))();
         }
     }

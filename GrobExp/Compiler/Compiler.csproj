@@ -35,6 +35,9 @@
     <Reference Include="GrEmit">
       <HintPath>..\..\Assemblies\GrEmit.dll</HintPath>
     </Reference>
+    <Reference Include="Sigil">
+      <HintPath>..\..\Assemblies\Sigil.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />

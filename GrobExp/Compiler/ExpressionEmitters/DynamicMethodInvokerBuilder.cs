@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
+using Sigil.NonGeneric;
+
 namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal static class DynamicMethodInvokerBuilder
@@ -83,33 +85,33 @@ namespace GrobExp.Compiler.ExpressionEmitters
             var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {genericConstantsType, genericClosureType, typeof(IntPtr)});
-            using(var il = new GroboIL(constructor))
             {
-                il.Ldarg(0);
-                il.Ldarg(1);
-                il.Stfld(constantsField);
-                il.Ldarg(0);
-                il.Ldarg(2);
-                il.Stfld(closureField);
-                il.Ldarg(0);
-                il.Ldarg(3);
-                il.Stfld(methodField);
-                il.Ret();
+                var il = constructor.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Stfld, constantsField);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Stfld, closureField);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_3);
+                il.Emit(OpCodes.Stfld, methodField);
+                il.Emit(OpCodes.Ret);
             }
 
             var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
-            using(var il = new GroboIL(method))
             {
-                il.Ldarg(0);
-                il.Ldfld(constantsField);
-                il.Ldarg(0);
-                il.Ldfld(closureField);
+                var il = method.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, constantsField);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, closureField);
                 for(int i = 0; i < genericParameterTypes.Length; ++i)
-                    il.Ldarg(i + 1);
-                il.Ldarg(0);
-                il.Ldfld(methodField);
-                il.Calli(CallingConventions.Standard, genericResultType, new[] {genericConstantsType, genericClosureType}.Concat(genericParameterTypes).ToArray());
-                il.Ret();
+                    il.Emit(OpCodes.Ldarg, i + 1);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, methodField);
+                il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, genericResultType, new[] {genericConstantsType, genericClosureType}.Concat(genericParameterTypes).ToArray(), null);
+                il.Emit(OpCodes.Ret);
             }
 
             return typeBuilder.CreateType();
@@ -131,28 +133,28 @@ namespace GrobExp.Compiler.ExpressionEmitters
             var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {genericConstantsType, typeof(IntPtr)});
-            using(var il = new GroboIL(constructor))
             {
-                il.Ldarg(0);
-                il.Ldarg(1);
-                il.Stfld(constantsField);
-                il.Ldarg(0);
-                il.Ldarg(2);
-                il.Stfld(methodField);
-                il.Ret();
+                var il = constructor.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Stfld, constantsField);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldarg_2);
+                il.Emit(OpCodes.Stfld, methodField);
+                il.Emit(OpCodes.Ret);
             }
 
             var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, genericParameterTypes);
-            using(var il = new GroboIL(method))
             {
-                il.Ldarg(0);
-                il.Ldfld(constantsField);
+                var il = method.GetILGenerator();
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, constantsField);
                 for(int i = 0; i < genericParameterTypes.Length; ++i)
-                    il.Ldarg(i + 1);
-                il.Ldarg(0);
-                il.Ldfld(methodField);
-                il.Calli(CallingConventions.Standard, genericResultType, new[] {genericConstantsType}.Concat(genericParameterTypes).ToArray());
-                il.Ret();
+                    il.Emit(OpCodes.Ldarg, i + 1);
+                il.Emit(OpCodes.Ldarg_0);
+                il.Emit(OpCodes.Ldfld, methodField);
+                il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, genericResultType, new[] {genericConstantsType}.Concat(genericParameterTypes).ToArray(), null);
+                il.Emit(OpCodes.Ret);
             }
 
             return typeBuilder.CreateType();
@@ -165,8 +167,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
         {
-            var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, typeof(LambdaExpressionEmitter).Module, true);
-            using(var il = new GroboIL(method))
+            //var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, typeof(LambdaExpressionEmitter).Module, true);
+            var emit = Emit.NewDynamicMethod(typeof(IntPtr), new[] {typeof(DynamicMethod)});
+            var il = new GroboIL(emit.AsShorthand());
             {
                 il.Ldarg(0); // stack: [dynamicMethod]
                 MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -187,7 +190,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Call(getFunctionPointerMethod); // stack: [runtimeMethodHandle.GetFunctionPointer()]
                 il.Ret(); // return runtimeMethodHandle.GetFunctionPointer()
             }
-            return (Func<DynamicMethod, IntPtr>)method.CreateDelegate(typeof(Func<DynamicMethod, IntPtr>));
+            return (Func<DynamicMethod, IntPtr>)emit.CreateDelegate(typeof(Func<DynamicMethod, IntPtr>));
         }
 
         private static readonly MethodInfo gcKeepAliveMethod = ((MethodCallExpression)((Expression<Action>)(() => GC.KeepAlive(null))).Body).Method;

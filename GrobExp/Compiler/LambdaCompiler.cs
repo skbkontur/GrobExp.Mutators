@@ -8,6 +8,10 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
+using Sigil;
+using Sigil.Impl;
+using Sigil.NonGeneric;
+
 namespace GrobExp.Compiler
 {
     public static class LambdaCompiler
@@ -35,16 +39,16 @@ namespace GrobExp.Compiler
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
-        {
-            CompileToMethodInternal(lambda, method, null, options);
-        }
-
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
-        {
-            CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
-        }
-
+//        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
+//        {
+//            CompileToMethodInternal(lambda, method, null, options);
+//        }
+//
+//        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
+//        {
+//            CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
+//        }
+//
         public static bool AnalyzeILStack = false;
 
         internal static CompiledLambda CompileInternal(
@@ -62,8 +66,9 @@ namespace GrobExp.Compiler
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
-            var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            using(var il = new GroboIL(method, AnalyzeILStack))
+            var emit = Emit.NewDynamicMethod(returnType, parameterTypes, lambda.Name ?? Guid.NewGuid().ToString());
+            //var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+            var il = new GroboIL(emit.AsShorthand());
             {
 
                 var context = new EmittingContext
@@ -71,7 +76,7 @@ namespace GrobExp.Compiler
                         Options = options,
                         DebugInfoGenerator = debugInfoGenerator,
                         Lambda = lambda,
-                        Method = method,
+                        Method = null,
                         SkipVisibility = true,
                         Parameters = parameters,
                         ClosureType = closureType,
@@ -100,7 +105,7 @@ namespace GrobExp.Compiler
                     if(returnType != typeof(void))
                     {
                         if(!returnType.IsValueType)
-                            il.Ldnull(returnType);
+                            il.Ldnull();
                         else
                         {
                             using(var defaultValue = context.DeclareLocal(returnType))
@@ -115,79 +120,98 @@ namespace GrobExp.Compiler
                 }
                 return new CompiledLambda
                     {
-                        Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                        Method = method,
-                        ILCode = il.GetILCode()
+                        Delegate = emit.CreateDelegate(Extensions.GetDelegateType(constants == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants, OptimizationOptions.None),
+                        Method = dynamicMethodFromEmitExtractor(emit),
+                        ILCode = emit.Instructions()
                     };
             }
         }
 
-        internal static ILCode CompileInternal(
-            LambdaExpression lambda,
-            DebugInfoGenerator debugInfoGenerator,
-            Type closureType,
-            ParameterExpression closureParameter,
-            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
-            CompilerOptions options,
-            List<CompiledLambda> compiledLambdas,
-            MethodBuilder method)
+        private static readonly Func<Emit, DynamicMethod> dynamicMethodFromEmitExtractor = BuildDynamicMethodFromEmitExtractor();
+
+        private static Func<Emit, DynamicMethod> BuildDynamicMethodFromEmitExtractor()
         {
-            var typeBuilder = method.ReflectedType as TypeBuilder;
-            if(typeBuilder == null)
-                throw new ArgumentException("Unable to obtain type builder of the method", "method");
-            Type returnType = lambda.ReturnType;
-            using(var il = new GroboIL(method, AnalyzeILStack))
-            {
-
-                var context = new EmittingContext
-                    {
-                        Options = options,
-                        DebugInfoGenerator = debugInfoGenerator,
-                        TypeBuilder = typeBuilder,
-                        Lambda = lambda,
-                        Method = method,
-                        SkipVisibility = false,
-                        Parameters = lambda.Parameters.ToArray(),
-                        ClosureType = closureType,
-                        ClosureParameter = closureParameter,
-                        Switches = switches,
-                        CompiledLambdas = compiledLambdas,
-                        Il = il
-                    };
-                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
-                Type resultType;
-                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
-                if(returnType == typeof(bool) && resultType == typeof(bool?))
-                    context.ConvertFromNullableBoolToBool();
-                if(returnType == typeof(void) && resultType != typeof(void))
-                {
-                    using(var temp = context.DeclareLocal(resultType))
-                        il.Stloc(temp);
-                }
-                il.Ret();
-                if(labelUsed)
-                {
-                    il.MarkLabel(returnDefaultValueLabel);
-                    il.Pop();
-                    if(returnType != typeof(void))
-                    {
-                        if(!returnType.IsValueType)
-                            il.Ldnull(returnType);
-                        else
-                        {
-                            using(var defaultValue = context.DeclareLocal(returnType))
-                            {
-                                il.Ldloca(defaultValue);
-                                il.Initobj(returnType);
-                                il.Ldloc(defaultValue);
-                            }
-                        }
-                    }
-                    il.Ret();
-                }
-                return il.GetILCode();
-            }
+            var emit = Emit.NewDynamicMethod(typeof(DynamicMethod), new[] {typeof(Emit)});
+            var il = emit.AsShorthand();
+//            ((Emit<NonGenericPlaceholderDelegate>)emit).DynMethod;
+            var nonGenericPlaceholderDelegateType = typeof(Emit).Assembly.GetTypes().Single(type => type.Name == "NonGenericPlaceholderDelegate");
+            var emitType = typeof(Emit<>).MakeGenericType(nonGenericPlaceholderDelegateType);
+            il.Ldarg(0);
+            var innerEmitPropertyGetter = typeof(Emit).GetField("InnerEmit", BindingFlags.Instance | BindingFlags.NonPublic);
+            il.Ldfld(innerEmitPropertyGetter);
+            var dynMethodPropertyGetter = emitType.GetProperty("DynMethod", BindingFlags.Instance | BindingFlags.NonPublic).GetGetMethod(true);
+            il.Call(dynMethodPropertyGetter);
+            il.Ret();
+            return emit.CreateDelegate<Func<Emit, DynamicMethod>>();
         }
+
+//        internal static void CompileInternal(
+//            LambdaExpression lambda,
+//            DebugInfoGenerator debugInfoGenerator,
+//            Type closureType,
+//            ParameterExpression closureParameter,
+//            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
+//            CompilerOptions options,
+//            List<CompiledLambda> compiledLambdas,
+//            MethodBuilder method)
+//        {
+//            var typeBuilder = method.ReflectedType as TypeBuilder;
+//            if(typeBuilder == null)
+//                throw new ArgumentException("Unable to obtain type builder of the method", "method");
+//            Type returnType = lambda.ReturnType;
+//            var emit = 
+//            using(var il = new GroboIL(method, AnalyzeILStack))
+//            {
+//
+//                var context = new EmittingContext
+//                    {
+//                        Options = options,
+//                        DebugInfoGenerator = debugInfoGenerator,
+//                        TypeBuilder = typeBuilder,
+//                        Lambda = lambda,
+//                        Method = method,
+//                        SkipVisibility = false,
+//                        Parameters = lambda.Parameters.ToArray(),
+//                        ClosureType = closureType,
+//                        ClosureParameter = closureParameter,
+//                        Switches = switches,
+//                        CompiledLambdas = compiledLambdas,
+//                        Il = il
+//                    };
+//                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
+//                Type resultType;
+//                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
+//                if(returnType == typeof(bool) && resultType == typeof(bool?))
+//                    context.ConvertFromNullableBoolToBool();
+//                if(returnType == typeof(void) && resultType != typeof(void))
+//                {
+//                    using(var temp = context.DeclareLocal(resultType))
+//                        il.Stloc(temp);
+//                }
+//                il.Ret();
+//                if(labelUsed)
+//                {
+//                    il.MarkLabel(returnDefaultValueLabel);
+//                    il.Pop();
+//                    if(returnType != typeof(void))
+//                    {
+//                        if(!returnType.IsValueType)
+//                            il.Ldnull(returnType);
+//                        else
+//                        {
+//                            using(var defaultValue = context.DeclareLocal(returnType))
+//                            {
+//                                il.Ldloca(defaultValue);
+//                                il.Initobj(returnType);
+//                                il.Ldloc(defaultValue);
+//                            }
+//                        }
+//                    }
+//                    il.Ret();
+//                }
+//                return il.GetILCode();
+//            }
+//        }
 
         internal static readonly AssemblyBuilder Assembly = CreateAssembly();
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
@@ -223,37 +247,38 @@ namespace GrobExp.Compiler
             return compiledLambda;
         }
 
-        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
-        {
-            var compiledLambdas = new List<CompiledLambda>();
-            Type closureType;
-            ParameterExpression closureParameter;
-            Type constantsType;
-            ParameterExpression constantsParameter;
-            object constants;
-            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            var module = method.Module as ModuleBuilder;
-            if(module == null)
-                throw new ArgumentException("Unable to obtain module builder of the method", "method");
-            method.SetReturnType(lambda.ReturnType);
-            method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
-            var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
-            if(constantsParameter != null)
-                throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
-            CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
-        }
-
+//        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
+//        {
+//            var compiledLambdas = new List<CompiledLambda>();
+//            Type closureType;
+//            ParameterExpression closureParameter;
+//            Type constantsType;
+//            ParameterExpression constantsParameter;
+//            object constants;
+//            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
+//            var module = method.Module as ModuleBuilder;
+//            if(module == null)
+//                throw new ArgumentException("Unable to obtain module builder of the method", "method");
+//            method.SetReturnType(lambda.ReturnType);
+//            method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
+//            var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+//            if(constantsParameter != null)
+//                throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
+//            CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
+//        }
+//
         private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(object), typeof(Delegate[])}, Module, true);
-            using(var il = new GroboIL(method))
+            var emit = Emit.NewDynamicMethod(typeof(void), new[] {typeof(object), typeof(Delegate[])});
+            var il = new GroboIL(emit.AsShorthand());
             {
                 il.Ldarg(0);
+                il.Castclass(type);
                 il.Ldarg(1);
                 il.Stfld(type.GetField("delegates"));
                 il.Ret();
             }
-            return (Action<object, Delegate[]>)method.CreateDelegate(typeof(Action<object, Delegate[]>));
+            return (Action<object, Delegate[]>)emit.CreateDelegate(typeof(Action<object, Delegate[]>));
         }
     }
 }

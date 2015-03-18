@@ -108,9 +108,9 @@ namespace GrobExp.Compiler
                 {ExpressionType.Throw, new ThrowExpressionEmitter()},
                 {ExpressionType.ListInit, new ListInitExpressionEmitter()},
                 {ExpressionType.Loop, new LoopExpressionEmitter()},
-                {ExpressionType.Try, new TryExpressionEmitter()},
+//                {ExpressionType.Try, new TryExpressionEmitter()},
                 {ExpressionType.Switch, new SwitchExpressionEmitter()},
-                {ExpressionType.DebugInfo, new DebugInfoExpressionEmitter()},
+//                {ExpressionType.DebugInfo, new DebugInfoExpressionEmitter()},
             };
     }
 }

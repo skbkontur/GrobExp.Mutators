@@ -24,7 +24,7 @@ namespace GrobExp.Compiler
                 using(var temp = DeclareLocal(type.MakeByRefType()))
                 {
                     Il.Stloc(temp);
-                    Il.Ldnull(typeof(object));
+                    Il.Ldnull();
                     Il.Ldloc(temp);
                     EmitHasValueAccess(type);
                     Il.Brfalse(objIsNullLabel);
@@ -247,7 +247,7 @@ namespace GrobExp.Compiler
             if(type == typeof(void))
                 return;
             if(!type.IsValueType)
-                Il.Ldnull(type);
+                Il.Ldnull();
             else
             {
                 using(var temp = DeclareLocal(type))

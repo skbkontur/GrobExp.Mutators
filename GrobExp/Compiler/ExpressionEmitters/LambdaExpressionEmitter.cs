@@ -25,9 +25,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     compiledLambda = LambdaCompiler.CompileInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.ConstantsType, context.ConstantsParameter, null, context.Switches, context.Options, context.CompiledLambdas);
                 else
                 {
-                    var method = context.TypeBuilder.DefineMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
-                    var ilCode = LambdaCompiler.CompileInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.Switches, context.Options, context.CompiledLambdas, method);
-                    compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
+                    throw new NotSupportedException();
+//                    var method = context.TypeBuilder.DefineMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
+//                    var ilCode = LambdaCompiler.CompileInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.Switches, context.Options, context.CompiledLambdas, method);
+//                    compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
                 }
                 context.CompiledLambdas.Add(compiledLambda);
                 Type constantsType;
@@ -47,6 +48,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                                : DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(context.ConstantsType, node.Body.Type, parameterTypes);
                     var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
                     il.Ldc_IntPtr(pointer);
+                    il.Conv_I();
                     var types = needClosure
                                     ? new[] {context.ConstantsType, context.ClosureType, typeof(IntPtr)}
                                     : new[] {context.ConstantsType, typeof(IntPtr)};

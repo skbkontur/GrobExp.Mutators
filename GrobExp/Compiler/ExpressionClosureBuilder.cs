@@ -10,6 +10,8 @@ using System.Threading;
 
 using GrEmit;
 
+using Sigil.NonGeneric;
+
 namespace GrobExp.Compiler
 {
     internal class ExpressionClosureBuilder : ExpressionVisitor
@@ -331,43 +333,45 @@ namespace GrobExp.Compiler
 
         private Func<object> BuildConstants(Type type, ClosureSubstituter closureSubstituter)
         {
-            var method = new DynamicMethod("Construct_" + type.Name, typeof(object), new[] {typeof(object[])}, typeof(ExpressionClosureBuilder), true);
+            var emit = Emit.NewDynamicMethod(typeof(object), new[] {typeof(object[])}, "Construct_" + type.Name);
             var consts = new object[hashtable.Count];
-            using(var il = new GroboIL(method))
+            var il = new GroboIL(emit.AsShorthand());
+            il.Newobj(type.GetConstructor(Type.EmptyTypes));
+            int index = 0;
+            foreach(DictionaryEntry entry in hashtable)
             {
-                il.Newobj(type.GetConstructor(Type.EmptyTypes));
-                int index = 0;
-                foreach(DictionaryEntry entry in hashtable)
+                var pair = (KeyValuePair<Type, object>)entry.Key;
+                var constType = pair.Key;
+                consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
+                il.Dup();
+                il.Ldarg(0);
+                il.Ldc_I4(index++);
+                il.Ldelem(typeof(object));
+                string name = ((FieldInfo)entry.Value).Name;
+                var field = type.GetField(name);
+                if(field == null)
+                    throw new MissingFieldException(type.Name, name);
+                if(!constType.IsValueType)
                 {
-                    var pair = (KeyValuePair<Type, object>)entry.Key;
-                    var constType = pair.Key;
-                    consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
-                    il.Dup();
-                    il.Ldarg(0);
-                    il.Ldc_I4(index++);
-                    il.Ldelem(typeof(object));
-                    string name = ((FieldInfo)entry.Value).Name;
-                    var field = type.GetField(name);
-                    if(field == null)
-                        throw new MissingFieldException(type.Name, name);
-                    if(constType.IsValueType)
-                    {
-                        il.Unbox_Any(constType);
-                        if(field.FieldType != constType)
-                        {
-                            var constructor = field.FieldType.GetConstructor(new[] {constType});
-                            if(constructor == null)
-                                throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
-                            il.Newobj(constructor);
-                        }
-                    }
-                    else if(field.FieldType != constType)
+                    if(field.FieldType != constType)
                         throw new InvalidOperationException("Attempt to assign a value of type '" + Format(constType) + "' to field of type '" + Format(field.FieldType) + "'");
-                    il.Stfld(field);
+                    il.Castclass(field.FieldType);
                 }
-                il.Ret();
+                else
+                {
+                    il.Unbox_Any(constType);
+                    if(field.FieldType != constType)
+                    {
+                        var constructor = field.FieldType.GetConstructor(new[] {constType});
+                        if(constructor == null)
+                            throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
+                        il.Newobj(constructor);
+                    }
+                }
+                il.Stfld(field);
             }
-            var func = (Func<object[], object>)method.CreateDelegate(typeof(Func<object[], object>));
+            il.Ret();
+            var func = (Func<object[], object>)emit.CreateDelegate(typeof(Func<object[], object>));
             return () => func(consts);
         }
 

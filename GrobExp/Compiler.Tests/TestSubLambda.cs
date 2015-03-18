@@ -103,138 +103,138 @@ namespace Compiler.Tests
 //                    ),
 //                parameter);
 
-            CompileAndSave(exp);
+//            CompileAndSave(exp);
         }
 
         private static readonly MethodInfo threadSleepMethod = ((MethodCallExpression)((Expression<Action>)(() => Thread.Sleep(0))).Body).Method;
 
-        [Test, Ignore]
-        public void TestDebugInfo()
-        {
-            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
-
-            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
-            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
-            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
-
-            var sdi = Expression.SymbolDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);
-
-            var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
-
-            var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
-            var block = Expression.Block(di, exp);
-
-            var gen = DebugInfoGenerator.CreatePdbGenerator();
-
-            LambdaExpression lambda = Expression.Lambda(block, new ParameterExpression[0]);
-            LambdaCompiler.CompileToMethod(lambda, meth, gen, CompilerOptions.All);
-            //lambda.CompileToMethod(meth, gen);
-
-            var newtype = type.CreateType();
-            asm.Save("tmp.dll");
-            newtype.GetMethod("go").Invoke(null, new object[0]);
-            //meth.Invoke(null, new object[0]);
-            //lambda.DynamicInvoke(new object[0]);
-            Console.WriteLine(" ");
-        }
-
-        [Test, Ignore]
-        public void TestDebugInfo2()
-        {
-            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
-
-            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
-            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
-            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static);
-
-            var nestedType = type.DefineNestedType("qwerty", TypeAttributes.NestedPublic | TypeAttributes.Class);
-            nestedType.DefineField("zzz", typeof(Guid), FieldAttributes.Static | FieldAttributes.Public);
-            nestedType.CreateType();
-
-            var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
-
-            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
-
-            //var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
-            //var block = Expression.Block(di, exp);
-
-            var il = meth.GetILGenerator();
-            il.MarkSequencePoint(document, 2, 2, 2, 13);
-            il.Emit(OpCodes.Ldc_I4_2);
-            il.Emit(OpCodes.Ldc_I4_4);
-            il.Emit(OpCodes.Ldc_I4_4);
-            il.Emit(OpCodes.Sub);
-            il.Emit(OpCodes.Div);
-
-            var newtype = type.CreateType();
-
-            asm.Save("tmp.dll");
-            newtype.GetMethod("go").Invoke(null, new object[0]);
-            //meth.Invoke(null, new object[0]);
-            //lambda.DynamicInvoke(new object[0]);
-            Console.WriteLine(" ");
-        }
-
-        [Test, Ignore]
-        public void TestDebug2()
-        {
-  // create a dynamic assembly and module 
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
-
-        ModuleBuilder module = assemblyBuilder.DefineDynamicModule("zzz", "HelloWorld.dll", true); // <-- pass 'true' to track debug info.
-
-        // Tell Emit about the source file that we want to associate this with. 
-        ISymbolDocumentWriter doc = module.DefineDocument("Source.txt", Guid.Empty, Guid.Empty, Guid.Empty);
-
-        // create a new type to hold our Main method 
-        TypeBuilder typeBuilder = module.DefineType("HelloWorldType", TypeAttributes.Public | TypeAttributes.Class);
-
-        // create the Main(string[] args) method 
-        MethodBuilder methodbuilder = typeBuilder.DefineMethod("Main", MethodAttributes.Static | MethodAttributes.Public, typeof(int), new Type[] { typeof(string[]) });
-
-        // generate the IL for the Main method 
-        ILGenerator ilGenerator = methodbuilder.GetILGenerator();
-
-        // Create a local variable of type 'string', and call it 'xyz'
-        LocalBuilder localXYZ = ilGenerator.DeclareLocal(typeof(string));
-        localXYZ.SetLocalSymInfo("xyz"); // Provide name for the debugger. 
-
-        // Emit sequence point before the IL instructions. This is start line, start col, end line, end column, 
-
-        // Line 2: xyz = "hello"; 
-        ilGenerator.MarkSequencePoint(doc, 2, 1, 2, 100);
-        ilGenerator.Emit(OpCodes.Ldstr, "Hello world!");
-        ilGenerator.Emit(OpCodes.Stloc, localXYZ);
-
-        // Line 3: Write(xyz); 
-        MethodInfo infoWriteLine = typeof(System.Console).GetMethod("WriteLine", new Type[] { typeof(string) });
-        ilGenerator.MarkSequencePoint(doc, 3, 1, 3, 100);
-        ilGenerator.Emit(OpCodes.Ldloc, localXYZ);
-        ilGenerator.EmitCall(OpCodes.Call, infoWriteLine, null);
-
-        LocalBuilder localResult = ilGenerator.DeclareLocal(typeof(string));
-        localResult.SetLocalSymInfo("result"); // Provide name for the debugger. 
-
-        // Line 4: result = 0/0; 
-        ilGenerator.MarkSequencePoint(doc, 4, 1, 4, 100);
-        ilGenerator.Emit(OpCodes.Ldc_I4_0);
-        ilGenerator.Emit(OpCodes.Ldc_I4_0);
-        ilGenerator.Emit(OpCodes.Div);
-        ilGenerator.Emit(OpCodes.Stloc, localResult);
-
-        // Line 5: return result; 
-        ilGenerator.MarkSequencePoint(doc, 5, 1, 5, 100);
-        ilGenerator.Emit(OpCodes.Ldloc, localResult);
-        ilGenerator.Emit(OpCodes.Ret);
-
-        // bake it 
-        Type helloWorldType = typeBuilder.CreateType();
-
-        assemblyBuilder.Save("HelloWorld.dll");
-
-        // This now calls the newly generated method. We can step into this and debug our emitted code!! 
-        helloWorldType.GetMethod("Main").Invoke(null, new string[] { null }); // <-- step into        
-        }
+//        [Test, Ignore]
+//        public void TestDebugInfo()
+//        {
+//            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+//
+//            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+//            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+//            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+//
+//            var sdi = Expression.SymbolDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);
+//
+//            var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+//
+//            var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+//            var block = Expression.Block(di, exp);
+//
+//            var gen = DebugInfoGenerator.CreatePdbGenerator();
+//
+//            LambdaExpression lambda = Expression.Lambda(block, new ParameterExpression[0]);
+//            LambdaCompiler.CompileToMethod(lambda, meth, gen, CompilerOptions.All);
+//            //lambda.CompileToMethod(meth, gen);
+//
+//            var newtype = type.CreateType();
+//            asm.Save("tmp.dll");
+//            newtype.GetMethod("go").Invoke(null, new object[0]);
+//            //meth.Invoke(null, new object[0]);
+//            //lambda.DynamicInvoke(new object[0]);
+//            Console.WriteLine(" ");
+//        }
+//
+//        [Test, Ignore]
+//        public void TestDebugInfo2()
+//        {
+//            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+//
+//            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+//            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+//            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static);
+//
+//            var nestedType = type.DefineNestedType("qwerty", TypeAttributes.NestedPublic | TypeAttributes.Class);
+//            nestedType.DefineField("zzz", typeof(Guid), FieldAttributes.Static | FieldAttributes.Public);
+//            nestedType.CreateType();
+//
+//            var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
+//
+//            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+//
+//            //var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+//            //var block = Expression.Block(di, exp);
+//
+//            var il = meth.GetILGenerator();
+//            il.MarkSequencePoint(document, 2, 2, 2, 13);
+//            il.Emit(OpCodes.Ldc_I4_2);
+//            il.Emit(OpCodes.Ldc_I4_4);
+//            il.Emit(OpCodes.Ldc_I4_4);
+//            il.Emit(OpCodes.Sub);
+//            il.Emit(OpCodes.Div);
+//
+//            var newtype = type.CreateType();
+//
+//            asm.Save("tmp.dll");
+//            newtype.GetMethod("go").Invoke(null, new object[0]);
+//            //meth.Invoke(null, new object[0]);
+//            //lambda.DynamicInvoke(new object[0]);
+//            Console.WriteLine(" ");
+//        }
+//
+//        [Test, Ignore]
+//        public void TestDebug2()
+//        {
+//  // create a dynamic assembly and module 
+//            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+//
+//        ModuleBuilder module = assemblyBuilder.DefineDynamicModule("zzz", "HelloWorld.dll", true); // <-- pass 'true' to track debug info.
+//
+//        // Tell Emit about the source file that we want to associate this with. 
+//        ISymbolDocumentWriter doc = module.DefineDocument("Source.txt", Guid.Empty, Guid.Empty, Guid.Empty);
+//
+//        // create a new type to hold our Main method 
+//        TypeBuilder typeBuilder = module.DefineType("HelloWorldType", TypeAttributes.Public | TypeAttributes.Class);
+//
+//        // create the Main(string[] args) method 
+//        MethodBuilder methodbuilder = typeBuilder.DefineMethod("Main", MethodAttributes.Static | MethodAttributes.Public, typeof(int), new Type[] { typeof(string[]) });
+//
+//        // generate the IL for the Main method 
+//        ILGenerator ilGenerator = methodbuilder.GetILGenerator();
+//
+//        // Create a local variable of type 'string', and call it 'xyz'
+//        LocalBuilder localXYZ = ilGenerator.DeclareLocal(typeof(string));
+//        localXYZ.SetLocalSymInfo("xyz"); // Provide name for the debugger. 
+//
+//        // Emit sequence point before the IL instructions. This is start line, start col, end line, end column, 
+//
+//        // Line 2: xyz = "hello"; 
+//        ilGenerator.MarkSequencePoint(doc, 2, 1, 2, 100);
+//        ilGenerator.Emit(OpCodes.Ldstr, "Hello world!");
+//        ilGenerator.Emit(OpCodes.Stloc, localXYZ);
+//
+//        // Line 3: Write(xyz); 
+//        MethodInfo infoWriteLine = typeof(System.Console).GetMethod("WriteLine", new Type[] { typeof(string) });
+//        ilGenerator.MarkSequencePoint(doc, 3, 1, 3, 100);
+//        ilGenerator.Emit(OpCodes.Ldloc, localXYZ);
+//        ilGenerator.EmitCall(OpCodes.Call, infoWriteLine, null);
+//
+//        LocalBuilder localResult = ilGenerator.DeclareLocal(typeof(string));
+//        localResult.SetLocalSymInfo("result"); // Provide name for the debugger. 
+//
+//        // Line 4: result = 0/0; 
+//        ilGenerator.MarkSequencePoint(doc, 4, 1, 4, 100);
+//        ilGenerator.Emit(OpCodes.Ldc_I4_0);
+//        ilGenerator.Emit(OpCodes.Ldc_I4_0);
+//        ilGenerator.Emit(OpCodes.Div);
+//        ilGenerator.Emit(OpCodes.Stloc, localResult);
+//
+//        // Line 5: return result; 
+//        ilGenerator.MarkSequencePoint(doc, 5, 1, 5, 100);
+//        ilGenerator.Emit(OpCodes.Ldloc, localResult);
+//        ilGenerator.Emit(OpCodes.Ret);
+//
+//        // bake it 
+//        Type helloWorldType = typeBuilder.CreateType();
+//
+//        assemblyBuilder.Save("HelloWorld.dll");
+//
+//        // This now calls the newly generated method. We can step into this and debug our emitted code!! 
+//        helloWorldType.GetMethod("Main").Invoke(null, new string[] { null }); // <-- step into        
+//        }
 
         [Test]
         public void TestSubLambda2x()
@@ -377,22 +377,22 @@ namespace Compiler.Tests
                 }));
         }
 
-        private void CompileAndSave<TDelegate>(Expression<TDelegate> lambda) where TDelegate : class
-        {
-            var da = AppDomain.CurrentDomain.DefineDynamicAssembly(
-                new AssemblyName("dyn"), // call it whatever you want
-                AssemblyBuilderAccess.Save);
-
-            var dm = da.DefineDynamicModule("dyn_mod", "dyn.dll");
-            var dt = dm.DefineType("dyn_type");
-            var method = dt.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
-
-            //lambda.CompileToMethod(method);
-            LambdaCompiler.CompileToMethod(lambda, method, CompilerOptions.All);
-            dt.CreateType();
-
-            da.Save("dyn.dll");
-        }
+//        private void CompileAndSave<TDelegate>(Expression<TDelegate> lambda) where TDelegate : class
+//        {
+//            var da = AppDomain.CurrentDomain.DefineDynamicAssembly(
+//                new AssemblyName("dyn"), // call it whatever you want
+//                AssemblyBuilderAccess.Save);
+//
+//            var dm = da.DefineDynamicModule("dyn_mod", "dyn.dll");
+//            var dt = dm.DefineType("dyn_type");
+//            var method = dt.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
+//
+//            //lambda.CompileToMethod(method);
+//            LambdaCompiler.CompileToMethod(lambda, method, CompilerOptions.All);
+//            dt.CreateType();
+//
+//            da.Save("dyn.dll");
+//        }
 
         private static readonly MethodInfo anyMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, bool>>)(ints => ints.Any())).Body).Method.GetGenericMethodDefinition();
 

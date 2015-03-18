@@ -10,6 +10,8 @@ using GrEmit;
 
 using GrobExp.Compiler;
 
+using Sigil.NonGeneric;
+
 namespace GrobExp.Mutators.Visitors
 {
     public static class LambdaExpressionCreator
@@ -58,17 +60,17 @@ namespace GrobExp.Mutators.Visitors
         private static Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression> BuildLambdaFactory(Type delegateType)
         {
             var resultType = typeof(Expression<>).MakeGenericType(delegateType);
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(LambdaExpression), new[] {typeof(Expression), typeof(ReadOnlyCollection<ParameterExpression>)}, typeof(LambdaExpressionCreator), true);
-            using(var il = new GroboIL(method))
+            var emit = Emit.NewDynamicMethod(typeof(LambdaExpression), new[] {typeof(Expression), typeof(ReadOnlyCollection<ParameterExpression>)});
+            var il = new GroboIL(emit.AsShorthand());
             {
                 il.Ldarg(0);
-                il.Ldnull(typeof(string));
+                il.Ldnull();
                 il.Ldc_I4(0);
                 il.Ldarg(1);
                 il.Newobj(resultType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single());
                 il.Ret();
             }
-            return (Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)method.CreateDelegate(typeof(Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
+            return (Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)emit.CreateDelegate(typeof(Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
         }
 
         private static readonly Hashtable factories = new Hashtable();

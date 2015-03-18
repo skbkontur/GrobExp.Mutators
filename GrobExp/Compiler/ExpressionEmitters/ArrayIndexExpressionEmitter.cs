@@ -34,7 +34,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     arrayIndex = context.DeclareLocal(typeof(int));
                     il.Stloc(arrayIndex); // arrayIndex = index; stack: [array]
                     il.Dup(); // stack: [array, array]
-                    il.Ldlen(); // stack: [array, array.Length]
+                    il.Ldlen(arrayType.GetElementType()); // stack: [array, array.Length]
                     il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                     il.Ble(typeof(int), returnDefaultValueLabel); // if(array.Length <= arrayIndex) goto returnDefaultValue; stack: [array]
                     il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
@@ -83,7 +83,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Ldc_I4(0); // stack: [array, arrayIndex, 0]
                 il.Blt(typeof(int), returnDefaultValueLabel); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
                 il.Dup(); // stack: [array, array]
-                il.Ldlen(); // stack: [array, array.Length]
+                il.Ldlen(arrayType.GetElementType()); // stack: [array, array.Length]
                 il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                 var bigEnoughLabel = il.DefineLabel("bigEnough");
                 il.Bgt(typeof(int), bigEnoughLabel); // if(array.Length > arrayIndex) goto bigEnough; stack: [array]

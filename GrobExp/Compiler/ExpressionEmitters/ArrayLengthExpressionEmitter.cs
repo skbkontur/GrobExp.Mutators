@@ -20,7 +20,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Dup();
                 il.Brfalse(returnDefaultValueLabel);
             }
-            il.Ldlen();
+            il.Ldlen(arrayType.GetElementType());
             resultType = typeof(int);
             return result;
         }

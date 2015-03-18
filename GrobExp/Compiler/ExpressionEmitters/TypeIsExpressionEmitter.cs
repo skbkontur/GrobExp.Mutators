@@ -15,7 +15,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             if(operandType.IsValueType)
                 il.Box(operandType);
             il.Isinst(node.TypeOperand);
-            il.Ldnull(typeof(object));
+            il.Ldnull();
             il.Cgt(typeof(UIntPtr));
             resultType = typeof(bool);
             return result;

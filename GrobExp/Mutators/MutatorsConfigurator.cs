@@ -23,11 +23,12 @@ namespace GrobExp.Mutators
             root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), mutator.If(Condition));
         }
 
-//        public void SetMutator(Expression pathToValue, MutatorConfiguration mutator)
-//        {
-//            root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
-//        }
-//
+        public void SetMutator(LambdaExpression pathToValue, MutatorConfiguration mutator)
+        {
+            //root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), mutator.If(Condition));
+        }
+
         public MutatorsConfigurator<TRoot> WithoutCondition()
         {
             return new MutatorsConfigurator<TRoot>(root);

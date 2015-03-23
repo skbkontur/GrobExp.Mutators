@@ -322,6 +322,8 @@ namespace GrobExp.Mutators
                         switch(method.Name)
                         {
                         case "Current":
+                        case "Each":
+                            result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
                             break;
                         default:
                             throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));

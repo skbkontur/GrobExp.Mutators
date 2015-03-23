@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Visitors;
-
-using System.Linq;
 
 namespace GrobExp.Mutators
 {
@@ -20,14 +19,15 @@ namespace GrobExp.Mutators
 
         public void SetMutator<TValue>(Expression<Func<TRoot, TValue>> pathToValue, MutatorConfiguration mutator)
         {
-            root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            //root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), mutator.If(Condition));
         }
 
-        public void SetMutator(Expression pathToValue, MutatorConfiguration mutator)
-        {
-            root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
-        }
-
+//        public void SetMutator(Expression pathToValue, MutatorConfiguration mutator)
+//        {
+//            root.Traverse(pathToValue.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+//        }
+//
         public MutatorsConfigurator<TRoot> WithoutCondition()
         {
             return new MutatorsConfigurator<TRoot>(root);
@@ -119,7 +119,8 @@ namespace GrobExp.Mutators
                 rootMutator = mutator.ToRoot((Expression<Func<TRoot, TChild>>)pathToChild);
             }
             if(PathToValue != null)
-                root.Traverse(PathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(rootMutator.If(Condition));
+                //root.Traverse(PathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(rootMutator.If(Condition));
+                root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), rootMutator.If(Condition));
             else
             {
                 foreach(var pathToValue in PathsToValue)
@@ -127,9 +128,10 @@ namespace GrobExp.Mutators
             }
         }
 
-        public void SetMutator(Expression pathToTarget, MutatorConfiguration mutator)
+        public void SetMutator(LambdaExpression pathToTarget, MutatorConfiguration mutator)
         {
-            root.Traverse(pathToTarget.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            //root.Traverse(pathToTarget.ResolveInterfaceMembers(), true).AddMutator(mutator.If(Condition));
+            root.AddMutatorSmart(pathToTarget.ResolveInterfaceMembers(), mutator.If(Condition));
         }
 
         public void SetMutator(Expression pathToNode, Expression pathToTarget, MutatorConfiguration mutator)

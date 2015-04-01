@@ -10,6 +10,11 @@ namespace GrobExp.Compiler
 {
     internal class LambdaPreparer : ExpressionVisitor
     {
+        protected override Expression VisitUnary(UnaryExpression node)
+        {
+            return node.NodeType == ExpressionType.Quote ? node : base.VisitUnary(node);
+        }
+
         protected override Expression VisitInvocation(InvocationExpression node)
         {
             if(node.Expression.NodeType != ExpressionType.Lambda)

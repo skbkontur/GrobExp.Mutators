@@ -202,6 +202,17 @@ namespace GrobExp.Mutators
             return configurator;
         }
 
+        public static MutatorsConfigurator<TRoot, TChild, TValue> InvalidIfFromRoot<TRoot, TChild, TValue>(
+            this MutatorsConfigurator<TRoot, TChild, TValue> configurator,
+            Expression<Func<TRoot, bool?>> condition,
+            Expression<Func<TRoot, MultiLanguageTextBase>> message,
+            int priority = 0,
+            ValidationResultType type = ValidationResultType.Error)
+        {
+            configurator.SetMutator(InvalidIfConfiguration.Create(priority, condition, message, type));
+            return configurator;
+        }
+
         public static MutatorsConfigurator<TRoot, TChild, TValue> MustBeEqualTo<TRoot, TChild, TValue>(
             this MutatorsConfigurator<TRoot, TChild, TValue> configurator,
             Expression<Func<TChild, TValue>> expectedValue,

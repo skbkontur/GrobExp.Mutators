@@ -69,8 +69,7 @@ namespace GrobExp.Mutators
 
                 il.MarkLabel(sourceCollectionIsNullLabel);
 
-                var current = il.DeclareLocal(typeof(object));
-
+                var current = il.DeclareLocal(typeof(MutatorsTree<>).MakeGenericType(genericParameters[0]));
                 for(var i = 0; i < numberOfGenericParameters - 1; ++i)
                 {
                     // First: Migrate tree
@@ -86,6 +85,7 @@ namespace GrobExp.Mutators
                     //il.Call(collectionType.GetMethod("Migrate", BindingFlags.Public | BindingFlags.Instance), collectionType); // stack: [converterCollection, converterCollection.Migrate(current, converterContexts[i])]
                     collectionType = typeof(IConverterCollection<,>).MakeGenericType(genericParameters[i + 1], genericParameters[i]);
                     il.Call(TypeBuilder.GetMethod(collectionType, typeof(IConverterCollection<,>).GetMethod("Migrate", BindingFlags.Public | BindingFlags.Instance)), collectionType); // stack: [converterCollection, converterCollection.Migrate(current, converterContexts[i])]
+                    current = il.DeclareLocal(typeof(MutatorsTree<>).MakeGenericType(genericParameters[i + 1]));
                     il.Stloc(current); // current = converterCollection.Migrate(current, converterContexts[i]); stack: [converterCollection]
 
                     // Second: Merge with validations tree

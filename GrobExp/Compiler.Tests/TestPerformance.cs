@@ -496,7 +496,7 @@ namespace Compiler.Tests
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), Type.EmptyTypes, Module, true);
             using(var il = new GroboIL(dynamicMethod))
             {
-                il.Ldnull(typeof(object));
+                il.Ldnull();
                 il.Ldftn(type.GetMethod("zzz"));
                 il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
                 il.Ret();
@@ -699,12 +699,12 @@ namespace Compiler.Tests
                 il.Ldfld(typeof(TestPerformance).GetField("testValues"));
                 il.Ldarg(0);
                 il.Ldc_I4(14);
-                il.Rem(typeof(uint));
+                il.Rem(true);
                 il.Stloc(index);
                 il.Ldloc(index);
                 il.Ldelem(typeof(int));
                 il.Ldarg(0);
-                il.Bne(xxxLabel);
+                il.Bne_Un(xxxLabel);
                 il.Ldfld(typeof(TestPerformance).GetField("indexes"));
                 il.Ldloc(index);
                 il.Ldelem(typeof(int));
@@ -795,7 +795,7 @@ namespace Compiler.Tests
                 il.Ldarg(0);
                 il.Call(typeof(object).GetMethod("GetHashCode"), typeof(string));
                 il.Ldc_I4(testValues2.Length);
-                il.Rem(typeof(uint));
+                il.Rem(true);
                 il.Stloc(index);
                 il.Ldloc(index);
                 il.Ldelem(typeof(string));

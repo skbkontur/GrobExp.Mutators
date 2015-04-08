@@ -62,7 +62,7 @@ namespace GrobExp.Mutators.Visitors
             using(var il = new GroboIL(method))
             {
                 il.Ldarg(0);
-                il.Ldnull(typeof(string));
+                il.Ldnull();
                 il.Ldc_I4(0);
                 il.Ldarg(1);
                 il.Newobj(resultType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single());

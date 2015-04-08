@@ -45,7 +45,7 @@ namespace GrobExp.Compiler
             CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
-        public static bool AnalyzeILStack = false;
+        public static bool AnalyzeILStack = true;
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
@@ -100,7 +100,7 @@ namespace GrobExp.Compiler
                     if(returnType != typeof(void))
                     {
                         if(!returnType.IsValueType)
-                            il.Ldnull(returnType);
+                            il.Ldnull();
                         else
                         {
                             using(var defaultValue = context.DeclareLocal(returnType))
@@ -172,7 +172,7 @@ namespace GrobExp.Compiler
                     if(returnType != typeof(void))
                     {
                         if(!returnType.IsValueType)
-                            il.Ldnull(returnType);
+                            il.Ldnull();
                         else
                         {
                             using(var defaultValue = context.DeclareLocal(returnType))
@@ -249,6 +249,7 @@ namespace GrobExp.Compiler
             using(var il = new GroboIL(method))
             {
                 il.Ldarg(0);
+                il.Castclass(type);
                 il.Ldarg(1);
                 il.Stfld(type.GetField("delegates"));
                 il.Ret();

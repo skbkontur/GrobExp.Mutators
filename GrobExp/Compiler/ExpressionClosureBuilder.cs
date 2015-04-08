@@ -350,7 +350,9 @@ namespace GrobExp.Compiler
                     var field = type.GetField(name);
                     if(field == null)
                         throw new MissingFieldException(type.Name, name);
-                    if(constType.IsValueType)
+                    if(!constType.IsValueType)
+                        il.Castclass(field.FieldType);
+                    else
                     {
                         il.Unbox_Any(constType);
                         if(field.FieldType != constType)
@@ -361,8 +363,6 @@ namespace GrobExp.Compiler
                             il.Newobj(constructor);
                         }
                     }
-                    else if(field.FieldType != constType)
-                        throw new InvalidOperationException("Attempt to assign a value of type '" + Format(constType) + "' to field of type '" + Format(field.FieldType) + "'");
                     il.Stfld(field);
                 }
                 il.Ret();

@@ -36,10 +36,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Dup(); // stack: [array, array]
                     il.Ldlen(); // stack: [array, array.Length]
                     il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
-                    il.Ble(typeof(int), returnDefaultValueLabel); // if(array.Length <= arrayIndex) goto returnDefaultValue; stack: [array]
+                    il.Ble(returnDefaultValueLabel, false); // if(array.Length <= arrayIndex) goto returnDefaultValue; stack: [array]
                     il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
                     il.Ldc_I4(0); // stack: [array, arrayIndex, 0]
-                    il.Blt(typeof(int), returnDefaultValueLabel); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
+                    il.Blt(returnDefaultValueLabel, false); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
                 }
                 else if(extendArrayElement)
                 {
@@ -81,12 +81,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Stloc(arrayIndex); // arrayIndex = index; stack: [array]
                 il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
                 il.Ldc_I4(0); // stack: [array, arrayIndex, 0]
-                il.Blt(typeof(int), returnDefaultValueLabel); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
+                il.Blt(returnDefaultValueLabel, false); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
                 il.Dup(); // stack: [array, array]
                 il.Ldlen(); // stack: [array, array.Length]
                 il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                 var bigEnoughLabel = il.DefineLabel("bigEnough");
-                il.Bgt(typeof(int), bigEnoughLabel); // if(array.Length > arrayIndex) goto bigEnough; stack: [array]
+                il.Bgt(bigEnoughLabel, false); // if(array.Length > arrayIndex) goto bigEnough; stack: [array]
                 using(var array = context.DeclareLocal(arrayType))
                 {
                     il.Stloc(array); // stack: []
@@ -149,13 +149,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Brtrue(elementIsNotNullLabel);
                         il.Ldloc(array);
                         il.Ldloc(arrayIndex);
-                        if(!node.Type.IsArray)
-                            il.Newobj(constructor);
-                        else
-                        {
-                            il.Ldc_I4(0);
-                            il.Newarr(node.Type.GetElementType());
-                        }
+                        context.Create(node.Type);
                         il.Stelem(node.Type);
                         il.MarkLabel(elementIsNotNullLabel);
                         il.Ldloc(array);

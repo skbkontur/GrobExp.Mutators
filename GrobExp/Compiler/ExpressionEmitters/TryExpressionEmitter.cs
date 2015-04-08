@@ -36,7 +36,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     else
                     {
-                        il.Ldnull(resultType);
+                        il.Ldnull();
                         il.Stloc(retValue);
                     }
                     il.Leave(doneLabel);

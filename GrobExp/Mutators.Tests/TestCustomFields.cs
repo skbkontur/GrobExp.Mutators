@@ -80,6 +80,7 @@ namespace Mutators.Tests
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"StrArr", new CustomFieldValue{TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
+                            {"Q", new CustomFieldValue{TypeCode = TypeCode.Double, Value = 2.0}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                             {"ComplexFieldёZёS", new CustomFieldValue {TypeCode = TypeCode.String, Value = "qzz"}},
                             {"ComplexArr", new CustomFieldValue
@@ -92,6 +93,7 @@ namespace Mutators.Tests
                         }
                 });
             Assert.AreEqual("zzz", data.S);
+            Assert.AreEqual(2.0m, data.Q);
             Assert.IsNotNull(data.ComplexField);
             Assert.AreEqual(123, data.ComplexField.X);
             Assert.IsNotNull(data.ComplexField.Z);
@@ -224,7 +226,8 @@ namespace Mutators.Tests
                 {
                     CustomFields = new Dictionary<string, CustomFieldValue>
                         {
-                            {"S", new CustomFieldValue {TypeCode = TypeCode.String}}, {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
+                            {"S", new CustomFieldValue {TypeCode = TypeCode.String}},
+                            {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
                         },
                     Items = new[]
                         {
@@ -409,6 +412,9 @@ namespace Mutators.Tests
 
             [CustomField]
             public string[] StrArr { get; set; }
+
+            [CustomField]
+            public decimal? Q { get; set; }
 
             [CustomField]
             public ComplexCustomField[] ComplexArr { get; set; }

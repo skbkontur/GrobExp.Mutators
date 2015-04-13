@@ -10,12 +10,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            Expression left = node.Left;
-            Expression right = node.Right;
+            var left = node.Left;
+            var right = node.Right;
             Type leftType, rightType;
             context.EmitLoadArgument(left, false, out leftType);
             context.EmitLoadArgument(right, false, out rightType);
-            GroboIL il = context.Il;
+            var il = context.Il;
             if(node.Method != null)
             {
                 if(!leftType.IsNullable() && !rightType.IsNullable())
@@ -75,18 +75,18 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     switch(node.NodeType)
                     {
                     case ExpressionType.GreaterThan:
-                        il.Cgt(type);
+                        il.Cgt(type.Unsigned());
                         break;
                     case ExpressionType.LessThan:
-                        il.Clt(type);
+                        il.Clt(type.Unsigned());
                         break;
                     case ExpressionType.GreaterThanOrEqual:
-                        il.Clt(type);
+                        il.Clt(type.Unsigned());
                         il.Ldc_I4(1);
                         il.Xor();
                         break;
                     case ExpressionType.LessThanOrEqual:
-                        il.Cgt(type);
+                        il.Cgt(type.Unsigned());
                         il.Ldc_I4(1);
                         il.Xor();
                         break;
@@ -110,20 +110,20 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             context.EmitValueAccess(type);
                             var returnFalseLabel = il.DefineLabel("returnFalse");
 
-                            Type argument = type.GetGenericArguments()[0];
+                            var argument = type.GetGenericArguments()[0];
                             switch(node.NodeType)
                             {
                             case ExpressionType.GreaterThan:
-                                il.Ble(argument, returnFalseLabel);
+                                il.Ble(returnFalseLabel, argument.Unsigned());
                                 break;
                             case ExpressionType.LessThan:
-                                il.Bge(argument, returnFalseLabel);
+                                il.Bge(returnFalseLabel, argument.Unsigned());
                                 break;
                             case ExpressionType.GreaterThanOrEqual:
-                                il.Blt(argument, returnFalseLabel);
+                                il.Blt(returnFalseLabel, argument.Unsigned());
                                 break;
                             case ExpressionType.LessThanOrEqual:
-                                il.Bgt(argument, returnFalseLabel);
+                                il.Bgt(returnFalseLabel, argument.Unsigned());
                                 break;
                             default:
                                 throw new InvalidOperationException();
@@ -164,18 +164,18 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             switch(node.NodeType)
                             {
                             case ExpressionType.GreaterThan:
-                                il.Cgt(argumentType);
+                                il.Cgt(argumentType.Unsigned());
                                 break;
                             case ExpressionType.LessThan:
-                                il.Clt(argumentType);
+                                il.Clt(argumentType.Unsigned());
                                 break;
                             case ExpressionType.GreaterThanOrEqual:
-                                il.Clt(argumentType);
+                                il.Clt(argumentType.Unsigned());
                                 il.Ldc_I4(1);
                                 il.Xor();
                                 break;
                             case ExpressionType.LessThanOrEqual:
-                                il.Cgt(argumentType);
+                                il.Cgt(argumentType.Unsigned());
                                 il.Ldc_I4(1);
                                 il.Xor();
                                 break;

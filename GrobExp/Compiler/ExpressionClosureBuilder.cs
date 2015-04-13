@@ -332,46 +332,55 @@ namespace GrobExp.Compiler
         private Func<object> BuildConstants(Type type, ClosureSubstituter closureSubstituter)
         {
             var method = new DynamicMethod("Construct_" + type.Name, typeof(object), new[] {typeof(object[])}, typeof(ExpressionClosureBuilder), true);
-            var il = new GroboIL(method);
-            il.Newobj(type.GetConstructor(Type.EmptyTypes));
             var consts = new object[hashtable.Count];
-            int index = 0;
-            foreach(DictionaryEntry entry in hashtable)
+            using(var il = new GroboIL(method))
             {
-                var pair = (KeyValuePair<Type, object>)entry.Key;
-                var constType = pair.Key;
-                consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
-                il.Dup();
-                il.Ldarg(0);
-                il.Ldc_I4(index++);
-                il.Ldelem(typeof(object));
-                string name = ((FieldInfo)entry.Value).Name;
-                var field = type.GetField(name);
-                if(field == null)
-                    throw new MissingFieldException(type.Name, name);
-                if(constType.IsValueType)
+                il.Newobj(type.GetConstructor(Type.EmptyTypes));
+                int index = 0;
+                foreach(DictionaryEntry entry in hashtable)
                 {
-                    il.Unbox_Any(constType);
-                    if(field.FieldType != constType)
+                    var pair = (KeyValuePair<Type, object>)entry.Key;
+                    var constType = pair.Key;
+                    consts[index] = pair.Value is Expression ? closureSubstituter.Visit((Expression)pair.Value) : pair.Value;
+                    il.Dup();
+                    il.Ldarg(0);
+                    il.Ldc_I4(index++);
+                    il.Ldelem(typeof(object));
+                    string name = ((FieldInfo)entry.Value).Name;
+                    var field = type.GetField(name);
+                    if(field == null)
+                        throw new MissingFieldException(type.Name, name);
+                    if(!constType.IsValueType)
+                        il.Castclass(field.FieldType);
+                    else
                     {
-                        var constructor = field.FieldType.GetConstructor(new[] {constType});
-                        if(constructor == null)
-                            throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
-                        il.Newobj(constructor);
+                        il.Unbox_Any(constType);
+                        if(field.FieldType != constType)
+                        {
+                            var constructor = field.FieldType.GetConstructor(new[] {constType});
+                            if(constructor == null)
+                                throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
+                            il.Newobj(constructor);
+                        }
                     }
+                    il.Stfld(field);
                 }
-                else if(field.FieldType != constType)
-                    throw new InvalidOperationException("Attempt to assign a value of type '" + Format(constType) + "' to field of type '" + Format(field.FieldType) + "'");
-                il.Stfld(field);
+                il.Ret();
             }
-            il.Ret();
             var func = (Func<object[], object>)method.CreateDelegate(typeof(Func<object[], object>));
             return () => func(consts);
         }
 
+        private static bool IsPrivate(Type type)
+        {
+            if(type.IsNestedPrivate || type.IsNotPublic)
+                return true;
+            return type.IsGenericType && type.GetGenericArguments().Any(IsPrivate);
+        }
+
         private static Type GetFieldType(Type type)
         {
-            return (type.IsNestedPrivate || type.IsNotPublic) && type.IsValueType
+            return IsPrivate(type) && type.IsValueType
                        ? typeof(StrongBox<>).MakeGenericType(new[] {type})
                        : type;
         }

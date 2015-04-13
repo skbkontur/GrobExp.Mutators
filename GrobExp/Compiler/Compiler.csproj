@@ -100,6 +100,7 @@
     <Compile Include="LambdaPreparer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultType.cs" />
+    <Compile Include="RuntimeVariablesInliner.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

@@ -477,26 +477,30 @@ namespace Compiler.Tests
         {
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new[] {typeof(TestClassA)});
-            var il = new GroboIL(method);
-            il.Ldarg(0);
-            il.Ldfld(typeof(TestClassA).GetField("Y"));
-            var y = il.DeclareLocal(typeof(int));
-            il.Stloc(y);
-            il.Ldarg(0);
-            il.Ldfld(typeof(TestClassA).GetField("Z"));
-            var z = il.DeclareLocal(typeof(int));
-            il.Stloc(z);
-            il.Ldloc(y);
-            il.Ldloc(z);
-            il.Add();
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Ldfld(typeof(TestClassA).GetField("Y"));
+                var y = il.DeclareLocal(typeof(int));
+                il.Stloc(y);
+                il.Ldarg(0);
+                il.Ldfld(typeof(TestClassA).GetField("Z"));
+                var z = il.DeclareLocal(typeof(int));
+                il.Stloc(z);
+                il.Ldloc(y);
+                il.Ldloc(z);
+                il.Add();
+                il.Ret();
+            }
             var type = typeBuilder.CreateType();
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), Type.EmptyTypes, Module, true);
-            il = new GroboIL(dynamicMethod);
-            il.Ldnull(typeof(object));
-            il.Ldftn(type.GetMethod("zzz"));
-            il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldnull();
+                il.Ldftn(type.GetMethod("zzz"));
+                il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
+                il.Ret();
+            }
             return ((Func<Func<TestClassA, int>>)dynamicMethod.CreateDelegate(typeof(Func<Func<TestClassA, int>>)))();
         }
 
@@ -504,26 +508,30 @@ namespace Compiler.Tests
         {
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var method = typeBuilder.DefineMethod("zzz", MethodAttributes.Public, typeof(int), new[] {typeof(TestClassA)});
-            var il = new GroboIL(method);
-            il.Ldarg(1);
-            il.Ldfld(typeof(TestClassA).GetField("Y"));
-            il.Ldarg(1);
-            il.Ldfld(typeof(TestClassA).GetField("Z"));
-            var y = il.DeclareLocal(typeof(int));
-            var z = il.DeclareLocal(typeof(int));
-            il.Stloc(z);
-            il.Stloc(y);
-            il.Ldloc(y);
-            il.Ldloc(z);
-            il.Add();
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(1);
+                il.Ldfld(typeof(TestClassA).GetField("Y"));
+                il.Ldarg(1);
+                il.Ldfld(typeof(TestClassA).GetField("Z"));
+                var y = il.DeclareLocal(typeof(int));
+                var z = il.DeclareLocal(typeof(int));
+                il.Stloc(z);
+                il.Stloc(y);
+                il.Ldloc(y);
+                il.Ldloc(z);
+                il.Add();
+                il.Ret();
+            }
             var type = typeBuilder.CreateType();
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(Func<TestClassA, int>), new[] {typeof(object)}, Module, true);
-            il = new GroboIL(dynamicMethod);
-            il.Ldarg(0);
-            il.Ldftn(type.GetMethod("zzz"));
-            il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldarg(0);
+                il.Ldftn(type.GetMethod("zzz"));
+                il.Newobj(typeof(Func<TestClassA, int>).GetConstructor(new[] {typeof(object), typeof(IntPtr)}));
+                il.Ret();
+            }
             return ((Func<object, Func<TestClassA, int>>)dynamicMethod.CreateDelegate(typeof(Func<object, Func<TestClassA, int>>)))(Activator.CreateInstance(type));
         }
 
@@ -531,17 +539,21 @@ namespace Compiler.Tests
         {
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var doNothingMethod = typeBuilder.DefineMethod("DoNothingImpl", MethodAttributes.Public, typeof(void), Type.EmptyTypes);
-            var il = new GroboIL(doNothingMethod);
-            il.Ldfld(xField);
-            il.Ldc_I4(1);
-            il.Add();
-            il.Stfld(xField);
-            il.Ret();
+            using(var il = new GroboIL(doNothingMethod))
+            {
+                il.Ldfld(xField);
+                il.Ldc_I4(1);
+                il.Add();
+                il.Stfld(xField);
+                il.Ret();
+            }
             var method = typeBuilder.DefineMethod("DoNothing", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
-            il = new GroboIL(method);
-            il.Ldarg(0);
-            il.Call(doNothingMethod);
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Call(doNothingMethod);
+                il.Ret();
+            }
             typeBuilder.DefineMethodOverride(method, typeof(ITest).GetMethod("DoNothing"));
             typeBuilder.AddInterfaceImplementation(typeof(ITest));
             var type = typeBuilder.CreateType();
@@ -554,17 +566,21 @@ namespace Compiler.Tests
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Class | TypeAttributes.Public);
             var actionField = typeBuilder.DefineField("action", typeof(Action), FieldAttributes.Private | FieldAttributes.InitOnly);
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {typeof(Action)});
-            var il = new GroboIL(constructor);
-            il.Ldarg(0);
-            il.Ldarg(1);
-            il.Stfld(actionField);
-            il.Ret();
+            using(var il = new GroboIL(constructor))
+            {
+                il.Ldarg(0);
+                il.Ldarg(1);
+                il.Stfld(actionField);
+                il.Ret();
+            }
             var method = typeBuilder.DefineMethod("DoNothing", MethodAttributes.Public | MethodAttributes.Virtual, typeof(void), Type.EmptyTypes);
-            il = new GroboIL(method);
-            il.Ldarg(0);
-            il.Ldfld(actionField);
-            il.Call(typeof(Action).GetMethod("Invoke", Type.EmptyTypes), typeof(Action));
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Ldfld(actionField);
+                il.Call(typeof(Action).GetMethod("Invoke", Type.EmptyTypes), typeof(Action));
+                il.Ret();
+            }
             typeBuilder.DefineMethodOverride(method, typeof(ITest).GetMethod("DoNothing"));
             typeBuilder.AddInterfaceImplementation(typeof(ITest));
             var type = typeBuilder.CreateType();
@@ -601,12 +617,14 @@ namespace Compiler.Tests
         private Tuple<Action, MethodInfo> Build()
         {
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), Type.EmptyTypes, Module, true);
-            var il = new GroboIL(dynamicMethod);
-            il.Ldfld(xField);
-            il.Ldc_I4(1);
-            il.Add();
-            il.Stfld(xField);
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldfld(xField);
+                il.Ldc_I4(1);
+                il.Add();
+                il.Stfld(xField);
+                il.Ret();
+            }
             return new Tuple<Action, MethodInfo>((Action)dynamicMethod.CreateDelegate(typeof(Action)), dynamicMethod);
         }
 
@@ -632,34 +650,36 @@ namespace Compiler.Tests
         private Func<int, string> BuildSwitch1()
         {
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] {typeof(int)}, Module, true);
-            var il = new GroboIL(dynamicMethod);
-            il.Ldarg(0);
-            var zzzLabel = il.DefineLabel("zzz");
-            var qxxLabel = il.DefineLabel("qxx");
-            var qzzLabel = il.DefineLabel("qzz");
-            var xxxLabel = il.DefineLabel("xxx");
-            il.Switch(zzzLabel, xxxLabel, zzzLabel);
-            il.Ldarg(0);
-            il.Ldc_I4(5);
-            il.Sub();
-            il.Switch(qxxLabel, xxxLabel, qzzLabel);
-            il.Ldarg(0);
-            il.Ldc_I4(0xf4240);
-            il.Sub();
-            il.Switch(qzzLabel, qxxLabel);
-            il.Br(xxxLabel);
-            il.MarkLabel(zzzLabel);
-            il.Ldstr("zzz");
-            il.Ret();
-            il.MarkLabel(qxxLabel);
-            il.Ldstr("qxx");
-            il.Ret();
-            il.MarkLabel(qzzLabel);
-            il.Ldstr("qzz");
-            il.Ret();
-            il.MarkLabel(xxxLabel);
-            il.Ldstr("xxx");
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldarg(0);
+                var zzzLabel = il.DefineLabel("zzz");
+                var qxxLabel = il.DefineLabel("qxx");
+                var qzzLabel = il.DefineLabel("qzz");
+                var xxxLabel = il.DefineLabel("xxx");
+                il.Switch(zzzLabel, xxxLabel, zzzLabel);
+                il.Ldarg(0);
+                il.Ldc_I4(5);
+                il.Sub();
+                il.Switch(qxxLabel, xxxLabel, qzzLabel);
+                il.Ldarg(0);
+                il.Ldc_I4(0xf4240);
+                il.Sub();
+                il.Switch(qzzLabel, qxxLabel);
+                il.Br(xxxLabel);
+                il.MarkLabel(zzzLabel);
+                il.Ldstr("zzz");
+                il.Ret();
+                il.MarkLabel(qxxLabel);
+                il.Ldstr("qxx");
+                il.Ret();
+                il.MarkLabel(qzzLabel);
+                il.Ldstr("qzz");
+                il.Ret();
+                il.MarkLabel(xxxLabel);
+                il.Ldstr("xxx");
+                il.Ret();
+            }
             return (Func<int, string>)dynamicMethod.CreateDelegate(typeof(Func<int, string>));
         }
 
@@ -669,38 +689,40 @@ namespace Compiler.Tests
         private Func<int, string> BuildSwitch2()
         {
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] {typeof(int)}, Module, true);
-            var il = new GroboIL(dynamicMethod);
-            var zzzLabel = il.DefineLabel("zzz");
-            var qxxLabel = il.DefineLabel("qxx");
-            var qzzLabel = il.DefineLabel("qzz");
-            var xxxLabel = il.DefineLabel("xxx");
-            var index = il.DeclareLocal(typeof(uint));
-            il.Ldfld(typeof(TestPerformance).GetField("testValues"));
-            il.Ldarg(0);
-            il.Ldc_I4(14);
-            il.Rem(typeof(uint));
-            il.Stloc(index);
-            il.Ldloc(index);
-            il.Ldelem(typeof(int));
-            il.Ldarg(0);
-            il.Bne(xxxLabel);
-            il.Ldfld(typeof(TestPerformance).GetField("indexes"));
-            il.Ldloc(index);
-            il.Ldelem(typeof(int));
-            il.Switch(zzzLabel, zzzLabel, qxxLabel, qzzLabel, qzzLabel, qxxLabel);
-            il.Br(xxxLabel);
-            il.MarkLabel(zzzLabel);
-            il.Ldstr("zzz");
-            il.Ret();
-            il.MarkLabel(qxxLabel);
-            il.Ldstr("qxx");
-            il.Ret();
-            il.MarkLabel(qzzLabel);
-            il.Ldstr("qzz");
-            il.Ret();
-            il.MarkLabel(xxxLabel);
-            il.Ldstr("xxx");
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                var zzzLabel = il.DefineLabel("zzz");
+                var qxxLabel = il.DefineLabel("qxx");
+                var qzzLabel = il.DefineLabel("qzz");
+                var xxxLabel = il.DefineLabel("xxx");
+                var index = il.DeclareLocal(typeof(uint));
+                il.Ldfld(typeof(TestPerformance).GetField("testValues"));
+                il.Ldarg(0);
+                il.Ldc_I4(14);
+                il.Rem(true);
+                il.Stloc(index);
+                il.Ldloc(index);
+                il.Ldelem(typeof(int));
+                il.Ldarg(0);
+                il.Bne_Un(xxxLabel);
+                il.Ldfld(typeof(TestPerformance).GetField("indexes"));
+                il.Ldloc(index);
+                il.Ldelem(typeof(int));
+                il.Switch(zzzLabel, zzzLabel, qxxLabel, qzzLabel, qzzLabel, qxxLabel);
+                il.Br(xxxLabel);
+                il.MarkLabel(zzzLabel);
+                il.Ldstr("zzz");
+                il.Ret();
+                il.MarkLabel(qxxLabel);
+                il.Ldstr("qxx");
+                il.Ret();
+                il.MarkLabel(qzzLabel);
+                il.Ldstr("qzz");
+                il.Ret();
+                il.MarkLabel(xxxLabel);
+                il.Ldstr("xxx");
+                il.Ret();
+            }
             return (Func<int, string>)dynamicMethod.CreateDelegate(typeof(Func<int, string>));
         }
 
@@ -762,65 +784,69 @@ namespace Compiler.Tests
         {
             Init(new[] {"0", "2", "5", "1000001", "7", "1000000"});
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(string), new[] { typeof(string) }, Module, true);
-            var il = new GroboIL(dynamicMethod);
-            var zzzLabel = il.DefineLabel("zzz");
-            var qxxLabel = il.DefineLabel("qxx");
-            var qzzLabel = il.DefineLabel("qzz");
-            var xxxLabel = il.DefineLabel("xxx");
-            var index = il.DeclareLocal(typeof(uint));
-            il.Ldfld(typeof(TestPerformance).GetField("testValues2"));
-            il.Ldarg(0);
-            il.Call(typeof(object).GetMethod("GetHashCode"), typeof(string));
-            il.Ldc_I4(testValues2.Length);
-            il.Rem(typeof(uint));
-            il.Stloc(index);
-            il.Ldloc(index);
-            il.Ldelem(typeof(string));
-            il.Ldarg(0);
-            il.Call(typeof(object).GetMethod("Equals", new[] {typeof(object)}), typeof(string));
-            il.Brfalse(xxxLabel);
-            il.Ldfld(typeof(TestPerformance).GetField("indexes2"));
-            il.Ldloc(index);
-            il.Ldelem(typeof(int));
-            il.Switch(zzzLabel, zzzLabel, qxxLabel, qxxLabel, qzzLabel, qzzLabel);
-            il.Br(xxxLabel);
-            il.MarkLabel(zzzLabel);
-            il.Ldstr("zzz");
-            il.Ret();
-            il.MarkLabel(qxxLabel);
-            il.Ldstr("qxx");
-            il.Ret();
-            il.MarkLabel(qzzLabel);
-            il.Ldstr("qzz");
-            il.Ret();
-            il.MarkLabel(xxxLabel);
-            il.Ldstr("xxx");
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                var zzzLabel = il.DefineLabel("zzz");
+                var qxxLabel = il.DefineLabel("qxx");
+                var qzzLabel = il.DefineLabel("qzz");
+                var xxxLabel = il.DefineLabel("xxx");
+                var index = il.DeclareLocal(typeof(uint));
+                il.Ldfld(typeof(TestPerformance).GetField("testValues2"));
+                il.Ldarg(0);
+                il.Call(typeof(object).GetMethod("GetHashCode"), typeof(string));
+                il.Ldc_I4(testValues2.Length);
+                il.Rem(true);
+                il.Stloc(index);
+                il.Ldloc(index);
+                il.Ldelem(typeof(string));
+                il.Ldarg(0);
+                il.Call(typeof(object).GetMethod("Equals", new[] {typeof(object)}), typeof(string));
+                il.Brfalse(xxxLabel);
+                il.Ldfld(typeof(TestPerformance).GetField("indexes2"));
+                il.Ldloc(index);
+                il.Ldelem(typeof(int));
+                il.Switch(zzzLabel, zzzLabel, qxxLabel, qxxLabel, qzzLabel, qzzLabel);
+                il.Br(xxxLabel);
+                il.MarkLabel(zzzLabel);
+                il.Ldstr("zzz");
+                il.Ret();
+                il.MarkLabel(qxxLabel);
+                il.Ldstr("qxx");
+                il.Ret();
+                il.MarkLabel(qzzLabel);
+                il.Ldstr("qzz");
+                il.Ret();
+                il.MarkLabel(xxxLabel);
+                il.Ldstr("xxx");
+                il.Ret();
+            }
             return (Func<string, string>)dynamicMethod.CreateDelegate(typeof(Func<string, string>));
         }
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
         {
             var method = new DynamicMethod("DynamicMethodPointerExtractor", typeof(IntPtr), new[] {typeof(DynamicMethod)}, Module, true);
-            var il = new GroboIL(method);
-            il.Ldarg(0); // stack: [dynamicMethod]
-            MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
-            if(getMethodDescriptorMethod == null)
-                throw new MissingMethodException(typeof(DynamicMethod).Name, "GetMethodDescriptor");
-            il.Call(getMethodDescriptorMethod); // stack: [dynamicMethod.GetMethodDescriptor()]
-            var runtimeMethodHandle = il.DeclareLocal(typeof(RuntimeMethodHandle));
-            il.Stloc(runtimeMethodHandle);
-            il.Ldloc(runtimeMethodHandle);
-            MethodInfo prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] {typeof(RuntimeMethodHandle)});
-            if(prepareMethodMethod == null)
-                throw new MissingMethodException(typeof(RuntimeHelpers).Name, "PrepareMethod");
-            il.Call(prepareMethodMethod);
-            MethodInfo getFunctionPointerMethod = typeof(RuntimeMethodHandle).GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public);
-            if(getFunctionPointerMethod == null)
-                throw new MissingMethodException(typeof(RuntimeMethodHandle).Name, "GetFunctionPointer");
-            il.Ldloca(runtimeMethodHandle);
-            il.Call(getFunctionPointerMethod); // stack: [dynamicMethod.GetMethodDescriptor().GetFunctionPointer()]
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0); // stack: [dynamicMethod]
+                MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
+                if(getMethodDescriptorMethod == null)
+                    throw new MissingMethodException(typeof(DynamicMethod).Name, "GetMethodDescriptor");
+                il.Call(getMethodDescriptorMethod); // stack: [dynamicMethod.GetMethodDescriptor()]
+                var runtimeMethodHandle = il.DeclareLocal(typeof(RuntimeMethodHandle));
+                il.Stloc(runtimeMethodHandle);
+                il.Ldloc(runtimeMethodHandle);
+                MethodInfo prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] {typeof(RuntimeMethodHandle)});
+                if(prepareMethodMethod == null)
+                    throw new MissingMethodException(typeof(RuntimeHelpers).Name, "PrepareMethod");
+                il.Call(prepareMethodMethod);
+                MethodInfo getFunctionPointerMethod = typeof(RuntimeMethodHandle).GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public);
+                if(getFunctionPointerMethod == null)
+                    throw new MissingMethodException(typeof(RuntimeMethodHandle).Name, "GetFunctionPointer");
+                il.Ldloca(runtimeMethodHandle);
+                il.Call(getFunctionPointerMethod); // stack: [dynamicMethod.GetMethodDescriptor().GetFunctionPointer()]
+                il.Ret();
+            }
             return (Func<DynamicMethod, IntPtr>)method.CreateDelegate(typeof(Func<DynamicMethod, IntPtr>));
         }
 

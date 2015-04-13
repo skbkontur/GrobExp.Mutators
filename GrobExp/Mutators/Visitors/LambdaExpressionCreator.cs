@@ -59,13 +59,15 @@ namespace GrobExp.Mutators.Visitors
         {
             var resultType = typeof(Expression<>).MakeGenericType(delegateType);
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(LambdaExpression), new[] {typeof(Expression), typeof(ReadOnlyCollection<ParameterExpression>)}, typeof(LambdaExpressionCreator), true);
-            var il = new GroboIL(method);
-            il.Ldarg(0);
-            il.Ldnull(typeof(string));
-            il.Ldc_I4(0);
-            il.Ldarg(1);
-            il.Newobj(resultType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single());
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Ldnull();
+                il.Ldc_I4(0);
+                il.Ldarg(1);
+                il.Newobj(resultType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance).Single());
+                il.Ret();
+            }
             return (Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>)method.CreateDelegate(typeof(Func<Expression, ReadOnlyCollection<ParameterExpression>, LambdaExpression>));
         }
 

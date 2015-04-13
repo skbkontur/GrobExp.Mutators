@@ -26,13 +26,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     var parameterIsNotNullLabel = context.Il.DefineLabel("parameterIsNotNull");
                     context.Il.Brtrue(parameterIsNotNullLabel);
                     context.Il.Ldarga(index);
-                    if(!node.Type.IsArray)
-                        context.Il.Newobj(constructor);
-                    else
-                    {
-                        context.Il.Ldc_I4(0);
-                        context.Il.Newarr(node.Type.GetElementType());
-                    }
+                    context.Create(node.Type);
                     context.Il.Stind(node.Type);
                     context.Il.MarkLabel(parameterIsNotNullLabel);
                 }
@@ -72,13 +66,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Il.Ldloc(variable);
                     var parameterIsNotNullLabel = context.Il.DefineLabel("parameterIsNotNull");
                     context.Il.Brtrue(parameterIsNotNullLabel);
-                    if(!node.Type.IsArray)
-                        context.Il.Newobj(constructor);
-                    else
-                    {
-                        context.Il.Ldc_I4(0);
-                        context.Il.Newarr(node.Type.GetElementType());
-                    }
+                    context.Create(node.Type);
                     context.Il.Stloc(variable);
                     context.Il.MarkLabel(parameterIsNotNullLabel);
                 }

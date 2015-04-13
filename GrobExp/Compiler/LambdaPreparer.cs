@@ -1,10 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
-using GrobExp.Compiler.ExpressionEmitters;
 
 namespace GrobExp.Compiler
 {
@@ -32,16 +29,10 @@ namespace GrobExp.Compiler
 
         protected override Expression VisitDynamic(DynamicExpression node)
         {
-            CallSite site = CallSite.Create(node.DelegateType, node.Binder);
-            Type siteType = site.GetType();
-            ConstantExpression constant = Expression.Constant(site, siteType);
+            var site = CallSite.Create(node.DelegateType, node.Binder);
+            var siteType = site.GetType();
+            var constant = Expression.Constant(site, siteType);
             return Expression.Call(Expression.MakeMemberAccess(constant, siteType.GetField("Target")), node.DelegateType.GetMethod("Invoke"), new[] {constant}.Concat(node.Arguments.Select(Visit)));
-        }
-
-        protected override Expression VisitRuntimeVariables(RuntimeVariablesExpression node)
-        {
-            var constructor = typeof(RuntimeVariables).GetConstructor(new[] {typeof(object[])});
-            return Expression.New(constructor, Expression.NewArrayInit(typeof(object), node.Variables.Select(parameter => parameter.Type.IsValueType ? Expression.Convert(parameter, typeof(object)) : (Expression)parameter)));
         }
 
         protected override Expression VisitBinary(BinaryExpression node)

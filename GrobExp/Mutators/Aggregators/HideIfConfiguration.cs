@@ -34,5 +34,10 @@ namespace GrobExp.Mutators.Aggregators
         {
             return new HideIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
         }
+
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new HideIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition));
+        }
     }
 }

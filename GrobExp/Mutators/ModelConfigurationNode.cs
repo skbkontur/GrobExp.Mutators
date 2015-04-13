@@ -357,6 +357,14 @@ namespace GrobExp.Mutators
                 return ((MethodCallExpression)first).Method == ((MethodCallExpression)second).Method;
             case ExpressionType.ArrayLength:
                 return true;
+            case ExpressionType.ArrayIndex:
+                var firstIndex = ((BinaryExpression)first).Right;
+                var secondIndex = ((BinaryExpression)second).Right;
+                if(firstIndex.NodeType != ExpressionType.Constant)
+                    throw new NotSupportedException(string.Format("Node type '{0}' is not supported", firstIndex.NodeType));
+                if(secondIndex.NodeType != ExpressionType.Constant)
+                    throw new NotSupportedException(string.Format("Node type '{0}' is not supported", secondIndex.NodeType));
+                return (((ConstantExpression)firstIndex)).Value == (((ConstantExpression)secondIndex)).Value;
             case ExpressionType.Convert:
                 return first.Type == second.Type;
             default:

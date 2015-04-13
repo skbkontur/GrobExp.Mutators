@@ -7,6 +7,8 @@ using System.Reflection;
 using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
+using GroBuf.Readers;
+
 namespace GrobExp.Mutators
 {
     public static class ExpressionExtensions
@@ -66,6 +68,14 @@ namespace GrobExp.Mutators
                                                 Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
                                                 Expression.Assign(memberExpression.Expression, temp));
                     }
+                    if (memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
+                    {
+                        var temp = Expression.Variable(memberExpression.Expression.Type);
+                        return Expression.Block(new[] { temp },
+                                                Expression.Assign(temp, memberExpression.Expression),
+                                                Expression.Call(listResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetItemType()), temp, value),
+                                                Expression.Assign(memberExpression.Expression, temp));
+                    }
                 }
                 break;
             case ExpressionType.Call:
@@ -84,6 +94,25 @@ namespace GrobExp.Mutators
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
+        private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(arr => Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
+
+        private static void Resize<T>(ref List<T> list, int size)
+        {
+            if(list == null)
+                list = new List<T>(size);
+            // todo emit
+            if (list.Count > size)
+            {
+                while (list.Count > size)
+                    list.RemoveAt(list.Count - 1);
+            }
+            else
+            {
+                var f = ObjectConstructionHelper.ConstructType(typeof(T));
+                while (list.Count < size)
+                    list.Add((T)f());
+            }
+        }
 
         public static Expression ExtendSelectMany(this Expression expression)
         {

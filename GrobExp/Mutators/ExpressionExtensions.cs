@@ -275,6 +275,11 @@ namespace GrobExp.Mutators
             return expression;
         }
 
+        public static LambdaExpression ResolveInterfaceMembers(this LambdaExpression lambda)
+        {
+            return Expression.Lambda(lambda.Body.ResolveInterfaceMembers(), lambda.Parameters);
+        }
+
         public static Expression ResolveInterfaceMembers(this Expression expression)
         {
             return new InterfaceMemberResolver().Visit(expression);

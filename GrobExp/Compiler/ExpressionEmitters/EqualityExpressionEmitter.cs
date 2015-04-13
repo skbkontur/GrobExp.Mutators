@@ -49,7 +49,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Ldloca(localRight); // stack: [left.HasValue, left.HasValue, &right]
                         context.EmitHasValueAccess(type); // stack: [left.HasValue, left.HasValue, right.HasValue]
                         var notEqualLabel = il.DefineLabel("notEqual");
-                        il.Bne(notEqualLabel); // stack: [left.HasValue]
+                        il.Bne_Un(notEqualLabel); // stack: [left.HasValue]
                         var equalLabel = il.DefineLabel("equal");
                         il.Brfalse(equalLabel);
                         il.Ldloca(localLeft);
@@ -74,7 +74,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Ldloca(localRight);
                         context.EmitValueAccess(type);
                         var notEqualLabel = il.DefineLabel("notEqual");
-                        il.Bne(notEqualLabel);
+                        il.Bne_Un(notEqualLabel);
                         il.Ldloca(localLeft);
                         context.EmitHasValueAccess(type);
                         il.Ldloca(localRight);

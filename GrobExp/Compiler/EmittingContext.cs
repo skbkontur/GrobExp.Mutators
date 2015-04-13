@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -24,7 +25,7 @@ namespace GrobExp.Compiler
                 using(var temp = DeclareLocal(type.MakeByRefType()))
                 {
                     Il.Stloc(temp);
-                    Il.Ldnull(typeof(object));
+                    Il.Ldnull();
                     Il.Ldloc(temp);
                     EmitHasValueAccess(type);
                     Il.Brfalse(objIsNullLabel);
@@ -50,6 +51,35 @@ namespace GrobExp.Compiler
                 EmitMemberAccess(type, type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance), ResultType.Value, out memberType);
             else
                 Il.Call(type.GetMethod("GetValueOrDefault", Type.EmptyTypes));
+        }
+
+        public void Create(Type type)
+        {
+            if(!type.IsArray)
+            {
+                var constructor = type.GetConstructor(Type.EmptyTypes);
+                if(constructor == null)
+                    throw new InvalidOperationException("Missing parameterless constructor for type '" + type + "'");
+                Il.Newobj(constructor);
+            }
+            else
+            {
+                var rank = type.GetArrayRank();
+                if(rank == 1)
+                {
+                    Il.Ldc_I4(0);
+                    Il.Newarr(type.GetElementType());
+                }
+                else
+                {
+                    var constructor = type.GetConstructor(Enumerable.Repeat(typeof(int), rank).ToArray());
+                    if(constructor == null)
+                        throw new InvalidOperationException(string.Format("Missing constructor accepting {0} integers for type '{1}'", rank, type));
+                    for(int i = 0; i < rank; ++i)
+                        Il.Ldc_I4(0);
+                    Il.Newobj(constructor);
+                }
+            }
         }
 
         public bool EmitMemberAccess(MemberExpression node, GroboIL.Label returnDefaultValueLabel, bool checkNullReferences, bool extend, ResultType whatReturn, out Type resultType, out LocalHolder owner)
@@ -93,13 +123,7 @@ namespace GrobExp.Compiler
                     il.Dup();
                     il.Brtrue(memberIsNotNullLabel);
                     il.Pop();
-                    if(!memberType.IsArray)
-                        il.Newobj(constructor);
-                    else
-                    {
-                        il.Ldc_I4(0);
-                        il.Newarr(memberType.GetElementType());
-                    }
+                    Create(memberType);
                     using(var newobj = DeclareLocal(memberType))
                     {
                         il.Stloc(newobj);
@@ -120,13 +144,7 @@ namespace GrobExp.Compiler
                     il.Brtrue(memberIsNotNullLabel);
                     il.Pop();
                     il.Ldloc(owner);
-                    if(!memberType.IsArray)
-                        il.Newobj(constructor);
-                    else
-                    {
-                        il.Ldc_I4(0);
-                        il.Newarr(memberType.GetElementType());
-                    }
+                    Create(memberType);
                     using(var newobj = DeclareLocal(memberType))
                     {
                         il.Stloc(newobj);
@@ -247,7 +265,7 @@ namespace GrobExp.Compiler
             if(type == typeof(void))
                 return;
             if(!type.IsValueType)
-                Il.Ldnull(type);
+                Il.Ldnull();
             else
             {
                 using(var temp = DeclareLocal(type))
@@ -505,31 +523,31 @@ namespace GrobExp.Compiler
                 il.Add();
                 break;
             case ExpressionType.AddChecked:
-                il.Add_Ovf(type);
+                il.Add_Ovf(type.Unsigned());
                 break;
             case ExpressionType.Subtract:
                 il.Sub();
                 break;
             case ExpressionType.SubtractChecked:
-                il.Sub_Ovf(type);
+                il.Sub_Ovf(type.Unsigned());
                 break;
             case ExpressionType.Multiply:
                 il.Mul();
                 break;
             case ExpressionType.MultiplyChecked:
-                il.Mul_Ovf(type);
+                il.Mul_Ovf(type.Unsigned());
                 break;
             case ExpressionType.Divide:
-                il.Div(type);
+                il.Div(type.Unsigned());
                 break;
             case ExpressionType.Modulo:
-                il.Rem(type);
+                il.Rem(type.Unsigned());
                 break;
             case ExpressionType.LeftShift:
                 il.Shl();
                 break;
             case ExpressionType.RightShift:
-                il.Shr(type);
+                il.Shr(type.Unsigned());
                 break;
             case ExpressionType.And:
                 il.And();
@@ -564,53 +582,53 @@ namespace GrobExp.Compiler
             switch(toTypeCode)
             {
             case TypeCode.SByte:
-                il.Conv_I1();
+                il.Conv<sbyte>();
                 break;
             case TypeCode.Byte:
             case TypeCode.Boolean:
-                il.Conv_U1();
+                il.Conv<byte>();
                 break;
             case TypeCode.Int16:
-                il.Conv_I2();
+                il.Conv<short>();
                 break;
             case TypeCode.UInt16:
-                il.Conv_U2();
+                il.Conv<ushort>();
                 break;
             case TypeCode.Int32:
                 if(fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
-                    il.Conv_I4();
+                    il.Conv<int>();
                 break;
             case TypeCode.UInt32:
                 if(fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
-                    il.Conv_U4();
+                    il.Conv<uint>();
                 break;
             case TypeCode.Int64:
                 if(fromTypeCode != TypeCode.UInt64)
                 {
                     if(fromTypeCode == TypeCode.Byte || fromTypeCode == TypeCode.UInt16 || fromTypeCode == TypeCode.Char || fromTypeCode == TypeCode.UInt32)
-                        il.Conv_U8();
+                        il.Conv<ulong>();
                     else
-                        il.Conv_I8();
+                        il.Conv<long>();
                 }
                 break;
             case TypeCode.UInt64:
                 if(fromTypeCode != TypeCode.Int64 /* && fromTypeCode != TypeCode.DateTime*/)
                 {
                     if(fromTypeCode == TypeCode.SByte || fromTypeCode == TypeCode.Int16 || fromTypeCode == TypeCode.Int32)
-                        il.Conv_I8();
+                        il.Conv<long>();
                     else
-                        il.Conv_U8();
+                        il.Conv<ulong>();
                 }
                 break;
             case TypeCode.Single:
                 if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
                     il.Conv_R_Un();
-                il.Conv_R4();
+                il.Conv<float>();
                 break;
             case TypeCode.Double:
                 if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
                     il.Conv_R_Un();
-                il.Conv_R8();
+                il.Conv<double>();
                 break;
             default:
                 throw new NotSupportedException("Type with type code '" + toTypeCode + "' is not supported");
@@ -636,27 +654,27 @@ namespace GrobExp.Compiler
             switch(toTypeCode)
             {
             case TypeCode.SByte:
-                il.Conv_Ovf_I1(from);
+                il.Conv_Ovf<sbyte>(from.Unsigned());
                 break;
             case TypeCode.Byte:
             case TypeCode.Boolean:
-                il.Conv_Ovf_U1(from);
+                il.Conv_Ovf<byte>(from.Unsigned());
                 break;
             case TypeCode.Int16:
-                il.Conv_Ovf_I2(from);
+                il.Conv_Ovf<short>(from.Unsigned());
                 break;
             case TypeCode.UInt16:
-                il.Conv_Ovf_U2(from);
+                il.Conv_Ovf<ushort>(from.Unsigned());
                 break;
             case TypeCode.Int32:
                 if(fromTypeCode == TypeCode.UInt32 || fromTypeCode == TypeCode.Int64 || fromTypeCode == TypeCode.UInt64
                    || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
-                    il.Conv_Ovf_I4(from);
+                    il.Conv_Ovf<int>(from.Unsigned());
                 break;
             case TypeCode.UInt32:
                 if(fromTypeCode == TypeCode.SByte || fromTypeCode == TypeCode.Int16 || fromTypeCode == TypeCode.Int32 || fromTypeCode == TypeCode.Int64
                    || fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.Double || fromTypeCode == TypeCode.Single /* || fromTypeCode == TypeCode.DateTime*/)
-                    il.Conv_Ovf_U4(from);
+                    il.Conv_Ovf<uint>(from.Unsigned());
                 break;
             case TypeCode.Int64:
                 switch(fromTypeCode)
@@ -664,16 +682,16 @@ namespace GrobExp.Compiler
                 case TypeCode.Double:
                 case TypeCode.Single:
                 case TypeCode.UInt64:
-                    il.Conv_Ovf_I8(from);
+                    il.Conv_Ovf<long>(from.Unsigned());
                     break;
                 case TypeCode.UInt32:
                 case TypeCode.Char:
                 case TypeCode.UInt16:
                 case TypeCode.Byte:
-                    il.Conv_U8();
+                    il.Conv<ulong>();
                     break;
                 default:
-                    il.Conv_I8();
+                    il.Conv<long>();
                     break;
                 }
                 break;
@@ -686,25 +704,25 @@ namespace GrobExp.Compiler
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.Int32:
-                    il.Conv_Ovf_U8(from);
+                    il.Conv_Ovf<ulong>(from.Unsigned());
                     break;
                 case TypeCode.UInt32:
                 case TypeCode.Char:
                 case TypeCode.UInt16:
                 case TypeCode.Byte:
-                    il.Conv_U8();
+                    il.Conv<ulong>();
                     break;
                 }
                 break;
             case TypeCode.Single:
                 if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
                     il.Conv_R_Un();
-                il.Conv_R4();
+                il.Conv<float>();
                 break;
             case TypeCode.Double:
                 if(fromTypeCode == TypeCode.UInt64 || fromTypeCode == TypeCode.UInt32)
                     il.Conv_R_Un();
-                il.Conv_R8();
+                il.Conv<double>();
                 break;
             default:
                 throw new NotSupportedException("Type with type code '" + toTypeCode + "' is not supported");

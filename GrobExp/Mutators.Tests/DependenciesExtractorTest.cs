@@ -53,6 +53,20 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestAll1()
+        {
+            Expression<Func<A, bool>> expression = a => a.B.C.All(c => c.S == "zzz");
+            DoTest(expression, a => a.B.C.Each().S);
+        }
+
+        [Test]
+        public void TestAll2()
+        {
+            Expression<Func<A, int?>> expression = a => a.B.C.Where(c => c.D.E.All(e => e.F == "zzz")).Sum(c => c.X);
+            DoTest(expression, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().X);
+        }
+
+        [Test]
         public void TestArrays()
         {
             Expression<Func<A, bool>> expression = a => a.B.C != null;

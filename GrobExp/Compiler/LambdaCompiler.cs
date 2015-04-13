@@ -5,7 +5,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using GrEmit;
 
@@ -46,6 +45,8 @@ namespace GrobExp.Compiler
             CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
+        public static bool AnalyzeILStack = true;
+
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
             DebugInfoGenerator debugInfoGenerator,
@@ -62,118 +63,130 @@ namespace GrobExp.Compiler
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
             var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            var il = new GroboIL(method, false);
+            using(var il = new GroboIL(method, AnalyzeILStack))
+            {
 
-            var context = new EmittingContext
-                {
-                    Options = options,
-                    DebugInfoGenerator = debugInfoGenerator,
-                    Lambda = lambda,
-                    Method = method,
-                    SkipVisibility = true,
-                    Parameters = parameters,
-                    ClosureType = closureType,
-                    ClosureParameter = closureParameter,
-                    ConstantsType = constantsType,
-                    ConstantsParameter = constantsParameter,
-                    Switches = switches,
-                    CompiledLambdas = compiledLambdas,
-                    Il = il
-                };
-            var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
-            Type resultType;
-            bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
-            if(returnType == typeof(bool) && resultType == typeof(bool?))
-                context.ConvertFromNullableBoolToBool();
-            if(returnType == typeof(void) && resultType != typeof(void))
-            {
-                using(var temp = context.DeclareLocal(resultType))
-                    il.Stloc(temp);
-            }
-            il.Ret();
-            if(labelUsed)
-            {
-                il.MarkLabel(returnDefaultValueLabel);
-                il.Pop();
-                if(returnType != typeof(void))
-                {
-                    if(!returnType.IsValueType)
-                        il.Ldnull(returnType);
-                    else
+                var context = new EmittingContext
                     {
-                        using(var defaultValue = context.DeclareLocal(returnType))
-                        {
-                            il.Ldloca(defaultValue);
-                            il.Initobj(returnType);
-                            il.Ldloc(defaultValue);
-                        }
-                    }
+                        Options = options,
+                        DebugInfoGenerator = debugInfoGenerator,
+                        Lambda = lambda,
+                        Method = method,
+                        SkipVisibility = true,
+                        Parameters = parameters,
+                        ClosureType = closureType,
+                        ClosureParameter = closureParameter,
+                        ConstantsType = constantsType,
+                        ConstantsParameter = constantsParameter,
+                        Switches = switches,
+                        CompiledLambdas = compiledLambdas,
+                        Il = il
+                    };
+                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
+                Type resultType;
+                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
+                if(returnType == typeof(bool) && resultType == typeof(bool?))
+                    context.ConvertFromNullableBoolToBool();
+                if(returnType == typeof(void) && resultType != typeof(void))
+                {
+                    using(var temp = context.DeclareLocal(resultType))
+                        il.Stloc(temp);
                 }
                 il.Ret();
-            }
-            return new CompiledLambda
+                if(labelUsed)
                 {
-                    Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                    Method = method,
-                    ILCode = il.GetILCode()
-                };
+                    il.MarkLabel(returnDefaultValueLabel);
+                    il.Pop();
+                    if(returnType != typeof(void))
+                    {
+                        if(!returnType.IsValueType)
+                            il.Ldnull();
+                        else
+                        {
+                            using(var defaultValue = context.DeclareLocal(returnType))
+                            {
+                                il.Ldloca(defaultValue);
+                                il.Initobj(returnType);
+                                il.Ldloc(defaultValue);
+                            }
+                        }
+                    }
+                    il.Ret();
+                }
+                return new CompiledLambda
+                    {
+                        Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                        Method = method,
+                        ILCode = il.GetILCode()
+                    };
+            }
         }
 
-        internal static ILCode CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, Type closureType, ParameterExpression closureParameter, Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches, CompilerOptions options, List<CompiledLambda> compiledLambdas, MethodBuilder method)
+        internal static ILCode CompileInternal(
+            LambdaExpression lambda,
+            DebugInfoGenerator debugInfoGenerator,
+            Type closureType,
+            ParameterExpression closureParameter,
+            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
+            CompilerOptions options,
+            List<CompiledLambda> compiledLambdas,
+            MethodBuilder method)
         {
             var typeBuilder = method.ReflectedType as TypeBuilder;
             if(typeBuilder == null)
                 throw new ArgumentException("Unable to obtain type builder of the method", "method");
             Type returnType = lambda.ReturnType;
-            var il = new GroboIL(method);
+            using(var il = new GroboIL(method, AnalyzeILStack))
+            {
 
-            var context = new EmittingContext
-                {
-                    Options = options,
-                    DebugInfoGenerator = debugInfoGenerator,
-                    TypeBuilder = typeBuilder,
-                    Lambda = lambda,
-                    Method = method,
-                    SkipVisibility = false,
-                    Parameters = lambda.Parameters.ToArray(),
-                    ClosureType = closureType,
-                    ClosureParameter = closureParameter,
-                    Switches = switches,
-                    CompiledLambdas = compiledLambdas,
-                    Il = il
-                };
-            var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
-            Type resultType;
-            bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
-            if(returnType == typeof(bool) && resultType == typeof(bool?))
-                context.ConvertFromNullableBoolToBool();
-            if(returnType == typeof(void) && resultType != typeof(void))
-            {
-                using(var temp = context.DeclareLocal(resultType))
-                    il.Stloc(temp);
-            }
-            il.Ret();
-            if(labelUsed)
-            {
-                il.MarkLabel(returnDefaultValueLabel);
-                il.Pop();
-                if(returnType != typeof(void))
-                {
-                    if(!returnType.IsValueType)
-                        il.Ldnull(returnType);
-                    else
+                var context = new EmittingContext
                     {
-                        using(var defaultValue = context.DeclareLocal(returnType))
-                        {
-                            il.Ldloca(defaultValue);
-                            il.Initobj(returnType);
-                            il.Ldloc(defaultValue);
-                        }
-                    }
+                        Options = options,
+                        DebugInfoGenerator = debugInfoGenerator,
+                        TypeBuilder = typeBuilder,
+                        Lambda = lambda,
+                        Method = method,
+                        SkipVisibility = false,
+                        Parameters = lambda.Parameters.ToArray(),
+                        ClosureType = closureType,
+                        ClosureParameter = closureParameter,
+                        Switches = switches,
+                        CompiledLambdas = compiledLambdas,
+                        Il = il
+                    };
+                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
+                Type resultType;
+                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
+                if(returnType == typeof(bool) && resultType == typeof(bool?))
+                    context.ConvertFromNullableBoolToBool();
+                if(returnType == typeof(void) && resultType != typeof(void))
+                {
+                    using(var temp = context.DeclareLocal(resultType))
+                        il.Stloc(temp);
                 }
                 il.Ret();
+                if(labelUsed)
+                {
+                    il.MarkLabel(returnDefaultValueLabel);
+                    il.Pop();
+                    if(returnType != typeof(void))
+                    {
+                        if(!returnType.IsValueType)
+                            il.Ldnull();
+                        else
+                        {
+                            using(var defaultValue = context.DeclareLocal(returnType))
+                            {
+                                il.Ldloca(defaultValue);
+                                il.Initobj(returnType);
+                                il.Ldloc(defaultValue);
+                            }
+                        }
+                    }
+                    il.Ret();
+                }
+                return il.GetILCode();
             }
-            return il.GetILCode();
         }
 
         internal static readonly AssemblyBuilder Assembly = CreateAssembly();
@@ -233,11 +246,14 @@ namespace GrobExp.Compiler
         private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)
         {
             var method = new DynamicMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(object), typeof(Delegate[])}, Module, true);
-            var il = new GroboIL(method);
-            il.Ldarg(0);
-            il.Ldarg(1);
-            il.Stfld(type.GetField("delegates"));
-            il.Ret();
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Castclass(type);
+                il.Ldarg(1);
+                il.Stfld(type.GetField("delegates"));
+                il.Ret();
+            }
             return (Action<object, Delegate[]>)method.CreateDelegate(typeof(Action<object, Delegate[]>));
         }
     }

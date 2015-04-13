@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,6 +8,8 @@ using GrobExp.Compiler;
 using GrobExp.Mutators;
 
 using NUnit.Framework;
+
+using GrEmit;
 
 namespace Mutators.Tests
 {
@@ -168,11 +171,45 @@ namespace Mutators.Tests
             DoTest(exp, testData, "A.0.B.1.S");
         }
 
+        private bool Possible(int p, int sum, int k, int[] counts, int[] prices, int[] maxes, int[] zzz)
+        {
+            if(sum < 0)
+                return false;
+            if(sum == 0)
+                return true;
+            if(k < 0)
+                return false;
+            for (int i = 1; i <= maxes[k]; ++i)
+            {
+                sum -= prices[k];
+                if(counts[k] < i * p)
+                    return false;
+                if(Possible(p, sum, k - 1, counts, prices, maxes, zzz))
+                {
+                    zzz[k] = i;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        [Test, Ignore]
+        public void Test()
+        {
+            var counts = new[] {300, 181, 240, 175, 44};
+            var prices = new[] {5, 25, 100, 500, 2500};
+            var maxes = new[] {10, 10, 10, 3, 1};
+            var result = new int[5];
+            Console.WriteLine(Possible(32, 5000, 4, counts, prices, maxes, result));
+            for(int i = 4; i >= 0; --i)
+                Console.WriteLine("{0} : {1}", prices[i], result[i]);
+        }
+
         [Test]
         public void Test12()
         {
-            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => a.B).Where(b => b.X > 0).Select(b => b.S).FirstOrDefault();
-            Func<TestData, string> func = data => data.A
+           Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => a.B).Where(b => b.X > 0).Select(b => b.S).FirstOrDefault();
+           Func<TestData, string> func = data => data.A
                                                       .Select((a, i) => new IndexedValue<A>(a, new[] {i}))
                                                       .SelectMany(valueA =>
                                                                       {

@@ -153,13 +153,54 @@ namespace GrobExp.Mutators
             return GetArrays(Path, cutTail);
         }
 
+        public static Expression CutTail(Expression exp)
+        {
+            var shards = exp.SmashToSmithereens();
+            for(var i = shards.Length - 1; i > 0; --i)
+            {
+                if(shards[i].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i]).Method.IsEachMethod()))
+                    return shards[i];
+            }
+            return exp;
+        }
+
+        public void AddMutatorSmart(LambdaExpression path, MutatorConfiguration mutator)
+        {
+            LambdaExpression filter;
+            var simplifiedPath = SimplifyPath(path, out filter);
+            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body));
+            Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
+        }
+
         public void AddMutator(MutatorConfiguration mutator)
         {
+            if(IsUncoditionalSetter(mutator))
+            {
+                for(var i = 0; i < mutators.Count; ++i)
+                {
+                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(Path, mutators[i].Key, false, false))
+                    {
+                        mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator);
+                        return;
+                    }
+                }
+            }
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator));
         }
 
         public void AddMutator(Expression path, MutatorConfiguration mutator)
         {
+            if(IsUncoditionalSetter(mutator))
+            {
+                for(var i = 0; i < mutators.Count; ++i)
+                {
+                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(path, mutators[i].Key, false, false))
+                    {
+                        mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(path, mutator);
+                        return;
+                    }
+                }
+            }
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path, mutator));
         }
 
@@ -223,6 +264,137 @@ namespace GrobExp.Mutators
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
         public const int PriorityShift = 1000;
+
+        private static bool IsUncoditionalSetter(MutatorConfiguration mutator)
+        {
+            return mutator is EqualsToConfiguration && !(mutator is EqualsToIfConfiguration);
+        }
+
+        private static LambdaExpression SimplifyPath(LambdaExpression path, out LambdaExpression filter)
+        {
+            filter = null;
+            var shards = path.Body.SmashToSmithereens();
+            int i;
+            for(i = 0; i < shards.Length; ++i)
+            {
+                if(shards[i].NodeType == ExpressionType.Call && ((MethodCallExpression)shards[i]).Method.DeclaringType == typeof(Enumerable))
+                    break;
+            }
+            if(i >= shards.Length)
+                return path;
+            var result = shards[i - 1];
+            for(; i < shards.Length; ++i)
+            {
+                var shard = shards[i];
+                switch(shard.NodeType)
+                {
+                case ExpressionType.MemberAccess:
+                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
+                    break;
+                case ExpressionType.ArrayIndex:
+                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
+                    break;
+                case ExpressionType.Call:
+                    var methodCallExpression = (MethodCallExpression)shard;
+                    var method = methodCallExpression.Method;
+                    if(method.DeclaringType == typeof(Enumerable))
+                    {
+                        switch(method.Name)
+                        {
+                        case "Select":
+                            var selector = (LambdaExpression)methodCallExpression.Arguments[1];
+                            result = Expression.Lambda(Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters).Merge(selector).Body;
+                            break;
+                        case "Where":
+                            var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                            var callExpression = result.Type == predicate.Parameters[0].Type
+                                                     ? result
+                                                     : Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result);
+                            var currentFilter = Expression.Lambda(callExpression, path.Parameters).Merge(predicate);
+                            filter = filter == null ? currentFilter : filter.AndAlso(currentFilter, false);
+                            break;
+                        default:
+                            throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
+                        }
+                    }
+                    else if(method.DeclaringType == typeof(MutatorsHelperFunctions))
+                    {
+                        switch(method.Name)
+                        {
+                        case "Current":
+                        case "Each":
+                            result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
+                            break;
+                        default:
+                            throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
+                        }
+                    }
+                    else
+                        throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
+                    break;
+                case ExpressionType.ArrayLength:
+                    result = Expression.ArrayLength(result);
+                    break;
+                case ExpressionType.Convert:
+                    result = Expression.Convert(result, shard.Type);
+                    break;
+                default:
+                    throw new NotSupportedException(string.Format("Node type '{0}' is not valid at this point", shard.NodeType));
+                }
+            }
+            return Expression.Lambda(result, path.Parameters);
+        }
+
+        private static bool Equivalent(Expression first, Expression second)
+        {
+            if(first.NodeType != second.NodeType)
+                return false;
+            switch(first.NodeType)
+            {
+            case ExpressionType.MemberAccess:
+                return ((MemberExpression)first).Member == ((MemberExpression)second).Member;
+            case ExpressionType.Call:
+                return ((MethodCallExpression)first).Method == ((MethodCallExpression)second).Method;
+            case ExpressionType.ArrayLength:
+                return true;
+            case ExpressionType.ArrayIndex:
+                var firstIndex = ((BinaryExpression)first).Right;
+                var secondIndex = ((BinaryExpression)second).Right;
+                if(firstIndex.NodeType != ExpressionType.Constant)
+                    throw new NotSupportedException(string.Format("Node type '{0}' is not supported", firstIndex.NodeType));
+                if(secondIndex.NodeType != ExpressionType.Constant)
+                    throw new NotSupportedException(string.Format("Node type '{0}' is not supported", secondIndex.NodeType));
+                return (((ConstantExpression)firstIndex)).Value == (((ConstantExpression)secondIndex)).Value;
+            case ExpressionType.Convert:
+                return first.Type == second.Type;
+            default:
+                throw new NotSupportedException(string.Format("Node type '{0}' is not supported", first.NodeType));
+            }
+        }
+
+        private static AliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
+        {
+            var simplifiedPathShards = simplifiedPath.SmashToSmithereens();
+            var pathShards = path.SmashToSmithereens();
+            var i = simplifiedPathShards.Length - 1;
+            var j = pathShards.Length - 1;
+            while(i > 0 && j > 0)
+            {
+                if(!Equivalent(simplifiedPathShards[i], pathShards[j]))
+                    break;
+                --i;
+                --j;
+            }
+            var simplifiedShard = simplifiedPathShards[i];
+            var pathShard = pathShards[j];
+            var cutSimplifiedShard = CutTail(simplifiedShard);
+            return new AliasesResolver(new List<KeyValuePair<Expression, Expression>>
+                {
+                    new KeyValuePair<Expression, Expression>(simplifiedShard, pathShard),
+                    new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(cutSimplifiedShard.Type), cutSimplifiedShard),
+                                                             Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(pathShard.Type), pathShard))
+                }, false);
+        }
 
         private void GetMutators(Dictionary<ExpressionWrapper, List<MutatorConfiguration>> result)
         {
@@ -354,7 +526,7 @@ namespace GrobExp.Mutators
                                         );
                                 }
                             }
-                        child = newChild;
+                            child = newChild;
                         }
                         return result || child == subRoot;
                     }
@@ -553,7 +725,7 @@ namespace GrobExp.Mutators
                                 var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
                                 if(subRoot != null)
                                 {
-                                    ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                    var keyLeaf = subRoot.FindKeyLeaf();
                                     if(keyLeaf != null)
                                     {
                                         var keyLeafPath = abstractPathResolver.Resolve(keyLeaf.Path);
@@ -588,7 +760,7 @@ namespace GrobExp.Mutators
                                 var subRoot = convertationRoot.Traverse(primaryDependencies[0], false);
                                 if(subRoot != null)
                                 {
-                                    ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
+                                    var keyLeaf = subRoot.FindKeyLeaf();
                                     if(keyLeaf != null)
                                         conditionalSetters = performer.GetConditionalSetters(abstractPathResolver.Resolve(keyLeaf.Path));
                                     if(conditionalSetters != null)
@@ -620,8 +792,8 @@ namespace GrobExp.Mutators
                 var shards = path.SmashToSmithereens();
                 var cleanedShards = cleanedPath.SmashToSmithereens();
                 var aliases = new List<KeyValuePair<Expression, Expression>>();
-                int i = 0;
-                int j = 0;
+                var i = 0;
+                var j = 0;
                 LambdaExpression condition = null;
                 foreach(var filter in filters)
                 {
@@ -702,6 +874,19 @@ namespace GrobExp.Mutators
                 var list = new List<Dictionary<Type, List<Expression>>>();
                 var arraysExtractor = new ArraysExtractor(list);
 
+//                var wasUncoditionalSetter = false;
+//
+//                for(int i = mutators.Count - 1; i >= 0; --i)
+//                {
+//                    var mutator = mutators[i];
+//                    if((mutator.Value is EqualsToConfiguration) && !(mutator.Value is EqualsToIfConfiguration))
+//                    {
+//                        if(wasUncoditionalSetter)
+//                            continue;
+//                        wasUncoditionalSetter = true;
+//                        mutator.Value.GetArrays(arraysExtractor);
+//                    }
+//                }
                 foreach(var mutator in mutators)
                     mutator.Value.GetArrays(arraysExtractor);
 
@@ -847,7 +1032,7 @@ namespace GrobExp.Mutators
                                     lengthsAreDifferent,
                                     Expression.IfThenElse(destArrayIsNull,
                                                           path.Assign(Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
-                                                          Expression.Block(new[] {temp}, new Expression[]
+                                                          Expression.Block(new[] {temp}, new[]
                                                               {
                                                                   Expression.Assign(temp, path),
                                                                   Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)),
@@ -909,8 +1094,8 @@ namespace GrobExp.Mutators
                     aliases.RemoveAt(aliases.Count - 1);
                     if(childResult.Count > 0)
                     {
-                        int indexOfKeyAssigner = -1;
-                        for(int i = 0; i < childResult.Count; ++i)
+                        var indexOfKeyAssigner = -1;
+                        for(var i = 0; i < childResult.Count; ++i)
                         {
                             if(childResult[i].NodeType == ExpressionType.Assign && ((BinaryExpression)childResult[i]).Left == destKeyParameter)
                             {
@@ -994,9 +1179,9 @@ namespace GrobExp.Mutators
                         throw new FoundExternalDependencyException("Unable to build mutator for the subtree '" + Path + "' due to the external dependency '" + dependency + "'");
                     if(child == null)
                     {
-                        bool found = false;
+                        var found = false;
                         var shards = dependency.Body.SmashToSmithereens();
-                        for(int i = shards.Length - 1; i >= 0; --i)
+                        for(var i = shards.Length - 1; i >= 0; --i)
                         {
                             Root.Traverse(shards[i], root, out child, false);
                             if(child != null && child.mutators.Any(pair => pair.Value is EqualsToConfiguration))

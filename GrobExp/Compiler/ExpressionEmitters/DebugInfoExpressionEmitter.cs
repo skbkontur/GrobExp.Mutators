@@ -27,16 +27,18 @@ namespace GrobExp.Compiler.ExpressionEmitters
         {
             var parameterTypes = new[] {typeof(DebugInfoGenerator), typeof(LambdaExpression), typeof(MethodBase), typeof(GroboIL), typeof(DebugInfoExpression)};
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), parameterTypes, typeof(DebugInfoExpressionEmitter), true);
-            var il = new GroboIL(dynamicMethod);
-            il.Ldarg(0);
-            il.Ldarg(1);
-            il.Ldarg(2);
-            il.Ldarg(3);
-            il.Ldfld(typeof(GroboIL).GetField("il", BindingFlags.NonPublic | BindingFlags.Instance));
-            il.Ldarg(4);
-            var markSequencePointMethod = typeof(DebugInfoGenerator).GetMethod("MarkSequencePoint", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { typeof(LambdaExpression), typeof(MethodBase), typeof(ILGenerator), typeof(DebugInfoExpression) }, null);
-            il.Call(markSequencePointMethod, typeof(DebugInfoGenerator));
-            il.Ret();
+            using(var il = new GroboIL(dynamicMethod))
+            {
+                il.Ldarg(0);
+                il.Ldarg(1);
+                il.Ldarg(2);
+                il.Ldarg(3);
+                il.Ldfld(typeof(GroboIL).GetField("il", BindingFlags.NonPublic | BindingFlags.Instance));
+                il.Ldarg(4);
+                var markSequencePointMethod = typeof(DebugInfoGenerator).GetMethod("MarkSequencePoint", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] {typeof(LambdaExpression), typeof(MethodBase), typeof(ILGenerator), typeof(DebugInfoExpression)}, null);
+                il.Call(markSequencePointMethod, typeof(DebugInfoGenerator));
+                il.Ret();
+            }
             return (Action<DebugInfoGenerator, LambdaExpression, MethodBase, GroboIL, DebugInfoExpression>)dynamicMethod.CreateDelegate(typeof(Action<DebugInfoGenerator, LambdaExpression, MethodBase, GroboIL, DebugInfoExpression>));
         }
 

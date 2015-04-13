@@ -83,8 +83,13 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     using(var index = context.DeclareLocal(typeof(int)))
                     {
-                        il.Ldc_I4(switchCase.Item3);
-                        il.Rem(typeof(uint));
+                        if(typeCode == TypeCode.Int64 || typeCode == TypeCode.UInt64)
+                            il.Ldc_I8(switchCase.Item3);
+                        else
+                            il.Ldc_I4(switchCase.Item3);
+                        il.Rem(true);
+                        if (typeCode == TypeCode.Int64 || typeCode == TypeCode.UInt64)
+                            il.Conv<int>();
                         il.Stloc(index);
                         il.Ldloc(index);
                         il.Ldelem(type);
@@ -121,9 +126,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     for(int index = 0; index < node.Cases.Count; index++)
                     {
-                        var @case = node.Cases[index];
+                        var caSe = node.Cases[index];
                         var label = caseLabels[index];
-                        foreach(var testValue in @case.TestValues)
+                        foreach(var testValue in caSe.TestValues)
                         {
                             context.EmitLoadArguments(testValue);
                             GroboIL.Label elseLabel = null;

@@ -82,7 +82,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 il.Ldc_I4(0);
                                 context.EmitConvert(typeof(int), operandType);
                                 il.Ldloc(temp);
-                                il.Sub_Ovf(operandType);
+                                il.Sub_Ovf(operandType.Unsigned());
                             }
                             break;
                         case ExpressionType.Increment:
@@ -137,7 +137,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 context.EmitConvert(typeof(int), argumentType);
                                 il.Ldloca(temp);
                                 context.EmitValueAccess(operandType);
-                                il.Sub_Ovf(argumentType);
+                                il.Sub_Ovf(argumentType.Unsigned());
                                 break;
                             case ExpressionType.Increment:
                                 il.Ldloca(temp);

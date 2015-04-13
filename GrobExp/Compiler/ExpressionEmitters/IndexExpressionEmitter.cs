@@ -64,15 +64,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         else if(valueType == typeof(string))
                             context.Il.Ldstr("");
                         else
-                        {
-                            if(!valueType.IsArray)
-                                context.Il.Newobj(constructor); // stack: [new valueType()]
-                            else
-                            {
-                                context.Il.Ldc_I4(0);
-                                context.Il.Newarr(valueType.GetElementType()); // stack: [new valueType[0]]
-                            }
-                        }
+                            context.Create(valueType);
                         context.Il.Stloc(value);
                         if(extend)
                         {

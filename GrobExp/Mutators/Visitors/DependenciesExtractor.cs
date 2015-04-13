@@ -125,10 +125,10 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitInvocation(InvocationExpression node)
         {
             var primaryDependencies = new List<Expression>();
-            foreach (var argument in node.Arguments)
+            foreach(var argument in node.Arguments)
             {
                 var arg = Visit(argument);
-                if (arg != null)
+                if(arg != null)
                     primaryDependencies.AddRange(((NewArrayExpression)arg).Expressions);
             }
             return Expression.NewArrayInit(typeof(object), primaryDependencies);
@@ -431,7 +431,7 @@ namespace GrobExp.Mutators.Visitors
             var method = ((MethodCallExpression)node).Method;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
-            return method.DeclaringType != typeof(Enumerable) || method.Name != "Any";
+            return method.DeclaringType != typeof(Enumerable) || (method.Name != "Any" && method.Name != "All");
         }
 
         private MethodProcessor GetMethodProcessor(MethodInfo method)
@@ -454,6 +454,7 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqFirst;
                 case "Where":
                 case "Any":
+                case "All":
                     return ProcessLinqWhere;
                 case "Select":
                     return ProcessLinqSelect;
@@ -521,6 +522,8 @@ namespace GrobExp.Mutators.Visitors
             var subDependencies = subExtractor.Extract(out primarySubDependencies, out additionalSubDependencies);
             var prefixEach = MakeLambda(GotoEach(prefix));
             AddSubDependencies(prefixEach, additionalSubDependencies);
+            if(primarySubDependencies.Length > 1)
+                return Expression.NewArrayInit(typeof(object), primarySubDependencies.Select(exp => Expression.Convert(prefixEach.Merge(exp).Body, typeof(object))));
             var primarySubDependency = primarySubDependencies.Single();
             if(!(primarySubDependency.Body is NewExpression))
                 return new AnonymousTypeEliminator().Eliminate(prefixEach.Merge(primarySubDependency)).Body;

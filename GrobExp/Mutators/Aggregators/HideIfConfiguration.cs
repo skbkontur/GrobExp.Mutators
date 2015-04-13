@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 using GrobExp.Mutators.Visitors;
 
-namespace GrobExp.Mutators.AutoEvaluators
+namespace GrobExp.Mutators.Aggregators
 {
     public class HideIfConfiguration : DisableIfConfiguration
     {
@@ -33,6 +33,11 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override MutatorConfiguration If(LambdaExpression condition)
         {
             return new HideIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
+        }
+
+        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        {
+            return new HideIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition));
         }
     }
 }

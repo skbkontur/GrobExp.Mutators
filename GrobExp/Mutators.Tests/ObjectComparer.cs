@@ -74,32 +74,32 @@ namespace Mutators.Tests
     {
         public static SizeCounterDelegate GetSizeCounter(Func<Type, SizeCounterDelegate> sizeCountersFactory, SizeCounterDelegate baseSizeCounter, Func<TAttribute, string> attributeKeySelector)
         {
-            return (o, writeEmpty) =>
+            return (o, writeEmpty, context) =>
             {
                 var type = o.GetType();
-                return sizeCountersFactory(typeof(string))(GetTypeNameByType(type, attributeKeySelector), true) + sizeCountersFactory(type)(o, true);
+                return sizeCountersFactory(typeof(string))(GetTypeNameByType(type, attributeKeySelector), true, context) + sizeCountersFactory(type)(o, true, context);
             };
         }
 
         public static WriterDelegate GetWriter(Func<Type, WriterDelegate> writersFactory, WriterDelegate baseWriter, Func<TAttribute, string> attributeKeySelector)
         {
-            return (object o, bool writeEmpty, IntPtr result, ref int index, int dataLength) =>
+            return (object o, bool writeEmpty, IntPtr result, ref int index, WriterContext context) =>
             {
                 var type = o.GetType();
-                writersFactory(typeof(string))(GetTypeNameByType(type, attributeKeySelector), true, result, ref index, dataLength);
-                writersFactory(type)(o, true, result, ref index, dataLength);
+                writersFactory(typeof(string))(GetTypeNameByType(type, attributeKeySelector), true, result, ref index, context);
+                writersFactory(type)(o, true, result, ref index, context);
                 if (index < 0) index = 0;
             };
         }
 
         public static ReaderDelegate GetReader(Func<Type, ReaderDelegate> readersFactory, ReaderDelegate baseReader, Func<TAttribute, string> attributeKeySelector)
         {
-            return (IntPtr data, ref int index, int length, ref object result) =>
+            return (IntPtr data, ref int index, ref object result, ReaderContext context) =>
             {
                 object textType = null;
-                readersFactory(typeof(string))(data, ref index, length, ref textType);
+                readersFactory(typeof(string))(data, ref index, ref textType, context);
                 var type = GetTypeByTypeNameType((string)textType, attributeKeySelector) ?? typeof(string);
-                readersFactory(type)(data, ref index, length, ref result);
+                readersFactory(type)(data, ref index, ref result, context);
             };
         }
 

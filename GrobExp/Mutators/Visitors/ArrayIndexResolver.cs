@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using GrEmit;
+using GrEmit.Utils;
 
 namespace GrobExp.Mutators.Visitors
 {

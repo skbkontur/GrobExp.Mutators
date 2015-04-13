@@ -369,9 +369,16 @@ namespace GrobExp.Compiler
             return () => func(consts);
         }
 
+        private static bool IsPrivate(Type type)
+        {
+            if(type.IsNestedPrivate || type.IsNotPublic)
+                return true;
+            return type.IsGenericType && type.GetGenericArguments().Any(IsPrivate);
+        }
+
         private static Type GetFieldType(Type type)
         {
-            return (type.IsNestedPrivate || type.IsNotPublic) && type.IsValueType
+            return IsPrivate(type) && type.IsValueType
                        ? typeof(StrongBox<>).MakeGenericType(new[] {type})
                        : type;
         }

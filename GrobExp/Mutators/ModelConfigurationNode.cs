@@ -168,7 +168,7 @@ namespace GrobExp.Mutators
         {
             LambdaExpression filter;
             var simplifiedPath = SimplifyPath(path, out filter);
-            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body));
+            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body.Simplify()));
             Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
         }
 
@@ -283,6 +283,7 @@ namespace GrobExp.Mutators
             if(i >= shards.Length)
                 return path;
             var result = shards[i - 1];
+            int currents = 0;
             for(; i < shards.Length; ++i)
             {
                 var shard = shards[i];
@@ -304,6 +305,7 @@ namespace GrobExp.Mutators
                         case "Select":
                             var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                             result = Expression.Lambda(Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters).Merge(selector).Body;
+                            ++currents;
                             break;
                         case "Where":
                             var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
@@ -323,7 +325,12 @@ namespace GrobExp.Mutators
                         {
                         case "Current":
                         case "Each":
-                            result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
+                            --currents;
+                            if(currents < 0)
+                            {
+                                result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
+                                ++currents;
+                            }
                             break;
                         default:
                             throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using System.Linq;
+
 namespace GrobExp.Mutators.Visitors
 {
     public static class ExpressionHashCalculator
@@ -10,7 +12,7 @@ namespace GrobExp.Mutators.Visitors
         public static int CalcHashCode(Expression node, bool strictly)
         {
             var hashCodes = new List<int>();
-            CalcHashCode(node, new Context {Strictly = strictly, Parameters = new Dictionary<Type, Dictionary<ParameterExpression, int>>(), HashCodes = hashCodes});
+            CalcHashCode(node, new Context {Strictly = strictly, Parameters = new Dictionary<Type, Dictionary<ParameterExpression, int>>(), Labels = new Dictionary<LabelTarget, int>(), HashCodes = hashCodes});
             const int x = 1084996963;
             var result = 0;
             foreach(var hashCode in hashCodes)
@@ -292,9 +294,8 @@ namespace GrobExp.Mutators.Visitors
             throw new NotImplementedException();
         }
 
-        private static ulong CalcHashCodeDefault(DefaultExpression node, Context context)
+        private static void CalcHashCodeDefault(DefaultExpression node, Context context)
         {
-            throw new NotImplementedException();
         }
 
         private static void CalcHashCodeDynamic(DynamicExpression node, Context context)
@@ -309,7 +310,15 @@ namespace GrobExp.Mutators.Visitors
 
         private static void CalcHashCodeGoto(GotoExpression node, Context context)
         {
-            throw new NotImplementedException();
+            context.HashCodes.Add(CalcHashCode(node.Kind));
+            int labelId;
+            if(!context.Labels.TryGetValue(node.Target, out labelId))
+            {
+                labelId = context.Labels.Count;
+                context.HashCodes.Add(labelId);
+            }
+            context.HashCodes.Add(labelId);
+            CalcHashCode(node.Value, context);
         }
 
         private static void CalcHashCodeIndex(IndexExpression node, Context context)
@@ -319,12 +328,19 @@ namespace GrobExp.Mutators.Visitors
 
         private static void CalcHashCodeInvoke(InvocationExpression node, Context context)
         {
-            throw new NotImplementedException();
+            CalcHashCode(new[] {node.Expression}.Concat(node.Arguments), context);
         }
 
         private static void CalcHashCodeLabel(LabelExpression node, Context context)
         {
-            throw new NotImplementedException();
+            int labelId;
+            if (!context.Labels.TryGetValue(node.Target, out labelId))
+            {
+                labelId = context.Labels.Count;
+                context.HashCodes.Add(labelId);
+            }
+            context.HashCodes.Add(labelId);
+            CalcHashCode(node.DefaultValue, context);
         }
 
         private static void CalcHashCodeLambda(LambdaExpression node, Context context)
@@ -409,6 +425,7 @@ namespace GrobExp.Mutators.Visitors
         {
             public bool Strictly { get; set; }
             public Dictionary<Type, Dictionary<ParameterExpression, int>> Parameters { get; set; }
+            public Dictionary<LabelTarget, int> Labels { get; set; }
             public List<int> HashCodes { get; set; }
         }
     }

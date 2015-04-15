@@ -14,7 +14,9 @@ namespace GrobExp.Mutators.Visitors
                     Strictly = strictly,
                     DistinguishEachAndCurrent = distinguishEachAndCurrent,
                     FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
-                    SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>()
+                    SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                    FirstLabels = new Dictionary<LabelTarget, LabelTarget>(),
+                    SecondLabels = new Dictionary<LabelTarget, LabelTarget>()
                 });
         }
 
@@ -184,6 +186,22 @@ namespace GrobExp.Mutators.Visitors
             }
         }
 
+        private static bool EquivalentLabel(LabelTarget first, LabelTarget second, Context context)
+        {
+            LabelTarget firstMapsTo;
+            LabelTarget secondMapsTo;
+            if (!context.FirstLabels.TryGetValue(first, out firstMapsTo))
+                context.FirstLabels.Add(first, second);
+            else if (firstMapsTo != second)
+                return false;
+            if (!context.SecondLabels.TryGetValue(second, out secondMapsTo))
+                context.SecondLabels.Add(second, first);
+            else if (secondMapsTo != first)
+                return false;
+            return true;
+
+        }
+
         private static bool EquivalentUnary(UnaryExpression first, UnaryExpression second, Context context)
         {
             return first.Method == second.Method && Equivalent(first.Operand, second.Operand, context);
@@ -248,7 +266,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentDefault(DefaultExpression first, DefaultExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return true;
         }
 
         private static bool EquivalentDynamic(DynamicExpression first, DynamicExpression second, Context context)
@@ -263,7 +281,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentGoto(GotoExpression first, GotoExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return first.Kind == second.Kind && EquivalentLabel(first.Target, second.Target, context) && Equivalent(first.Value, second.Value, context);
         }
 
         private static bool EquivalentIndex(IndexExpression first, IndexExpression second, Context context)
@@ -273,12 +291,12 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentInvoke(InvocationExpression first, InvocationExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return Equivalent(first.Expression, second.Expression, context) && Equivalent(first.Arguments, second.Arguments, context);
         }
 
         private static bool EquivalentLabel(LabelExpression first, LabelExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return EquivalentLabel(first.Target, second.Target, context) && Equivalent(first.DefaultValue, second.DefaultValue, context);
         }
 
         private static bool EquivalentLambda(LambdaExpression first, LambdaExpression second, Context context)
@@ -373,6 +391,8 @@ namespace GrobExp.Mutators.Visitors
             public bool DistinguishEachAndCurrent { get; set; }
             public Dictionary<ParameterExpression, ParameterExpression> FirstParameters { get; set; }
             public Dictionary<ParameterExpression, ParameterExpression> SecondParameters { get; set; }
+            public Dictionary<LabelTarget, LabelTarget> FirstLabels { get; set; }
+            public Dictionary<LabelTarget, LabelTarget> SecondLabels { get; set; }
         }
     }
 }

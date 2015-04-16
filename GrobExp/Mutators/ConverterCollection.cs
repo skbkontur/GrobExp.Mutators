@@ -5,6 +5,11 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit.Utils;
+
+using GroBuf;
+using GroBuf.DataMembersExtracters;
+
 using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
@@ -265,7 +270,10 @@ namespace GrobExp.Mutators
                         Expression value = Expression.Property(Expression.Call(pathToSourceCustomFieldsContainer.Body, indexerGetter, Expression.Constant(path)), "Value");
                         if(pathToTarget.Type.IsValueType)
                             value = Expression.Coalesce(value, Expression.Convert(Expression.Default(pathToTarget.Type), typeof(object)));
-                        var convertedValue = Expression.Convert(value, pathToTarget.Type);
+                        Expression convertedValue = value;
+                        if(IsPrimitive(pathToTarget.Type))
+                            convertedValue = Expression.Call(Expression.Constant(serializer), HackHelpers.GetMethodDefinition<ISerializer>(x => x.ChangeType<int, int>(0)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), pathToTarget.Type), value);
+                        convertedValue = Expression.Convert(convertedValue, pathToTarget.Type);
                         configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(convertedValue, sourceParameter))));
                     }
                 }
@@ -291,6 +299,15 @@ namespace GrobExp.Mutators
                 configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(Expression.Property(value, "Title"), sourceParameter))));
             }
         }
+
+        private static bool IsPrimitive(Type type)
+        {
+            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return IsPrimitive(type.GetGenericArguments()[0]);
+            return type.IsPrimitive || type == typeof(decimal);
+        }
+
+        private static readonly ISerializer serializer = new Serializer(new AllPropertiesExtractor());
 
         private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {

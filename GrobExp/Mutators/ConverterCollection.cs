@@ -272,7 +272,7 @@ namespace GrobExp.Mutators
                             value = Expression.Coalesce(value, Expression.Convert(Expression.Default(pathToTarget.Type), typeof(object)));
                         Expression convertedValue = value;
                         if(IsPrimitive(pathToTarget.Type))
-                            convertedValue = Expression.Call(Expression.Constant(serializer), HackHelpers.GetMethodDefinition<ISerializer>(x => x.ChangeType<int, int>(0)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), pathToTarget.Type), value);
+                            convertedValue = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), pathToTarget.Type), value);
                         convertedValue = Expression.Convert(convertedValue, pathToTarget.Type);
                         configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(convertedValue, sourceParameter))));
                     }
@@ -306,8 +306,6 @@ namespace GrobExp.Mutators
                 return IsPrimitive(type.GetGenericArguments()[0]);
             return type.IsPrimitive || type == typeof(decimal);
         }
-
-        private static readonly ISerializer serializer = new Serializer(new AllPropertiesExtractor());
 
         private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {

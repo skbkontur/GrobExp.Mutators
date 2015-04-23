@@ -55,6 +55,55 @@ namespace Compiler.Tests
         }
 
         [Test, Ignore]
+        public unsafe void TestWriteAssemblerCode()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(IntPtr), new[] {typeof(int)}, typeof(string), true);
+            using(var il = new GroboIL(method))
+            {
+                il.Ldnull();
+                il.Ldarg(0);
+                il.Sub();
+                il.Conv<IntPtr>();
+                il.Ret();
+            }
+            method.CreateDelegate(typeof(Func<int, IntPtr>));
+            var pointer = dynamicMethodPointerExtractor(method);
+            var b = (byte*)pointer;
+            for(int i = 0; i < 20; ++i)
+            {
+                for(int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+        }
+
+        [Test, Ignore]
+        public unsafe void TestWriteAssemblerCode2()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(IntPtr), Type.EmptyTypes, typeof(string), true);
+            var il = method.GetILGenerator();
+            var ptr = new IntPtr(0x40100C);
+            if(IntPtr.Size == 4)
+                il.Emit(OpCodes.Ldc_I4, ptr.ToInt32());
+            else il.Emit(OpCodes.Ldc_I8, ptr.ToInt64());
+            il.Emit(OpCodes.Conv_U);
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(void), Type.EmptyTypes, null);
+            il.Emit(OpCodes.Ldnull);
+
+            il.Emit(OpCodes.Ret);
+            
+            method.CreateDelegate(typeof(Func<IntPtr>));
+            var pointer = dynamicMethodPointerExtractor(method);
+            var b = (byte*)pointer;
+            for(int i = 0; i < 20; ++i)
+            {
+                for(int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+        }
+
+        [Test, Ignore]
         public void TestSimple()
         {
             Expression<Func<TestClassA, int?>> exp = o => o.ArrayB[0].C.ArrayD[0].X;

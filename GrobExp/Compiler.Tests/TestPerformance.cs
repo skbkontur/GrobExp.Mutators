@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 using GrEmit;
@@ -78,6 +79,28 @@ namespace Compiler.Tests
         }
 
         [Test, Ignore]
+        public unsafe void TestWriteAssemblerCode0()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(int), new[] {typeof(double)}, typeof(string), true);
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Conv<int>();
+                il.Ret();
+            }
+            var func = (Func<double, int>)method.CreateDelegate(typeof(Func<double, int>));
+            Console.WriteLine(func(3000000000));
+            var pointer = dynamicMethodPointerExtractor(method);
+            var b = (byte*)pointer;
+            for(int i = 0; i < 20; ++i)
+            {
+                for(int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+        }
+
+        [Test, Ignore]
         public unsafe void TestWriteAssemblerCode2()
         {
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(IntPtr), Type.EmptyTypes, typeof(string), true);
@@ -101,6 +124,233 @@ namespace Compiler.Tests
                     Console.Write(string.Format("{0:X2} ", *b++));
                 Console.WriteLine();
             }
+        }
+
+        [Test, Ignore]
+        public unsafe void TestWriteAssemblerCode3()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new[] { typeof(IntPtr), typeof(int) }, typeof(string), true);
+            var il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            if(IntPtr.Size == 8)
+                il.Emit(OpCodes.Ldc_I8, 0x123456789ABCDEF1);
+            else
+                il.Emit(OpCodes.Ldc_I4, 0x12345678);
+            il.EmitCalli(OpCodes.Calli, CallingConvention.StdCall, typeof(void), new[] {typeof(IntPtr), typeof(int)});
+            il.Emit(OpCodes.Ret);
+            method.CreateDelegate(typeof(Action<IntPtr, int>));
+            var pointer = dynamicMethodPointerExtractor(method);
+            var b = (byte*)pointer;
+            for (int i = 0; i < 20; ++i)
+            {
+                for (int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+            Console.WriteLine(TestStind_i4(123456678)[1]);
+        }
+
+        [Test, Ignore]
+        public unsafe void TestWriteAssemblerCode4()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(int), new[] { typeof(int), typeof(int), typeof(int), typeof(int) }, typeof(string), true);
+            var il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_3);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_2);
+            il.Emit(OpCodes.Ldarg_3);
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            byte[] marker;
+            if(IntPtr.Size == 8)
+            {
+                const long addr = 0x123456789ABCDEF1;
+                marker = BitConverter.GetBytes(addr);
+                il.Emit(OpCodes.Ldc_I8, addr);
+            }
+            else
+            {
+                const int addr = 0x12345678;
+                marker = BitConverter.GetBytes(addr);
+                il.Emit(OpCodes.Ldc_I4, addr);
+            }
+            il.EmitCalli(OpCodes.Calli, CallingConventions.Standard, typeof(int), new[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), }, null);
+            il.Emit(OpCodes.Ret);
+            var func = (Func<int, int, int, int, int>)method.CreateDelegate(typeof(Func<int, int, int, int, int>));
+            var pointer = dynamicMethodPointerExtractor(method);
+
+            Console.WriteLine("{0:X}", pointer.ToInt64());
+
+            //Replace((byte*)pointer, marker);
+
+            var b = (byte*)pointer;
+            for (int i = 0; i < 20; ++i)
+            {
+                for (int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+
+            var stopwatch = Stopwatch.StartNew();
+            for (int i = 0; i < 1000000001; ++i)
+            {
+                func(i, i, i, i);
+            }
+            var elapsed = stopwatch.Elapsed;
+            Console.WriteLine(elapsed.TotalMilliseconds);
+        }
+
+        private unsafe void Replace(byte* ptr, byte[] marker)
+        {
+            for(;;++ptr)
+            {
+                if(marker.Where((t, i) => *(ptr + i) != t).Any()) continue;
+                int prevJunk = (IntPtr.Size == 4 ? 1 : 2);
+                int nextJunk = 2;
+                ptr -= prevJunk;
+                byte[] body;
+                if (IntPtr.Size == 4)
+                {
+                    // x86
+                    body = new byte[]
+                    {
+                        0x31, 0xC0, // xor eax, eax
+                    };
+                }
+                else
+                {
+                    body = new byte[]
+                    {
+                        0x48, 0x31, 0xC0, // xor rax, rax
+                    };
+                }
+                foreach(byte b in body)
+                    *ptr++ = b;
+                for(int i = 0; i < prevJunk + marker.Length + nextJunk - body.Length; ++i)
+                    *ptr++ = 0x90; // nop
+                break;
+            }
+        }
+
+        [Flags]
+        private enum AllocationTypes : uint
+        {
+            Commit = 0x1000, Reserve = 0x2000,
+            Reset = 0x80000, LargePages = 0x20000000,
+            Physical = 0x400000, TopDown = 0x100000,
+            WriteWatch = 0x200000
+        }
+
+        [Flags]
+        private enum MemoryProtections : uint
+        {
+            Execute = 0x10, ExecuteRead = 0x20,
+            ExecuteReadWrite = 0x40, ExecuteWriteCopy = 0x80,
+            NoAccess = 0x01, ReadOnly = 0x02,
+            ReadWrite = 0x04, WriteCopy = 0x08,
+            GuartModifierflag = 0x100, NoCacheModifierflag = 0x200,
+            WriteCombineModifierflag = 0x400
+        }
+
+        [Flags]
+        private enum FreeTypes : uint
+        {
+            Decommit = 0x4000, Release = 0x8000
+        }
+
+        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]
+        private unsafe delegate int ZzzUnmanagedDelegate(int x, int y);
+
+        private static class NativeMethods
+        {
+            [DllImport("kernel32.dll", SetLastError = true)]
+            internal static extern IntPtr VirtualAlloc(
+                IntPtr lpAddress,
+                UIntPtr dwSize,
+                AllocationTypes flAllocationType,
+                MemoryProtections flProtect);
+
+            [DllImport("kernel32")]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            internal static extern bool VirtualFree(
+                IntPtr lpAddress,
+                uint dwSize,
+                FreeTypes flFreeType);
+        }
+
+        [Test]
+        public unsafe void TestMarshal()
+        {
+            byte[] body;
+            if (IntPtr.Size == 4)
+            {
+                // x86
+                /*
+                 * xor eax, eax // 0x31, 0xC0
+                 * ret 8 // 0xC2, 0x08, 0x00
+                 */
+                body = new byte[]
+                    {
+                        0x31, 0xC0, // xor eax, eax
+                        0xC2, 0x08, 0x00 // ret 8
+                    };
+            }
+            else
+            {
+                body = new byte[]
+                    {
+                        0x48, 0x31, 0xC0, // xor rax, rax
+                        0xC3 // ret
+                    };
+            }
+            IntPtr p = NativeMethods.VirtualAlloc(
+                    IntPtr.Zero,
+                    new UIntPtr((uint)body.Length),
+                    AllocationTypes.Commit | AllocationTypes.Reserve,
+                    MemoryProtections.ExecuteReadWrite);
+            Marshal.Copy(body, 0, p, body.Length);
+            var func = (ZzzUnmanagedDelegate)Marshal.GetDelegateForFunctionPointer(p, typeof(ZzzUnmanagedDelegate));
+            var method = ((MulticastDelegate)func).Method;
+            var methodHandle = (RuntimeMethodHandle)method.GetType().GetProperty("MethodHandle", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public).GetGetMethod().Invoke(method, new object[0]);
+            var pointer = methodHandle.GetFunctionPointer();
+            var b = (byte*)pointer;
+            for (int i = 0; i < 20; ++i)
+            {
+                for (int j = 0; j < 10; ++j)
+                    Console.Write(string.Format("{0:X2} ", *b++));
+                Console.WriteLine();
+            }
+
+            func(0, 1);
+
+//            var stopwatch = Stopwatch.StartNew();
+//            for (int i = 0; i < 1000000001; ++i)
+//            {
+//                func(i, i);
+//            }
+//            var elapsed = stopwatch.Elapsed;
+//            Console.WriteLine(elapsed.TotalMilliseconds);
+        }
+
+        public unsafe byte[] TestStind_i4(int x)
+        {
+            var arr = new byte[10];
+            fixed(byte* a = &arr[0])
+            {
+                *(int*)(a + 1) = x;
+                *(int*)(a + 2) = x;
+                *(int*)(a + 3) = x;
+                *(int*)(a + 4) = x;
+                *(int*)(a + 5) = x;
+                *(int*)(a + 6) = x;
+                *(int*)(a + 7) = x;
+            }
+            return arr;
         }
 
         [Test, Ignore]

@@ -48,10 +48,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     switch(node.NodeType)
                     {
                     case ExpressionType.Convert:
-                        context.EmitConvert(node.Operand.Type, node.Type); // stack: [(type)obj]
+                        context.EmitConvert(resultType, node.Type); // stack: [(type)obj]
                         break;
                     case ExpressionType.ConvertChecked:
-                        context.EmitConvert(node.Operand.Type, node.Type, true); // stack: [(type)obj]
+                        context.EmitConvert(resultType, node.Type, true); // stack: [(type)obj]
                         break;
                     default:
                         throw new InvalidOperationException("Node type '" + node.NodeType + "' is not valid at this point");

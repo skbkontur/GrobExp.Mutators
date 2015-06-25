@@ -144,7 +144,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static void FindCustomFields(Type type, Expression current, string path, PropertyInfo rootProperty, List<Tuple<string, PropertyInfo, Expression>> result)
+        private static void FindCustomFields(Type type, Expression current, string path, PropertyInfo rootProperty, List<CustomFieldInfo> result)
         {
             if(type.IsArray)
             {
@@ -159,18 +159,34 @@ namespace GrobExp.Mutators
                 if(string.IsNullOrEmpty(path))
                     rootProperty = property;
                 if(IsALeaf(property.PropertyType))
-                    result.Add(new Tuple<string, PropertyInfo, Expression>(nextPath, rootProperty, nextCurrent));
+                    result.Add(new CustomFieldInfo(nextPath, rootProperty, property, nextCurrent));
                 else
                     FindCustomFields(property.PropertyType, nextCurrent, nextPath, rootProperty, result);
             }
         }
 
-        private static Tuple<string, PropertyInfo, LambdaExpression>[] FindCustomFields(Type type)
+        private class CustomFieldInfo
+        {
+            public CustomFieldInfo(string path, PropertyInfo rootProperty, PropertyInfo property, Expression value)
+            {
+                Path = path;
+                RootProperty = rootProperty;
+                Property = property;
+                Value = value;
+            }
+
+            public string Path { get; private set; }
+            public PropertyInfo RootProperty { get; private set; }
+            public PropertyInfo Property { get; private set; }
+            public Expression Value { get; private set; }
+        }
+
+        private static Tuple<string, PropertyInfo, PropertyInfo, LambdaExpression>[] FindCustomFields(Type type)
         {
             var parameter = Expression.Parameter(type);
-            var customFields = new List<Tuple<string, PropertyInfo, Expression>>();
+            var customFields = new List<CustomFieldInfo>();
             FindCustomFields(type, parameter, "", null, customFields);
-            return customFields.Select(tuple => new Tuple<string, PropertyInfo, LambdaExpression>(tuple.Item1, tuple.Item2, Expression.Lambda(tuple.Item3, parameter))).ToArray();
+            return customFields.Select(info => new Tuple<string, PropertyInfo, PropertyInfo, LambdaExpression>(info.Path, info.RootProperty, info.Property, Expression.Lambda(info.Value, parameter))).ToArray();
         }
 
         private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild)
@@ -194,9 +210,10 @@ namespace GrobExp.Mutators
                 foreach(var customField in sourceCustomFields)
                 {
                     var path = customField.Item1;
-                    var property = customField.Item2;
-                    var value = customField.Item3;
-                    if(property.PropertyType.IsArray && !IsALeaf(property.PropertyType))
+                    var rootProperty = customField.Item2;
+                    var property = customField.Item3;
+                    var value = customField.Item4;
+                    if(rootProperty.PropertyType.IsArray && !IsALeaf(rootProperty.PropertyType))
                     {
                         // An array of complex types
                         var delimiterIndex = path.IndexOf('ё');
@@ -250,9 +267,9 @@ namespace GrobExp.Mutators
                 foreach(var customField in destCustomFields)
                 {
                     var path = customField.Item1;
-                    var property = customField.Item2;
-                    var pathToTarget = pathToDestChild.Merge(customField.Item3).Body;
-                    if(property.PropertyType.IsArray && !IsALeaf(property.PropertyType.GetElementType()))
+                    var rootProperty = customField.Item2;
+                    var pathToTarget = pathToDestChild.Merge(customField.Item4).Body;
+                    if(rootProperty.PropertyType.IsArray && !IsALeaf(rootProperty.PropertyType.GetElementType()))
                     {
                         var delimiterIndex = path.IndexOf('ё');
                         var pathToArray = path.Substring(0, delimiterIndex);

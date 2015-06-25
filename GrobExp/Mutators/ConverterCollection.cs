@@ -144,7 +144,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static void FindCustomFields(Type type, Expression current, string path, PropertyInfo rootProperty, List<CustomFieldInfo> result)
+        private static void FindCustomFields(Type type, Expression current, Type titleType, string path, PropertyInfo rootProperty, List<CustomFieldInfo> result)
         {
             if(type.IsArray)
             {
@@ -156,37 +156,57 @@ namespace GrobExp.Mutators
             {
                 var nextCurrent = Expression.Property(current, property);
                 var nextPath = string.IsNullOrEmpty(path) ? property.Name : path + "ё" + property.Name;
+                var customFieldAttribute = property.GetCustomAttributes(typeof(CustomFieldAttribute), false).SingleOrDefault() as CustomFieldAttribute;
+                var currentTitleType = titleType;
+                if(customFieldAttribute != null && customFieldAttribute.TitleType != null)
+                    currentTitleType = customFieldAttribute.TitleType;
                 if(string.IsNullOrEmpty(path))
                     rootProperty = property;
                 if(IsALeaf(property.PropertyType))
-                    result.Add(new CustomFieldInfo(nextPath, rootProperty, property, nextCurrent));
+                    result.Add(new CustomFieldInfo(nextPath, rootProperty, currentTitleType, nextCurrent));
                 else
-                    FindCustomFields(property.PropertyType, nextCurrent, nextPath, rootProperty, result);
+                    FindCustomFields(property.PropertyType, nextCurrent, currentTitleType, nextPath, rootProperty, result);
             }
         }
 
         private class CustomFieldInfo
         {
-            public CustomFieldInfo(string path, PropertyInfo rootProperty, PropertyInfo property, Expression value)
+            public CustomFieldInfo(string path, PropertyInfo rootProperty, Type titleType, Expression value)
             {
                 Path = path;
                 RootProperty = rootProperty;
-                Property = property;
+                TitleType = titleType;
                 Value = value;
             }
 
             public string Path { get; private set; }
             public PropertyInfo RootProperty { get; private set; }
-            public PropertyInfo Property { get; private set; }
+            public Type TitleType { get; private set; }
             public Expression Value { get; private set; }
         }
 
-        private static Tuple<string, PropertyInfo, PropertyInfo, LambdaExpression>[] FindCustomFields(Type type)
+        private static CustomFieldInfoZ[] FindCustomFields(Type type)
         {
             var parameter = Expression.Parameter(type);
             var customFields = new List<CustomFieldInfo>();
-            FindCustomFields(type, parameter, "", null, customFields);
-            return customFields.Select(info => new Tuple<string, PropertyInfo, PropertyInfo, LambdaExpression>(info.Path, info.RootProperty, info.Property, Expression.Lambda(info.Value, parameter))).ToArray();
+            FindCustomFields(type, parameter, null, "", null, customFields);
+            return customFields.Select(info => new CustomFieldInfoZ(info.Path, info.RootProperty, info.TitleType, Expression.Lambda(info.Value, parameter))).ToArray();
+        }
+
+        public class CustomFieldInfoZ
+        {
+            public CustomFieldInfoZ(string path, PropertyInfo rootProperty, Type titleType, LambdaExpression value)
+            {
+                Path = path;
+                RootProperty = rootProperty;
+                TitleType = titleType;
+                Value = value;
+            }
+
+            public string Path { get; private set; }
+            public PropertyInfo RootProperty { get; private set; }
+            public Type TitleType { get; private set; }
+            public LambdaExpression Value { get; private set; }
         }
 
         private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild)
@@ -209,10 +229,10 @@ namespace GrobExp.Mutators
                 var indexerGetter = destCustomFieldsContainer.PropertyType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                 foreach(var customField in sourceCustomFields)
                 {
-                    var path = customField.Item1;
-                    var rootProperty = customField.Item2;
-                    var property = customField.Item3;
-                    var value = customField.Item4;
+                    var path = customField.Path;
+                    var rootProperty = customField.RootProperty;
+                    var titleType = customField.TitleType;
+                    var value = customField.Value;
                     if(rootProperty.PropertyType.IsArray && !IsALeaf(rootProperty.PropertyType))
                     {
                         // An array of complex types
@@ -250,9 +270,8 @@ namespace GrobExp.Mutators
                         configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(GetTypeCode(value.Body.Type)))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(value.Body.Type.IsArray))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(value)));
-                        var customFieldAttribute = property.GetCustomAttributes(typeof(CustomFieldAttribute), false).SingleOrDefault() as CustomFieldAttribute;
-                        if(customFieldAttribute != null && customFieldAttribute.TitleType != null)
-                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(customFieldAttribute.TitleType))));
+                        if(titleType != null)
+                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(titleType))));
                     }
                 }
             }
@@ -266,9 +285,9 @@ namespace GrobExp.Mutators
                 var indexerGetter = sourceCustomFieldsContainer.PropertyType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                 foreach(var customField in destCustomFields)
                 {
-                    var path = customField.Item1;
-                    var rootProperty = customField.Item2;
-                    var pathToTarget = pathToDestChild.Merge(customField.Item4).Body;
+                    var path = customField.Path;
+                    var rootProperty = customField.RootProperty;
+                    var pathToTarget = pathToDestChild.Merge(customField.Value).Body;
                     if(rootProperty.PropertyType.IsArray && !IsALeaf(rootProperty.PropertyType.GetElementType()))
                     {
                         var delimiterIndex = path.IndexOf('ё');

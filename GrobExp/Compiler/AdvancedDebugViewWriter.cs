@@ -584,8 +584,26 @@ namespace GrobExp.Compiler
             return false;
         }
 
+        private bool HasEmptyBody(Expression node)
+        {
+            var defaultNode = node as DefaultExpression;
+            if(defaultNode == null)
+                return false;
+            return defaultNode.Type == typeof(void);
+        }
+
         protected override Expression VisitConditional(ConditionalExpression node)
         {
+            if(node.Type != typeof(void)) //TODO : line break
+            {
+                Visit(node.Test);
+                Out(Flow.Space, "?", Flow.Space | Flow.Break);
+                Visit(node.IfTrue);
+                Out(Flow.Space, ":", Flow.Space | Flow.Break);
+                Visit(node.IfFalse);
+                return node;
+            }
+
             if (IsSimpleExpression(node.Test))
             {
                 Out("IF (");
@@ -603,11 +621,18 @@ namespace GrobExp.Compiler
             Indent();
             Visit(node.IfTrue);
             Dedent();
-            Out(Flow.NewLine, "} ELSE {", Flow.NewLine);
-            Indent();
-            Visit(node.IfFalse);
-            Dedent();
-            Out(Flow.NewLine, "}");
+            if(!HasEmptyBody(node.IfFalse))
+            {
+                Out(Flow.NewLine, "} ELSE {", Flow.NewLine);
+                Indent();
+                Visit(node.IfFalse);
+                Dedent();
+                Out(Flow.NewLine, "}");
+            }
+            else
+            {
+                Out(Flow.NewLine, "}");
+            }
             return node;
         }
 

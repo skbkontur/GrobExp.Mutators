@@ -351,7 +351,7 @@ namespace GrobExp.Mutators.Visitors
             while(index < smithereens.Length && smithereens[index].NodeType != ExpressionType.Call)
                 ++index;
             var prefix = smithereens[index - 1];
-            while(index < smithereens.Length)
+            while(index < smithereens.Length && prefix != null)
             {
                 var shard = smithereens[index];
                 switch(shard.NodeType)
@@ -406,20 +406,23 @@ namespace GrobExp.Mutators.Visitors
             }
 
             var primaryDependencies = new List<Expression>();
-            if(prefix is NewExpression)
+            if(prefix != null)
             {
-                if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
-                    primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
-                else
+                if(prefix is NewExpression)
                 {
-                    foreach(var expression in ((NewExpression)prefix).Arguments.Select(ClearConverts))
-                        primaryDependencies.AddRange(((NewArrayExpression)expression).Expressions.Select(ClearConverts));
+                    if(!prefix.IsAnonymousTypeCreation() && !prefix.IsTupleCreation())
+                        primaryDependencies.AddRange(((NewExpression)prefix).Arguments);
+                    else
+                    {
+                        foreach(var expression in ((NewExpression)prefix).Arguments.Select(ClearConverts))
+                            primaryDependencies.AddRange(((NewArrayExpression)expression).Expressions.Select(ClearConverts));
+                    }
                 }
+                else if(prefix is NewArrayExpression)
+                    primaryDependencies.AddRange(((NewArrayExpression)prefix).Expressions.Select(ClearConverts));
+                else if(IsPrimary(smithereens.Last()))
+                    primaryDependencies.Add(prefix);
             }
-            else if(prefix is NewArrayExpression)
-                primaryDependencies.AddRange(((NewArrayExpression)prefix).Expressions.Select(ClearConverts));
-            else if(IsPrimary(smithereens.Last()))
-                primaryDependencies.Add(prefix);
 
             return Expression.NewArrayInit(typeof(object), primaryDependencies.Select(dependency => Expression.Convert(dependency, typeof(object))));
         }
@@ -524,7 +527,9 @@ namespace GrobExp.Mutators.Visitors
             AddSubDependencies(prefixEach, additionalSubDependencies);
             if(primarySubDependencies.Length > 1)
                 return Expression.NewArrayInit(typeof(object), primarySubDependencies.Select(exp => Expression.Convert(prefixEach.Merge(exp).Body, typeof(object))));
-            var primarySubDependency = primarySubDependencies.Single();
+            var primarySubDependency = primarySubDependencies.SingleOrDefault();
+            if(primarySubDependency == null)
+                return null;
             if(!(primarySubDependency.Body is NewExpression))
                 return new AnonymousTypeEliminator().Eliminate(prefixEach.Merge(primarySubDependency)).Body;
             var newExpression = (NewExpression)primarySubDependency.Body;
@@ -577,6 +582,8 @@ namespace GrobExp.Mutators.Visitors
         {
             var collectionSelector = (LambdaExpression)arguments[0];
             var collection = MakeSelect(prefix, collectionSelector);
+            if(collection == null)
+                return null;
             if(arguments.Length == 1)
                 return collection;
             var resultSelector = (LambdaExpression)arguments[1];

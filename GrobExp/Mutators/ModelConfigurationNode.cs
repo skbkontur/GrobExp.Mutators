@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
@@ -204,9 +205,43 @@ namespace GrobExp.Mutators
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path, mutator));
         }
 
+        public override string ToString()
+        {
+            var allMutators = new List<KeyValuePair<Expression, MutatorConfiguration>>();
+            GetMutatorsWithPath(allMutators);
+            return PrintAllMutators(allMutators);
+        }
+
+        public static string PrintAllMutators(IEnumerable<KeyValuePair<Expression, MutatorConfiguration>> mutators)
+        {
+            var result = new StringBuilder();
+            foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.Key, false)))
+            {
+                result.AppendLine(group.Key.Expression.ToString());
+                foreach (var pair in group)
+                {
+                    result.Append("    ");
+                    result.AppendLine(pair.Value.ToString());
+                }
+            }
+            return result.ToString();
+        }
+
         public MutatorConfiguration[] GetMutators()
         {
             return mutators.Select(pair => pair.Value).ToArray();
+        }
+
+        public KeyValuePair<Expression, MutatorConfiguration>[] GetMutatorsWithPath()
+        {
+            return mutators.ToArray();
+        }
+
+        private void GetMutatorsWithPath(List<KeyValuePair<Expression, MutatorConfiguration>> result)
+        {
+            result.AddRange(mutators);
+            foreach(var child in Children)
+                child.GetMutatorsWithPath(result);
         }
 
         public void ExtractValidationsFromConverters(ModelConfigurationNode validationsTree)

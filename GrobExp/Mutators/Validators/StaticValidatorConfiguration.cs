@@ -20,6 +20,11 @@ namespace GrobExp.Mutators.Validators
             validatorFromRoot = path.Merge(validator);
         }
 
+        public override string ToString()
+        {
+            return Name;
+        }
+
         public static StaticValidatorConfiguration Create<TData, TValue>(string name, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TValue, ValidationResult>> validator)
         {
             return new StaticValidatorConfiguration(typeof(TData), name, priority, Prepare(condition), Prepare(path), validator);

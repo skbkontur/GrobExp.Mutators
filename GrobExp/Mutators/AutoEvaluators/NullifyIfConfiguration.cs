@@ -15,6 +15,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             Condition = condition;
         }
 
+        public override string ToString()
+        {
+            return "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
+        }
+
         public static NullifyIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
         {
             return new NullifyIfConfiguration(typeof(TData), Prepare(condition));

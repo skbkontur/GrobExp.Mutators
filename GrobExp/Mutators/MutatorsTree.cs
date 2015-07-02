@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
 
 using GrobExp.Mutators.Aggregators;
 using GrobExp.Mutators.AutoEvaluators;
@@ -83,7 +84,17 @@ namespace GrobExp.Mutators
 
         public MutatorConfiguration[] GetAllMutators()
         {
-            var result = new List<MutatorConfiguration>();
+            return GetAllMutatorsWithPaths().Select(pair => pair.Value).ToArray();
+        }
+
+        public override string ToString()
+        {
+            return ModelConfigurationNode.PrintAllMutators(GetAllMutatorsWithPaths());
+        }
+
+        public KeyValuePair<Expression, MutatorConfiguration>[] GetAllMutatorsWithPaths()
+        {
+            var result = new List<KeyValuePair<Expression, MutatorConfiguration>>();
             GetAllMutators(result);
             return result.ToArray();
         }
@@ -197,7 +208,7 @@ namespace GrobExp.Mutators
         protected abstract Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path);
         protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
         protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
-        protected abstract void GetAllMutators(List<MutatorConfiguration> mutators);
+        protected abstract void GetAllMutators(List<KeyValuePair<Expression, MutatorConfiguration>> mutators);
 
         private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
         {

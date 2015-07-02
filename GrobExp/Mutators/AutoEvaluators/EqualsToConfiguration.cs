@@ -20,6 +20,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             Validator = validator;
         }
 
+        public override string ToString()
+        {
+            return "equalsTo" + ("(" + Value + ")");
+        }
+
         public static EqualsToConfiguration Create<TData>(LambdaExpression value, StaticValidatorConfiguration validator = null)
         {
             return new EqualsToConfiguration(typeof(TData), Prepare(value), validator);

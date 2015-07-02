@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -55,19 +56,18 @@ namespace Compiler.Tests
             }
         }
 
+        static int Add(int x, double y) { return (int)(x + y); }
+
         [Test, Ignore]
         public unsafe void TestWriteAssemblerCode()
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(IntPtr), new[] {typeof(int)}, typeof(string), true);
-            using(var il = new GroboIL(method))
-            {
-                il.Ldnull();
-                il.Ldarg(0);
-                il.Sub();
-                il.Conv<IntPtr>();
-                il.Ret();
-            }
-            method.CreateDelegate(typeof(Func<int, IntPtr>));
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(int), new[] { typeof(int), typeof(double) }, typeof(string), true);
+            var il = method.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Ldarg_0); // stack: [str]
+            il.Emit(OpCodes.Add);
+            il.Emit(OpCodes.Ret);
+            var func = (Func<int, double, int>)method.CreateDelegate(typeof(Func<int, double, int>));
             var pointer = dynamicMethodPointerExtractor(method);
             var b = (byte*)pointer;
             for(int i = 0; i < 20; ++i)
@@ -76,6 +76,8 @@ namespace Compiler.Tests
                     Console.Write(string.Format("{0:X2} ", *b++));
                 Console.WriteLine();
             }
+            var result = func(10, 3.14);
+            Console.WriteLine(result);
         }
 
         [Test, Ignore]

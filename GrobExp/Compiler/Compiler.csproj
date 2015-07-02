@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="ClosureSubstituter.cs" />
     <Compile Include="CompiledLambda.cs" />
+    <Compile Include="AdvancedDebugViewWriter.cs" />
     <Compile Include="EmittingContext.cs" />
     <Compile Include="ExpressionClosureBuilder.cs" />
     <Compile Include="ExpressionClosureResolver.cs" />

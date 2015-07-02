@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 using GrEmit;
 
@@ -216,6 +218,10 @@ namespace GrobExp.Compiler
             object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            //here
+            using (var writer = new StreamWriter("log.txt", false, Encoding.UTF8))
+                AdvancedDebugViewWriter.WriteTo(resolvedLambda, writer);
+            //here
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0)

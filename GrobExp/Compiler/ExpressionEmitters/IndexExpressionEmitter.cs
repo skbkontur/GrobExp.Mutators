@@ -9,7 +9,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class IndexExpressionEmitter : ExpressionEmitter<IndexExpression>
     {
-        protected override bool Emit(IndexExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(IndexExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(node.Object != null && node.Object.Type.IsArray && node.Object.Type.GetArrayRank() == 1)
                 return ExpressionEmittersCollection.Emit(Expression.ArrayIndex(node.Object, node.Arguments.Single()), context, returnDefaultValueLabel, whatReturn, extend, out resultType);

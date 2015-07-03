@@ -7,7 +7,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class NewArrayInitExpressionEmitter : ExpressionEmitter<NewArrayExpression>
     {
-        protected override bool Emit(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var il = context.Il;
             Type elementType = node.Type.GetElementType();

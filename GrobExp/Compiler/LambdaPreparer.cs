@@ -24,7 +24,7 @@ namespace GrobExp.Compiler
 
         protected override Expression VisitExtension(Expression node)
         {
-            return node.CanReduce ? Visit(node.Reduce()) : base.VisitExtension(node);
+            return !(node is TypedDebugInfoExpression) && node.CanReduce ? Visit(node.Reduce()) : base.VisitExtension(node);
         }
 
         protected override Expression VisitDynamic(DynamicExpression node)

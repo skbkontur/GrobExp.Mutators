@@ -23,6 +23,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting.Channels;
 
 using GrEmit.Utils;
 
@@ -174,7 +175,7 @@ namespace GrobExp.Compiler
         /// <summary>
         /// Write out the given AST
         /// </summary>
-        internal static void WriteTo(Expression node, TextWriter writer)
+        public static void WriteTo(Expression node, TextWriter writer)
         {
             Debug.Assert(node != null);
             Debug.Assert(writer != null);
@@ -350,6 +351,13 @@ namespace GrobExp.Compiler
             }
         }
 
+        public override Expression Visit(Expression node)
+        {
+            if(node is TypedDebugInfoExpression)
+                return base.Visit(((TypedDebugInfoExpression)node).Expression);
+            return base.Visit(node);
+        }
+
         private void VisitExpressions<T>(char open, IList<T> expressions) where T : Expression
         {
             VisitExpressions<T>(open, ',', expressions);
@@ -374,6 +382,7 @@ namespace GrobExp.Compiler
             });
         }
 
+        //TODO : no semicolon before return
         //open = 0 means no brackets
         private void VisitExpressions<T>(char open, char separator, IList<T> expressions, Action<T> visit, BlockType blockType = BlockType.None)
         {
@@ -386,6 +395,8 @@ namespace GrobExp.Compiler
                 bool isFirst = true;
                 foreach (T e in expressions)
                 {
+                    if(e is DebugInfoExpression)
+                        continue;
                     if (isFirst)
                     {
                         if (open == '{' || expressions.Count > 1)
@@ -431,6 +442,15 @@ namespace GrobExp.Compiler
             return node;
         }
 
+        private bool? GetBooleanConstantValue(Expression node)
+        {
+            var constant = node as ConstantExpression;
+            if(constant == null)
+                return null;
+            var value = constant.Value as bool?;
+            return value;
+        }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -440,6 +460,10 @@ namespace GrobExp.Compiler
                 Out("[");
                 Visit(node.Right);
                 Out("]");
+            }
+            else if(node.NodeType == ExpressionType.Equal && GetBooleanConstantValue(node.Right) == true) //TODO redundant brackets
+            {
+                ParenthesizedVisit(node, node.Left);
             }
             else
             {
@@ -510,7 +534,7 @@ namespace GrobExp.Compiler
                 {
                     op = String.Format(
                             CultureInfo.CurrentCulture,
-                            "#{0}",
+                            "{0}",
                             op
                     );
                 }
@@ -594,12 +618,12 @@ namespace GrobExp.Compiler
 
         protected override Expression VisitConditional(ConditionalExpression node)
         {
-            if(node.Type != typeof(void)) //TODO : line break
+            if(node.Type != typeof(void))
             {
                 Visit(node.Test);
-                Out(Flow.Space, "?", Flow.Space | Flow.Break);
+                Out(Flow.NewLine, "?", Flow.Space);
                 Visit(node.IfTrue);
-                Out(Flow.Space, ":", Flow.Space | Flow.Break);
+                Out(Flow.NewLine, ":", Flow.Space);
                 Visit(node.IfFalse);
                 return node;
             }
@@ -675,7 +699,7 @@ namespace GrobExp.Compiler
                 {
                     Out(String.Format(
                         CultureInfo.CurrentCulture,
-                        "constant<{0}>({1})",
+                        "const<{0}>({1})",
                         Formatter.Format(node.Type),
                         value));
                 }
@@ -815,6 +839,7 @@ namespace GrobExp.Compiler
                     case ExpressionType.ArrayLength:
                     case ExpressionType.ArrayIndex:
                     case ExpressionType.Index:
+                    case ExpressionType.Convert:
                         return false;
                 }
                 return true;
@@ -1110,7 +1135,7 @@ namespace GrobExp.Compiler
                     }
                     break;
                 case ExpressionType.ConvertChecked:
-                    Out("#(" + Formatter.Format(node.Type) + ")");
+                    Out("(" + Formatter.Format(node.Type) + ")");
                     break;
                 case ExpressionType.TypeAs:
                     break;
@@ -1124,7 +1149,7 @@ namespace GrobExp.Compiler
                     Out("-");
                     break;
                 case ExpressionType.NegateChecked:
-                    Out("#-");
+                    Out("-");
                     break;
                 case ExpressionType.UnaryPlus:
                     Out("+");

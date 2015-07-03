@@ -10,7 +10,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class LambdaExpressionEmitter : ExpressionEmitter<LambdaExpression>
     {
-        protected override bool Emit(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
             resultType = Extensions.GetDelegateType(parameterTypes, node.ReturnType);

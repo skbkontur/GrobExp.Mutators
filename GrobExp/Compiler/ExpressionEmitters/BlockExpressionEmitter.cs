@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class BlockExpressionEmitter : ExpressionEmitter<BlockExpression>
     {
-        protected override bool Emit(BlockExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(BlockExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var variables = node.Variables.Where(variable => !context.VariablesToLocals.ContainsKey(variable)).ToArray();
             foreach(var variable in variables)

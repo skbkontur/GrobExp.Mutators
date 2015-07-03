@@ -9,7 +9,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class SwitchExpressionEmitter : ExpressionEmitter<SwitchExpression>
     {
-        protected override bool Emit(SwitchExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(SwitchExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             GroboIL il = context.Il;
             var defaultLabel = il.DefineLabel("default");

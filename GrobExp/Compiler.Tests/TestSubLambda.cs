@@ -2,12 +2,17 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
+using System.Xml.Linq;
+
+using GrEmit;
 
 using GrobExp.Compiler;
 
@@ -117,12 +122,19 @@ namespace Compiler.Tests
             var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
             var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
 
-            var sdi = Expression.SymbolDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);
+            var filename = "TestDebug2.txt";
+
+            var sdi = Expression.SymbolDocument(filename, Guid.Empty, Guid.Empty, Guid.Empty);
 
             var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
 
             var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
             var block = Expression.Block(di, exp);
+
+            using(var writer = new StreamWriter(filename, false, Encoding.UTF8))
+            {
+                AdvancedDebugViewWriter.WriteTo(exp, writer);
+            }
 
             var gen = DebugInfoGenerator.CreatePdbGenerator();
 
@@ -133,6 +145,248 @@ namespace Compiler.Tests
             var newtype = type.CreateType();
             asm.Save("tmp.dll");
             newtype.GetMethod("go").Invoke(null, new object[0]);
+            //meth.Invoke(null, new object[0]);
+            //lambda.DynamicInvoke(new object[0]);
+            Console.WriteLine(" ");
+        }
+
+        [Test, Ignore]
+        public void TestDebugInfo123()
+        {
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+
+            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+
+            var filename = "TestDebug2.txt";
+
+            var sdi = Expression.SymbolDocument(filename, Guid.Empty, Guid.Empty, Guid.Empty);
+
+            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+
+            var variable = Expression.Parameter(typeof(int), "x");
+            var boolVar = Expression.Variable(typeof(bool));
+            var two = Expression.Constant(2);
+            var zero = Expression.Constant(0);
+            var temp = Expression.Variable(typeof(int));
+
+            var tst = Expression.Block(typeof(bool), Expression.DebugInfo(sdi, 4, 13, 4, 19), new TypedDebugInfoExpression(sdi, Expression.Equal(variable, zero), 5, 9, 5, 10));
+            var iftrue = Expression.Block(Expression.DebugInfo(sdi, 7, 13, 7, 19), new TypedDebugInfoExpression(sdi, Expression.Add(variable, two), 8, 9, 8, 10));
+            var iffalse = Expression.Block(Expression.DebugInfo(sdi, 10, 13, 10, 19), new TypedDebugInfoExpression(sdi, Expression.Multiply(variable, two), 11, 9, 11, 10));
+            //var iftrue = Expression.Block(Expression.DebugInfo(sdi, 10, 20, 10, 26), variable, Expression.DebugInfo(sdi, 10, 20, 10, 26));
+            //var iffalse = Expression.Block(Expression.DebugInfo(sdi, 14, 20, 14, 26), variable, Expression.DebugInfo(sdi, 14, 20, 14, 26));
+            var exp = Expression.Condition(tst, iftrue, iffalse);
+
+            /*
+            var returnTarget = Expression.Label(typeof(int));
+            var returnExpression = Expression.Return(returnTarget, exp, typeof(int));
+            var returnLabel = Expression.Label(returnTarget, Expression.Constant(0));
+            */
+
+            var block = Expression.Block(Expression.DebugInfo(sdi, 3, 9, 3, 15), new TypedDebugInfoExpression(sdi, exp, 12, 5, 12, 6));
+            //var block = Expression.Block(Expression.DebugInfo(sdi, 4, 16, 17, 10), Expression.Assign(temp, exp)));
+            var kek = Expression.Lambda(block, variable);
+
+            using (var writer = new StreamWriter(filename, false, Encoding.UTF8))
+            {
+                AdvancedDebugViewWriter.WriteTo(kek, writer);
+            }
+
+            var gen = DebugInfoGenerator.CreatePdbGenerator();
+
+            //LambdaExpression lambda = Expression.Lambda(block);
+            LambdaCompiler.CompileToMethod(kek, meth, gen, CompilerOptions.All);
+            //lambda.CompileToMethod(meth, gen);
+
+            var newtype = type.CreateType();
+            asm.Save("tmp.dll");
+            var res = newtype.GetMethod("go").Invoke(null, new object[] {0});
+            //meth.Invoke(null, new object[0]);
+            //lambda.DynamicInvoke(new object[0]);
+            Console.WriteLine(" ");
+        }
+
+        [Test]
+        public void TestZzz()
+        {
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+
+            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new [] {typeof(int)});
+
+            var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
+
+            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+
+            //var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+            //var block = Expression.Block(di, exp);
+
+            using(var il = new GroboIL(meth))
+            {
+//                var tst = Expression.Block(Expression.DebugInfo(sdi, 6, 20, 6, 27), Expression.Equal(variable, zero));
+//                var iftrue = Expression.Block(Expression.DebugInfo(sdi, 10, 20, 10, 26), Expression.Add(variable, two));
+//                var iffalse = Expression.Block(Expression.DebugInfo(sdi, 14, 20, 14, 26), Expression.Divide(variable, two));
+//                var exp = Expression.Condition(tst, iftrue, iffalse);
+//                var block = Expression.Block(Expression.DebugInfo(sdi, 4, 16, 15, 10), exp);
+
+//                        nop                      // []
+//        nop                      // []
+//        ldarg.0                  // [Int32]
+//        ldc.i4.0                 // [Int32, Int32]
+//        ceq                      // [Int32]
+//        brfalse ifFalse_5        // []
+//        nop                      // []
+//        ldarg.0                  // [Int32]
+//        ldc.i4.2                 // [Int32, Int32]
+//        add                      // [Int32]
+//        br done_8                // [Int32]
+//ifFalse_5:                       // []
+//        nop                      // []
+//        ldarg.0                  // [Int32]
+//        ldc.i4.2                 // [Int32, Int32]
+//        div                      // [Int32]
+//done_8:                          // [Int32]
+//        ret                      // []
+
+                il.MarkSequencePoint(document, 4, 16, 15, 10);
+                //il.MarkSequencePoint(document, 6, 20, 6, 27);
+//                il.Nop();
+//                il.Nop();
+                il.Ldarg(0);
+                il.Ldc_I4(0);
+                il.Ceq();
+                var label = il.DefineLabel("ifFalse");
+                il.Brfalse(label);
+                il.MarkSequencePoint(document, 10, 20, 10, 26);
+//                il.Nop();
+                il.Ldarg(0);
+                il.Ldc_I4(2);
+                il.Add();
+                var doneLabel = il.DefineLabel("done");
+                il.Br(doneLabel);
+                il.MarkLabel(label);
+                il.MarkSequencePoint(document, 14, 20, 14, 26);
+//                il.Nop();
+                il.Ldarg(0);
+                il.Ldc_I4(4);
+                il.Div(false);
+                il.MarkLabel(doneLabel);
+                il.MarkSequencePoint(document, 16, 20, 16, 26);
+                il.Ret();
+            }
+            var newtype = type.CreateType();
+
+            asm.Save("tmp.dll");
+            newtype.GetMethod("go").Invoke(null, new object[]{0});
+            //meth.Invoke(null, new object[0]);
+            //lambda.DynamicInvoke(new object[0]);
+            Console.WriteLine(" ");
+        }
+
+        [Test]
+        public void Test()
+        {
+            if(asdfsadf())
+            {
+                Console.WriteLine("zzz");
+            }
+            else
+            {
+                Console.WriteLine("qxx");
+            }
+        }
+
+        private static bool asdfsadf()
+        {
+            return 1 == 1;
+        }
+
+        [Test]
+        public void TestZzz2()
+        {
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+
+            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new [] {typeof(int)});
+
+            var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
+
+            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+
+            //var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+            //var block = Expression.Block(di, exp);
+
+            using(var il = new GroboIL(meth))
+            {
+//                        nop                      // []
+//        nop                      // []
+//        ldc.i4.1                 // [Int32]
+//        brfalse ifFalse_7        // []
+//        nop                      // []
+//        ldarg.0                  // [Int32]
+//        br done_10               // [Int32]
+//ifFalse_7:                       // []
+//        nop                      // []
+//        ldarg.0                  // [Int32]
+//done_10:                         // [Int32]
+//        stloc local_0            // []
+//        nop                      // []
+//        ldloc local_0            // [Int32]
+//        ret                      // []
+
+
+//                var tst = Expression.Block(Expression.DebugInfo(sdi, 6, 20, 6, 27), Expression.Constant(true));
+//                var iftrue = Expression.Block(Expression.DebugInfo(sdi, 10, 20, 10, 26), variable);
+//                var iffalse = Expression.Block(Expression.DebugInfo(sdi, 14, 20, 14, 26), variable);
+//                var exp = Expression.Condition(tst, iftrue, iffalse);
+//
+//                /*
+//                var returnTarget = Expression.Label(typeof(int));
+//                var returnExpression = Expression.Return(returnTarget, exp, typeof(int));
+//                var returnLabel = Expression.Label(returnTarget, Expression.Constant(0));
+//                */
+//
+//                var block = Expression.Block(typeof(int), new[] { temp },
+//                    Expression.DebugInfo(sdi, 4, 15, 4, 16), Expression.Assign(temp, exp), Expression.DebugInfo(sdi, 17, 16, 17, 21), temp);
+//                //var block = Expression.Block(Expression.DebugInfo(sdi, 4, 16, 17, 10), Expression.Assign(temp, exp)));
+//                var kek = Expression.Lambda(block, variable);
+
+                il.MarkSequencePoint(document, 4, 15, 4, 16);
+                il.Nop();
+                il.Nop();
+                il.Ldc_I4(1);
+                il.MarkSequencePoint(document, 6, 20, 6, 27);
+                var brFalse = il.DefineLabel("brFalse");
+                il.Brfalse(brFalse);
+                il.MarkSequencePoint(document, 10, 20, 10, 26);
+                il.Nop();
+                il.Ldarg(0);
+                il.Ldc_I4(100);
+                il.Add();
+                var doneLabel = il.DefineLabel("done");
+                il.Br(doneLabel);
+                il.MarkSequencePoint(document, 14, 20, 14, 26);
+                il.MarkLabel(brFalse);
+                il.Nop();
+                il.Ldarg(0);
+                il.Ldc_I4(10);
+                il.Add();
+                il.MarkLabel(doneLabel);
+                il.MarkSequencePoint(document, 16, 16, 16, 21);
+                var local = il.DeclareLocal(typeof(int));
+                il.Stloc(local);
+                il.Nop();
+                il.MarkSequencePoint(document, 17, 16, 17, 21);
+                il.Ldloc(local);
+                il.Ret();
+            }
+            var newtype = type.CreateType();
+
+            asm.Save("tmp.dll");
+            newtype.GetMethod("go").Invoke(null, new object[]{0});
             //meth.Invoke(null, new object[0]);
             //lambda.DynamicInvoke(new object[0]);
             Console.WriteLine(" ");

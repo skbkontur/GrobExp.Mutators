@@ -916,7 +916,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                 // For static members, include the type name
                 Out(Formatter.Format(member.DeclaringType) + "." + member.Name);
             }
-            return node;
+            return instance;
         }
 
         protected override Expression VisitMember(MemberExpression node)

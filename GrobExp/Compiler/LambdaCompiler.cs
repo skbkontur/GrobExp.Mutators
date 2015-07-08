@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 using GrEmit;
 
@@ -18,17 +16,14 @@ namespace GrobExp.Compiler
         public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
             CompiledLambda[] subLambdas;
-            return CompileInternal(lambda, DebugInfoGenerator.CreatePdbGenerator(), out subLambdas, options).Delegate;
+            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
+            return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
         public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
-            return Compile(lambda, DebugInfoGenerator.CreatePdbGenerator(), options);
-        }
-
-        private static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options) where TDelegate : class
-        {
             CompiledLambda[] subLambdas;
+            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
@@ -43,14 +38,7 @@ namespace GrobExp.Compiler
         }
 
         public static bool AnalyzeILStack = true;
-        private const string DebugOutputDirectory = @"C:\Temp\";
-
-        private static string GenerateFilename()
-        {
-            if(!Directory.Exists(DebugOutputDirectory))
-                Directory.CreateDirectory(DebugOutputDirectory);
-            return DebugOutputDirectory + Guid.NewGuid() + ".lambda";
-        }
+        public static string DebugOutputDirectory = null;
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
@@ -64,90 +52,40 @@ namespace GrobExp.Compiler
             CompilerOptions options,
             List<CompiledLambda> compiledLambdas)
         {
+            if(debugInfoGenerator == null)
+                return CompileToDynamicMethod(lambda, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             var parameters = lambda.Parameters.ToArray();
-            Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
-            Type returnType = lambda.ReturnType;
-            //var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+            var parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
+            var returnType = lambda.ReturnType;
 
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public | TypeAttributes.Class);
             var method = typeBuilder.DefineMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, returnType, parameterTypes);
+            var ilCode = CompileToMethodInternal(lambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, switches, options, compiledLambdas, method);
 
-            using (var il = new GroboIL(method, AnalyzeILStack))
+            var type = typeBuilder.CreateType();
+            var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), returnType, parameterTypes, Module, true);
+            using(var il = new GroboIL(dynamicMethod))
             {
-
-                var context = new EmittingContext
-                    {
-                        Options = options,
-                        DebugInfoGenerator = debugInfoGenerator,
-                        Lambda = lambda,
-                        Method = method,
-                        TypeBuilder = typeBuilder,
-                        SkipVisibility = false,
-                        Parameters = parameters,
-                        ClosureType = closureType,
-                        ClosureParameter = closureParameter,
-                        ConstantsType = constantsType,
-                        ConstantsParameter = constantsParameter,
-                        Switches = switches,
-                        CompiledLambdas = compiledLambdas,
-                        Il = il
-                    };
-                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
-                Type resultType;
-                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
-                if(returnType == typeof(bool) && resultType == typeof(bool?))
-                    context.ConvertFromNullableBoolToBool();
-                if(returnType == typeof(void) && resultType != typeof(void))
-                {
-                    using(var temp = context.DeclareLocal(resultType))
-                        il.Stloc(temp);
-                }
+                for(var i = 0; i < parameterTypes.Length; ++i)
+                    il.Ldarg(i);
+                il.Call(type.GetMethod(method.Name));
                 il.Ret();
-                if(labelUsed)
-                {
-                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
-                    il.Pop();
-                    if(returnType != typeof(void))
-                    {
-                        if(!returnType.IsValueType)
-                            il.Ldnull();
-                        else
-                        {
-                            using(var defaultValue = context.DeclareLocal(returnType))
-                            {
-                                il.Ldloca(defaultValue);
-                                il.Initobj(returnType);
-                                il.Ldloc(defaultValue);
-                            }
-                        }
-                    }
-                    il.Ret();
-                }
-                var type = typeBuilder.CreateType();
-                var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), returnType, parameterTypes, Module, true);
-                using(var zil = new GroboIL(dynamicMethod))
-                {
-                    for(int i = 0; i < parameterTypes.Length; ++i)
-                    {
-                        zil.Ldarg(i);
-                    }
-                    zil.Call(type.GetMethod(method.Name));
-                    zil.Ret();
-                }
-                return new CompiledLambda
-                    {
-                        Delegate = dynamicMethod.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                        Method = method,
-                        ILCode = il.GetILCode()
-                    };
             }
+            return new CompiledLambda
+                {
+                    Delegate = dynamicMethod.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                    Method = method,
+                    ILCode = ilCode
+                };
         }
 
-        internal static string CompileInternal(
+        internal static string CompileToMethodInternal(
             LambdaExpression lambda,
             DebugInfoGenerator debugInfoGenerator,
             Type closureType,
             ParameterExpression closureParameter,
+            Type constantsType,
+            ParameterExpression constantsParameter,
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
             CompilerOptions options,
             List<CompiledLambda> compiledLambdas,
@@ -156,10 +94,8 @@ namespace GrobExp.Compiler
             var typeBuilder = method.ReflectedType as TypeBuilder;
             if(typeBuilder == null)
                 throw new ArgumentException("Unable to obtain type builder of the method", "method");
-            Type returnType = lambda.ReturnType;
             using(var il = new GroboIL(method, AnalyzeILStack))
             {
-
                 var context = new EmittingContext
                     {
                         Options = options,
@@ -171,47 +107,106 @@ namespace GrobExp.Compiler
                         Parameters = lambda.Parameters.ToArray(),
                         ClosureType = closureType,
                         ClosureParameter = closureParameter,
+                        ConstantsType = constantsType,
+                        ConstantsParameter = constantsParameter,
                         Switches = switches,
                         CompiledLambdas = compiledLambdas,
                         Il = il
                     };
-                var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
-                Type resultType;
-                bool labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, returnType == typeof(void) ? ResultType.Void : ResultType.Value, false, out resultType);
-                if(returnType == typeof(bool) && resultType == typeof(bool?))
-                    context.ConvertFromNullableBoolToBool();
-                if(returnType == typeof(void) && resultType != typeof(void))
-                {
-                    using(var temp = context.DeclareLocal(resultType))
-                        il.Stloc(temp);
-                }
-                il.Ret();
-                if (labelUsed)
-                {
-                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
-                    il.Pop();
-                    if(returnType != typeof(void))
-                    {
-                        if(!returnType.IsValueType)
-                            il.Ldnull();
-                        else
-                        {
-                            using(var defaultValue = context.DeclareLocal(returnType))
-                            {
-                                il.Ldloca(defaultValue);
-                                il.Initobj(returnType);
-                                il.Ldloc(defaultValue);
-                            }
-                        }
-                    }
-                    il.Ret();
-                }
+                CompileInternal(lambda, context);
                 return il.GetILCode();
             }
         }
 
         internal static readonly AssemblyBuilder Assembly = CreateAssembly();
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString(), true);
+
+        private static string GenerateFileName()
+        {
+            if(!Directory.Exists(DebugOutputDirectory))
+                Directory.CreateDirectory(DebugOutputDirectory);
+            return DebugOutputDirectory + Guid.NewGuid() + ".lambda";
+        }
+
+        private static void CompileInternal(LambdaExpression lambda, EmittingContext context)
+        {
+            var returnType = lambda.ReturnType;
+            var il = context.Il;
+            var returnDefaultValueLabel = context.CanReturn ? il.DefineLabel("returnDefaultValue") : null;
+            Type resultType;
+            var whatReturn = returnType == typeof(void) ? ResultType.Void : ResultType.Value;
+            var labelUsed = ExpressionEmittersCollection.Emit(lambda.Body, context, returnDefaultValueLabel, whatReturn, false, out resultType);
+            if(returnType == typeof(bool) && resultType == typeof(bool?))
+                context.ConvertFromNullableBoolToBool();
+            if(returnType == typeof(void) && resultType != typeof(void))
+            {
+                using(var temp = context.DeclareLocal(resultType))
+                    il.Stloc(temp);
+            }
+            il.Ret();
+            if(!labelUsed)
+                return;
+            context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
+            il.Pop();
+            if(returnType != typeof(void))
+            {
+                if(!returnType.IsValueType)
+                    il.Ldnull();
+                else
+                {
+                    using(var defaultValue = context.DeclareLocal(returnType))
+                    {
+                        il.Ldloca(defaultValue);
+                        il.Initobj(returnType);
+                        il.Ldloc(defaultValue);
+                    }
+                }
+            }
+            il.Ret();
+        }
+
+        private static CompiledLambda CompileToDynamicMethod(
+            LambdaExpression lambda,
+            Type closureType,
+            ParameterExpression closureParameter,
+            Type constantsType,
+            ParameterExpression constantsParameter,
+            object constants,
+            Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches,
+            CompilerOptions options,
+            List<CompiledLambda> compiledLambdas)
+        {
+            var parameters = lambda.Parameters.ToArray();
+            var parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
+            var returnType = lambda.ReturnType;
+            var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+            using(var il = new GroboIL(method, AnalyzeILStack))
+            {
+                var context = new EmittingContext
+                    {
+                        Options = options,
+                        Lambda = lambda,
+                        Method = method,
+                        SkipVisibility = true,
+                        Parameters = parameters,
+                        ClosureType = closureType,
+                        ClosureParameter = closureParameter,
+                        ConstantsType = constantsType,
+                        ConstantsParameter = constantsParameter,
+                        Switches = switches,
+                        CompiledLambdas = compiledLambdas,
+                        Il = il
+                    };
+
+                CompileInternal(lambda, context);
+                return new CompiledLambda
+                    {
+                        Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                        Method = method,
+                        ILCode = il.GetILCode()
+                    };
+            }
+        }
 
         private static AssemblyBuilder CreateAssembly()
         {
@@ -237,10 +232,9 @@ namespace GrobExp.Compiler
             object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
-            //here
-            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFilename());
-            //here
-            var compiledLambda = CompileInternal(res, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
+            if(!string.IsNullOrEmpty(DebugOutputDirectory))
+                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFileName());
+            var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0)
                 BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
@@ -262,12 +256,11 @@ namespace GrobExp.Compiler
             method.SetReturnType(lambda.ReturnType);
             method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
-            //here
-            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFilename());
-            //here
+            if(!string.IsNullOrEmpty(DebugOutputDirectory))
+                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFileName());
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
-            CompileInternal(res, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
+            CompileToMethodInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, null, null, switches, options, compiledLambdas, method);
         }
 
         private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)

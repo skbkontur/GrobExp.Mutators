@@ -32,17 +32,25 @@ namespace GrobExp.Compiler
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options, string filename = "1.txt")
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
         {
-            CompileToMethodInternal(lambda, method, null, options, filename);
+            CompileToMethodInternal(lambda, method, null, options);
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options, string filename = "1.txt")
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
-            CompileToMethodInternal(lambda, method, debugInfoGenerator, options, filename);
+            CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
         }
 
         public static bool AnalyzeILStack = true;
+        private const string DebugOutputDirectory = @"C:\Temp\";
+
+        private static string GenerateFilename()
+        {
+            if(!Directory.Exists(DebugOutputDirectory))
+                Directory.CreateDirectory(DebugOutputDirectory);
+            return DebugOutputDirectory + Guid.NewGuid() + ".lambda";
+        }
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
@@ -219,7 +227,6 @@ namespace GrobExp.Compiler
             return assemblyBuilder;
         }
 
-        //TODO avoid hardcoded filename
         private static CompiledLambda CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out CompiledLambda[] subLambdas, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
@@ -231,7 +238,7 @@ namespace GrobExp.Compiler
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             //here
-            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, "z1.txt");
+            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFilename());
             //here
             var compiledLambda = CompileInternal(res, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
@@ -240,7 +247,7 @@ namespace GrobExp.Compiler
             return compiledLambda;
         }
 
-        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options, string filename = "1.txt")
+        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
@@ -256,7 +263,7 @@ namespace GrobExp.Compiler
             method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             //here
-            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, filename);
+            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFilename());
             //here
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");

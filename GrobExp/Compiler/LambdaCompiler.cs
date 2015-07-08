@@ -125,7 +125,7 @@ namespace GrobExp.Compiler
         {
             if(!Directory.Exists(DebugOutputDirectory))
                 Directory.CreateDirectory(DebugOutputDirectory);
-            return DebugOutputDirectory + Guid.NewGuid() + ".lambda";
+            return Path.Combine(DebugOutputDirectory, Guid.NewGuid() + ".lambda");
         }
 
         private static void CompileInternal(LambdaExpression lambda, EmittingContext context)

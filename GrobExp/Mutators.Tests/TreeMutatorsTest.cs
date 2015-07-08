@@ -1075,7 +1075,7 @@ namespace Mutators.Tests
             public string Key { get; set; }
         }
 
-        private class TestData
+        public class TestData
         {
             public string S { get; set; }
             public string F { get; set; }
@@ -1093,14 +1093,14 @@ namespace Mutators.Tests
             public DateTime? Date { get; set; }
         }
 
-        private class A
+        public class A
         {
             public B[] B { get; set; }
             public int? Z { get; set; }
             public string S;
         }
 
-        private class B
+        public class B
         {
             public string S { get; set; }
             public string[] Хрень { get; set; }
@@ -1111,20 +1111,20 @@ namespace Mutators.Tests
             public C C { get; set; }
         }
 
-        private class C
+        public class C
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public D[] D { get; set; }
         }
 
-        private class D
+        public class D
         {
             public string S { get; set; }
             public int? Z { get; set; }
         }
 
-        private class TestData2
+        public class TestData2
         {
             public string S { get; set; }
 
@@ -1142,7 +1142,7 @@ namespace Mutators.Tests
             public DateTime? Date2 { get; set; }
         }
 
-        private class T
+        public class T
         {
             public R[] R { get; set; }
             public IEnumerable<R> Rz { get; set; }
@@ -1150,7 +1150,7 @@ namespace Mutators.Tests
             public string S;
         }
 
-        private class R
+        public class R
         {
             public U U { get; set; }
             public string S { get; set; }
@@ -1158,7 +1158,7 @@ namespace Mutators.Tests
             public string[] Чужь { get; set; }
         }
 
-        private class U
+        public class U
         {
             public string S { get; set; }
             public int? Z { get; set; }
@@ -1166,26 +1166,26 @@ namespace Mutators.Tests
             public V V { get; set; }
         }
 
-        private class V
+        public class V
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public X[] X { get; set; }
         }
 
-        private class X
+        public class X
         {
             public W W { get; set; }
             public string S { get; set; }
         }
 
-        private class W
+        public class W
         {
             public string S { get; set; }
             public int? Z { get; set; }
         }
 
-        private class Qxx
+        public class Qxx
         {
             public int? A0 { get; set; }
             public int? B0 { get; set; }

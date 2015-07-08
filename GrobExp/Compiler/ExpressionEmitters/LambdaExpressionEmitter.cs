@@ -48,15 +48,17 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
                 }
 
-                if(context.TypeBuilder != null)
-                    il.Ldftn(compiledLambda.Method);
-                else
                 {
                     var subLambdaInvoker = needClosure
                                                ? DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(context.ConstantsType, context.ClosureType, node.Body.Type, parameterTypes)
                                                : DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(context.ConstantsType, node.Body.Type, parameterTypes);
-                    var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
-                    il.Ldc_IntPtr(pointer);
+                    if(context.TypeBuilder != null)
+                        il.Ldftn(compiledLambda.Method);
+                    else
+                    {
+                        var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                        il.Ldc_IntPtr(pointer);
+                    }
                     var types = needClosure
                                     ? new[] {context.ConstantsType, context.ClosureType, typeof(IntPtr)}
                                     : new[] {context.ConstantsType, typeof(IntPtr)};

@@ -18,21 +18,15 @@ namespace GrobExp.Compiler
         public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
             CompiledLambda[] subLambdas;
-            return CompileInternal(lambda, null, out subLambdas, options).Delegate;
-        }
-
-        public static Delegate Compile(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
-        {
-            CompiledLambda[] subLambdas;
-            return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
+            return CompileInternal(lambda, DebugInfoGenerator.CreatePdbGenerator(), out subLambdas, options).Delegate;
         }
 
         public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
-            return Compile(lambda, null, options);
+            return Compile(lambda, DebugInfoGenerator.CreatePdbGenerator(), options);
         }
 
-        public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options) where TDelegate : class
+        private static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, DebugInfoGenerator debugInfoGenerator, CompilerOptions options) where TDelegate : class
         {
             CompiledLambda[] subLambdas;
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
@@ -65,8 +59,12 @@ namespace GrobExp.Compiler
             var parameters = lambda.Parameters.ToArray();
             Type[] parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             Type returnType = lambda.ReturnType;
-            var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
-            using(var il = new GroboIL(method, AnalyzeILStack))
+            //var method = new DynamicMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard, returnType, parameterTypes, Module, true);
+
+            var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public | TypeAttributes.Class);
+            var method = typeBuilder.DefineMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, returnType, parameterTypes);
+
+            using (var il = new GroboIL(method, AnalyzeILStack))
             {
 
                 var context = new EmittingContext
@@ -75,7 +73,8 @@ namespace GrobExp.Compiler
                         DebugInfoGenerator = debugInfoGenerator,
                         Lambda = lambda,
                         Method = method,
-                        SkipVisibility = true,
+                        TypeBuilder = typeBuilder,
+                        SkipVisibility = false,
                         Parameters = parameters,
                         ClosureType = closureType,
                         ClosureParameter = closureParameter,
@@ -116,9 +115,20 @@ namespace GrobExp.Compiler
                     }
                     il.Ret();
                 }
+                var type = typeBuilder.CreateType();
+                var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), returnType, parameterTypes, Module, true);
+                using(var zil = new GroboIL(dynamicMethod))
+                {
+                    for(int i = 0; i < parameterTypes.Length; ++i)
+                    {
+                        zil.Ldarg(i);
+                    }
+                    zil.Call(type.GetMethod(method.Name));
+                    zil.Ret();
+                }
                 return new CompiledLambda
                     {
-                        Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                        Delegate = dynamicMethod.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
                         Method = method,
                         ILCode = il.GetILCode()
                     };
@@ -193,7 +203,7 @@ namespace GrobExp.Compiler
         }
 
         internal static readonly AssemblyBuilder Assembly = CreateAssembly();
-        internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+        internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString(), true);
 
         private static AssemblyBuilder CreateAssembly()
         {
@@ -221,7 +231,7 @@ namespace GrobExp.Compiler
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             //here
-            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, "1.txt");
+            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, "z1.txt");
             //here
             var compiledLambda = CompileInternal(res, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();

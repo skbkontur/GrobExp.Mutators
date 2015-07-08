@@ -411,7 +411,7 @@ namespace GrobExp.Mutators.Visitors
             public string[] Names { get; private set; }
         }
 
-        private class IndexedValue<T>
+        public class IndexedValue<T>
         {
             public IndexedValue(T value, IEnumerable<int> indexes)
             {

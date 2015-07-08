@@ -758,48 +758,48 @@ namespace Mutators.Tests
 
         private IPathFormatterCollection pathFormatterCollection;
 
-        private class InnerData2ndLevel
+        public class InnerData2ndLevel
         {
             public string InnerZ { get; set; }
         }
 
-        private class InnerData1stLevel
+        public class InnerData1stLevel
         {
             public string InnerS { get; set; }
             public InnerData2ndLevel[] InnerItemz { get; set; }
         }
 
-        private class InnerData
+        public class InnerData
         {
             public InnerData1stLevel[] InnerItems { get; set; }
         }
 
-        private class WebData2ndLevel
+        public class WebData2ndLevel
         {
             public bool WebIzRemoved { get; set; }
             public string WebZ { get; set; }
         }
 
-        private class WebData1stLevel
+        public class WebData1stLevel
         {
             public bool WebIsRemoved { get; set; }
             public string WebS { get; set; }
             public WebData2ndLevel[] WebItemz { get; set; }
         }
 
-        private class WebData
+        public class WebData
         {
             public WebData1stLevel[] WebItems { get; set; }
         }
 
-        private class ModelData2ndLevel
+        public class ModelData2ndLevel
         {
             public int ModelA { get; set; }
             public int ModelB { get; set; }
             public string ModelZ { get; set; }
         }
 
-        private class ModelData1stLevel
+        public class ModelData1stLevel
         {
             public int ModelX { get; set; }
             public int ModelY { get; set; }
@@ -807,12 +807,12 @@ namespace Mutators.Tests
             public ModelData2ndLevel[] ModelItemz { get; set; }
         }
 
-        private class ModelData
+        public class ModelData
         {
             public ModelData1stLevel[] ModelItems { get; set; }
         }
 
-        private class TestMutatorsContext : MutatorsContext
+        public class TestMutatorsContext : MutatorsContext
         {
             public override string GetKey()
             {
@@ -822,24 +822,24 @@ namespace Mutators.Tests
             public string Key { get; set; }
         }
 
-        private class CommonClassA
+        public class CommonClassA
         {
             public CommonClassB B { get; set; }
             public string S { get; set; }
         }
 
-        private class CommonClassB
+        public class CommonClassB
         {
             public CommonClassC C { get; set; }
             public string S { get; set; }
         }
 
-        private class CommonClassC
+        public class CommonClassC
         {
             public string S { get; set; }
         }
 
-        private class TestData
+        public class TestData
         {
             public string S { get; set; }
             public string F { get; set; }
@@ -856,14 +856,14 @@ namespace Mutators.Tests
             public Dictionary<string, string> Dict { get; set; }
         }
 
-        private class A
+        public class A
         {
             public B[] B { get; set; }
             public int? Z { get; set; }
             public string S;
         }
 
-        private class B
+        public class B
         {
             public CommonClassA A { get; set; }
             public string S { get; set; }
@@ -873,32 +873,32 @@ namespace Mutators.Tests
             public C C { get; set; }
         }
 
-        private class C
+        public class C
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public D[] D { get; set; }
         }
 
-        private class D
+        public class D
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public E E { get; set; }
         }
 
-        private class E
+        public class E
         {
             public string S { get; set; }
             public int X { get; set; }
             public Empty Empty { get; set; }
         }
 
-        private class Empty
+        public class Empty
         {
         }
 
-        private class TestData2
+        public class TestData2
         {
             public string S { get; set; }
 
@@ -912,21 +912,21 @@ namespace Mutators.Tests
             public int Q { get; set; }
         }
 
-        private class T
+        public class T
         {
             public R[] R { get; set; }
             public int? Z { get; set; }
             public string S;
         }
 
-        private class R
+        public class R
         {
             public CommonClassA A { get; set; }
             public U U { get; set; }
             public string S { get; set; }
         }
 
-        private class U
+        public class U
         {
             public string S { get; set; }
             public int? Z { get; set; }
@@ -934,33 +934,33 @@ namespace Mutators.Tests
             public V V { get; set; }
         }
 
-        private class V
+        public class V
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public X[] X { get; set; }
         }
 
-        private class X
+        public class X
         {
             public W W { get; set; }
             public string S { get; set; }
         }
 
-        private class W
+        public class W
         {
             public string S { get; set; }
             public int? Z { get; set; }
             public Y Y { get; set; }
         }
 
-        private class Y
+        public class Y
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private class TestData3
+        public class TestData3
         {
             public string S { get; set; }
             public int X { get; set; }

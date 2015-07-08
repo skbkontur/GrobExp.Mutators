@@ -380,6 +380,12 @@
             </summary>
             <param name="value">The value to push.</param>
         </member>
+        <member name="M:GrEmit.GroboIL.Ldc_IntPtr(System.IntPtr)">
+            <summary>
+                Pushes a supplied value of type native int onto the evaluation stack.
+            </summary>
+            <param name="value">The value to push.</param>
+        </member>
         <member name="M:GrEmit.GroboIL.Ldlen">
             <summary>
                 Pushes the number of elements of a zero-based, one-dimensional array onto the evaluation stack.

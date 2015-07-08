@@ -15,7 +15,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         public static Type BuildDynamicMethodInvoker(Type[] constantTypes, Type resultType, Type[] parameterTypes)
         {
-            string key = GetKey(constantTypes, resultType, parameterTypes);
+            var key = GetKey(constantTypes, resultType, parameterTypes);
             var type = (Type)types[key];
             if(type == null)
             {
@@ -45,25 +45,25 @@ namespace GrobExp.Compiler.ExpressionEmitters
         {
             var typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
             var names = new List<string>();
-            for(int i = 0; i < numberOfConstants; ++i)
+            for(var i = 0; i < numberOfConstants; ++i)
                 names.Add("TConst" + (i + 1));
-            for(int i = 0; i < numberOfParameters; ++i)
+            for(var i = 0; i < numberOfParameters; ++i)
                 names.Add("TParam" + (i + 1));
             if(!returnsVoid)
                 names.Add("TResult");
             var genericParameters = typeBuilder.DefineGenericParameters(names.ToArray());
             var constantTypes = genericParameters.Take(numberOfConstants).Cast<Type>().ToArray();
             var parameterTypes = genericParameters.Skip(numberOfConstants).Take(numberOfParameters).Cast<Type>().ToArray();
-            Type genericResultType = returnsVoid ? typeof(void) : genericParameters.Last();
+            var resultType = returnsVoid ? typeof(void) : genericParameters.Last();
             var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
             var constantFields = new List<FieldInfo>();
-            for (int i = 0; i < numberOfConstants; ++i)
+            for(var i = 0; i < numberOfConstants; ++i)
                 constantFields.Add(typeBuilder.DefineField("const_" + (i + 1), constantTypes[i], FieldAttributes.Public));
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, constantTypes.Concat(new[] {typeof(IntPtr)}).ToArray());
             using(var il = new GroboIL(constructor))
             {
-                for(int i = 0; i < numberOfConstants; ++i)
+                for(var i = 0; i < numberOfConstants; ++i)
                 {
                     il.Ldarg(0); // stack: [this]
                     il.Ldarg(i + 1); // stack: [this, arg_{i+1}]
@@ -75,19 +75,19 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Ret();
             }
 
-            var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, genericResultType, parameterTypes);
+            var method = typeBuilder.DefineMethod("Invoke", MethodAttributes.Public, resultType, parameterTypes);
             using(var il = new GroboIL(method))
             {
-                for (int i = 0; i < numberOfConstants; ++i)
+                for(var i = 0; i < numberOfConstants; ++i)
                 {
                     il.Ldarg(0); // stack: [this]
                     il.Ldfld(constantFields[i]); // stack: [this.const_{i+1}]
                 }
-                for(int i = 0; i < parameterTypes.Length; ++i)
+                for(var i = 0; i < numberOfParameters; ++i)
                     il.Ldarg(i + 1);
                 il.Ldarg(0);
                 il.Ldfld(methodField);
-                il.Calli(CallingConventions.Standard, genericResultType, genericParameters.Take(genericParameters.Length - 1).Cast<Type>().ToArray());
+                il.Calli(CallingConventions.Standard, resultType, constantTypes.Concat(parameterTypes).ToArray());
                 il.Ret();
             }
 
@@ -97,8 +97,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
         private static string GetKey(Type[] constantTypes, Type resultType, Type[] parameterTypes)
         {
             return resultType == typeof(void)
-                ? string.Format("ActionInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length)
-                : string.Format("FuncInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length);
+                       ? string.Format("ActionInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length)
+                       : string.Format("FuncInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length);
         }
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()
@@ -107,18 +107,18 @@ namespace GrobExp.Compiler.ExpressionEmitters
             using(var il = new GroboIL(method))
             {
                 il.Ldarg(0); // stack: [dynamicMethod]
-                MethodInfo getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
+                var getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
                 if(getMethodDescriptorMethod == null)
                     throw new MissingMethodException(typeof(DynamicMethod).Name, "GetMethodDescriptor");
                 il.Call(getMethodDescriptorMethod); // stack: [dynamicMethod.GetMethodDescriptor()]
                 var runtimeMethodHandle = il.DeclareLocal(typeof(RuntimeMethodHandle));
                 il.Stloc(runtimeMethodHandle); // runtimeMethodHandle = dynamicMethod.GetMethodDescriptor(); stack: []
                 il.Ldloc(runtimeMethodHandle); // stack: [runtimeMethodHandle]
-                MethodInfo prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] {typeof(RuntimeMethodHandle)});
+                var prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] {typeof(RuntimeMethodHandle)});
                 if(prepareMethodMethod == null)
                     throw new MissingMethodException(typeof(RuntimeHelpers).Name, "PrepareMethod");
                 il.Call(prepareMethodMethod); // RuntimeHelpers.PrepareMethod(runtimeMethodHandle)
-                MethodInfo getFunctionPointerMethod = typeof(RuntimeMethodHandle).GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public);
+                var getFunctionPointerMethod = typeof(RuntimeMethodHandle).GetMethod("GetFunctionPointer", BindingFlags.Instance | BindingFlags.Public);
                 if(getFunctionPointerMethod == null)
                     throw new MissingMethodException(typeof(RuntimeMethodHandle).Name, "GetFunctionPointer");
                 il.Ldloca(runtimeMethodHandle); // stack: [&runtimeMethodHandle]

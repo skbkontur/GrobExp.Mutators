@@ -18,7 +18,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 if(!context.Labels.TryGetValue(node.ContinueLabel, out continueLabel))
                     context.Labels.Add(node.ContinueLabel, continueLabel = context.Il.DefineLabel(string.IsNullOrEmpty(node.ContinueLabel.Name) ? "continue" : node.ContinueLabel.Name));
             }
-            context.Il.MarkLabel(continueLabel);
+            context.MarkLabelAndSurroundWithSP(continueLabel);
             GroboIL.Label breakLabel;
             if(node.BreakLabel == null)
                 breakLabel = null;
@@ -39,7 +39,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             }
             il.Br(continueLabel);
             if(breakLabel != null)
-                il.MarkLabel(breakLabel);
+                context.MarkLabelAndSurroundWithSP(breakLabel);
             if(node.BreakLabel != null)
                 resultType = node.BreakLabel.Type;
             return false;

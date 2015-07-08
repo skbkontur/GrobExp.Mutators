@@ -41,12 +41,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
             il.Br(valueIsNotNullLabel);
             if(labelUsed)
             {
-                il.MarkLabel(valueIsNullLabel);
+                context.MarkLabelAndSurroundWithSP(valueIsNullLabel);
                 il.Pop();
             }
             Type rightType;
             var result = ExpressionEmittersCollection.Emit(right, context, returnDefaultValueLabel, out rightType);
-            il.MarkLabel(valueIsNotNullLabel);
+            context.MarkLabelAndSurroundWithSP(valueIsNotNullLabel);
             resultType = node.Type;
             return result;
             // ReSharper restore HeuristicUnreachableCode

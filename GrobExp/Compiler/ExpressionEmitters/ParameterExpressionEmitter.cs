@@ -28,7 +28,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Il.Ldarga(index);
                     context.Create(node.Type);
                     context.Il.Stind(node.Type);
-                    context.Il.MarkLabel(parameterIsNotNullLabel);
+                    context.MarkLabelAndSurroundWithSP(parameterIsNotNullLabel);
                 }
 
                 switch(whatReturn)
@@ -68,7 +68,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Il.Brtrue(parameterIsNotNullLabel);
                     context.Create(node.Type);
                     context.Il.Stloc(variable);
-                    context.Il.MarkLabel(parameterIsNotNullLabel);
+                    context.MarkLabelAndSurroundWithSP(parameterIsNotNullLabel);
                 }
                 switch(whatReturn)
                 {

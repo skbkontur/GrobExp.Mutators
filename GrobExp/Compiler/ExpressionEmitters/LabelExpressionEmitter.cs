@@ -17,7 +17,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             GroboIL.Label label;
             if(!context.Labels.TryGetValue(node.Target, out label))
                 context.Labels.Add(node.Target, label = context.Il.DefineLabel(node.Target.Name));
-            context.Il.MarkLabel(label);
+            context.MarkLabelAndSurroundWithSP(label);
             return result;
         }
     }

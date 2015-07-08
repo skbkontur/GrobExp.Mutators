@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -97,7 +98,7 @@ namespace GrobExp.Compiler
                 il.Ret();
                 if(labelUsed)
                 {
-                    il.MarkLabel(returnDefaultValueLabel);
+                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
                     il.Pop();
                     if(returnType != typeof(void))
                     {
@@ -167,9 +168,9 @@ namespace GrobExp.Compiler
                         il.Stloc(temp);
                 }
                 il.Ret();
-                if(labelUsed)
+                if (labelUsed)
                 {
-                    il.MarkLabel(returnDefaultValueLabel);
+                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
                     il.Pop();
                     if(returnType != typeof(void))
                     {

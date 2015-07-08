@@ -52,9 +52,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         else throw new InvalidOperationException("Cannot perform operation '" + node.NodeType + "' to a type '" + operandType + "'");
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
-                        il.MarkLabel(returnFalseLabel);
+                        context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                         il.Ldc_I4(0);
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                     }
                 }
             }
@@ -165,9 +165,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Newobj(operandType.GetConstructor(new[] {argumentType}));
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
-                        il.MarkLabel(returnNullLabel);
+                        context.MarkLabelAndSurroundWithSP(returnNullLabel);
                         context.EmitLoadDefaultValue(operandType);
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                     }
                 }
             }

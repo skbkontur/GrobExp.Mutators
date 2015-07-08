@@ -76,12 +76,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "set_" + node.Indexer.Name);
                             context.Il.Call(setter, node.Object.Type); // dict.set_Item(key, default(valueType)); stack: []
                         }
-                        context.Il.MarkLabel(loadResultLabel);
+                        context.MarkLabelAndSurroundWithSP(loadResultLabel);
                         context.Il.Ldloc(value);
                     }
                 }
                 if(doneLabel != null)
-                    context.Il.MarkLabel(doneLabel);
+                    context.MarkLabelAndSurroundWithSP(doneLabel);
                 else
                     context.Il.Call(getter, node.Object.Type);
             }

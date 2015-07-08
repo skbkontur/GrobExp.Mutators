@@ -59,13 +59,13 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Call(node.Method);
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
-                        il.MarkLabel(notEqualLabel);
+                        context.MarkLabelAndSurroundWithSP(notEqualLabel);
                         il.Pop();
                         il.Ldc_I4(node.NodeType == ExpressionType.Equal ? 0 : 1);
                         il.Br(doneLabel);
-                        il.MarkLabel(equalLabel);
+                        context.MarkLabelAndSurroundWithSP(equalLabel);
                         il.Ldc_I4(node.NodeType == ExpressionType.Equal ? 1 : 0);
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                     }
                     else
                     {
@@ -82,9 +82,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Ceq();
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
-                        il.MarkLabel(notEqualLabel);
+                        context.MarkLabelAndSurroundWithSP(notEqualLabel);
                         il.Ldc_I4(0);
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                         if(node.NodeType == ExpressionType.NotEqual)
                         {
                             il.Ldc_I4(1);

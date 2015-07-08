@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.SymbolStore;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -29,6 +31,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
 //            context.Il.Nop();
             markSequencePoint(context.DebugInfoGenerator, context.Lambda, context.Method, context.Il, debugInfo);
             context.Il.Nop();
+            //context.Il.Ldc_I4(1);
+            //var continueLabel = context.Il.DefineLabel("continue");
+            //context.Il.Brtrue(continueLabel);
+            //context.MarkLabelAndSurroundWithSP(continueLabel);
             return result;
         }
 

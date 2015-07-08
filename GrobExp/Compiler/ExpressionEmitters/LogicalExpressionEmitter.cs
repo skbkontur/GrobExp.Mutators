@@ -29,11 +29,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         context.EmitLoadArgument(right, false, out rightType); // stack: [right]
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel); // goto done; stack: [right]
-                        il.MarkLabel(returnFalseLabel);
+                        context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                         il.Ldc_I4(0); // stack: [false]
                         if(rightType == typeof(bool?))
                             il.Newobj(nullableBoolConstructor); // stack: [new bool?(false)]
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                         resultType = rightType;
                         break;
                     }
@@ -45,11 +45,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         context.EmitLoadArgument(right, false, out rightType); // stack: [right]
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel); // goto done; stack: [right]
-                        il.MarkLabel(returnTrueLabel);
+                        context.MarkLabelAndSurroundWithSP(returnTrueLabel);
                         il.Ldc_I4(1); // stack: [true]
                         if(rightType == typeof(bool?))
                             il.Newobj(nullableBoolConstructor); // stack: [new bool?(true)]
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                         resultType = rightType;
                         break;
                     }
@@ -118,14 +118,14 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 il.Brtrue(returnLeftLabel); // if(localRight == true) goto returnLeft;
                                 il.Ldloca(localLeft); // stack: [&localLeft]
                                 il.Initobj(typeof(bool?)); // localLeft = default(bool?); stack: []
-                                il.MarkLabel(returnLeftLabel);
+                                context.MarkLabelAndSurroundWithSP(returnLeftLabel);
                                 il.Ldloc(localLeft); // stack: [localLeft]
                                 var doneLabel = il.DefineLabel("done");
                                 il.Br(doneLabel);
-                                il.MarkLabel(returnFalseLabel);
+                                context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                                 il.Ldc_I4(0); // stack: [false]
                                 il.Newobj(nullableBoolConstructor); // new bool?(false)
-                                il.MarkLabel(doneLabel);
+                                context.MarkLabelAndSurroundWithSP(doneLabel);
                                 resultType = typeof(bool?);
                             }
                         }
@@ -186,14 +186,14 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 il.Brfalse(returnLeftLabel); // if(localRight == false) goto returnLeft;
                                 il.Ldloca(localLeft); // stack: [&localLeft]
                                 il.Initobj(typeof(bool?)); // localLeft = default(bool?); stack: []
-                                il.MarkLabel(returnLeftLabel);
+                                context.MarkLabelAndSurroundWithSP(returnLeftLabel);
                                 il.Ldloc(localLeft); // stack: [localLeft]
                                 var doneLabel = il.DefineLabel("done");
                                 il.Br(doneLabel);
-                                il.MarkLabel(returnTrueLabel);
+                                context.MarkLabelAndSurroundWithSP(returnTrueLabel);
                                 il.Ldc_I4(1); // stack: [true]
                                 il.Newobj(nullableBoolConstructor); // new bool?(true)
-                                il.MarkLabel(doneLabel);
+                                context.MarkLabelAndSurroundWithSP(doneLabel);
                                 resultType = typeof(bool?);
                             }
                         }

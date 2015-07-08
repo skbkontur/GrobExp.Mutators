@@ -180,12 +180,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     var doneLabel = il.DefineLabel("done");
                     il.Br(doneLabel);
-                    il.MarkLabel(returnNullLabel);
+                    context.MarkLabelAndSurroundWithSP(returnNullLabel);
                     if(assigneeType != null)
                         il.Pop();
                     if(whatReturn != ResultType.Void)
                         il.Ldloc(value);
-                    il.MarkLabel(doneLabel);
+                    context.MarkLabelAndSurroundWithSP(doneLabel);
                 }
             }
             resultType = whatReturn == ResultType.Void ? typeof(void) : operand.Type;

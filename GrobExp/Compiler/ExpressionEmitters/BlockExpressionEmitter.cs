@@ -37,14 +37,14 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 {
                     var doneLabel = il.DefineLabel("done");
                     il.Br(doneLabel);
-                    il.MarkLabel(valueIsNullLabel);
+                    context.MarkLabelAndSurroundWithSP(valueIsNullLabel);
                     il.Pop();
                     if(resultType != typeof(void) && index == node.Expressions.Count - 1)
                     {
                         // return default value for the last expression in the block
                         context.EmitLoadDefaultValue(resultType);
                     }
-                    il.MarkLabel(doneLabel);
+                    context.MarkLabelAndSurroundWithSP(doneLabel);
                 }
             }
             if(node.Type == typeof(bool) && resultType == typeof(bool?))

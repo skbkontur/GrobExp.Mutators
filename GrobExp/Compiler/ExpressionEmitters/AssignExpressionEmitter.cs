@@ -130,9 +130,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         EmitAssign(assigneeKind, left, context, null, right);
                         var returnLabel = il.DefineLabel("return");
                         il.Br(returnLabel);
-                        il.MarkLabel(skipAssigneeLabel);
+                        context.MarkLabelAndSurroundWithSP(skipAssigneeLabel);
                         il.Pop();
-                        il.MarkLabel(returnLabel);
+                        context.MarkLabelAndSurroundWithSP(returnLabel);
                     }
                     else
                     {
@@ -153,9 +153,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             EmitAssign(assigneeKind, left, context, null, value);
                             var returnValueLabel = il.DefineLabel("returnValue");
                             il.Br(returnValueLabel);
-                            il.MarkLabel(skipAssigneeLabel);
+                            context.MarkLabelAndSurroundWithSP(skipAssigneeLabel);
                             il.Pop();
-                            il.MarkLabel(returnValueLabel);
+                            context.MarkLabelAndSurroundWithSP(returnValueLabel);
                             il.Ldloc(value);
                         }
                     }

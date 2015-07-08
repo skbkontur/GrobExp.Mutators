@@ -58,9 +58,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
                         var doneLabel = il.DefineLabel("done");
                         il.Br(doneLabel);
-                        il.MarkLabel(returnNullLabel);
+                        context.MarkLabelAndSurroundWithSP(returnNullLabel);
                         context.EmitLoadDefaultValue(node.Type);
-                        il.MarkLabel(doneLabel);
+                        context.MarkLabelAndSurroundWithSP(doneLabel);
                     }
                 }
                 resultType = node.Method.ReturnType;
@@ -135,9 +135,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             il.And();
                             var doneLabel = il.DefineLabel("done");
                             il.Br(doneLabel);
-                            il.MarkLabel(returnFalseLabel);
+                            context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                             il.Ldc_I4(0);
-                            il.MarkLabel(doneLabel);
+                            context.MarkLabelAndSurroundWithSP(doneLabel);
                             resultType = typeof(bool);
                         }
                     }
@@ -186,9 +186,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
                             var doneLabel = il.DefineLabel("done");
                             il.Br(doneLabel);
-                            il.MarkLabel(returnNullLabel);
+                            context.MarkLabelAndSurroundWithSP(returnNullLabel);
                             context.EmitLoadDefaultValue(typeof(bool?));
-                            il.MarkLabel(doneLabel);
+                            context.MarkLabelAndSurroundWithSP(doneLabel);
                             resultType = typeof(bool?);
                         }
                     }

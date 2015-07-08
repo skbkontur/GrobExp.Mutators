@@ -23,31 +23,31 @@ namespace GrobExp.Compiler
 
         public static bool Unsigned(this Type type)
         {
-            if (type == typeof(IntPtr))
+            if(type == typeof(IntPtr))
                 return false;
-            if (type == typeof(UIntPtr))
+            if(type == typeof(UIntPtr))
                 return true;
-            switch (Type.GetTypeCode(type))
+            switch(Type.GetTypeCode(type))
             {
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                    return true;
-                case TypeCode.SByte:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                case TypeCode.Single:
-                case TypeCode.Double:
-                    return false;
-                default:
-                    throw new InvalidOperationException(string.Format("Type '{0}' cannot be used in comparison operations", type));
+            case TypeCode.Boolean:
+            case TypeCode.Byte:
+            case TypeCode.Char:
+            case TypeCode.UInt16:
+            case TypeCode.UInt32:
+            case TypeCode.UInt64:
+                return true;
+            case TypeCode.SByte:
+            case TypeCode.Int16:
+            case TypeCode.Int32:
+            case TypeCode.Int64:
+            case TypeCode.Single:
+            case TypeCode.Double:
+                return false;
+            default:
+                throw new InvalidOperationException(string.Format("Type '{0}' cannot be used in comparison operations", type));
             }
         }
-        
+
         public static Type GetDelegateType(Type[] parameterTypes, Type returnType)
         {
             if(returnType == typeof(void))

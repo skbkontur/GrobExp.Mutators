@@ -42,10 +42,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Ceq();
                 var doneLabel = il.DefineLabel("done");
                 il.Br(doneLabel);
-                il.MarkLabel(returnFalseLabel);
+                context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                 il.Pop();
                 il.Ldc_I4(0);
-                il.MarkLabel(doneLabel);
+                context.MarkLabelAndSurroundWithSP(doneLabel);
             }
             resultType = typeof(bool);
             return result;

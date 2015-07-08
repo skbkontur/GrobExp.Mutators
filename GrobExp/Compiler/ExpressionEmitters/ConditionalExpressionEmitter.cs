@@ -1,5 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using GrEmit;
 
@@ -40,10 +46,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
             il.Br(doneLabel);
             if(testIsNullLabelUsed)
             {
-                il.MarkLabel(testIsNullLabel);
+                context.MarkLabelAndSurroundWithSP(testIsNullLabel);
                 il.Pop();
             }
-            il.MarkLabel(ifFalseLabel);
+            context.MarkLabelAndSurroundWithSP(ifFalseLabel);
             Type ifFalseType;
             result |= ExpressionEmittersCollection.Emit(ifFalse, context, returnDefaultValueLabel, whatReturn, extend, out ifFalseType);
             if(node.Type == typeof(void) && ifFalseType != typeof(void))
@@ -51,7 +57,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var temp = context.DeclareLocal(ifFalseType))
                     il.Stloc(temp);
             }
-            il.MarkLabel(doneLabel);
+            var symbolDocumentGeneratorType = typeof(DebugInfoGenerator).Assembly.GetTypes().FirstOrDefault(type => type.Name == "SymbolDocumentGenerator");
+            var dict = (Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter>)symbolDocumentGeneratorType.GetField("_symbolWriters", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context.DebugInfoGenerator);
+            il.MarkSequencePoint(dict.Values.Single(), 0xFeeFee, 1, 0xFeeFee, 100);
+            ((ILGenerator)typeof(GroboIL).GetField("il", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(il)).Emit(OpCodes.Nop);
+            context.MarkLabelAndSurroundWithSP(doneLabel);
             resultType = node.Type;
             return result;
         }

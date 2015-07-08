@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -12,6 +13,28 @@ namespace GrobExp.Compiler
 {
     internal class EmittingContext
     {
+        public void MarkHiddenSP()
+        {
+            if (DebugInfoGenerator != null)
+            {
+                if (symbolDocumentWriter == null)
+                {
+                    var symbolDocumentGeneratorType = typeof(DebugInfoGenerator).Assembly.GetTypes().FirstOrDefault(type => type.Name == "SymbolDocumentGenerator");
+                    var dict = (Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter>)symbolDocumentGeneratorType.GetField("_symbolWriters", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(DebugInfoGenerator);
+                    symbolDocumentWriter = dict.Values.Single();
+                }
+                Il.MarkSequencePoint(symbolDocumentWriter, 0xFeeFee, 1, 0xFeeFee, 100);
+                Il.Nop();
+            }
+        }
+
+        public void MarkLabelAndSurroundWithSP(GroboIL.Label label)
+        {
+            MarkHiddenSP();
+            Il.MarkLabel(label);
+            MarkHiddenSP();
+        }
+
         public bool EmitNullChecking(Type type, GroboIL.Label objIsNullLabel)
         {
             if(!type.IsValueType)
@@ -131,7 +154,7 @@ namespace GrobExp.Compiler
                         EmitMemberAssign(type, node.Member);
                         il.Ldloc(newobj);
                     }
-                    il.MarkLabel(memberIsNotNullLabel);
+                    MarkLabelAndSurroundWithSP(memberIsNotNullLabel);
                 }
                 else
                 {
@@ -152,7 +175,7 @@ namespace GrobExp.Compiler
                         EmitMemberAssign(type, node.Member);
                         il.Ldloc(newobj);
                     }
-                    il.MarkLabel(memberIsNotNullLabel);
+                    MarkLabelAndSurroundWithSP(memberIsNotNullLabel);
                 }
             }
             return result;
@@ -280,10 +303,10 @@ namespace GrobExp.Compiler
         public void EmitReturnDefaultValue(Type type, GroboIL.Label valueIsNullLabel, GroboIL.Label valueIsNotNullLabel)
         {
             Il.Br(valueIsNotNullLabel);
-            Il.MarkLabel(valueIsNullLabel);
+            MarkLabelAndSurroundWithSP(valueIsNullLabel);
             Il.Pop();
             EmitLoadDefaultValue(type);
-            Il.MarkLabel(valueIsNotNullLabel);
+            MarkLabelAndSurroundWithSP(valueIsNotNullLabel);
         }
 
         public void EmitArithmeticOperation(ExpressionType nodeType, Type resultType, Type leftType, Type rightType, MethodInfo method)
@@ -344,9 +367,9 @@ namespace GrobExp.Compiler
 
                     var doneLabel = Il.DefineLabel("done");
                     Il.Br(doneLabel);
-                    Il.MarkLabel(returnNullLabel);
+                    MarkLabelAndSurroundWithSP(returnNullLabel);
                     EmitLoadDefaultValue(resultType);
-                    Il.MarkLabel(doneLabel);
+                    MarkLabelAndSurroundWithSP(doneLabel);
                 }
             }
         }
@@ -395,9 +418,9 @@ namespace GrobExp.Compiler
                                 Il.Newobj(to.GetConstructor(new[] {toArgument}));
                                 var doneLabel = Il.DefineLabel("done");
                                 Il.Br(doneLabel);
-                                Il.MarkLabel(valueIsNullLabel);
+                                MarkLabelAndSurroundWithSP(valueIsNullLabel);
                                 EmitLoadDefaultValue(to);
-                                Il.MarkLabel(doneLabel);
+                                MarkLabelAndSurroundWithSP(doneLabel);
                             }
                         }
                         else
@@ -422,9 +445,9 @@ namespace GrobExp.Compiler
                                 EmitConvert(fromArgument, to, check);
                             var doneLabel = Il.DefineLabel("done");
                             Il.Br(doneLabel);
-                            Il.MarkLabel(valueIsNullLabel);
+                            MarkLabelAndSurroundWithSP(valueIsNullLabel);
                             EmitLoadDefaultValue(to);
-                            Il.MarkLabel(doneLabel);
+                            MarkLabelAndSurroundWithSP(doneLabel);
                         }
                     }
                     else if(to.IsEnum || to == typeof(Enum))
@@ -473,6 +496,7 @@ namespace GrobExp.Compiler
         public CompilerOptions Options { get; set; }
         public TypeBuilder TypeBuilder { get; set; }
         public DebugInfoGenerator DebugInfoGenerator { get; set; }
+        private ISymbolDocumentWriter symbolDocumentWriter;
         public LambdaExpression Lambda { get; set; }
         public MethodInfo Method { get; set; }
         public bool SkipVisibility { get; set; }

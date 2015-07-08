@@ -38,7 +38,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Xor();
                     il.Newobj(nullableBoolConstructor);
                     il.Stloc(value);
-                    il.MarkLabel(returnLabel);
+                    context.MarkLabelAndSurroundWithSP(returnLabel);
                     il.Ldloc(value);
                 }
             }

@@ -18,7 +18,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             if(resultType == typeof(void))
             {
                 if(returnDefaultValueLabelUsed)
-                    il.MarkLabel(returnDefaultValueLabel);
+                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
                 il.Leave(doneLabel);
             }
             else
@@ -28,7 +28,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Leave(doneLabel);
                 if(returnDefaultValueLabelUsed)
                 {
-                    il.MarkLabel(returnDefaultValueLabel);
+                    context.MarkLabelAndSurroundWithSP(returnDefaultValueLabel);
                     if(resultType.IsValueType)
                     {
                         il.Ldloca(retValue);
@@ -82,7 +82,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Ldc_I4(0);
                     var endFilterLabel = il.DefineLabel("endFilter");
                     il.Br(endFilterLabel);
-                    il.MarkLabel(rightTypeLabel);
+                    context.MarkLabelAndSurroundWithSP(rightTypeLabel);
                     if(variable == null)
                         il.Pop();
                     else
@@ -110,11 +110,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     if(returnFalseLabelUsed)
                     {
                         il.Br(endFilterLabel);
-                        il.MarkLabel(returnFalseLabel);
+                        context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                         il.Pop();
                         il.Ldc_I4(0);
                     }
-                    il.MarkLabel(endFilterLabel);
+                    context.MarkLabelAndSurroundWithSP(endFilterLabel);
                     il.BeginCatchBlock(null);
                     il.Pop();
                 }
@@ -145,7 +145,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
             il.EndExceptionBlock();
 
-            il.MarkLabel(doneLabel);
+            context.MarkLabelAndSurroundWithSP(doneLabel);
             if(retValue != null)
             {
                 il.Ldloc(retValue);
@@ -175,9 +175,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                 }
                 il.Br(endLabel);
-                il.MarkLabel(skipLabel);
+                context.MarkLabelAndSurroundWithSP(skipLabel);
                 il.Pop();
-                il.MarkLabel(endLabel);
+                context.MarkLabelAndSurroundWithSP(endLabel);
             }
         }
     }

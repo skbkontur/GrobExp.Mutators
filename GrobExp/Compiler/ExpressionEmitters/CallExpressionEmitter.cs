@@ -61,7 +61,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Pop();
                         il.Ldc_I4(0);
                         il.Newarr(GetElementType(type));
-                        il.MarkLabel(arrIsNotNullLabel);
+                        context.MarkLabelAndSurroundWithSP(arrIsNotNullLabel);
                     }
                 }
             }

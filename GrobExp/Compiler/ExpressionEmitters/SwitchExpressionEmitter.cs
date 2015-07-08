@@ -162,23 +162,23 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 il.Ceq();
                             il.Brtrue(label);
                             if(elseLabel != null)
-                                il.MarkLabel(elseLabel);
+                                context.MarkLabelAndSurroundWithSP(elseLabel);
                         }
                     }
                 }
             }
-            il.MarkLabel(defaultLabel);
+            context.MarkLabelAndSurroundWithSP(defaultLabel);
             var doneLabel = il.DefineLabel("done");
             context.EmitLoadArguments(node.DefaultBody);
             il.Br(doneLabel);
             for(int index = 0; index < node.Cases.Count; ++index)
             {
-                il.MarkLabel(caseLabels[index]);
+                context.MarkLabelAndSurroundWithSP(caseLabels[index]);
                 context.EmitLoadArguments(node.Cases[index].Body);
                 if(index < node.Cases.Count - 1)
                     il.Br(doneLabel);
             }
-            il.MarkLabel(doneLabel);
+            context.MarkLabelAndSurroundWithSP(doneLabel);
             resultType = node.Type;
             return false;
         }

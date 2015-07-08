@@ -191,7 +191,7 @@ namespace Compiler.Tests
             var gen = DebugInfoGenerator.CreatePdbGenerator();
 
             //LambdaExpression lambda = Expression.Lambda(block);
-            LambdaCompiler.CompileToMethod(kek, meth, gen, CompilerOptions.All, "test_log.txt");
+            LambdaCompiler.CompileToMethod(kek, meth, gen, CompilerOptions.All);
             //lambda.CompileToMethod(meth, gen);
 
             //meth.DefineParameter(1, ParameterAttributes.In, "$x");

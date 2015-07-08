@@ -55,19 +55,24 @@ namespace Compiler.Tests
             }
         }
 
+        public static int? Zzz(object x)
+        {
+            if(x is int)
+                return (int)x;
+            return null;
+        }
+
         [Test, Ignore]
         public unsafe void TestWriteAssemblerCode()
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(IntPtr), new[] {typeof(int)}, typeof(string), true);
-            using(var il = new GroboIL(method))
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(object), new[] {typeof(object)}, typeof(string), true);
+            using(var il = new GroboIL(method, false))
             {
-                il.Ldnull();
                 il.Ldarg(0);
-                il.Sub();
-                il.Conv<IntPtr>();
+                il.Isinst(typeof(int?));
                 il.Ret();
             }
-            method.CreateDelegate(typeof(Func<int, IntPtr>));
+            method.CreateDelegate(typeof(Func<object, object>));
             var pointer = dynamicMethodPointerExtractor(method);
             var b = (byte*)pointer;
             for(int i = 0; i < 20; ++i)

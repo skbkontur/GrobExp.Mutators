@@ -25,6 +25,8 @@ namespace Compiler.Tests
             var parameter = Expression.Parameter(typeof(int));
             var exp = Expression.Lambda<Func<int, int?>>(Expression.TypeAs(parameter, typeof(int?)), parameter);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            int? x = f(5);
+            Console.WriteLine(x.GetType());
             Assert.AreEqual(5, f(5));
         }
 

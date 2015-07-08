@@ -37,14 +37,14 @@ namespace GrobExp.Compiler
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options, string filename = "1.txt")
         {
-            CompileToMethodInternal(lambda, method, null, options);
+            CompileToMethodInternal(lambda, method, null, options, filename);
         }
 
-        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
+        public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options, string filename = "1.txt")
         {
-            CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
+            CompileToMethodInternal(lambda, method, debugInfoGenerator, options, filename);
         }
 
         public static bool AnalyzeILStack = true;
@@ -208,6 +208,7 @@ namespace GrobExp.Compiler
             return assemblyBuilder;
         }
 
+        //TODO avoid hardcoded filename
         private static CompiledLambda CompileInternal(LambdaExpression lambda, DebugInfoGenerator debugInfoGenerator, out CompiledLambda[] subLambdas, CompilerOptions options)
         {
             var compiledLambdas = new List<CompiledLambda>();
@@ -219,17 +220,16 @@ namespace GrobExp.Compiler
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             //here
-            using (var writer = new StreamWriter("log.txt", false, Encoding.UTF8))
-                AdvancedDebugViewWriter.WriteTo(resolvedLambda, writer);
+            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, "1.txt");
             //here
-            var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
+            var compiledLambda = CompileInternal(res, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0)
                 BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
             return compiledLambda;
         }
 
-        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
+        private static void CompileToMethodInternal(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options, string filename = "1.txt")
         {
             var compiledLambdas = new List<CompiledLambda>();
             Type closureType;
@@ -244,9 +244,12 @@ namespace GrobExp.Compiler
             method.SetReturnType(lambda.ReturnType);
             method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            //here
+            var res = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, filename);
+            //here
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
-            CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
+            CompileInternal(res, debugInfoGenerator, closureType, closureParameter, switches, options, compiledLambdas, method);
         }
 
         private static Action<object, Delegate[]> BuildDelegatesFoister(Type type)

@@ -155,11 +155,11 @@ namespace Compiler.Tests
         {
             var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
 
-            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var mod = asm.DefineDynamicModule("mymod", "tmp2.dll", true);
             var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
             var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
 
-            var filename = "TestDebug2.txt";
+            var filename = "test_log.txt";
 
             var sdi = Expression.SymbolDocument(filename, Guid.Empty, Guid.Empty, Guid.Empty);
 
@@ -171,9 +171,9 @@ namespace Compiler.Tests
             var zero = Expression.Constant(0);
             var temp = Expression.Variable(typeof(int));
 
-            var tst = Expression.Block(typeof(bool), Expression.DebugInfo(sdi, 4, 13, 4, 19), new TypedDebugInfoExpression(sdi, Expression.Equal(variable, zero), 5, 9, 5, 10));
-            var iftrue = Expression.Block(Expression.DebugInfo(sdi, 7, 13, 7, 19), new TypedDebugInfoExpression(sdi, Expression.Add(variable, two), 8, 9, 8, 10));
-            var iffalse = Expression.Block(Expression.DebugInfo(sdi, 10, 13, 10, 19), new TypedDebugInfoExpression(sdi, Expression.Multiply(variable, two), 11, 9, 11, 10));
+            var tst = Expression.Block(Expression.DebugInfo(sdi, 4, 13, 4, 19), Expression.Equal(variable, zero)/*, new TypedDebugInfoExpression(sdi, Expression.Equal(variable, zero), 5, 9, 5, 10)*/);
+            var iftrue = Expression.Block(Expression.DebugInfo(sdi, 7, 13, 7, 19), Expression.Add(variable, two)/*new TypedDebugInfoExpression(sdi, Expression.Add(variable, two), 8, 9, 8, 10)*/);
+            var iffalse = Expression.Block(Expression.DebugInfo(sdi, 10, 13, 10, 19), Expression.Multiply(variable, two)/*, new TypedDebugInfoExpression(sdi, Expression.Multiply(variable, two), 11, 9, 11, 10)*/);
             //var iftrue = Expression.Block(Expression.DebugInfo(sdi, 10, 20, 10, 26), variable, Expression.DebugInfo(sdi, 10, 20, 10, 26));
             //var iffalse = Expression.Block(Expression.DebugInfo(sdi, 14, 20, 14, 26), variable, Expression.DebugInfo(sdi, 14, 20, 14, 26));
             var exp = Expression.Condition(tst, iftrue, iffalse);
@@ -188,19 +188,16 @@ namespace Compiler.Tests
             //var block = Expression.Block(Expression.DebugInfo(sdi, 4, 16, 17, 10), Expression.Assign(temp, exp)));
             var kek = Expression.Lambda(block, variable);
 
-            using (var writer = new StreamWriter(filename, false, Encoding.UTF8))
-            {
-                AdvancedDebugViewWriter.WriteTo(kek, writer);
-            }
-
             var gen = DebugInfoGenerator.CreatePdbGenerator();
 
             //LambdaExpression lambda = Expression.Lambda(block);
-            LambdaCompiler.CompileToMethod(kek, meth, gen, CompilerOptions.All);
+            LambdaCompiler.CompileToMethod(kek, meth, gen, CompilerOptions.All, "test_log.txt");
             //lambda.CompileToMethod(meth, gen);
 
+            //meth.DefineParameter(1, ParameterAttributes.In, "$x");
+
             var newtype = type.CreateType();
-            asm.Save("tmp.dll");
+            asm.Save("tmp2.dll");
             var res = newtype.GetMethod("go").Invoke(null, new object[] {0});
             //meth.Invoke(null, new object[0]);
             //lambda.DynamicInvoke(new object[0]);
@@ -217,6 +214,8 @@ namespace Compiler.Tests
             var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, typeof(int), new [] {typeof(int)});
 
             var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
+
+            meth.DefineParameter(1, ParameterAttributes.In, "$x");
 
             //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
 
@@ -250,30 +249,31 @@ namespace Compiler.Tests
 //done_8:                          // [Int32]
 //        ret                      // []
 
-                il.MarkSequencePoint(document, 4, 16, 15, 10);
-                //il.MarkSequencePoint(document, 6, 20, 6, 27);
-//                il.Nop();
-//                il.Nop();
+                il.MarkSequencePoint(document, 3, 9, 3, 15);
+                il.Nop();
+                il.MarkSequencePoint(document, 4, 13, 4, 19);
+                il.Nop();
                 il.Ldarg(0);
                 il.Ldc_I4(0);
                 il.Ceq();
                 var label = il.DefineLabel("ifFalse");
                 il.Brfalse(label);
-                il.MarkSequencePoint(document, 10, 20, 10, 26);
-//                il.Nop();
+                il.MarkSequencePoint(document, 7, 13, 7, 19);
+                il.Nop();
                 il.Ldarg(0);
                 il.Ldc_I4(2);
                 il.Add();
                 var doneLabel = il.DefineLabel("done");
                 il.Br(doneLabel);
                 il.MarkLabel(label);
-                il.MarkSequencePoint(document, 14, 20, 14, 26);
-//                il.Nop();
+                il.MarkSequencePoint(document, 10, 13, 10, 19);
+                il.Nop();
                 il.Ldarg(0);
-                il.Ldc_I4(4);
-                il.Div(false);
+                il.Ldc_I4(2);
+                il.Mul();
                 il.MarkLabel(doneLabel);
-                il.MarkSequencePoint(document, 16, 20, 16, 26);
+                il.MarkSequencePoint(document, 12, 5, 12, 6);
+                il.Nop();
                 il.Ret();
             }
             var newtype = type.CreateType();

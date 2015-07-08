@@ -21,6 +21,17 @@ namespace GrobExp.Compiler
             debugInfo = Expression.DebugInfo(Document, StartLine, StartColumn, EndLine, EndColumn);
         }
 
+        public TypedDebugInfoExpression(Expression expression, DebugInfoExpression debugInfo)
+        {
+            _document = debugInfo.Document;
+            this.expression = expression;
+            _startLine = debugInfo.StartLine;
+            _startColumn = debugInfo.StartColumn;
+            _endLine = debugInfo.EndLine;
+            _endColumn = debugInfo.EndColumn;
+            this.debugInfo = debugInfo;
+        }
+
         /// <summary>
         /// Gets the static type of the expression that this <see cref="Expression" /> represents. (Inherited from <see cref="Expression"/>.)
         /// </summary>

@@ -47,7 +47,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
             }
             var il = context.Il;
             var constantTypes = constantParameters.Select(exp => exp.Type).ToArray();
-            var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(constantTypes, node.Body.Type, parameterTypes);
+            var module = (ModuleBuilder)(context.TypeBuilder == null ? null : context.TypeBuilder.Module);
+            var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(module, constantTypes, node.Body.Type, parameterTypes);
             if(context.TypeBuilder != null)
                 il.Ldftn(compiledLambda.Method);
             else

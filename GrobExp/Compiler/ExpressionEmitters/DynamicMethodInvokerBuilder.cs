@@ -13,9 +13,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal static class DynamicMethodInvokerBuilder
     {
-        public static Type BuildDynamicMethodInvoker(Type[] constantTypes, Type resultType, Type[] parameterTypes)
+        public static Type BuildDynamicMethodInvoker(ModuleBuilder module, Type[] constantTypes, Type resultType, Type[] parameterTypes)
         {
-            var key = GetKey(constantTypes, resultType, parameterTypes);
+            var key = GetKey(module, constantTypes, resultType, parameterTypes);
             var type = (Type)types[key];
             if(type == null)
             {
@@ -24,7 +24,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     type = (Type)types[key];
                     if(type == null)
                     {
-                        type = BuildDynamicMethodInvoker(key, constantTypes.Length, parameterTypes.Length, resultType == typeof(void));
+                        type = BuildDynamicMethodInvoker(module ?? LambdaCompiler.Module, key, constantTypes.Length, parameterTypes.Length, resultType == typeof(void));
                         types[key] = type;
                     }
                 }
@@ -41,9 +41,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
         public static readonly Func<DynamicMethod, IntPtr> DynamicMethodPointerExtractor = EmitDynamicMethodPointerExtractor();
 
-        private static Type BuildDynamicMethodInvoker(string name, int numberOfConstants, int numberOfParameters, bool returnsVoid)
+        private static Type BuildDynamicMethodInvoker(ModuleBuilder module, string name, int numberOfConstants, int numberOfParameters, bool returnsVoid)
         {
-            var typeBuilder = LambdaCompiler.Module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
+            var typeBuilder = module.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
             var names = new List<string>();
             for(var i = 0; i < numberOfConstants; ++i)
                 names.Add("TConst" + (i + 1));
@@ -94,11 +94,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
             return typeBuilder.CreateType();
         }
 
-        private static string GetKey(Type[] constantTypes, Type resultType, Type[] parameterTypes)
+        private static string GetKey(ModuleBuilder module, Type[] constantTypes, Type resultType, Type[] parameterTypes)
         {
             return resultType == typeof(void)
-                       ? string.Format("ActionInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length)
-                       : string.Format("FuncInvoker_{0}_{1}", constantTypes.Length, parameterTypes.Length);
+                       ? string.Format("{0}_ActionInvoker_{1}_{2}", module.MetadataToken, constantTypes.Length, parameterTypes.Length)
+                       : string.Format("{0}_FuncInvoker_{1}_{2}", module.MetadataToken, constantTypes.Length, parameterTypes.Length);
         }
 
         private static Func<DynamicMethod, IntPtr> EmitDynamicMethodPointerExtractor()

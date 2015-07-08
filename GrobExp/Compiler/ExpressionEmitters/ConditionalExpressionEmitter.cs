@@ -57,10 +57,6 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var temp = context.DeclareLocal(ifFalseType))
                     il.Stloc(temp);
             }
-            var symbolDocumentGeneratorType = typeof(DebugInfoGenerator).Assembly.GetTypes().FirstOrDefault(type => type.Name == "SymbolDocumentGenerator");
-            var dict = (Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter>)symbolDocumentGeneratorType.GetField("_symbolWriters", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context.DebugInfoGenerator);
-            il.MarkSequencePoint(dict.Values.Single(), 0xFeeFee, 1, 0xFeeFee, 100);
-            ((ILGenerator)typeof(GroboIL).GetField("il", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(il)).Emit(OpCodes.Nop);
             context.MarkLabelAndSurroundWithSP(doneLabel);
             resultType = node.Type;
             return result;

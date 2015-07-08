@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -17,8 +18,14 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
             GroboIL il = context.Il;
             bool needClosure = context.ClosureParameter != null;
+            var needConstants = context.ConstantsParameter != null;
             {
-                var parameters = (needClosure ? new[] {context.ConstantsParameter, context.ClosureParameter} : new[] {context.ConstantsParameter}).Concat(node.Parameters).ToArray();
+                List<ParameterExpression> parameters = new List<ParameterExpression>();
+                if(needConstants)
+                    parameters.Add(context.ConstantsParameter);
+                if(needClosure)
+                    parameters.Add(context.ClosureParameter);
+                parameters.AddRange(node.Parameters);
                 var lambda = Expression.Lambda(Extensions.GetDelegateType(parameters.Select(parameter => parameter.Type).ToArray(), node.ReturnType), node.Body, node.Name, node.TailCall, parameters);
                 CompiledLambda compiledLambda;
                 if(context.TypeBuilder == null)
@@ -30,8 +37,11 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
                 }
                 context.CompiledLambdas.Add(compiledLambda);
-                Type constantsType;
-                ExpressionEmittersCollection.Emit(context.ConstantsParameter, context, out constantsType);
+                if(needConstants)
+                {
+                    Type constantsType;
+                    ExpressionEmittersCollection.Emit(context.ConstantsParameter, context, out constantsType);
+                }
                 if(needClosure)
                 {
                     Type closureType;

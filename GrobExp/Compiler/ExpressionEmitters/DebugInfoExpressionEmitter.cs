@@ -26,6 +26,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 result = ExpressionEmittersCollection.Emit(typedNode.Expression, context, returnDefaultValueLabel, out resultType);
                 debugInfo = typedNode.DebugInfo;
             }
+//            context.Il.Nop();
             markSequencePoint(context.DebugInfoGenerator, context.Lambda, context.Method, context.Il, debugInfo);
             context.Il.Nop();
             return result;

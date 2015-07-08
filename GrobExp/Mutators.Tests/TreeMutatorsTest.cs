@@ -1005,13 +1005,13 @@ namespace Mutators.Tests
             random = new Random();
         }
 
-        private static X[] FilterArray(X[] arr)
+        public static X[] FilterArray(X[] arr)
         {
             ++filterArrayCalls;
             return arr.Where(x => x.S != null).ToArray();
         }
 
-        private X[] FilterArray2(X[] arr)
+        public X[] FilterArray2(X[] arr)
         {
             ++filterArrayCalls;
             return arr.Where(x => x.S != null).ToArray();

@@ -346,7 +346,7 @@ namespace Mutators.Tests
             Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)));
         }
 
-        private class IndexedValue<T>
+        public class IndexedValue<T>
         {
             public IndexedValue(T value, IEnumerable<int> indexes)
             {
@@ -358,26 +358,26 @@ namespace Mutators.Tests
             public int[] Indexes { get; set; }
         }
 
-        private class TestData
+        public class TestData
         {
             public A[] A { get; set; }
         }
 
-        private class A
+        public class A
         {
             public string S { get; set; }
             public int X { get; set; }
             public B[] B { get; set; }
         }
 
-        private class B
+        public class B
         {
             public string S { get; set; }
             public int X { get; set; }
             public C[] C { get; set; }
         }
 
-        private class C
+        public class C
         {
             public string S { get; set; }
             public int X { get; set; }

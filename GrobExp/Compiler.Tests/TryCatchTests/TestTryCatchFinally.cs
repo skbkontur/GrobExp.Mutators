@@ -222,7 +222,7 @@ namespace Compiler.Tests.TryCatchTests
         public static bool B;
         public static string F;
 
-        private class TestClassA
+        public class TestClassA
         {
             public object X { get; set; }
             public bool B { get; set; }

@@ -58,7 +58,7 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             Assert.IsNull(TestClassA.NullableDoubleProp);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static double? NullableDoubleProp { get; set; }
             public static double DoubleField;

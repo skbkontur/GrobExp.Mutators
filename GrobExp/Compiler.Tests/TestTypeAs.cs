@@ -95,15 +95,15 @@ namespace Compiler.Tests
             Assert.AreEqual(TestEnum.One, actual);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
         }
 
-        private class TestClassB : TestClassA
+        public class TestClassB : TestClassA
         {
         }
 
-        private enum TestEnum
+        public enum TestEnum
         {
             One,
             Two

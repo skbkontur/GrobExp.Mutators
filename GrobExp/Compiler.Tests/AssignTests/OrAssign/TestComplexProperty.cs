@@ -93,13 +93,13 @@ namespace Compiler.Tests.AssignTests.OrAssign
             Assert.IsNull(o.NullableIntArray["zzz", 1]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public IntArray IntArray { get; set; }
             public NullableIntArray NullableIntArray;
         }
 
-        private class IntArray
+        public class IntArray
         {
             public int this[string key, int index]
             {
@@ -122,7 +122,7 @@ namespace Compiler.Tests.AssignTests.OrAssign
             private readonly Dictionary<string, int[]> dict = new Dictionary<string, int[]>();
         }
 
-        private class NullableIntArray
+        public class NullableIntArray
         {
             public int? this[string key, int index]
             {

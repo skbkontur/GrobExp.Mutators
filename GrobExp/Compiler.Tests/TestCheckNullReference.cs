@@ -91,7 +91,7 @@ namespace Compiler.Tests
             Assert.That(compiledExp(new TestClassA {ArrayB = new[] {new TestClassB {Y = 2}, null}}), Is.EqualTo(2));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -111,7 +111,7 @@ namespace Compiler.Tests
             public bool Bool;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -130,7 +130,7 @@ namespace Compiler.Tests
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -139,7 +139,7 @@ namespace Compiler.Tests
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -150,7 +150,7 @@ namespace Compiler.Tests
             public readonly string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }

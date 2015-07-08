@@ -755,7 +755,7 @@ namespace Compiler.Tests
             public int X { get; set; }
         }
 
-        private struct TestStructA
+        public struct TestStructA
         {
             public string S { get; set; }
             public TestStructB[] ArrayB { get; set; }
@@ -763,7 +763,7 @@ namespace Compiler.Tests
             public int Y { get; set; }
         }
 
-        private struct TestStructB
+        public struct TestStructB
         {
             public string S { get; set; }
             public int Y { get; set; }

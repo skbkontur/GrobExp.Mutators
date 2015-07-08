@@ -104,7 +104,7 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             Assert.IsNull(o.NullableDoubleArray[0, 0]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public double?[,] NullableDoubleArray { get; set; }
             public double[,] DoubleArray;

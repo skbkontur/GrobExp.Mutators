@@ -173,7 +173,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             Assert.IsNull(TestClassA.NullableUIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static int? NullableIntProp { get; set; }

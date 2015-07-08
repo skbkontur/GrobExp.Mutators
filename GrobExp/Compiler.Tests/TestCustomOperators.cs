@@ -477,7 +477,7 @@ namespace Compiler.Tests
             Assert.IsTrue(f(new Fraction(1, 3), new Fraction(1, 2)));
         }
 
-        private class Fraction
+        public class Fraction
         {
             public Fraction(int num, int den)
             {

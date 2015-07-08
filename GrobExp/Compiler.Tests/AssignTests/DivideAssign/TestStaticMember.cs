@@ -86,7 +86,7 @@ namespace Compiler.Tests.AssignTests.DivideAssign
             Assert.AreEqual(2147483646, TestClassA.UIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static int? NullableIntProp { get; set; }

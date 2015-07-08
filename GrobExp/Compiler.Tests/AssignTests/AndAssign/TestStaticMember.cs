@@ -52,7 +52,7 @@ namespace Compiler.Tests.AssignTests.AndAssign
             Assert.IsNull(TestClassA.NullableIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static int? NullableIntField;

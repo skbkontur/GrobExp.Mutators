@@ -285,7 +285,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             Assert.IsNull(o.NullableUIntArray["zzz", 1]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public IntArray IntArray { get; set; }
             public NullableIntArray NullableIntArray { get; set; }
@@ -293,7 +293,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             public NullableUIntArray NullableUIntArray;
         }
 
-        private class IntArray
+        public class IntArray
         {
             public int this[string key, int index]
             {
@@ -316,7 +316,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             private readonly Dictionary<string, int[]> dict = new Dictionary<string, int[]>();
         }
 
-        private class NullableIntArray
+        public class NullableIntArray
         {
             public int? this[string key, int index]
             {
@@ -339,7 +339,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             private readonly Dictionary<string, int?[]> dict = new Dictionary<string, int?[]>();
         }
 
-        private class UIntArray
+        public class UIntArray
         {
             public uint this[string key, int index]
             {
@@ -362,7 +362,7 @@ namespace Compiler.Tests.AssignTests.SubtractAssign
             private readonly Dictionary<string, uint[]> dict = new Dictionary<string, uint[]>();
         }
 
-        private class NullableUIntArray
+        public class NullableUIntArray
         {
             public uint? this[string key, int index]
             {

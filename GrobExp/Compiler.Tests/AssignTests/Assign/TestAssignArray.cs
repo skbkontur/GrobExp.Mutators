@@ -297,7 +297,7 @@ namespace Compiler.Tests.AssignTests.Assign
         private static int x;
         private static bool b;
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -324,7 +324,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestStructA structA;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -345,7 +345,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -354,7 +354,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -367,13 +367,13 @@ namespace Compiler.Tests.AssignTests.Assign
             public readonly string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private struct TestStructA
+        public struct TestStructA
         {
             public string S { get; set; }
             public int? X { get; set; }
@@ -381,12 +381,12 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestStructB b;
         }
 
-        private struct TestStructB
+        public struct TestStructB
         {
             public string S { get; set; }
         }
 
-        private struct Qzz
+        public struct Qzz
         {
             public long X;
         }

@@ -131,11 +131,6 @@ namespace Compiler.Tests
             var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
             var block = Expression.Block(di, exp);
 
-            using(var writer = new StreamWriter(filename, false, Encoding.UTF8))
-            {
-                AdvancedDebugViewWriter.WriteTo(exp, writer);
-            }
-
             var gen = DebugInfoGenerator.CreatePdbGenerator();
 
             LambdaExpression lambda = Expression.Lambda(block, new ParameterExpression[0]);

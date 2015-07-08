@@ -237,16 +237,18 @@ namespace GrobExp.Compiler
             return GetId(target, ref _labelIds);
         }
 
-        /// <summary>
-        /// Write out the given AST
-        /// </summary>
-        public static void WriteTo(Expression node, TextWriter writer)
-        {
-            Debug.Assert(node != null);
-            Debug.Assert(writer != null);
+        /*
+/// <summary>
+/// Write out the given AST
+/// </summary>
+public static void WriteTo(Expression node, TextWriter writer)
+{
+    Debug.Assert(node != null);
+    Debug.Assert(writer != null);
 
-            new AdvancedDebugViewWriter(writer, null).WriteTo(node);
-        }
+    new AdvancedDebugViewWriter(writer, null).WriteTo(node);
+}
+*/
 
         public static LambdaExpression WriteToModifying(Expression node, string filename)
         {
@@ -264,7 +266,7 @@ namespace GrobExp.Compiler
             }
             else
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException("Only lambdas are allowed");
                 /*
                 Visit(node);
                 Debug.Assert(_stack.Count == 0);
@@ -453,8 +455,11 @@ namespace GrobExp.Compiler
         {
             if(node is TypedDebugInfoExpression)
             {
+                throw new NotSupportedException("Nobody should use TypedDebugInfoExpression, it is dangerous!");
+                /*
                 base.Visit(((TypedDebugInfoExpression)node).Expression);
                 return node;
+                */
             }
             return base.Visit(node);
         }
@@ -573,7 +578,7 @@ namespace GrobExp.Compiler
             Out("dynamic", Flow.Space);
             Out(FormatBinder(node.Binder));
             var newArguments = VisitExpressions('(', node.Arguments);
-            return Expression.Dynamic(node.Binder, node.Type, newArguments);
+            return node.Update(newArguments);
         }
 
         private bool? GetBooleanConstantValue(Expression node)
@@ -685,7 +690,7 @@ namespace GrobExp.Compiler
                     Out(Flow.None, ")", Flow.Break);
                 }
             }
-            return Expression.MakeBinary(node.NodeType, newLeft, newRight, node.IsLiftedToNull, node.Method);
+            return node.Update(newLeft, node.Conversion, newRight);
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
@@ -771,9 +776,7 @@ namespace GrobExp.Compiler
                 var ifFalseBody = Visit(node.IfFalse);
                 newFalse = Expression.Block(EndSelection(), ifFalseBody);
 
-                //var finalDebugInfo = GenerateDebugInfo(row, _column, row, _column + 1);
-                return Expression.Condition(newTest, newTrue, newFalse);
-                //return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo);
+                return node.Update(newTest, newTrue, newFalse);
             }
 
             if (IsSimpleExpression(node.Test))
@@ -813,9 +816,7 @@ namespace GrobExp.Compiler
             {
                 Out(Flow.NewLine, "}");
             }
-            return Expression.Condition(newTest, newTrue, newFalse, node.Type);
-            //var finalDebugInfo1 = GenerateDebugInfo(row, _column, row, _column + 1);
-            //return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo1);
+            return node.Update(newTest, newTrue, newFalse);
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
@@ -898,7 +899,7 @@ namespace GrobExp.Compiler
         {
             Out(".RuntimeVariables");
             var newVariables = VisitExpressions('(', node.Variables);
-            return Expression.RuntimeVariables(newVariables.ToArray() as ParameterExpression[]);
+            return node.Update(newVariables.ToArray() as ParameterExpression[]);
         }
 
         // Prints ".instanceField" or "declaringType.staticField"
@@ -1199,22 +1200,21 @@ namespace GrobExp.Compiler
                 // .NewArray MyType[expr1, expr2]
                 Out("new " + Formatter.Format(node.Type.GetElementType()));
                 newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Expressions));
-                return Expression.NewArrayBounds(node.Type.GetElementType(), newExpressions);
             }
             else
             {
                 // .NewArray MyType {expr1, expr2}
                 Out("new " + Formatter.Format(node.Type), Flow.Space);
                 newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Expressions));
-                return Expression.NewArrayInit(node.Type.GetElementType(), newExpressions);
             }
+            return node.Update(newExpressions);
         }
 
         protected override Expression VisitNew(NewExpression node)
         {
             Out("new " + Formatter.Format(node.Type));
             var newArguments = VisitExpressions('(', node.Arguments);
-            return Expression.New(node.Constructor, newArguments);
+            return node.Update(newArguments);
         }
 
         protected override ElementInit VisitElementInit(ElementInit node)
@@ -1228,19 +1228,19 @@ namespace GrobExp.Compiler
             {
                 newArg = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Arguments));
             }
-            return Expression.ElementInit(node.AddMethod, newArg);
+            return node.Update(newArg);
         }
 
         //TODO
         protected override Expression VisitListInit(ListInitExpression node)
         {
-            Visit(node.NewExpression);
+            var newExp = Visit(node.NewExpression) as NewExpression;
             VisitExpressions('{', ',', node.Initializers, e =>
             {
                 VisitElementInit(e);
                 return null;
             });
-            return node;
+            return node.Update(newExp, node.Initializers);
         }
 
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment assignment)
@@ -1402,9 +1402,10 @@ namespace GrobExp.Compiler
                     Out("++");
                     break;
             }
-            return Expression.MakeUnary(node.NodeType, newOperand, node.Type, node.Method);
+            return node.Update(newOperand);
         }
 
+        //TODO
         protected override Expression VisitBlock(BlockExpression node)
         {
             Out("BLOCK");
@@ -1416,7 +1417,7 @@ namespace GrobExp.Compiler
 
             List<Expression> newBlock = null;
 
-            VisitDeclarations(node.Variables); //TODO variables
+            VisitDeclarations(node.Variables);
             Out(" ");
             // Use ; to separate expressions in the block
             if(node.Type != typeof(void))
@@ -1457,7 +1458,7 @@ namespace GrobExp.Compiler
             Out("{", Flow.Space);
             var newValue = Visit(node.Value);
             Out(Flow.Space, "}");
-            return Expression.Goto(node.Target, newValue, node.Type);
+            return node.Update(node.Target, newValue);
         }
 
         protected override Expression VisitLoop(LoopExpression node)
@@ -1477,7 +1478,7 @@ namespace GrobExp.Compiler
                 Out("", Flow.NewLine);
                 DumpLabel(node.BreakLabel);
             }
-            return Expression.Loop(newBody, node.BreakLabel, node.ContinueLabel);
+            return node.Update(node.BreakLabel, node.ContinueLabel, newBody);
         }
 
         protected override SwitchCase VisitSwitchCase(SwitchCase node)
@@ -1493,7 +1494,7 @@ namespace GrobExp.Compiler
             newBody = Visit(node.Body);
             Dedent(); Dedent();
             NewLine();
-            return Expression.SwitchCase(newBody, node.TestValues);
+            return node.Update(node.TestValues, newBody);
         }
 
         protected override Expression VisitSwitch(SwitchExpression node)
@@ -1513,7 +1514,7 @@ namespace GrobExp.Compiler
                 NewLine();
             }
             Out("}");
-            return Expression.Switch(newSwitchValue, newDefault, node.Comparison, newCases);
+            return node.Update(newSwitchValue, newCases, newDefault);
         }
 
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
@@ -1535,7 +1536,7 @@ namespace GrobExp.Compiler
             Indent();
             var newBody = Visit(node.Body);
             Dedent();
-            return Expression.Catch(newVar, newBody, newFilter);
+            return node.Update(newVar, newFilter, newBody);
         }
 
         protected override Expression VisitTry(TryExpression node)
@@ -1563,7 +1564,7 @@ namespace GrobExp.Compiler
             }
 
             Out(Flow.NewLine, "}");
-            return Expression.MakeTry(node.Type, newBody, newFinally, newFault, newHandlers);
+            return node.Update(newBody, newHandlers, newFinally, newFault);
         }
 
         protected override Expression VisitIndex(IndexExpression node)
@@ -1636,7 +1637,7 @@ namespace GrobExp.Compiler
             }
         }
 
-        // TODO
+        //TODO
         private LambdaExpression WriteLambda(LambdaExpression lambda)
         {
             Out(
@@ -1660,7 +1661,7 @@ namespace GrobExp.Compiler
             Out(Flow.NewLine, "}");
             Debug.Assert(_stack.Count == 0);
 
-            return Expression.Lambda(newBody, lambda.Parameters);
+            return Expression.Lambda(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
         }
 
         private string GetLambdaName(LambdaExpression lambda)

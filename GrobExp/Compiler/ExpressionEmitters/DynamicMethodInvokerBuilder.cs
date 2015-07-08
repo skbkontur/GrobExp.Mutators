@@ -15,6 +15,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         public static Type BuildDynamicMethodInvoker(ModuleBuilder module, Type[] constantTypes, Type resultType, Type[] parameterTypes)
         {
+            module = module ?? LambdaCompiler.Module;
             var key = GetKey(module, constantTypes, resultType, parameterTypes);
             var type = (Type)types[key];
             if(type == null)
@@ -24,7 +25,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     type = (Type)types[key];
                     if(type == null)
                     {
-                        type = BuildDynamicMethodInvoker(module ?? LambdaCompiler.Module, key, constantTypes.Length, parameterTypes.Length, resultType == typeof(void));
+                        type = BuildDynamicMethodInvoker(module, key, constantTypes.Length, parameterTypes.Length, resultType == typeof(void));
                         types[key] = type;
                     }
                 }

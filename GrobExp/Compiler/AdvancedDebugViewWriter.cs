@@ -22,6 +22,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Remoting.Channels;
@@ -661,7 +662,7 @@ namespace GrobExp.Compiler
                     Out(Flow.None, ")", Flow.Break);
                 }
             }
-            return Expression.MakeBinary(node.NodeType, newLeft, newRight);
+            return Expression.MakeBinary(node.NodeType, newLeft, newRight, node.IsLiftedToNull, node.Method);
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
@@ -747,11 +748,10 @@ namespace GrobExp.Compiler
                 var ifFalseBody = Visit(node.IfFalse);
                 newFalse = Expression.Block(EndSelection(), ifFalseBody);
 
-                var finalDebugInfo = GenerateDebugInfo(row, _column, row, _column + 1);
-                return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo);
+                //var finalDebugInfo = GenerateDebugInfo(row, _column, row, _column + 1);
+                return Expression.Condition(newTest, newTrue, newFalse);
+                //return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo);
             }
-
-            //TODO normal if
 
             if (IsSimpleExpression(node.Test))
             {
@@ -790,8 +790,9 @@ namespace GrobExp.Compiler
             {
                 Out(Flow.NewLine, "}");
             }
-            var finalDebugInfo1 = GenerateDebugInfo(row, _column, row, _column + 1);
-            return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo1);
+            return Expression.Condition(newTest, newTrue, newFalse, node.Type);
+            //var finalDebugInfo1 = GenerateDebugInfo(row, _column, row, _column + 1);
+            //return new TypedDebugInfoExpression(Expression.Condition(newTest, newTrue, newFalse), finalDebugInfo1);
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
@@ -1299,7 +1300,7 @@ namespace GrobExp.Compiler
                     }
                     else
                     {
-                        return ParenthesizedVisit(node, node.Operand);
+                        //return ParenthesizedVisit(node, node.Operand);
                     }
                     break;
                 case ExpressionType.ConvertChecked:

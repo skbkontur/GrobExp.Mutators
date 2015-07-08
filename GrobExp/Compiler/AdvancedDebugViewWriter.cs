@@ -510,14 +510,17 @@ namespace GrobExp.Compiler
                         if (separator != ';')
                             Out(separator.ToString(), Flow.NewLine);
                     }
-                    if (separator == ';')
+                    bool isComplex = IsComplexArgument(e);
+                    if (separator == ';' || isComplex)
                         StartSelection();
                     if (blockType == BlockType.Return)
                         Out("return ");
+                    var cursorDump = Tuple.Create(row, _column);
                     var newExp = visit(e);
-                    if (separator == ';')
+                    bool anyText = !Equals(cursorDump, Tuple.Create(row, _column));
+                    if (separator == ';' && anyText)
                         Out(separator.ToString(), Flow.NewLine);
-                    if(separator == ';')
+                    if((separator == ';' || isComplex) && anyText)
                         newBlock.Add(GetBlock(newExp));
                     else
                         newBlock.Add(newExp);
@@ -543,6 +546,26 @@ namespace GrobExp.Compiler
                 Out(close.ToString(), Flow.Break);
 
             return newBlock;
+        }
+
+        private bool IsComplexArgument(object obj)
+        {
+            var node = obj as Expression;
+            if(node == null)
+                return false;
+
+            if(node.NodeType == ExpressionType.Constant || node.NodeType == ExpressionType.Parameter)
+                return false;
+
+            if(node.NodeType == ExpressionType.Convert)
+                return IsComplexArgument((node as UnaryExpression).Operand);
+            if(node.NodeType == ExpressionType.MemberAccess)
+            {
+                var bin = node as MemberExpression;
+                return IsComplexArgument(bin.Expression) || IsComplexArgument(bin.Member);
+            }
+
+            return true;
         }
 
         protected override Expression VisitDynamic(DynamicExpression node)
@@ -895,11 +918,10 @@ namespace GrobExp.Compiler
             return node;
         }
 
-        //TODO
         protected override Expression VisitMember(MemberExpression node)
         {
-            OutMember(node, node.Expression, node.Member);
-            return node;
+            var newExp = OutMember(node, node.Expression, node.Member);
+            return node.Update(newExp);
         }
 
         protected override Expression VisitInvocation(InvocationExpression node)
@@ -907,7 +929,7 @@ namespace GrobExp.Compiler
             Out(".Invoke ");
             var newExp = ParenthesizedVisit(node, node.Expression);
             var newArgs = VisitExpressions('(', node.Arguments);
-            return Expression.Invoke(newExp, newArgs);
+            return node.Update(newExp, newArgs);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -1166,7 +1188,7 @@ namespace GrobExp.Compiler
                 Out(node.Method.Name);
                 newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('(', node.Arguments));
             }
-            return Expression.Call(newObject, node.Method, newArguments);
+            return node.Update(newObject, newArguments);
         }
 
         protected override Expression VisitNewArray(NewArrayExpression node)
@@ -1209,7 +1231,7 @@ namespace GrobExp.Compiler
             return Expression.ElementInit(node.AddMethod, newArg);
         }
 
-        //TODO such strange
+        //TODO
         protected override Expression VisitListInit(ListInitExpression node)
         {
             Visit(node.NewExpression);
@@ -1221,13 +1243,12 @@ namespace GrobExp.Compiler
             return node;
         }
 
-        //TODO
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment assignment)
         {
             Out(assignment.Member.Name);
             Out(Flow.Space, "=", Flow.Space);
-            Visit(assignment.Expression);
-            return assignment;
+            var newExp = Visit(assignment.Expression);
+            return assignment.Update(newExp);
         }
 
         //TODO
@@ -1268,10 +1289,9 @@ namespace GrobExp.Compiler
             return node;
         }
 
-        //TODO
         protected override Expression VisitTypeBinary(TypeBinaryExpression node)
         {
-            ParenthesizedVisit(node, node.Expression);
+            var newExp = ParenthesizedVisit(node, node.Expression);
             switch (node.NodeType)
             {
                 case ExpressionType.TypeIs:
@@ -1282,7 +1302,7 @@ namespace GrobExp.Compiler
                     break;
             }
             Out(Formatter.Format(node.TypeOperand));
-            return node;
+            return node.Update(newExp);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -1396,7 +1416,7 @@ namespace GrobExp.Compiler
 
             List<Expression> newBlock = null;
 
-            VisitDeclarations(node.Variables);
+            VisitDeclarations(node.Variables); //TODO variables
             Out(" ");
             // Use ; to separate expressions in the block
             if(node.Type != typeof(void))
@@ -1409,7 +1429,7 @@ namespace GrobExp.Compiler
                 newBlock = VisitExpressions('{', ';', node.Expressions);
             }
 
-            return Expression.Block(node.Type, node.Variables, newBlock);
+            return node.Update(node.Variables, newBlock);
         }
 
         protected override Expression VisitDefault(DefaultExpression node)
@@ -1427,7 +1447,7 @@ namespace GrobExp.Compiler
             Dedent();
             NewLine();
             DumpLabel(node.Target);
-            return Expression.Label(node.Target, newDefault);
+            return node.Update(node.Target, newDefault);
         }
 
         protected override Expression VisitGoto(GotoExpression node)
@@ -1546,20 +1566,22 @@ namespace GrobExp.Compiler
             return Expression.MakeTry(node.Type, newBody, newFinally, newFault, newHandlers);
         }
 
-        //TODO
         protected override Expression VisitIndex(IndexExpression node)
         {
+            var newObj = node.Object;
+            var newArgs = node.Arguments;
+
             if (node.Indexer != null)
             {
-                OutMember(node, node.Object, node.Indexer);
+                newObj = OutMember(node, node.Object, node.Indexer);
             }
             else
             {
-                ParenthesizedVisit(node, node.Object);
+                newObj = ParenthesizedVisit(node, node.Object);
             }
 
-            VisitExpressions('[', node.Arguments);
-            return node;
+            newArgs = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Arguments));
+            return node.Update(newObj, newArgs);
         }
 
         //TODO

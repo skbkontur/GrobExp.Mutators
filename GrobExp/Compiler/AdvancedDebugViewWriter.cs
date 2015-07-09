@@ -464,17 +464,17 @@ public static void WriteTo(Expression node, TextWriter writer)
             return base.Visit(node);
         }
 
-        private List<Expression> VisitExpressions<T>(char open, IList<T> expressions) where T : Expression
+        private List<object> VisitExpressions<T>(char open, IList<T> expressions) where T : Expression
         {
             return VisitExpressions<T>(open, ',', expressions);
         }
 
-        private List<Expression> VisitExpressions<T>(char open, char separator, IList<T> expressions, BlockType blockType = BlockType.None) where T : Expression
+        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, BlockType blockType = BlockType.None) where T : Expression
         {
             return VisitExpressions(open, separator, expressions, Visit, blockType);
         }
 
-        private List<Expression> VisitDeclarations(IList<ParameterExpression> expressions)
+        private List<object> VisitDeclarations(IList<ParameterExpression> expressions)
         {
             return VisitExpressions('(', ',', expressions, variable =>
             {
@@ -489,12 +489,12 @@ public static void WriteTo(Expression node, TextWriter writer)
         }
 
         //open = 0 means no brackets
-        private List<Expression> VisitExpressions<T>(char open, char separator, IList<T> expressions, Func<T, Expression> visit, BlockType blockType = BlockType.None)
+        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, Func<T, object> visit, BlockType blockType = BlockType.None)
         {
             if (open != '0' && blockType != BlockType.Return)
                 Out(open.ToString());
 
-            var newBlock = new List<Expression>();
+            var newBlock = new List<object>();
 
             if (expressions != null)
             {
@@ -525,8 +525,11 @@ public static void WriteTo(Expression node, TextWriter writer)
                     bool anyText = !Equals(cursorDump, Tuple.Create(row, _column));
                     if (separator == ';' && anyText)
                         Out(separator.ToString(), Flow.NewLine);
-                    if((separator == ';' || isComplex) && anyText)
-                        newBlock.Add(GetBlock(newExp));
+                    DebugInfoExpression debugInfo = null;
+                    if (separator == ';' || isComplex)
+                        debugInfo = EndSelection();
+                    if((separator == ';' || isComplex) && anyText && newExp is Expression)
+                        newBlock.Add(Expression.Block(debugInfo, newExp as Expression));
                     else
                         newBlock.Add(newExp);
                 }
@@ -577,7 +580,7 @@ public static void WriteTo(Expression node, TextWriter writer)
         {
             Out("dynamic", Flow.Space);
             Out(FormatBinder(node.Binder));
-            var newArguments = VisitExpressions('(', node.Arguments);
+            var newArguments = VisitExpressions('(', node.Arguments).Cast<Expression>();
             return node.Update(newArguments);
         }
 
@@ -899,7 +902,7 @@ public static void WriteTo(Expression node, TextWriter writer)
         {
             Out(".RuntimeVariables");
             var newVariables = VisitExpressions('(', node.Variables);
-            return node.Update(newVariables.ToArray() as ParameterExpression[]);
+            return node.Update(newVariables.Cast<ParameterExpression>());
         }
 
         // Prints ".instanceField" or "declaringType.staticField"
@@ -929,7 +932,7 @@ public static void WriteTo(Expression node, TextWriter writer)
         {
             Out(".Invoke ");
             var newExp = ParenthesizedVisit(node, node.Expression);
-            var newArgs = VisitExpressions('(', node.Arguments);
+            var newArgs = VisitExpressions('(', node.Arguments).Cast<Expression>();
             return node.Update(newExp, newArgs);
         }
 
@@ -1164,12 +1167,12 @@ public static void WriteTo(Expression node, TextWriter writer)
 
             if (node.Method.IsExtension())
             {
-                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('0', new[] {node.Arguments[0]}));
+                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('0', new[] {node.Arguments[0]}).Cast<Expression>().ToList());
                 Out(".");
                 Out(node.Method.Name);
                 newArguments = new ReadOnlyCollection<Expression>(
                     newArguments.Concat(new ReadOnlyCollection<Expression>(
-                        VisitExpressions('(', node.Arguments.Skip(1).ToArray()))).ToList());
+                        VisitExpressions('(', node.Arguments.Skip(1).ToArray()).Cast<Expression>().ToList()).ToList()).ToList());
             }
             else
             {
@@ -1187,7 +1190,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                 }
                 Out(".");
                 Out(node.Method.Name);
-                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('(', node.Arguments));
+                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('(', node.Arguments).Cast<Expression>().ToList());
             }
             return node.Update(newObject, newArguments);
         }
@@ -1199,13 +1202,13 @@ public static void WriteTo(Expression node, TextWriter writer)
             {
                 // .NewArray MyType[expr1, expr2]
                 Out("new " + Formatter.Format(node.Type.GetElementType()));
-                newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Expressions));
+                newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Expressions).Cast<Expression>().ToList());
             }
             else
             {
                 // .NewArray MyType {expr1, expr2}
                 Out("new " + Formatter.Format(node.Type), Flow.Space);
-                newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Expressions));
+                newExpressions = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Expressions).Cast<Expression>().ToList());
             }
             return node.Update(newExpressions);
         }
@@ -1217,7 +1220,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if(node.Constructor == null)
                 return Expression.New(node.Type);
-            return node.Update(newArguments);
+            return node.Update(newArguments.Cast<Expression>().ToList());
         }
 
         protected override ElementInit VisitElementInit(ElementInit node)
@@ -1229,68 +1232,53 @@ public static void WriteTo(Expression node, TextWriter writer)
             }
             else
             {
-                newArg = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Arguments));
+                newArg = new ReadOnlyCollection<Expression>(VisitExpressions('{', node.Arguments).Cast<Expression>().ToList());
             }
             return node.Update(newArg);
         }
 
-        //TODO
         protected override Expression VisitListInit(ListInitExpression node)
         {
             var newExp = Visit(node.NewExpression) as NewExpression;
-            VisitExpressions('{', ',', node.Initializers, e =>
-            {
-                VisitElementInit(e);
-                return null;
-            });
-            return node.Update(newExp, node.Initializers);
+            var newInits = VisitExpressions('{', ',', node.Initializers, VisitElementInit).Cast<ElementInit>();
+            return node.Update(newExp, newInits);
         }
 
         protected override MemberAssignment VisitMemberAssignment(MemberAssignment assignment)
         {
+            bool isComplex = IsComplexArgument(assignment.Expression);
+            if (isComplex)
+                StartSelection();
             Out(assignment.Member.Name);
             Out(Flow.Space, "=", Flow.Space);
             var newExp = Visit(assignment.Expression);
+            if(isComplex)
+                return assignment.Update(GetBlock(newExp));
             return assignment.Update(newExp);
         }
 
-        //TODO
         protected override MemberListBinding VisitMemberListBinding(MemberListBinding binding)
         {
             Out(binding.Member.Name);
             Out(Flow.Space, "=", Flow.Space);
-            VisitExpressions('{', ',', binding.Initializers, e =>
-            {
-                VisitElementInit(e);
-                return null;
-            });
-            return binding;
+            var newInits = VisitExpressions('{', ',', binding.Initializers, VisitElementInit).Cast<ElementInit>();
+            return binding.Update(newInits);
         }
 
-        //TODO
         protected override MemberMemberBinding VisitMemberMemberBinding(MemberMemberBinding binding)
         {
             Out(binding.Member.Name);
             Out(Flow.Space, "=", Flow.Space);
-            VisitExpressions('{', ',', binding.Bindings, e =>
-            {
-                VisitMemberBinding(e);
-                return null;
-            });
-            return binding;
+            var newBinds = VisitExpressions('{', ',', binding.Bindings, VisitMemberBinding).Cast<MemberBinding>();
+            return binding.Update(newBinds);
         }
         
-        //TODO
         //TODO highlight complex initializers
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
-            Visit(node.NewExpression);
-            VisitExpressions('{', ',', node.Bindings, e =>
-            {
-                VisitMemberBinding(e);
-                return null;
-            });
-            return node;
+            var newExp = Visit(node.NewExpression) as NewExpression;
+            var newBinds = VisitExpressions('{', ',', node.Bindings, VisitMemberBinding).Cast<MemberBinding>();
+            return node.Update(newExp, newBinds);
         }
 
         protected override Expression VisitTypeBinary(TypeBinaryExpression node)
@@ -1409,7 +1397,6 @@ public static void WriteTo(Expression node, TextWriter writer)
             return node.Update(newOperand);
         }
 
-        //TODO
         protected override Expression VisitBlock(BlockExpression node)
         {
             Out("BLOCK");
@@ -1419,22 +1406,24 @@ public static void WriteTo(Expression node, TextWriter writer)
             if (node.Type != node.Expressions.Last().Type)
                 Out(String.Format(CultureInfo.CurrentCulture, "<{0}>", Formatter.Format(node.Type)));
 
-            List<Expression> newBlock = null;
+            List<Expression> newBlock;
 
-            VisitDeclarations(node.Variables);
+            var newVars = VisitDeclarations(node.Variables).Cast<ParameterExpression>();
             Out(" ");
             // Use ; to separate expressions in the block
             if(node.Type != typeof(void))
             {
-                newBlock = VisitExpressions('{', ';', node.Expressions.Take(node.Expressions.Count - 1).ToArray(), BlockType.Body);
-                newBlock = newBlock.Concat(VisitExpressions('{', ';', new[] {node.Expressions.Last()}, BlockType.Return)).ToList();
+                newBlock = VisitExpressions('{', ';', node.Expressions.Take(node.Expressions.Count - 1).ToArray(), BlockType.Body)
+                    .Cast<Expression>().ToList();
+                newBlock = newBlock.Concat(VisitExpressions('{', ';', new[] { node.Expressions.Last() }, BlockType.Return)
+                    .Cast<Expression>().ToList()).ToList();
             }
             else
             {
-                newBlock = VisitExpressions('{', ';', node.Expressions);
+                newBlock = VisitExpressions('{', ';', node.Expressions).Cast<Expression>().ToList();
             }
 
-            return node.Update(node.Variables, newBlock);
+            return node.Update(newVars, newBlock);
         }
 
         protected override Expression VisitDefault(DefaultExpression node)
@@ -1585,7 +1574,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                 newObj = ParenthesizedVisit(node, node.Object);
             }
 
-            newArgs = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Arguments));
+            newArgs = new ReadOnlyCollection<Expression>(VisitExpressions('[', node.Arguments).Cast<Expression>().ToList());
             return node.Update(newObj, newArgs);
         }
 
@@ -1641,7 +1630,6 @@ public static void WriteTo(Expression node, TextWriter writer)
             }
         }
 
-        //TODO
         private LambdaExpression WriteLambda(LambdaExpression lambda)
         {
             Out(
@@ -1652,7 +1640,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                     Formatter.Format(lambda.Type))
             );
 
-            VisitDeclarations(lambda.Parameters);
+            var newParams = VisitDeclarations(lambda.Parameters).Cast<ParameterExpression>();
 
             var body = lambda.Body;
             if (body.NodeType != ExpressionType.Block)
@@ -1665,7 +1653,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             Out(Flow.NewLine, "}");
             Debug.Assert(_stack.Count == 0);
 
-            return Expression.Lambda(lambda.Type, newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
+            return Expression.Lambda(lambda.Type, newBody, lambda.Name, lambda.TailCall, newParams);
         }
 
         private string GetLambdaName(LambdaExpression lambda)

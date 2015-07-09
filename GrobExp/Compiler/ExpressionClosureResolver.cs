@@ -5,13 +5,43 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
+using GrEmit;
+
 namespace GrobExp.Compiler
 {
+    class ExpressionFieldsExtractor : ExpressionVisitor
+    {
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            var member = node.Member;
+            var parentClass = member.DeclaringType;
+
+            var newExpression = Visit(node.Expression);
+
+            if(parentClass.IsNestedPrivate && member.MemberType == MemberTypes.Field)
+            {
+                /*
+                Func<object, object> kekeke = parentClass
+                    .GetField(member.Name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
+                    .GetValue;
+                return Expression.Convert(Expression.Invoke(Expression.Constant(kekeke), newExpression), node.Type);
+                */
+
+                var extractor = FieldsExtractor.GetExtractor(member as FieldInfo);
+                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), newExpression), node.Type);
+            }
+
+            return node.Update(newExpression);
+        }
+    }
+
     internal class ExpressionClosureResolver : ExpressionVisitor
     {
         public ExpressionClosureResolver(LambdaExpression lambda, ModuleBuilder module, bool dynamic)
         {
-            lambda = (LambdaExpression)new LambdaPreparer().Visit(new RuntimeVariablesInliner().Visit(lambda));
+            lambda = (LambdaExpression)new LambdaPreparer().Visit(
+                new ExpressionFieldsExtractor().Visit(
+                    new RuntimeVariablesInliner().Visit(lambda)));
             var parsedLambda = new ExpressionClosureBuilder(lambda, module).Build(dynamic);
             this.lambda = parsedLambda.Lambda;
             closureType = parsedLambda.ClosureType;

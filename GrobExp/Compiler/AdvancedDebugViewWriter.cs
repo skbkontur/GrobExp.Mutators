@@ -49,7 +49,7 @@ namespace GrobExp.Compiler
             var lambda = node as LambdaExpression;
             lambda = newLambdaReference[lambda];
             var newBody = Visit(lambda.Body);
-            return Expression.Lambda(newBody, lambda.Parameters);
+            return Expression.Lambda<T>(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
         }
     }
 
@@ -1214,6 +1214,9 @@ public static void WriteTo(Expression node, TextWriter writer)
         {
             Out("new " + Formatter.Format(node.Type));
             var newArguments = VisitExpressions('(', node.Arguments);
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+            if(node.Constructor == null)
+                return Expression.New(node.Type);
             return node.Update(newArguments);
         }
 
@@ -1278,6 +1281,7 @@ public static void WriteTo(Expression node, TextWriter writer)
         }
         
         //TODO
+        //TODO highlight complex initializers
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             Visit(node.NewExpression);
@@ -1661,7 +1665,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             Out(Flow.NewLine, "}");
             Debug.Assert(_stack.Count == 0);
 
-            return Expression.Lambda(newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
+            return Expression.Lambda(lambda.Type, newBody, lambda.Name, lambda.TailCall, lambda.Parameters);
         }
 
         private string GetLambdaName(LambdaExpression lambda)

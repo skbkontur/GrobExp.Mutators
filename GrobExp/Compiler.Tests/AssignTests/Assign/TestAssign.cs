@@ -236,10 +236,10 @@ namespace Compiler.Tests.AssignTests.Assign
 
         }
 
-        private static string S { get; set; }
+        public static string S { get; set; }
 
-        private static int x;
-        private static bool b;
+        public static int x;
+        public static bool b;
 
         public class TestClassA
         {

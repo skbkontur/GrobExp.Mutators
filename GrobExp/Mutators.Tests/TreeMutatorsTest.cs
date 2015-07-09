@@ -1057,7 +1057,7 @@ namespace Mutators.Tests
         private Random random;
         private IPathFormatterCollection pathFormatterCollection;
 
-        private class IdGenerator
+        public class IdGenerator
         {
             public string GetId()
             {

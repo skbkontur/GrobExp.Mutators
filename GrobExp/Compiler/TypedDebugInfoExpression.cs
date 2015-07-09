@@ -43,7 +43,7 @@ namespace GrobExp.Compiler
 
         public Expression Expression { get {  return expression;} }
 
-        public DebugInfoExpression DebugInfo { get { return debugInfo; } }
+        public new DebugInfoExpression DebugInfo { get { return debugInfo; } }
 
         /// <summary>
         /// Returns the node type of this <see cref="Expression" />. (Inherited from <see cref="Expression" />.)

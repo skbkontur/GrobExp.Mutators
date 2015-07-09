@@ -38,7 +38,7 @@ namespace GrobExp.Compiler
         }
 
         public static bool AnalyzeILStack = true;
-        public static string DebugOutputDirectory = null;
+        public static string DebugOutputDirectory = @"c:\temp";
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,

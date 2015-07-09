@@ -288,14 +288,14 @@ namespace Compiler.Tests.AssignTests.Assign
             Assert.AreEqual(-123, TwoDimensionalIntArray[1, 2]);
         }
 
-        private static int[,] TwoDimensionalIntArray { get; set; }
+        public static int[,] TwoDimensionalIntArray { get; set; }
 
-        private static DateTime MyBirthDate { get { return new DateTime(1986, 2, 16); } }
-        private static string S { get; set; }
+        public static DateTime MyBirthDate { get { return new DateTime(1986, 2, 16); } }
+        public static string S { get; set; }
 
-        private static int[] intArray;
-        private static int x;
-        private static bool b;
+        public static int[] intArray;
+        public static int x;
+        public static bool b;
 
         public class TestClassA
         {

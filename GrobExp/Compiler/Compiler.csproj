@@ -98,6 +98,7 @@
     <Compile Include="ExpressionEmitters\IExpressionEmitter.cs" />
     <Compile Include="LabelsCloner.cs" />
     <Compile Include="LambdaCompiler.cs" />
+    <Compile Include="LambdaExpressionCreator.cs" />
     <Compile Include="LambdaPreparer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultType.cs" />

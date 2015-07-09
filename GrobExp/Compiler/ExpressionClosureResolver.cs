@@ -14,11 +14,10 @@ namespace GrobExp.Compiler
         protected override Expression VisitMember(MemberExpression node)
         {
             var member = node.Member;
-            var parentClass = member.DeclaringType;
 
-            var newExpression = Visit(node.Expression);
+            var expression = Visit(node.Expression);
 
-            if(parentClass.IsNestedPrivate && member.MemberType == MemberTypes.Field)
+            if (expression != null && member.MemberType == MemberTypes.Field && (expression.Type.IsNestedPrivate || !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)))
             {
                 /*
                 Func<object, object> kekeke = parentClass
@@ -28,10 +27,12 @@ namespace GrobExp.Compiler
                 */
 
                 var extractor = FieldsExtractor.GetExtractor(member as FieldInfo);
-                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), newExpression), node.Type);
+                if(expression.NodeType == ExpressionType.Convert)
+                    expression = ((UnaryExpression)expression).Operand;
+                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), expression), node.Type);
             }
 
-            return node.Update(newExpression);
+            return node.Update(expression);
         }
     }
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
@@ -168,7 +169,7 @@ namespace GrobExp.Mutators
         {
             LambdaExpression filter;
             var simplifiedPath = SimplifyPath(path, out filter);
-            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body));
+            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body.Simplify()));
             Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
         }
 
@@ -204,9 +205,43 @@ namespace GrobExp.Mutators
             mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path, mutator));
         }
 
+        public override string ToString()
+        {
+            var allMutators = new List<KeyValuePair<Expression, MutatorConfiguration>>();
+            GetMutatorsWithPath(allMutators);
+            return PrintAllMutators(allMutators);
+        }
+
+        public static string PrintAllMutators(IEnumerable<KeyValuePair<Expression, MutatorConfiguration>> mutators)
+        {
+            var result = new StringBuilder();
+            foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.Key, false)))
+            {
+                result.AppendLine(group.Key.Expression.ToString());
+                foreach (var pair in group)
+                {
+                    result.Append("    ");
+                    result.AppendLine(pair.Value.ToString());
+                }
+            }
+            return result.ToString();
+        }
+
         public MutatorConfiguration[] GetMutators()
         {
             return mutators.Select(pair => pair.Value).ToArray();
+        }
+
+        public KeyValuePair<Expression, MutatorConfiguration>[] GetMutatorsWithPath()
+        {
+            return mutators.ToArray();
+        }
+
+        private void GetMutatorsWithPath(List<KeyValuePair<Expression, MutatorConfiguration>> result)
+        {
+            result.AddRange(mutators);
+            foreach(var child in Children)
+                child.GetMutatorsWithPath(result);
         }
 
         public void ExtractValidationsFromConverters(ModelConfigurationNode validationsTree)
@@ -283,6 +318,7 @@ namespace GrobExp.Mutators
             if(i >= shards.Length)
                 return path;
             var result = shards[i - 1];
+            int currents = 0;
             for(; i < shards.Length; ++i)
             {
                 var shard = shards[i];
@@ -304,6 +340,7 @@ namespace GrobExp.Mutators
                         case "Select":
                             var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                             result = Expression.Lambda(Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters).Merge(selector).Body;
+                            ++currents;
                             break;
                         case "Where":
                             var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
@@ -323,7 +360,12 @@ namespace GrobExp.Mutators
                         {
                         case "Current":
                         case "Each":
-                            result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
+                            --currents;
+                            if(currents < 0)
+                            {
+                                result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
+                                ++currents;
+                            }
                             break;
                         default:
                             throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));

@@ -41,6 +41,22 @@ namespace Compiler.Tests
             Assert.AreEqual(3, o.IntArray2[2]);
         }
 
+        public static int Zzz(int x, out int y)
+        {
+            y = x + 1;
+            return x;
+        }
+
+        [Test]
+        public void TestOutParameter()
+        {
+            int y = 0;
+            Expression<Func<int, int>> exp = x => Zzz(x, out y);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            Assert.AreEqual(5, f(5));
+            Assert.AreEqual(6, y);
+        }
+
         [Test, Ignore]
         public void TestPinning1()
         {

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GroBuf.Readers;
+
 using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
@@ -66,6 +68,8 @@ namespace GrobExp.Mutators
                                                 Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
                                                 Expression.Assign(memberExpression.Expression, temp));
                     }
+                    if(memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
+                        return Expression.Call(listResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetItemType()), memberExpression.Expression, value);
                 }
                 break;
             case ExpressionType.Call:
@@ -74,16 +78,14 @@ namespace GrobExp.Mutators
                 {
                     var temp = Expression.Variable(methodCallExpression.Object.Type);
                     return Expression.Block(new[] {temp},
-                        Expression.Assign(temp, methodCallExpression.Object),
-                        Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
-                        Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
+                                            Expression.Assign(temp, methodCallExpression.Object),
+                                            Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
+                                            Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
                 }
                 break;
             }
             return Expression.Assign(path, value);
         }
-
-        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
 
         public static Expression ExtendSelectMany(this Expression expression)
         {
@@ -176,14 +178,14 @@ namespace GrobExp.Mutators
             return Expression.Lambda(Expression.AndAlso(convertToNullable ? Convert(leftBody) : leftBody, convertToNullable ? Convert(rightBody) : rightBody), parameters);
         }
 
-        public static LambdaExpression OrElse(this LambdaExpression left, LambdaExpression right)
+        public static LambdaExpression OrElse(this LambdaExpression left, LambdaExpression right, bool convertToNullable = true)
         {
             if(left == null) return right;
             if(right == null) return left;
             Expression leftBody, rightBody;
             ParameterExpression[] parameters;
             Canonize(left, right, out leftBody, out rightBody, out parameters);
-            return Expression.Lambda(Expression.OrElse(Convert(leftBody), Convert(rightBody)), parameters);
+            return Expression.Lambda(Expression.OrElse(convertToNullable ? Convert(leftBody) : leftBody, convertToNullable ? Convert(rightBody) : rightBody), parameters);
         }
 
         public static LambdaExpression[] ExtractDependencies(this LambdaExpression lambda)
@@ -215,8 +217,8 @@ namespace GrobExp.Mutators
         public static Expression CleanFilters(this Expression node, List<LambdaExpression> filters)
         {
             var shards = node.SmashToSmithereens();
-            Expression result = shards[0];
-            int i = 0;
+            var result = shards[0];
+            var i = 0;
             while(i + 1 < shards.Length)
             {
                 ++i;
@@ -359,6 +361,22 @@ namespace GrobExp.Mutators
             return i == 0 ? null : shards1[i - 1];
         }
 
+        private static void Resize<T>(List<T> list, int size)
+        {
+            // todo emit
+            if(list.Count > size)
+            {
+                while(list.Count > size)
+                    list.RemoveAt(list.Count - 1);
+            }
+            else
+            {
+                var f = ObjectConstructionHelper.ConstructType(typeof(T));
+                while(list.Count < size)
+                    list.Add((T)f());
+            }
+        }
+
         private static Expression Convert(Expression exp)
         {
             return exp.Type == typeof(bool?) ? exp : Expression.Convert(exp, typeof(bool?));
@@ -427,6 +445,9 @@ namespace GrobExp.Mutators
                 return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, rootOnlyParameter, true);
             return node != null && node.NodeType == ExpressionType.ArrayIndex;
         }
+
+        private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
+        private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(arr => Resize(arr, 0))).Body).Method.GetGenericMethodDefinition();
 
         private static readonly MemberInfo stringLengthProperty = ((MemberExpression)((Expression<Func<string, int>>)(s => s.Length)).Body).Member;
 

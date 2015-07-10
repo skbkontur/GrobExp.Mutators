@@ -19,6 +19,11 @@ namespace GrobExp.Mutators.Validators
             this.validationResultType = validationResultType;
         }
 
+        public override string ToString()
+        {
+            return "invalidIf" + (Condition == null ? "" : "(" + Condition + ")");
+        }
+
         public static InvalidIfConfiguration Create<TData>(int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
         {
             return new InvalidIfConfiguration(typeof(TData), priority, Prepare(condition), Prepare(message), validationResultType);

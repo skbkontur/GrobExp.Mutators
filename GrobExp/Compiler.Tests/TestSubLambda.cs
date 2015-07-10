@@ -176,6 +176,42 @@ namespace Compiler.Tests
         }
 
         [Test, Ignore]
+        public void TestDebugInfo3()
+        {
+            var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("foo"), AssemblyBuilderAccess.RunAndSave);
+
+            var mod = asm.DefineDynamicModule("mymod", "tmp.dll", true);
+            var type = mod.DefineType("baz", TypeAttributes.Public | TypeAttributes.Class);
+            var meth = type.DefineMethod("go", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(void), new[] {typeof(IntPtr), typeof(int)});
+
+            var nestedType = type.DefineNestedType("qwerty", TypeAttributes.NestedPublic | TypeAttributes.Class);
+            nestedType.DefineField("zzz", typeof(Guid), FieldAttributes.Static | FieldAttributes.Public);
+            nestedType.CreateType();
+
+            var document = mod.DefineDocument("TestDebug2.txt", Guid.Empty, Guid.Empty, Guid.Empty);//Expression.SymbolDocument("TestDebug2.txt");
+
+            //var di = Expression.DebugInfo(sdi, 2, 2, 2, 13);
+
+            //var exp = Expression.Divide(Expression.Constant(2), Expression.Subtract(Expression.Constant(4), Expression.Constant(4)));
+            //var block = Expression.Block(di, exp);
+
+            var il = meth.GetILGenerator();
+            il.Emit(OpCodes.Ldarg_0);
+            il.Emit(OpCodes.Ldarg_1);
+            il.Emit(OpCodes.Unaligned, (byte)1);
+            il.Emit(OpCodes.Stind_I4);
+            il.Emit(OpCodes.Ret);
+
+            var newtype = type.CreateType();
+
+            asm.Save("tmp.dll");
+            //newtype.GetMethod("go").Invoke(null, new object[0]);
+            //meth.Invoke(null, new object[0]);
+            //lambda.DynamicInvoke(new object[0]);
+            Console.WriteLine(" ");
+        }
+
+        [Test, Ignore]
         public void TestDebug2()
         {
   // create a dynamic assembly and module 

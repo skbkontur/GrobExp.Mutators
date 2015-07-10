@@ -15,6 +15,11 @@ namespace GrobExp.Mutators.Aggregators
             Condition = condition;
         }
 
+        public override string ToString()
+        {
+            return "disabledIf" + (Condition == null ? "" : "(" + Condition + ")");
+        }
+
         public static DisableIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
         {
             return new DisableIfConfiguration(typeof(TData), Prepare(condition));

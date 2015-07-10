@@ -32,6 +32,13 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestWhereNull()
+        {
+            Expression<Func<A, int?>> expression = a => a.B.C.Where(c => null == "zzz").Sum(c => c.D.E.Where(e => null == "qxx").Sum(e => e.X));
+            DoTest(expression, a => a.B.C.Each().D.E.Each().X);
+        }
+
+        [Test]
         public void TestWhere2()
         {
             Expression<Func<A, int?>> expression = a => a.B.C.Where(c => c.D.S == "zzz").Sum(c => c.D.E.Single(e => e.F == "qxx").X);
@@ -113,6 +120,13 @@ namespace Mutators.Tests
         {
             Expression<Func<A, object>> expression = a => a.B.C.Select(c => c.X);
             DoTest(expression, a => a.B.C.Each().X);
+        }
+
+        [Test]
+        public void TestSelectNull()
+        {
+            Expression<Func<A, object>> expression = a => a.B.C.Select<C, object>(c => null);
+            DoTest(expression);
         }
 
         [Test]

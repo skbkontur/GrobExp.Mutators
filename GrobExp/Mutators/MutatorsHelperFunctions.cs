@@ -5,6 +5,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GroBuf;
+using GroBuf.DataMembersExtracters;
+
 namespace GrobExp.Mutators
 {
     public class Batch : IEnumerable
@@ -113,6 +116,13 @@ namespace GrobExp.Mutators
         {
             return strings == null || strings.Length == 0 || strings.All(string.IsNullOrEmpty);
         }
+
+        public static TTo ChangeType<TFrom, TTo>(TFrom value)
+        {
+            return serializer.ChangeType<TFrom, TTo>(value);
+        }
+
+        private static ISerializer serializer = new Serializer(new AllPropertiesExtractor());
 
         public static bool IsEachMethod(this MethodInfo methodInfo)
         {

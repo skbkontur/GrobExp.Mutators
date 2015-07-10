@@ -122,7 +122,7 @@ namespace GrobExp.Compiler
             }
         }
 
-        internal static ILCode CompileInternal(
+        internal static string CompileInternal(
             LambdaExpression lambda,
             DebugInfoGenerator debugInfoGenerator,
             Type closureType,

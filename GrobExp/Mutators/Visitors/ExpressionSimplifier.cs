@@ -20,7 +20,10 @@ namespace GrobExp.Mutators.Visitors
                 return null;
             if(exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsDynamicMethod())
                 return exp;
-            if(exp.NodeType != ExpressionType.Lambda && exp.NodeType != ExpressionType.Goto && exp.NodeType != ExpressionType.Label && exp.NodeType != ExpressionType.Default && exp.NodeType != ExpressionType.New && exp.NodeType != ExpressionType.MemberInit && exp.NodeType != ExpressionType.Constant && IsConstant(exp)) // todo ich: очень странная вещь.. надо как-то получше сделать
+            if(exp.NodeType != ExpressionType.Lambda && exp.NodeType != ExpressionType.Goto
+                && exp.NodeType != ExpressionType.Label && exp.NodeType != ExpressionType.Default
+                && exp.NodeType != ExpressionType.New && exp.NodeType != ExpressionType.MemberInit
+                && exp.NodeType != ExpressionType.Constant && IsConstant(exp)) // todo ich: очень странная вещь.. надо как-то получше сделать
             {
                 if(exp.NodeType == ExpressionType.Convert)
                 {
@@ -41,6 +44,14 @@ namespace GrobExp.Mutators.Visitors
                 return VisitConstant(exp.ToConstant());
             }
             return base.Visit(exp);
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            var parameters = node.Method.GetParameters();
+            if(!parameters.Any(param => param.ParameterType.IsByRef))
+                return base.VisitMethodCall(node);
+            return Expression.Call(Visit(node.Object), node.Method, node.Arguments.Select((x, i) => parameters[i].ParameterType.IsByRef ? x : Visit(x)));
         }
 
         protected override Expression VisitMember(MemberExpression node)

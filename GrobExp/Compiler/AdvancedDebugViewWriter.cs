@@ -1446,7 +1446,7 @@ public static void WriteTo(Expression node, TextWriter writer)
 
         protected override Expression VisitGoto(GotoExpression node)
         {
-            Out("." + node.Kind.ToString(), Flow.Space);
+            Out(node.Kind.ToString().ToUpper(), Flow.Space);
             Out(GetLabelTargetName(node.Target), Flow.Space);
             Out("{", Flow.Space);
             var newValue = Visit(node.Value);
@@ -1461,7 +1461,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             {
                 DumpLabel(node.ContinueLabel);
             }
-            Out(" {", Flow.NewLine);
+            Out("{", Flow.NewLine);
             Indent();
             var newBody = Visit(node.Body);
             Dedent();
@@ -1614,7 +1614,7 @@ public static void WriteTo(Expression node, TextWriter writer)
 
         private void DumpLabel(LabelTarget target)
         {
-            Out(String.Format(CultureInfo.CurrentCulture, ".LabelTarget {0}:", GetLabelTargetName(target)));
+            Out(String.Format(CultureInfo.CurrentCulture, "{0}:", GetLabelTargetName(target)));
         }
 
         private string GetLabelTargetName(LabelTarget target)

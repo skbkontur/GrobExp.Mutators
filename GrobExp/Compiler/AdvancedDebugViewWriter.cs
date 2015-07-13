@@ -504,7 +504,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                 {
                     if (isFirst)
                     {
-                        if (open == '{' || expressions.Count > 1)
+                        if (open == '{'/* || expressions.Count > 1*/)
                         {
                             NewLine();
                         }
@@ -513,7 +513,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                     else
                     {
                         if (separator != ';')
-                            Out(separator.ToString(), Flow.NewLine);
+                            Out(separator.ToString(), Flow.Space | Flow.Break);
                     }
                     bool isComplex = IsComplexArgument(e);
                     if (separator == ';' || isComplex)
@@ -1272,8 +1272,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             var newBinds = VisitExpressions('{', ',', binding.Bindings, VisitMemberBinding).Cast<MemberBinding>();
             return binding.Update(newBinds);
         }
-        
-        //TODO highlight complex initializers
+
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             var newExp = Visit(node.NewExpression) as NewExpression;

@@ -231,12 +231,13 @@ namespace GrobExp.Compiler
             ParameterExpression constantsParameter;
             object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            var resolvedLambda = new ExpressionClosureResolver(lambda, Module, true).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            bool dynamic = string.IsNullOrEmpty(DebugOutputDirectory);
+            var resolvedLambda = new ExpressionClosureResolver(lambda, Module, dynamic).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
                 resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFileName());
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
-            if(compiledLambdas.Count > 0)
+            if(compiledLambdas.Count > 0 && dynamic)
                 BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
             return compiledLambda;
         }

@@ -11,10 +11,9 @@ namespace GrobExp.Compiler
     {
         public ExpressionClosureResolver(LambdaExpression lambda, ModuleBuilder module, bool dynamic)
         {
-            lambda = (LambdaExpression)new LambdaPreparer().Visit(
-                new ExpressionFieldsExtractor().Visit(
-                    new ExpressionAnonymousTypeReplacer(module).Visit(
-                        new RuntimeVariablesInliner().Visit(lambda))));
+            lambda = (LambdaExpression)new LambdaPreparer().Visit(new RuntimeVariablesInliner().Visit(lambda));
+            if(!dynamic)
+                lambda = (LambdaExpression)new ExpressionPrivateMembersAccessor().Visit(new ExpressionAnonymousTypeReplacer(module).Visit(lambda));
             var parsedLambda = new ExpressionClosureBuilder(lambda, module).Build(dynamic);
             this.lambda = parsedLambda.Lambda;
             closureType = parsedLambda.ClosureType;

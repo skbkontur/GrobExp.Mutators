@@ -739,7 +739,7 @@ namespace Mutators.Tests
             pathFormatterCollection = new PathFormatterCollection();
         }
 
-        public static int[] BuildCounts(string[] keys)
+        private static int[] BuildCounts(string[] keys)
         {
             if(keys == null)
                 return null;

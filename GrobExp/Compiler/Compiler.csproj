@@ -44,10 +44,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AnonymousTypeBuilder.cs" />
     <Compile Include="ClosureSubstituter.cs" />
     <Compile Include="CompiledLambda.cs" />
     <Compile Include="AdvancedDebugViewWriter.cs" />
     <Compile Include="EmittingContext.cs" />
+    <Compile Include="ExpressionAnonymousTypeReplacer.cs" />
     <Compile Include="ExpressionClosureBuilder.cs" />
     <Compile Include="ExpressionClosureResolver.cs" />
     <Compile Include="ExpressionEmitters\BinaryArithmeticOperationExpressionEmitter.cs" />
@@ -92,6 +94,7 @@
     <Compile Include="ExpressionEmitters\UnaryAritmeticOperationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnaryAssignExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnboxExpressionEmitter.cs" />
+    <Compile Include="ExpressionFieldsExtractor.cs" />
     <Compile Include="ExpressionQuoter.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="CompilerOptions.cs" />

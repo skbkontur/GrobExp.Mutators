@@ -5,44 +5,16 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 
-using GrEmit;
-
 namespace GrobExp.Compiler
 {
-    class ExpressionFieldsExtractor : ExpressionVisitor
-    {
-        protected override Expression VisitMember(MemberExpression node)
-        {
-            var member = node.Member;
-
-            var expression = Visit(node.Expression);
-
-            if (expression != null && member.MemberType == MemberTypes.Field && (expression.Type.IsNestedPrivate || !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)))
-            {
-                /*
-                Func<object, object> kekeke = parentClass
-                    .GetField(member.Name, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
-                    .GetValue;
-                return Expression.Convert(Expression.Invoke(Expression.Constant(kekeke), newExpression), node.Type);
-                */
-
-                var extractor = FieldsExtractor.GetExtractor(member as FieldInfo);
-                if(expression.NodeType == ExpressionType.Convert)
-                    expression = ((UnaryExpression)expression).Operand;
-                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), expression), node.Type);
-            }
-
-            return node.Update(expression);
-        }
-    }
-
     internal class ExpressionClosureResolver : ExpressionVisitor
     {
         public ExpressionClosureResolver(LambdaExpression lambda, ModuleBuilder module, bool dynamic)
         {
             lambda = (LambdaExpression)new LambdaPreparer().Visit(
                 new ExpressionFieldsExtractor().Visit(
-                    new RuntimeVariablesInliner().Visit(lambda)));
+                    new ExpressionAnonymousTypeReplacer(module).Visit(
+                        new RuntimeVariablesInliner().Visit(lambda))));
             var parsedLambda = new ExpressionClosureBuilder(lambda, module).Build(dynamic);
             this.lambda = parsedLambda.Lambda;
             closureType = parsedLambda.ClosureType;

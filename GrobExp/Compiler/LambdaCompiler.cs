@@ -234,7 +234,7 @@ namespace GrobExp.Compiler
             bool dynamic = string.IsNullOrEmpty(DebugOutputDirectory);
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, dynamic).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
-                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFileName());
+                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, constantsType, constantsParameter, constants, GenerateFileName());
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0 && dynamic)
@@ -258,7 +258,7 @@ namespace GrobExp.Compiler
             method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
-                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, GenerateFileName());
+                resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, constantsType, constantsParameter, constants, GenerateFileName());
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
             CompileToMethodInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, null, null, switches, options, compiledLambdas, method);

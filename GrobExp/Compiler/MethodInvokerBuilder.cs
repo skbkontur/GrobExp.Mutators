@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using GrEmit;
+using GrEmit.Utils;
 
 namespace GrobExp.Compiler
 {
@@ -32,7 +33,10 @@ namespace GrobExp.Compiler
             if(!method.IsStatic)
                 parameterTypes.Add(method.ReflectedType);
             parameterTypes.AddRange(method.GetParameters().Select(p => p.ParameterType));
-            var dynamicMethod = new DynamicMethod("MethodInvoker$" + method.Name + "$" + Guid.NewGuid(), method.ReturnType, parameterTypes.ToArray(), typeof(MethodInvokerBuilder), true);
+            var prefix = "MethodInvoker";
+            if(method.IsStatic)
+                prefix += "$" + Formatter.Format(method.DeclaringType);
+            var dynamicMethod = new DynamicMethod(prefix + "$" + method.Name + "$" + Guid.NewGuid(), method.ReturnType, parameterTypes.ToArray(), typeof(MethodInvokerBuilder), true);
             using(var il = new GroboIL(dynamicMethod))
             {
                 for(var i = 0; i < parameterTypes.Count; ++i)

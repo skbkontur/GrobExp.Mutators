@@ -15,13 +15,13 @@ namespace GrobExp.Compiler
 
             var expression = Visit(node.Expression);
 
-            if(expression != null && member.MemberType == MemberTypes.Field &&
-               (expression.Type.IsNestedPrivate || !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)))
+            if(member.MemberType == MemberTypes.Field &&
+               ((expression != null && expression.Type.IsNestedPrivate) || !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)))
             {
                 var extractor = FieldsExtractor.GetExtractor(member as FieldInfo);
-                if(expression.NodeType == ExpressionType.Convert)
+                if(expression != null && expression.NodeType == ExpressionType.Convert)
                     expression = ((UnaryExpression)expression).Operand;
-                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), expression), node.Type);
+                return Expression.Convert(Expression.Invoke(Expression.Constant(extractor), expression ?? Expression.Constant(null)), node.Type);
             }
 
             return node.Update(expression);

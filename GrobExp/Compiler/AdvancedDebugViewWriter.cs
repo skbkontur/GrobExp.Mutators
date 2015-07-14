@@ -117,6 +117,11 @@ namespace GrobExp.Compiler
         //
         private Dictionary<LabelTarget, int> _labelIds;
 
+        // Constants object
+        private readonly Type constantsType;
+        private readonly ParameterExpression constantsParam;
+        private readonly object constants;
+
         // DebugInfo section
         private class SelectionItem
         {
@@ -160,9 +165,12 @@ namespace GrobExp.Compiler
         }
         // End DebugInfo section
 
-        private AdvancedDebugViewWriter(TextWriter file, string filename)
+        private AdvancedDebugViewWriter(TextWriter file, Type constantsType, ParameterExpression constantsParam, object constants, string filename)
         {
             symbolDocument = Expression.SymbolDocument(filename, Guid.Empty, Guid.Empty, Guid.Empty);
+            this.constantsType = constantsType;
+            this.constantsParam = constantsParam;
+            this.constants = constants;
             _out = file;
         }
 
@@ -237,23 +245,10 @@ namespace GrobExp.Compiler
             return GetId(target, ref _labelIds);
         }
 
-        /*
-/// <summary>
-/// Write out the given AST
-/// </summary>
-public static void WriteTo(Expression node, TextWriter writer)
-{
-    Debug.Assert(node != null);
-    Debug.Assert(writer != null);
-
-    new AdvancedDebugViewWriter(writer, null).WriteTo(node);
-}
-*/
-
-        public static LambdaExpression WriteToModifying(Expression node, string filename)
+        public static LambdaExpression WriteToModifying(Expression node, Type constantsType, ParameterExpression constantsParam, object constants, string filename)
         {
             using(var writer = new StreamWriter(filename, false, Encoding.UTF8))
-                return new AdvancedDebugViewWriter(writer, filename).WriteTo(node);
+                return new AdvancedDebugViewWriter(writer, constantsType, constantsParam, constants, filename).WriteTo(node);
         }
 
         private LambdaExpression WriteTo(Expression node)
@@ -488,6 +483,7 @@ public static void WriteTo(Expression node, TextWriter writer)
             });
         }
 
+        // TODO : fix line break before bracket
         //open = 0 means no brackets
         private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, Func<T, object> visit, BlockType blockType = BlockType.None)
         {
@@ -551,7 +547,7 @@ public static void WriteTo(Expression node, TextWriter writer)
                 NewLine();
             }
             if (close != '0' && blockType != BlockType.Body)
-                Out(close.ToString(), Flow.Break);
+                Out(Flow.None, close.ToString(), Flow.Break);
 
             return newBlock;
         }
@@ -924,16 +920,79 @@ public static void WriteTo(Expression node, TextWriter writer)
 
         protected override Expression VisitMember(MemberExpression node)
         {
+            if(node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
+            {
+                var param = (ParameterExpression)node.Expression;
+                if(param == constantsParam && node.Member.Name.StartsWith("<>c__"))
+                    return node;
+            }
             var newExp = OutMember(node, node.Expression, node.Member);
             return node.Update(newExp);
         }
 
         protected override Expression VisitInvocation(InvocationExpression node)
         {
-            Out(".Invoke ");
+            if(node.Expression.NodeType == ExpressionType.Convert)
+            {
+                var convert = (UnaryExpression)node.Expression;
+                if(convert.Operand.NodeType == ExpressionType.MemberAccess)
+                {
+                    var access = (MemberExpression)convert.Operand;
+                    if(access.Expression.NodeType == ExpressionType.Parameter)
+                    {
+                        var param = (ParameterExpression)access.Expression;
+                        if(param == constantsParam)
+                        {
+                            var funcName = ExtractNameUsingReflection(access.Member.Name);
+                            var result = GetRealPrivateName(funcName, "MethodInvoker$");
+
+                            if(result != null)
+                            {
+                                var realName = result.Item2;
+                                var className = result.Item1;
+                                var arguments = node.Arguments.ToArray();
+
+                                if(className == null)
+                                {
+                                    var obj = arguments[0];
+                                    arguments = arguments.Skip(1).ToArray();
+                                    var newArguments = new[] {Visit(obj)}.ToList();
+                                    Out(".");
+                                    Out(realName);
+                                    newArguments.AddRange(VisitExpressions('(', arguments).Cast<Expression>());
+                                    return node.Update(node.Expression, newArguments);
+                                }
+                                else
+                                {
+                                    Out(className);
+                                    Out(".");
+                                    Out(realName);
+                                    var newArguments = VisitExpressions('(', arguments).Cast<Expression>().ToArray();
+                                    return node.Update(node.Expression, newArguments);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Out("INVOKE ");
             var newExp = ParenthesizedVisit(node, node.Expression);
             var newArgs = VisitExpressions('(', node.Arguments).Cast<Expression>();
             return node.Update(newExp, newArgs);
+        }
+
+        private static Tuple<string, string> GetRealPrivateName(string name, string prefix)
+        {
+            if(!name.StartsWith(prefix))
+                return null;
+            int firstPos = name.IndexOf('$');
+            int secondPos = name.IndexOf('$', firstPos + 1);
+            int thirdPos = name.IndexOf('$', secondPos + 1);
+            if(thirdPos == -1)
+                return Tuple.Create<string, string>(null, name.Substring(firstPos + 1, secondPos - firstPos - 1));
+            return Tuple.Create(name.Substring(firstPos + 1, secondPos - firstPos - 1),
+                name.Substring(secondPos + 1, thirdPos - secondPos - 1));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
@@ -1276,6 +1335,7 @@ public static void WriteTo(Expression node, TextWriter writer)
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             var newExp = Visit(node.NewExpression) as NewExpression;
+            Out(" ");
             var newBinds = VisitExpressions('{', ',', node.Bindings, VisitMemberBinding).Cast<MemberBinding>();
             return node.Update(newExp, newBinds);
         }
@@ -1302,18 +1362,57 @@ public static void WriteTo(Expression node, TextWriter writer)
             switch (node.NodeType)
             {
                 case ExpressionType.Convert:
-                    if(node.Type != node.Operand.Type &&
-                        !(node.Type.IsGenericType &&
-                        node.Type.GetGenericTypeDefinition() == typeof(Nullable<>) &&
-                        node.Type.GetGenericArgument() == node.Operand.Type))
+
+                if(node.Operand.NodeType == ExpressionType.Invoke)
+                {
+                    var invoke = (InvocationExpression)node.Operand;
+                    if(invoke.Expression.NodeType == ExpressionType.MemberAccess)
                     {
-                        Out("(" + Formatter.Format(node.Type) + ")");
+                        var access = (MemberExpression)invoke.Expression;
+                        if(access.Expression.NodeType == ExpressionType.Parameter)
+                        {
+                            var param = (ParameterExpression)access.Expression;
+                            if(param == constantsParam)
+                            {
+                                var funcName = ExtractNameUsingReflection(access.Member.Name);
+                                var result = GetRealPrivateName(funcName, "FieldExtractor$");
+
+                                if(result != null)
+                                {
+                                    var realName = result.Item2;
+                                    var className = result.Item1;
+
+                                    if(className == null)
+                                    {
+                                        var cursorDump = Tuple.Create(row, _column);
+                                        var obj = Visit(invoke.Arguments[0]);
+                                        if (!Equals(cursorDump, Tuple.Create(row, _column)))
+                                            Out(".");
+                                        Out(realName);
+                                        return node.Update(invoke.Update(invoke.Expression, new[] {obj}));
+                                    }
+                                    else
+                                    {
+                                        Out(className);
+                                        Out(".");
+                                        Out(realName);
+                                        return node;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    else
-                    {
-                        //return ParenthesizedVisit(node, node.Operand);
-                    }
-                    break;
+                }
+
+                if(node.Type != node.Operand.Type &&
+                   !(node.Type.IsGenericType &&
+                     node.Type.GetGenericTypeDefinition() == typeof(Nullable<>) &&
+                     node.Type.GetGenericArgument() == node.Operand.Type))
+                {
+                    Out("(" + Formatter.Format(node.Type) + ")");
+                }
+                break;
+
                 case ExpressionType.ConvertChecked:
                     Out("(" + Formatter.Format(node.Type) + ")");
                     break;
@@ -1394,6 +1493,16 @@ public static void WriteTo(Expression node, TextWriter writer)
                     break;
             }
             return node.Update(newOperand);
+        }
+
+        private string ExtractNameUsingReflection(string memberName)
+        {
+            var reflectionA = constantsType.GetField(memberName);
+            var reflectionB = reflectionA.GetValue(constants);
+            var reflectionC = reflectionB.GetType().GetProperty("Method");
+            var reflectionD = reflectionC.GetValue(reflectionB, null);
+            var reflectionE = typeof(MethodInfo).GetProperty("Name");
+            return (string)reflectionE.GetValue(reflectionD, null);
         }
 
         protected override Expression VisitBlock(BlockExpression node)

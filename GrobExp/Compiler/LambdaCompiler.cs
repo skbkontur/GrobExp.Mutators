@@ -126,7 +126,7 @@ namespace GrobExp.Compiler
             var hash = ExpressionHashCalculator.CalcHashCode(expression, true);
             if(!Directory.Exists(DebugOutputDirectory))
                 Directory.CreateDirectory(DebugOutputDirectory);
-            return Path.Combine(DebugOutputDirectory, "Z" + hash + ".lambda");
+            return Path.Combine(DebugOutputDirectory, "Z" + Math.Abs(hash) + ".lambda");
         }
 
         private static void CompileInternal(LambdaExpression lambda, EmittingContext context)

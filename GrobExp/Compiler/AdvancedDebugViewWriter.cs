@@ -364,7 +364,7 @@ namespace GrobExp.Compiler
         {
             if ((flow & Flow.Break) != 0)
             {
-                if (_column > (MaxColumn + Depth))
+                if (_column > (MaxColumn/* + Depth*/))
                 {
                     flow = Flow.NewLine;
                 }
@@ -483,7 +483,6 @@ namespace GrobExp.Compiler
             });
         }
 
-        // TODO : fix line break before bracket
         //open = 0 means no brackets
         private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, Func<T, object> visit, BlockType blockType = BlockType.None)
         {
@@ -494,7 +493,8 @@ namespace GrobExp.Compiler
 
             if (expressions != null)
             {
-                Indent();
+                //if (separator == ';')
+                    Indent();
                 bool isFirst = true;
                 foreach (T e in expressions)
                 {
@@ -508,8 +508,11 @@ namespace GrobExp.Compiler
                     }
                     else
                     {
-                        if (separator != ';')
+                        if(separator != ';')
+                        {
+                            _flow &= ~Flow.Break;
                             Out(separator.ToString(), Flow.Space | Flow.Break);
+                        }
                     }
                     bool isComplex = IsComplexArgument(e);
                     if (separator == ';' || isComplex)
@@ -519,8 +522,11 @@ namespace GrobExp.Compiler
                     var cursorDump = Tuple.Create(row, _column);
                     var newExp = visit(e);
                     bool anyText = !Equals(cursorDump, Tuple.Create(row, _column));
-                    if (separator == ';' && anyText)
+                    if(separator == ';' && anyText)
+                    {
+                        _flow &= ~Flow.Break;
                         Out(separator.ToString(), Flow.NewLine);
+                    }
                     DebugInfoExpression debugInfo = null;
                     if (separator == ';' || isComplex)
                         debugInfo = EndSelection();
@@ -529,7 +535,8 @@ namespace GrobExp.Compiler
                     else
                         newBlock.Add(newExp);
                 }
-                Dedent();
+                //if (separator == ';')
+                    Dedent();
             }
 
             char close = '0';
@@ -1360,7 +1367,7 @@ namespace GrobExp.Compiler
         protected override Expression VisitMemberInit(MemberInitExpression node)
         {
             var newExp = Visit(node.NewExpression) as NewExpression;
-            Out(" ");
+            Out(Flow.Space, "");
             var newBinds = VisitExpressions('{', ',', node.Bindings, VisitMemberBinding).Cast<MemberBinding>();
             return node.Update(newExp, newBinds);
         }

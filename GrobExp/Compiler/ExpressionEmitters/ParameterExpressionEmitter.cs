@@ -58,7 +58,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 }
                 return false;
             }
-            EmittingContext.LocalHolder variable;
+            GroboIL.Local variable;
             if(context.VariablesToLocals.TryGetValue(node, out variable))
             {
                 if(extend)

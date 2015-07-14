@@ -508,7 +508,7 @@ namespace GrobExp.Compiler
         public Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> Switches { get; set; }
         public List<CompiledLambda> CompiledLambdas { get; set; }
         public GroboIL Il { get; set; }
-        public Dictionary<ParameterExpression, LocalHolder> VariablesToLocals { get { return variablesToLocals; } }
+        public Dictionary<ParameterExpression, GroboIL.Local> VariablesToLocals { get { return variablesToLocals; } }
         public Dictionary<LabelTarget, GroboIL.Label> Labels { get { return labels; } }
         public Stack<ParameterExpression> Variables { get { return variables; } }
 
@@ -770,7 +770,7 @@ namespace GrobExp.Compiler
             }
         }
 
-        private readonly Dictionary<ParameterExpression, LocalHolder> variablesToLocals = new Dictionary<ParameterExpression, LocalHolder>();
+        private readonly Dictionary<ParameterExpression, GroboIL.Local> variablesToLocals = new Dictionary<ParameterExpression, GroboIL.Local>();
         private readonly Stack<ParameterExpression> variables = new Stack<ParameterExpression>();
         private readonly Dictionary<LabelTarget, GroboIL.Label> labels = new Dictionary<LabelTarget, GroboIL.Label>();
 

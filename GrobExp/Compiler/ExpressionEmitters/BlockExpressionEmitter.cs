@@ -13,16 +13,21 @@ namespace GrobExp.Compiler.ExpressionEmitters
             var variables = node.Variables.Where(variable => !context.VariablesToLocals.ContainsKey(variable)).ToArray();
             foreach(var variable in variables)
             {
-                context.VariablesToLocals.Add(variable, context.DeclareLocal(variable.Type));
+                var local = string.IsNullOrEmpty(variable.Name)
+                                ? context.Il.DeclareLocal(variable.Type)
+                                : context.Il.DeclareLocal(variable.Type, variable.Name, appendUniquePrefix : false);
+                if(context.DebugInfoGenerator != null)
+                    local.SetLocalSymInfo(local.Name);
+                context.VariablesToLocals.Add(variable, local);
                 context.Variables.Push(variable);
             }
             resultType = typeof(void);
-            for(int index = 0; index < node.Expressions.Count; index++)
+            for(var index = 0; index < node.Expressions.Count; index++)
             {
                 var expression = node.Expressions[index];
-                GroboIL il = context.Il;
+                var il = context.Il;
                 var valueIsNullLabel = il.DefineLabel("valueIsNull");
-                bool labelUsed = ExpressionEmittersCollection.Emit(expression, context, valueIsNullLabel, index < node.Expressions.Count - 1 ? ResultType.Void : whatReturn, extend, out resultType);
+                var labelUsed = ExpressionEmittersCollection.Emit(expression, context, valueIsNullLabel, index < node.Expressions.Count - 1 ? ResultType.Void : whatReturn, extend, out resultType);
                 if(resultType != typeof(void) && index < node.Expressions.Count - 1)
                 {
                     // eat results of all expressions except the last one
@@ -65,7 +70,6 @@ namespace GrobExp.Compiler.ExpressionEmitters
             }
             foreach(var variable in variables)
             {
-                context.VariablesToLocals[variable].Dispose();
                 context.VariablesToLocals.Remove(variable);
                 context.Variables.Pop();
             }

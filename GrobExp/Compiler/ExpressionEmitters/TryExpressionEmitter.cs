@@ -59,7 +59,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             il.Starg(index);
                         else
                         {
-                            EmittingContext.LocalHolder local;
+                            GroboIL.Local local;
                             if(!context.VariablesToLocals.TryGetValue(variable, out local))
                             {
                                 local = context.DeclareLocal(variable.Type);
@@ -93,10 +93,14 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             il.Starg(index);
                         else
                         {
-                            EmittingContext.LocalHolder local;
+                            GroboIL.Local local;
                             if(!context.VariablesToLocals.TryGetValue(variable, out local))
                             {
-                                local = context.DeclareLocal(variable.Type);
+                                local = string.IsNullOrEmpty(variable.Name)
+                                                ? context.Il.DeclareLocal(variable.Type)
+                                                : context.Il.DeclareLocal(variable.Type, variable.Name, appendUniquePrefix: false);
+                                if (context.DebugInfoGenerator != null)
+                                    local.SetLocalSymInfo(local.Name);
                                 context.VariablesToLocals.Add(variable, local);
                                 context.Variables.Push(variable);
                                 disposeVariable = true;
@@ -125,7 +129,6 @@ namespace GrobExp.Compiler.ExpressionEmitters
 
                 if(disposeVariable)
                 {
-                    context.VariablesToLocals[variable].Dispose();
                     context.VariablesToLocals.Remove(variable);
                     context.Variables.Pop();
                 }

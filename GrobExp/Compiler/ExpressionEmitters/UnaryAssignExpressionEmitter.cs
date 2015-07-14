@@ -237,7 +237,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Ldarg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Ldloc(variable);
                     else
@@ -328,7 +328,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else
@@ -431,7 +431,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else

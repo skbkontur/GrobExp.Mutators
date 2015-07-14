@@ -94,6 +94,7 @@
     <Compile Include="ExpressionEmitters\UnaryAritmeticOperationExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnaryAssignExpressionEmitter.cs" />
     <Compile Include="ExpressionEmitters\UnboxExpressionEmitter.cs" />
+    <Compile Include="ExpressionHashCalculator.cs" />
     <Compile Include="ExpressionPrivateMembersAccessor.cs" />
     <Compile Include="ExpressionQuoter.cs" />
     <Compile Include="Extensions.cs" />

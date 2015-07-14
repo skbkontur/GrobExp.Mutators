@@ -123,7 +123,6 @@
     <Compile Include="Visitors\DependenciesExtractor.cs" />
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
-    <Compile Include="Visitors\ExpressionHashCalculator.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />

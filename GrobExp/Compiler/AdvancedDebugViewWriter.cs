@@ -692,8 +692,33 @@ namespace GrobExp.Compiler
             return node.Update(newLeft, node.Conversion, newRight);
         }
 
+        private readonly Dictionary<Type, int> typeParametersCounter = new Dictionary<Type, int>();
+        private readonly Dictionary<ParameterExpression, string> parameterNames = new Dictionary<ParameterExpression, string>();
+        private readonly FieldInfo field = typeof(ParameterExpression).GetField("_name", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private string GetName(ParameterExpression param)
+        {
+            if(!parameterNames.ContainsKey(param))
+            {
+                int counter;
+                if(!typeParametersCounter.TryGetValue(param.Type, out counter))
+                    typeParametersCounter.Add(param.Type, counter = 1);
+                var newName = Formatter.Format(param.Type) + "_" + counter;
+                typeParametersCounter[param.Type]++;
+                parameterNames.Add(param, newName);
+                return newName;
+            }
+            return parameterNames[param];
+        }
+
         protected override Expression VisitParameter(ParameterExpression node)
         {
+            if(string.IsNullOrEmpty(node.Name))
+            {
+                var name = GetName(node);
+                field.SetValue(node, name);
+            }
+
             // Have '$' for the DebugView of ParameterExpressions
             Out("$");
             if (String.IsNullOrEmpty(node.Name))
@@ -778,7 +803,7 @@ namespace GrobExp.Compiler
                 return node.Update(newTest, newTrue, newFalse);
             }
 
-            if (IsSimpleExpression(node.Test))
+            //if (IsSimpleExpression(node.Test))
             {
                 Out("IF (");
                 StartSelection();
@@ -786,7 +811,7 @@ namespace GrobExp.Compiler
                 newTest = Expression.Block(EndSelection(), newTestBody);
                 Out(") {", Flow.NewLine);
             }
-            else
+            /*else
             {
                 Out("IF (", Flow.NewLine);
                 Indent();
@@ -795,7 +820,7 @@ namespace GrobExp.Compiler
                 newTest = Expression.Block(EndSelection(), newTestBody);
                 Dedent();
                 Out(Flow.NewLine, ") {", Flow.NewLine);
-            }
+            }*/
             Indent();
             StartSelection();
             var newTrueBody = Visit(node.IfTrue);

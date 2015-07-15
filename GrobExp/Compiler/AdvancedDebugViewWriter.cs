@@ -88,6 +88,8 @@ namespace GrobExp.Compiler
             Break = 0x8000      // newline if column > MaxColumn
         };
 
+        private const int breakArgsCount = 2;
+
         private const int Tab = 4;
         private const int MaxColumn = 120;
 
@@ -464,7 +466,8 @@ namespace GrobExp.Compiler
             return VisitExpressions<T>(open, ',', expressions);
         }
 
-        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, BlockType blockType = BlockType.None) where T : Expression
+        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions,
+            BlockType blockType = BlockType.None) where T : Expression
         {
             return VisitExpressions(open, separator, expressions, Visit, blockType);
         }
@@ -474,7 +477,7 @@ namespace GrobExp.Compiler
             return VisitExpressions('(', ',', expressions, variable =>
             {
                 Out(Formatter.Format(variable.Type));
-                if (variable.IsByRef)
+                if(variable.IsByRef)
                 {
                     Out("&");
                 }
@@ -484,8 +487,13 @@ namespace GrobExp.Compiler
         }
 
         //open = 0 means no brackets
-        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions, Func<T, object> visit, BlockType blockType = BlockType.None)
+        private List<object> VisitExpressions<T>(char open, char separator, IList<T> expressions,
+            Func<T, object> visit, BlockType blockType = BlockType.None)
         {
+            var nonSemicolonFlow = Flow.NewLine;
+            if(open == '(' && expressions.Count < breakArgsCount)
+                nonSemicolonFlow = Flow.Space | Flow.Break;
+
             if (open != '0' && blockType != BlockType.Return)
                 Out(open.ToString());
 
@@ -500,10 +508,8 @@ namespace GrobExp.Compiler
                 {
                     if (isFirst)
                     {
-                        if (open == '{'/* || expressions.Count > 1*/)
-                        {
+                        if (open == '{' || expressions.Count >= breakArgsCount)
                             NewLine();
-                        }
                         isFirst = false;
                     }
                     else
@@ -511,7 +517,7 @@ namespace GrobExp.Compiler
                         if(separator != ';')
                         {
                             _flow &= ~Flow.Break;
-                            Out(separator.ToString(), Flow.Space | Flow.Break);
+                            Out(separator.ToString(), nonSemicolonFlow);
                         }
                     }
                     bool isComplex = IsComplexArgument(e);
@@ -554,7 +560,7 @@ namespace GrobExp.Compiler
                 NewLine();
             }
             if (close != '0' && blockType != BlockType.Body)
-                Out(Flow.None, close.ToString(), Flow.Break);
+                Out(nonSemicolonFlow == Flow.NewLine ? Flow.NewLine : Flow.None, close.ToString(), Flow.Break);
 
             return newBlock;
         }
@@ -699,7 +705,7 @@ namespace GrobExp.Compiler
             return node.Update(newLeft, node.Conversion, newRight);
         }
 
-        private readonly Dictionary<Type, int> typeParametersCounter = new Dictionary<Type, int>();
+        private readonly Dictionary<string, int> nameParametersCounter = new Dictionary<string, int>();
         private readonly Dictionary<ParameterExpression, string> parameterNames = new Dictionary<ParameterExpression, string>();
         private readonly FieldInfo field = typeof(ParameterExpression).GetField("_name", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -707,15 +713,32 @@ namespace GrobExp.Compiler
         {
             if(!parameterNames.ContainsKey(param))
             {
+                string typeName = BeutifyName(Formatter.Format(param.Type));
                 int counter;
-                if(!typeParametersCounter.TryGetValue(param.Type, out counter))
-                    typeParametersCounter.Add(param.Type, counter = 1);
-                var newName = Formatter.Format(param.Type) + "_" + counter;
-                typeParametersCounter[param.Type]++;
+                if (!nameParametersCounter.TryGetValue(typeName, out counter))
+                    nameParametersCounter.Add(typeName, counter = 1);
+                var newName = typeName + (counter == 1 ? "" : "_" + counter);
+                nameParametersCounter[typeName]++;
                 parameterNames.Add(param, newName);
                 return newName;
             }
             return parameterNames[param];
+        }
+
+        private string BeutifyName(string name)
+        {
+            if(char.IsUpper(name[0]))
+                name = char.ToLower(name[0]) + name.Substring(1);
+
+            int position = name.LastIndexOf('_');
+            if(position != -1)
+                name = name.Substring(0, position);
+
+            position = name.IndexOf('<');
+            if(position != -1)
+                name = name.Substring(0, position);
+
+            return name;
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
@@ -727,7 +750,7 @@ namespace GrobExp.Compiler
             }
 
             // Have '$' for the DebugView of ParameterExpressions
-            Out("$");
+            //Out("$");
             if (String.IsNullOrEmpty(node.Name))
             {
                 // If no name if provided, generate a name as $var1, $var2.
@@ -1263,7 +1286,8 @@ namespace GrobExp.Compiler
                 Out(node.Method.Name);
                 newArguments = new ReadOnlyCollection<Expression>(
                     newArguments.Concat(new ReadOnlyCollection<Expression>(
-                        VisitExpressions('(', node.Arguments.Skip(1).ToArray()).Cast<Expression>().ToList()).ToList()).ToList());
+                        VisitExpressions('(', node.Arguments.Skip(1).ToArray())
+                            .Cast<Expression>().ToList()).ToList()).ToList());
             }
             else
             {
@@ -1281,7 +1305,8 @@ namespace GrobExp.Compiler
                 }
                 Out(".");
                 Out(node.Method.Name);
-                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('(', node.Arguments).Cast<Expression>().ToList());
+                newArguments = new ReadOnlyCollection<Expression>(VisitExpressions('(', node.Arguments)
+                    .Cast<Expression>().ToList());
             }
             return node.Update(newObject, newArguments);
         }

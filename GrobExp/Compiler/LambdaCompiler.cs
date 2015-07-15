@@ -60,6 +60,8 @@ namespace GrobExp.Compiler
 
             var typeBuilder = Module.DefineType(Guid.NewGuid().ToString(), TypeAttributes.Public | TypeAttributes.Class);
             var method = typeBuilder.DefineMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, returnType, parameterTypes);
+            for(var i = 0; i < parameters.Length; ++i)
+                method.DefineParameter(i + 1, ParameterAttributes.None, parameters[i].Name);
             var ilCode = CompileToMethodInternal(lambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, switches, options, compiledLambdas, method);
 
             var type = typeBuilder.CreateType();
@@ -232,11 +234,13 @@ namespace GrobExp.Compiler
             ParameterExpression constantsParameter;
             object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            bool dynamic = string.IsNullOrEmpty(DebugOutputDirectory);
+            var dynamic = string.IsNullOrEmpty(DebugOutputDirectory);
             var resolvedLambda = new ExpressionClosureResolver(lambda, Module, dynamic).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
+            {
                 resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, constantsType,
-                    constantsParameter, constants, GenerateFileName(resolvedLambda));
+                                                                          constantsParameter, constants, GenerateFileName(resolvedLambda));
+            }
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
             if(compiledLambdas.Count > 0 && dynamic)
@@ -260,8 +264,10 @@ namespace GrobExp.Compiler
             method.SetParameters(lambda.Parameters.Select(parameter => parameter.Type).ToArray());
             var resolvedLambda = new ExpressionClosureResolver(lambda, module, false).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
+            {
                 resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, constantsType,
-                    constantsParameter, constants, GenerateFileName(resolvedLambda));
+                                                                          constantsParameter, constants, GenerateFileName(resolvedLambda));
+            }
             if(constantsParameter != null)
                 throw new InvalidOperationException("Non-trivial constants are not allowed for compilation to method");
             CompileToMethodInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, null, null, switches, options, compiledLambdas, method);

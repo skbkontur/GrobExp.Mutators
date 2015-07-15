@@ -17,15 +17,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Channels;
 using System.Text;
 
 using GrEmit.Utils;
@@ -75,7 +74,7 @@ namespace GrobExp.Compiler
     }
 
 #endif
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
+    [SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     public sealed class AdvancedDebugViewWriter : ExpressionVisitor
     {
         [Flags]
@@ -161,8 +160,11 @@ namespace GrobExp.Compiler
             return GenerateDebugInfo(current.StartRow, current.StartColumn, row, _column);
         }
 
-        BlockExpression GetBlock(Expression e)
+        Expression GetBlock(Expression e)
         {
+            if(e.NodeType == ExpressionType.Block ||
+               e.NodeType == ExpressionType.Conditional)
+                return e;
             return Expression.Block(EndSelection(), e);
         }
         // End DebugInfo section
@@ -359,7 +361,7 @@ namespace GrobExp.Compiler
             flow = CheckBreak(flow);
 
             // Get the biggest flow that is requested None < Space < NewLine
-            return (Flow)System.Math.Max((int)last, (int)flow);
+            return (Flow)Math.Max((int)last, (int)flow);
         }
 
         private Flow CheckBreak(Flow flow)
@@ -521,6 +523,15 @@ namespace GrobExp.Compiler
                         }
                     }
                     bool isComplex = IsComplexArgument(e);
+
+                    bool needSelection = false;
+                    var eAsExp = e as Expression;
+                    if(eAsExp != null)
+                    {
+                        needSelection = eAsExp.NodeType != ExpressionType.Conditional &&
+                                        eAsExp.NodeType != ExpressionType.Block;
+                    }
+
                     if (separator == ';' || isComplex)
                         StartSelection();
                     if (blockType == BlockType.Return)
@@ -536,7 +547,7 @@ namespace GrobExp.Compiler
                     DebugInfoExpression debugInfo = null;
                     if (separator == ';' || isComplex)
                         debugInfo = EndSelection();
-                    if((separator == ';' || isComplex) && anyText && newExp is Expression)
+                    if((separator == ';' || isComplex) && anyText && newExp is Expression && needSelection)
                         newBlock.Add(Expression.Block(debugInfo, newExp as Expression));
                     else
                         newBlock.Add(newExp);
@@ -602,7 +613,7 @@ namespace GrobExp.Compiler
             return value;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected override Expression VisitBinary(BinaryExpression node)
         {
             Expression newLeft = node.Left, newRight = node.Right;
@@ -818,43 +829,31 @@ namespace GrobExp.Compiler
             {
                 StartSelection();
                 var ifTestBody = Visit(node.Test);
-                newTest = Expression.Block(EndSelection(), ifTestBody);
+                newTest = GetBlock(ifTestBody);
 
                 Out(Flow.NewLine, "?", Flow.Space);
                 StartSelection();
                 var ifTrueBody = Visit(node.IfTrue);
-                newTrue = Expression.Block(EndSelection(), ifTrueBody);
+                newTrue = GetBlock(ifTrueBody);
 
                 Out(Flow.NewLine, ":", Flow.Space);
                 StartSelection();
                 var ifFalseBody = Visit(node.IfFalse);
-                newFalse = Expression.Block(EndSelection(), ifFalseBody);
+                newFalse = GetBlock(ifFalseBody);
 
                 return node.Update(newTest, newTrue, newFalse);
             }
 
-            //if (IsSimpleExpression(node.Test))
-            {
-                Out("IF (");
-                StartSelection();
-                var newTestBody = Visit(node.Test);
-                newTest = Expression.Block(EndSelection(), newTestBody);
-                Out(") {", Flow.NewLine);
-            }
-            /*else
-            {
-                Out("IF (", Flow.NewLine);
-                Indent();
-                StartSelection();
-                var newTestBody = Visit(node.Test);
-                newTest = Expression.Block(EndSelection(), newTestBody);
-                Dedent();
-                Out(Flow.NewLine, ") {", Flow.NewLine);
-            }*/
+            Out("IF (");
+            StartSelection();
+            var newTestBody = Visit(node.Test);
+            newTest = GetBlock(newTestBody);
+            Out(") {", Flow.NewLine);
+
             Indent();
             StartSelection();
             var newTrueBody = Visit(node.IfTrue);
-            newTrue = Expression.Block(EndSelection(), newTrueBody);
+            newTrue = GetBlock(newTrueBody);
             Dedent();
             if(!HasEmptyBody(node.IfFalse))
             {
@@ -862,7 +861,7 @@ namespace GrobExp.Compiler
                 Indent();
                 StartSelection();
                 var newFalseBody = Visit(node.IfFalse);
-                newFalse = Expression.Block(EndSelection(), newFalseBody);
+                newFalse = GetBlock(newFalseBody);
                 Dedent();
                 Out(Flow.NewLine, "}");
             }
@@ -1050,7 +1049,7 @@ namespace GrobExp.Compiler
                 name.Substring(secondPos + 1, thirdPos - secondPos - 1));
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static bool NeedsParentheses(Expression parent, Expression child)
         {
             Debug.Assert(parent != null);
@@ -1136,7 +1135,7 @@ namespace GrobExp.Compiler
         }
 
         // the greater the higher
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private static int GetOperatorPrecedence(Expression node)
         {
             // Roughly matches C# operator precedence, with some additional
@@ -1413,7 +1412,7 @@ namespace GrobExp.Compiler
             return node.Update(newExp);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)

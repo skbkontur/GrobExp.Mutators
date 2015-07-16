@@ -493,7 +493,7 @@ namespace GrobExp.Compiler
             Func<T, object> visit, BlockType blockType = BlockType.None)
         {
             var nonSemicolonFlow = Flow.NewLine;
-            if(open == '(' && expressions.Count < breakArgsCount)
+            if(open != '{' && expressions.Count < breakArgsCount)
                 nonSemicolonFlow = Flow.Space | Flow.Break;
 
             if (open != '0' && blockType != BlockType.Return)
@@ -566,12 +566,11 @@ namespace GrobExp.Compiler
                 //default:
             }
 
-            if (open == '{')
+            if(close != '0' && blockType != BlockType.Body)
             {
-                NewLine();
-            }
-            if (close != '0' && blockType != BlockType.Body)
+                _flow &= ~Flow.Break;
                 Out(nonSemicolonFlow == Flow.NewLine ? Flow.NewLine : Flow.None, close.ToString(), Flow.Break);
+            }
 
             return newBlock;
         }
@@ -974,12 +973,14 @@ namespace GrobExp.Compiler
 
         protected override Expression VisitMember(MemberExpression node)
         {
+            /*
             if(node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
             {
                 var param = (ParameterExpression)node.Expression;
                 if(param == constantsParam && node.Member.Name.StartsWith("<>c__"))
                     return node;
             }
+             */
             var newExp = OutMember(node, node.Expression, node.Member);
             return node.Update(newExp);
         }
@@ -1030,7 +1031,6 @@ namespace GrobExp.Compiler
                 }
             }
 
-            Out("INVOKE ");
             var newExp = ParenthesizedVisit(node, node.Expression);
             var newArgs = VisitExpressions('(', node.Arguments).Cast<Expression>();
             return node.Update(newExp, newArgs);

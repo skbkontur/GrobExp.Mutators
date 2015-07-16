@@ -13,10 +13,10 @@ namespace GrobExp.Compiler
 {
     public static class LambdaCompiler
     {
-        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
+        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options, bool forceDynamic = false)
         {
             CompiledLambda[] subLambdas;
-            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
+            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) || forceDynamic ? null : DebugInfoGenerator.CreatePdbGenerator();
             return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 
@@ -214,6 +214,7 @@ namespace GrobExp.Compiler
         private static AssemblyBuilder CreateAssembly()
         {
             var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+
 //            Type daType = typeof(AssemblyFlagsAttribute);
 //            ConstructorInfo daCtor = daType.GetConstructor(new[] {typeof(AssemblyNameFlags)});
 ////[assembly : AssemblyFlags(AssemblyNameFlags.EnableJITcompileOptimizer)]

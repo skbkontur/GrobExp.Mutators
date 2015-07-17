@@ -118,6 +118,9 @@ namespace GrobExp.Compiler
         //
         private Dictionary<LabelTarget, int> _labelIds;
 
+        // Result string
+        public StringBuilder result;
+
         // Constants object
         private readonly Type constantsType;
         private readonly ParameterExpression constantsParam;
@@ -169,13 +172,13 @@ namespace GrobExp.Compiler
         }
         // End DebugInfo section
 
-        private AdvancedDebugViewWriter(TextWriter file, Type constantsType, ParameterExpression constantsParam, object constants, string filename)
+        private AdvancedDebugViewWriter(Type constantsType, ParameterExpression constantsParam, object constants, string filename)
         {
             symbolDocument = Expression.SymbolDocument(filename, Guid.Empty, Guid.Empty, Guid.Empty);
             this.constantsType = constantsType;
             this.constantsParam = constantsParam;
             this.constants = constants;
-            _out = file;
+            this.result = new StringBuilder();
         }
 
         private int Base
@@ -249,10 +252,23 @@ namespace GrobExp.Compiler
             return GetId(target, ref _labelIds);
         }
 
-        public static LambdaExpression WriteToModifying(Expression node, Type constantsType, ParameterExpression constantsParam, object constants, string filename)
+        public static LambdaExpression WriteToModifying(Expression node, Type constantsType, ParameterExpression constantsParam,
+            object constants, string filename)
         {
-            using(var writer = new StreamWriter(filename, false, Encoding.UTF8))
-                return new AdvancedDebugViewWriter(writer, constantsType, constantsParam, constants, filename).WriteTo(node);
+            var visitor = new AdvancedDebugViewWriter(constantsType, constantsParam, constants, filename);
+            var newNode = visitor.WriteTo(node);
+            var debugOutput = visitor.result;
+
+            try
+            {
+                File.WriteAllText(filename, debugOutput.ToString());
+            }
+            catch(IOException)
+            {
+                //nothing
+            }
+
+            return newNode;
         }
 
         private LambdaExpression WriteTo(Expression node)
@@ -328,7 +344,8 @@ namespace GrobExp.Compiler
 
         private void WriteLine()
         {
-            _out.WriteLine();
+            //_out.WriteLine();
+            result.Append('\n');
             row++;
             _column = 0;
             foreach (var element in selectionStack)
@@ -349,7 +366,8 @@ namespace GrobExp.Compiler
             if (i < s.Length)
                 foreach (var element in selectionStack)
                     element.PassSpaces = false;
-            _out.Write(s);
+            result.Append(s);
+            //_out.Write(s);
             _column += s.Length;
         }
 

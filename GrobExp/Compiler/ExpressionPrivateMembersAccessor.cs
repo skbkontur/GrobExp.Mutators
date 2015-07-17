@@ -11,12 +11,39 @@ namespace GrobExp.Compiler
 {
     internal class ExpressionPrivateMembersAccessor : ExpressionVisitor
     {
-        private static bool IsPublic(Type type)
+        private static bool IsNestedlyPublic(Type type)
         {
             if (type == null) return true;
+
+            if(type.IsArray)
+            {
+                if (!type.IsNested)
+                {
+                    if (!type.IsPublic)
+                        return false;
+                }
+                else if (!type.IsNestedPublic || !IsNestedlyPublic(type.DeclaringType))
+                    return false;
+                var elem = type.GetElementType();
+                return IsNestedlyPublic(elem);
+            }
+
+            if(type.IsGenericType)
+            {
+                if(!type.IsNested)
+                {
+                    if(!type.IsPublic)
+                        return false;
+                }
+                else if(!type.IsNestedPublic || !IsNestedlyPublic(type.DeclaringType))
+                    return false;
+                var parameters = type.GetGenericArguments();
+                return parameters.All(IsNestedlyPublic);
+            }
+
             if (!type.IsNested)
                 return type.IsPublic;
-            return type.IsNestedPublic && IsPublic(type.DeclaringType);
+            return type.IsNestedPublic && IsNestedlyPublic(type.DeclaringType);
         }
 
         private static Expression GetGetter(FieldInfo field, Expression obj, Type type)
@@ -34,7 +61,7 @@ namespace GrobExp.Compiler
         private static bool NeedsToBeReplacedByGetter(Expression node)
         {
             var access = node as MemberExpression;
-            if(access == null)
+            if (access == null)
                 return false;
             return NeedsToBeReplacedByGetter(access);
         }
@@ -45,7 +72,7 @@ namespace GrobExp.Compiler
             var expression = node.Expression;
 
             return member.MemberType == MemberTypes.Field &&
-                   ((expression != null && !IsPublic(expression.Type)) ||
+                   ((expression != null && !IsNestedlyPublic(expression.Type)) ||
                     !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public));
         }
 
@@ -75,12 +102,25 @@ namespace GrobExp.Compiler
             return node.Update(expression);
         }
 
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            return base.VisitLambda(node);
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var newObject = Visit(node.Object);
             var arguments = node.Arguments;
             var newArguments = Visit(arguments).ToArray();
             var argumentsTypes = node.Method.GetParameters().Select(p => p.ParameterType).ToArray();
+
+            if(node.Method.IsPrivate)
+            {
+                if(argumentsTypes.Any(t => !IsNestedlyPublic(t)) || !IsNestedlyPublic(node.Method.ReturnType))
+                    throw new InvalidOperationException(
+                        string.Format("Private method '{0}' with arguments or return value of private types is not allowed!",
+                            node.Method.Name));
+            }
 
             var variables = new List<ParameterExpression>();
             var beforeInvocation = new List<Expression>();
@@ -103,7 +143,7 @@ namespace GrobExp.Compiler
             }
 
             Expression newInvocation;
-            if(node.Method.IsPublic && IsPublic(node.Method.DeclaringType))
+            if(node.Method.IsPublic && IsNestedlyPublic(node.Method.DeclaringType))
                 newInvocation = node.Update(newObject, newArguments);
             else
             {

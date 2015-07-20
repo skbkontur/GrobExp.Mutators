@@ -1617,7 +1617,7 @@ namespace GrobExp.Compiler
 
         protected override Expression VisitLabel(LabelExpression node)
         {
-            Out("LABEL", Flow.NewLine);
+            Out("LABEL", Flow.Space);
             Indent();
             var newDefault = Visit(node.DefaultValue);
             Dedent();

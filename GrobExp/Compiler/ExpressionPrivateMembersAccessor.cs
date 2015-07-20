@@ -6,6 +6,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 
 using GrEmit;
+using GrEmit.Utils;
 
 namespace GrobExp.Compiler
 {
@@ -71,9 +72,9 @@ namespace GrobExp.Compiler
             var member = node.Member;
             var expression = node.Expression;
 
-            return member.MemberType == MemberTypes.Field &&
-                   ((expression != null && !IsNestedlyPublic(expression.Type)) ||
-                    !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public));
+            return (expression != null && !IsNestedlyPublic(expression.Type)) ||
+                   (member is FieldInfo && !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)) ||
+                   (member is PropertyInfo && !((PropertyInfo)member).GetGetMethod().IsPublic);
         }
 
         private static Expression GetObjectFromGetter(Expression getter)
@@ -87,6 +88,43 @@ namespace GrobExp.Compiler
             return obj;
         }
 
+        private static Expression GetInvocation(MethodInfo method, Expression obj, Expression[] arguments)
+        {
+            if(obj != null)
+                arguments = new[] {obj}.Concat(arguments).ToArray();
+
+            foreach(var arg in arguments)
+                if(!IsNestedlyPublic(arg.Type))
+                {
+                    throw new InvalidOperationException(string.Format(
+                        "Non-public method '{0}' with argument or return value of non-public type '{1}' is not allowed!",
+                        method.Name, Formatter.Format(arg.Type)));
+                }
+
+            var methodDelegate = MethodInvokerBuilder.GetInvoker(method);
+            var methodDelegateType = Extensions.GetDelegateType(arguments.Select(a => a.Type).ToArray(), method.ReturnType);
+
+            return Expression.Invoke(Expression.Convert(Expression.Constant(methodDelegate), methodDelegateType), arguments);
+        }
+
+        private void CheckTypePublicity(Type type)
+        {
+            if(!IsNestedlyPublic(type))
+                throw new InvalidOperationException(string.Format("Non-public type '{0}' is not allowed!", Formatter.Format(type)));
+        }
+
+        protected override Expression VisitNew(NewExpression node)
+        {
+            CheckTypePublicity(node.Type);
+            return base.VisitNew(node);
+        }
+
+        protected override Expression VisitNewArray(NewArrayExpression node)
+        {
+            CheckTypePublicity(node.Type);
+            return base.VisitNewArray(node);
+        }
+
         protected override Expression VisitMember(MemberExpression node)
         {
             var member = node.Member;
@@ -94,17 +132,27 @@ namespace GrobExp.Compiler
 
             if (NeedsToBeReplacedByGetter(node))
             {
-                if(expression != null && expression.NodeType == ExpressionType.Convert)
-                    expression = ((UnaryExpression)expression).Operand;
-                return GetGetter((FieldInfo)member, expression, node.Type);
+                CheckTypePublicity(node.Type);
+                if(node.Member.MemberType == MemberTypes.Property)
+                {
+                    CheckTypePublicity(expression.Type);
+                    var getter = ((PropertyInfo)node.Member).GetGetMethod();
+                    return GetInvocation(getter, expression, new Expression[0]);
+                }
+                else if (node.Member.MemberType == MemberTypes.Field)
+                {
+                    if (expression != null && expression.NodeType == ExpressionType.Convert)
+                        expression = ((UnaryExpression)expression).Operand;
+                    return GetGetter((FieldInfo)member, expression, node.Type);
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        string.Format("Unknown MemberType '{0}'", node.Member.MemberType));
+                }
             }
 
             return node.Update(expression);
-        }
-
-        protected override Expression VisitLambda<T>(Expression<T> node)
-        {
-            return base.VisitLambda(node);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -113,14 +161,6 @@ namespace GrobExp.Compiler
             var arguments = node.Arguments;
             var newArguments = Visit(arguments).ToArray();
             var argumentsTypes = node.Method.GetParameters().Select(p => p.ParameterType).ToArray();
-
-            if(node.Method.IsPrivate)
-            {
-                if(argumentsTypes.Any(t => !IsNestedlyPublic(t)) || !IsNestedlyPublic(node.Method.ReturnType))
-                    throw new InvalidOperationException(
-                        string.Format("Private method '{0}' with arguments or return value of private types is not allowed!",
-                            node.Method.Name));
-            }
 
             var variables = new List<ParameterExpression>();
             var beforeInvocation = new List<Expression>();
@@ -131,6 +171,12 @@ namespace GrobExp.Compiler
                 if(NeedsToBeReplacedByGetter(arguments[i]) && argumentsTypes[i].IsByRef)
                 {
                     var access = (MemberExpression)arguments[i];
+                    if(access.Member.MemberType == MemberTypes.Property)
+                    {
+                        throw new InvalidOperationException(
+                            String.Format("Property by reference '{0}' is not allowed", access.Member.Name));
+                    }
+
                     var getter = newArguments[i];
                     var local = Expression.Parameter(argumentsTypes[i].GetElementType());
                     var setter = GetSetter((FieldInfo)access.Member, GetObjectFromGetter(getter), local);
@@ -146,15 +192,7 @@ namespace GrobExp.Compiler
             if(node.Method.IsPublic && IsNestedlyPublic(node.Method.DeclaringType))
                 newInvocation = node.Update(newObject, newArguments);
             else
-            {
-                if(newObject != null)
-                    newArguments = new[] {newObject}.Concat(newArguments).ToArray();
-
-                var methodDelegate = MethodInvokerBuilder.GetInvoker(node.Method);
-                var methodDelegateType = Extensions.GetDelegateType(newArguments.Select(a => a.Type).ToArray(), node.Method.ReturnType);
-
-                newInvocation = Expression.Invoke(Expression.Convert(Expression.Constant(methodDelegate), methodDelegateType), newArguments);
-            }
+                newInvocation = GetInvocation(node.Method, newObject, newArguments);
 
             if(variables.Count > 0)
             {

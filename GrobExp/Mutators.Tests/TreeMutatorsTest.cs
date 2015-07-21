@@ -16,7 +16,9 @@ namespace Mutators.Tests
         public void TestProperty()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).NullifyIf(data => data.A.S != null));
-            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            MutatorsTree<TestData> mutatorsTree = collection.GetMutatorsTree(MutatorsContext.Empty);
+            Action<TestData> mutator = mutatorsTree.GetTreeMutator();
+            Console.WriteLine(mutatorsTree);
             var o = new TestData {A = new A {S = "zzz"}, S = "qxx"};
             mutator(o);
             Assert.IsNullOrEmpty(o.S);
@@ -53,7 +55,8 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().C.D.Each().S).NullifyIf(data => data.A.B.Each().Z > data.A.B.Each().C.D.Each().Z);
                     configurator.Target(data => data.A.B.Each().Z).NullifyIf(data => data.A.B.Each().Z < 0);
                 });
-            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            MutatorsTree<TestData> mutatorsTree = collection.GetMutatorsTree(MutatorsContext.Empty);
+            Action<TestData> mutator = mutatorsTree.GetTreeMutator();
             var o = new TestData
                 {
                     A = new A
@@ -106,7 +109,7 @@ namespace Mutators.Tests
             Assert.IsNullOrEmpty(o.A.B[1].C.D[1].S);
             Assert.AreEqual("zzz20", o.A.B[2].C.D[0].S);
             Assert.AreEqual("zzz21", o.A.B[2].C.D[1].S);
-            Action<A> subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A);
+            Action<A> subMutator = mutatorsTree.GetTreeMutator(data => data.A);
             var a = new A
                 {
                     B = new[]

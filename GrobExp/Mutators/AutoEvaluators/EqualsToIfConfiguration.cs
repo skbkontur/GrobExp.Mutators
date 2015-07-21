@@ -23,6 +23,12 @@ namespace GrobExp.Mutators.AutoEvaluators
             arraysExtractor.GetArrays(Condition);
         }
 
+        public override string ToString()
+        {
+            var value = "equalsTo (" + Value + ")";
+            return Condition == null ? value : "if (" + Condition + ") " + value;
+        }
+
         public static EqualsToIfConfiguration Create(Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
         {
             return new EqualsToIfConfiguration(type, Prepare(condition), Prepare(value), validator);

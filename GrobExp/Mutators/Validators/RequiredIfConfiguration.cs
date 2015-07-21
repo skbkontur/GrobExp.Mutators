@@ -22,6 +22,11 @@ namespace GrobExp.Mutators.Validators
             this.validationResultType = validationResultType;
         }
 
+        public override string ToString()
+        {
+            return "requiredIf" + (Condition == null ? "" : "(" + Condition + ")");
+        }
+
         public static RequiredIfConfiguration Create<TData, TValue>(int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
         {
             return new RequiredIfConfiguration(typeof(TData), priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);

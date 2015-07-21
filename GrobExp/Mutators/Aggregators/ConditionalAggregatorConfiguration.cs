@@ -15,6 +15,11 @@ namespace GrobExp.Mutators.Aggregators
             Condition = condition;
         }
 
+        public override string ToString()
+        {
+            return Condition == null ? Name : "if(" + Condition + ") " + Name;
+        }
+
         public static ConditionalAggregatorConfiguration Create<TData>(Expression<Func<TData, bool?>> condition, string name)
         {
             return new ConditionalAggregatorConfiguration(typeof(TData), Prepare(condition), name);

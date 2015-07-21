@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -62,6 +63,8 @@ namespace Compiler.Tests
             return null;
         }
 
+        static int Add(int x, double y) { return (int)(x + y); }
+
         [Test, Ignore]
         public unsafe void TestWriteAssemblerCode()
         {
@@ -81,6 +84,8 @@ namespace Compiler.Tests
                     Console.Write(string.Format("{0:X2} ", *b++));
                 Console.WriteLine();
             }
+            var result = func(10, 3.14);
+            Console.WriteLine(result);
         }
 
         [Test, Ignore]

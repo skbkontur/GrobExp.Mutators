@@ -9,19 +9,19 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         protected override bool Emit(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            Expression test = node.Test;
-            Expression ifTrue = node.IfTrue;
-            Expression ifFalse = node.IfFalse;
-            bool ifTrueBranchIsEmpty = ifTrue.NodeType == ExpressionType.Default && ifTrue.Type == typeof(void);
+            var test = node.Test;
+            var ifTrue = node.IfTrue;
+            var ifFalse = node.IfFalse;
+            var ifTrueBranchIsEmpty = ifTrue.NodeType == ExpressionType.Default && ifTrue.Type == typeof(void);
             if(ifTrueBranchIsEmpty)
             {
                 test = Expression.Not(test);
-                Expression temp = ifTrue;
+                var temp = ifTrue;
                 ifTrue = ifFalse;
                 ifFalse = temp;
             }
             var result = false;
-            GroboIL il = context.Il;
+            var il = context.Il;
             var testIsNullLabel = il.DefineLabel("testIsNull");
             Type testType;
             var testIsNullLabelUsed = ExpressionEmittersCollection.Emit(test, context, testIsNullLabel, out testType);
@@ -52,7 +52,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Stloc(temp);
             }
             il.MarkLabel(doneLabel);
-            resultType = node.Type;
+            if(ifTrueType != typeof(void) && ifFalseType != typeof(void) && ifTrueType != ifFalseType)
+                throw new InvalidOperationException(string.Format("ifTrue type '{0}' is not equal to ifFalse type '{1}'", ifTrueType, ifFalseType));
+            resultType = node.Type == typeof(void) ? typeof(void) : ifTrueType;
             return result;
         }
     }

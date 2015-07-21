@@ -84,8 +84,6 @@ namespace Compiler.Tests
                     Console.Write(string.Format("{0:X2} ", *b++));
                 Console.WriteLine();
             }
-            var result = func(10, 3.14);
-            Console.WriteLine(result);
         }
 
         [Test, Ignore]

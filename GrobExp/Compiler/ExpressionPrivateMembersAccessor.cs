@@ -73,8 +73,8 @@ namespace GrobExp.Compiler
             var expression = node.Expression;
 
             return (expression != null && !IsNestedlyPublic(expression.Type)) ||
-                   (member is FieldInfo && !((FieldInfo)member).Attributes.HasFlag(FieldAttributes.Public)) ||
-                   (member is PropertyInfo && !((PropertyInfo)member).GetGetMethod().IsPublic);
+                   (member is FieldInfo && !((FieldInfo)member).IsPublic) ||
+                   (member is PropertyInfo && !((PropertyInfo)member).GetGetMethod(true).IsPublic);
         }
 
         private static Expression GetObjectFromGetter(Expression getter)
@@ -133,19 +133,18 @@ namespace GrobExp.Compiler
             if (NeedsToBeReplacedByGetter(node))
             {
                 CheckTypePublicity(node.Type);
-                if(node.Member.MemberType == MemberTypes.Property)
+                switch(node.Member.MemberType)
                 {
-                    var getter = ((PropertyInfo)node.Member).GetGetMethod();
-                    return GetInvocation(getter, expression, new Expression[0]);
-                }
-                else if (node.Member.MemberType == MemberTypes.Field)
-                {
+                case MemberTypes.Property:
+                    {
+                        var getter = ((PropertyInfo)node.Member).GetGetMethod(true);
+                        return GetInvocation(getter, expression, new Expression[0]);
+                    }
+                case MemberTypes.Field:
                     if (expression != null && expression.NodeType == ExpressionType.Convert)
                         expression = ((UnaryExpression)expression).Operand;
                     return GetGetter((FieldInfo)member, expression, node.Type);
-                }
-                else
-                {
+                default:
                     throw new InvalidOperationException(
                         string.Format("Unknown MemberType '{0}'", node.Member.MemberType));
                 }
@@ -170,12 +169,6 @@ namespace GrobExp.Compiler
                 if(NeedsToBeReplacedByGetter(arguments[i]) && argumentsTypes[i].IsByRef)
                 {
                     var access = (MemberExpression)arguments[i];
-                    if(access.Member.MemberType == MemberTypes.Property)
-                    {
-                        throw new InvalidOperationException(
-                            String.Format("Property by reference '{0}' is not allowed", access.Member.Name));
-                    }
-
                     var getter = newArguments[i];
                     var local = Expression.Parameter(argumentsTypes[i].GetElementType());
                     var setter = GetSetter((FieldInfo)access.Member, GetObjectFromGetter(getter), local);

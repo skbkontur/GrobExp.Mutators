@@ -87,6 +87,9 @@ namespace GrobExp.Mutators.Visitors
             return exp.NodeType == ExpressionType.ArrayIndex || (exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsEachMethod());
         }
 
+        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
+
         private Expression ResolveInternal(Expression exp, bool wrapCollections)
         {
             if(!exp.IsLinkOfChain(true, true))
@@ -97,7 +100,7 @@ namespace GrobExp.Mutators.Visitors
                 var resolvedArguments = ((NewExpression)exp).Arguments.Select(arg => ResolveInternal(arg, wrapCollections)).ToArray();
                 var types = resolvedArguments.Select(arg => arg.Type).ToArray();
                 var names = exp.Type.GetProperties().Select(property => property.Name).ToArray();
-                var type = AnonymousTypeBuilder.CreateAnonymousType(types, names);
+                var type = AnonymousTypeBuilder.CreateAnonymousType(types, names, module);
                 var constructor = type.GetConstructor(types);
                 if(constructor == null)
                     throw new Exception("Missing constructor of type '" + Formatter.Format(type) + "' with parameters {" + string.Join(", ", types.Select(Formatter.Format)) + "}");

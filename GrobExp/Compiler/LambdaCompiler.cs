@@ -54,6 +54,7 @@ namespace GrobExp.Compiler
         {
             if(debugInfoGenerator == null)
                 return CompileToDynamicMethod(lambda, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
+
             var parameters = lambda.Parameters.ToArray();
             var parameterTypes = parameters.Select(parameter => parameter.Type).ToArray();
             var returnType = lambda.ReturnType;
@@ -235,8 +236,8 @@ namespace GrobExp.Compiler
             ParameterExpression constantsParameter;
             object constants;
             Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> switches;
-            var dynamic = string.IsNullOrEmpty(DebugOutputDirectory);
-            var resolvedLambda = new ExpressionClosureResolver(lambda, Module, dynamic).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
+            var emitToDynamicMethod = debugInfoGenerator == null;
+            var resolvedLambda = new ExpressionClosureResolver(lambda, Module, emitToDynamicMethod).Resolve(out closureType, out closureParameter, out constantsType, out constantsParameter, out constants, out switches);
             if(!string.IsNullOrEmpty(DebugOutputDirectory))
             {
                 resolvedLambda = AdvancedDebugViewWriter.WriteToModifying(resolvedLambda, constantsType,
@@ -244,8 +245,8 @@ namespace GrobExp.Compiler
             }
             var compiledLambda = CompileInternal(resolvedLambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, constants, switches, options, compiledLambdas);
             subLambdas = compiledLambdas.ToArray();
-            if(compiledLambdas.Count > 0 && dynamic)
-                BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compiledLambda1 => compiledLambda1.Delegate).ToArray());
+            if(compiledLambdas.Count > 0 && emitToDynamicMethod)
+                BuildDelegatesFoister(constantsType)(constants, compiledLambdas.Select(compIledLambda => compIledLambda.Delegate).ToArray());
             return compiledLambda;
         }
 

@@ -56,7 +56,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             var constantTypes = genericParameters.Take(numberOfConstants).Cast<Type>().ToArray();
             var parameterTypes = genericParameters.Skip(numberOfConstants).Take(numberOfParameters).Cast<Type>().ToArray();
             var resultType = returnsVoid ? typeof(void) : genericParameters.Last();
-            var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Private | FieldAttributes.InitOnly);
+            var methodField = typeBuilder.DefineField("method", typeof(IntPtr), FieldAttributes.Public);
             var constantFields = new List<FieldInfo>();
             for(var i = 0; i < numberOfConstants; ++i)
                 constantFields.Add(typeBuilder.DefineField("const_" + (i + 1), constantTypes[i], FieldAttributes.Public));
@@ -70,9 +70,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Ldarg(i + 1); // stack: [this, arg_{i+1}]
                     il.Stfld(constantFields[i]); // this.const_{i+1} = arg_{i+1}; stack: []
                 }
-                il.Ldarg(0);
-                il.Ldarg(numberOfConstants + 1);
-                il.Stfld(methodField);
+                il.Ldarg(0); // stack: [this]
+                il.Ldarg(numberOfConstants + 1); // stack: [this, arg_{constants + 1} = method]
+                il.Stfld(methodField); // this.method = method; stack: []
                 il.Ret();
             }
 

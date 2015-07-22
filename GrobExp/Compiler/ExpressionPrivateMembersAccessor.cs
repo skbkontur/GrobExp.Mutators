@@ -14,7 +14,7 @@ namespace GrobExp.Compiler
     {
         private static bool IsNestedlyPublic(Type type)
         {
-            if (type == null) return true;
+            if (type == null || type.IsGenericParameter) return true;
 
             if(type.IsArray)
             {
@@ -135,7 +135,6 @@ namespace GrobExp.Compiler
                 CheckTypePublicity(node.Type);
                 if(node.Member.MemberType == MemberTypes.Property)
                 {
-                    CheckTypePublicity(expression.Type);
                     var getter = ((PropertyInfo)node.Member).GetGetMethod();
                     return GetInvocation(getter, expression, new Expression[0]);
                 }

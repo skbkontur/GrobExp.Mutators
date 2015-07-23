@@ -12,24 +12,24 @@ namespace GrobExp.Mutators
 {
     public static class ExpressionCompiler
     {
-        public static Func<TResult> Compile<TResult>(Expression<Func<TResult>> exp, bool forceDynamic = false)
+        public static Func<TResult> Compile<TResult>(Expression<Func<TResult>> exp)
         {
             object[] constants;
-            var func = (Func<object[], TResult>)Compile(KillConstants(exp, out constants), forceDynamic);
+            var func = (Func<object[], TResult>)Compile(KillConstants(exp, out constants));
             return () => func(constants);
         }
 
-        public static Func<T, TResult> Compile<T, TResult>(Expression<Func<T, TResult>> exp, bool forceDynamic = false)
+        public static Func<T, TResult> Compile<T, TResult>(Expression<Func<T, TResult>> exp)
         {
             object[] constants;
-            var func = (Func<T, object[], TResult>)Compile(KillConstants(exp, out constants), forceDynamic);
+            var func = (Func<T, object[], TResult>)Compile(KillConstants(exp, out constants));
             return arg => func(arg, constants);
         }
 
-        public static Func<T1, T2, TResult> Compile<T1, T2, TResult>(Expression<Func<T1, T2, TResult>> exp, bool forceDynamic = false)
+        public static Func<T1, T2, TResult> Compile<T1, T2, TResult>(Expression<Func<T1, T2, TResult>> exp)
         {
             object[] constants;
-            var func = (Func<T1, T2, object[], TResult>)Compile(KillConstants(exp, out constants), forceDynamic);
+            var func = (Func<T1, T2, object[], TResult>)Compile(KillConstants(exp, out constants));
             return (arg1, arg2) => func(arg1, arg2, constants);
         }
 
@@ -42,10 +42,10 @@ namespace GrobExp.Mutators
             return Expression.Lambda(bodyWithoutConstants, lambda.Parameters.Concat(new[] {constantsParameter}));
         }
 
-        private static Delegate Compile(LambdaExpression lambda, bool forceDynamic)
+        private static Delegate Compile(LambdaExpression lambda)
         {
             //var key = new ExpressionWrapper(lambda);
-            var key = forceDynamic + DebugViewGetter(lambda);
+            var key = DebugViewGetter(lambda);
             var result = hashtable[key];
             if(result == null)
             {
@@ -54,7 +54,7 @@ namespace GrobExp.Mutators
                     result = hashtable[key];
                     if(result == null)
                     {
-                        result = LambdaCompiler.Compile(lambda, CompilerOptions.All, forceDynamic); //lambda.Compile();
+                        result = LambdaCompiler.Compile(lambda, CompilerOptions.All); //lambda.Compile();
                         hashtable[key] = result;
                     }
                 }

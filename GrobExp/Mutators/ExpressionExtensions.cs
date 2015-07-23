@@ -149,8 +149,7 @@ namespace GrobExp.Mutators
         {
             if(exp.Type != typeof(object))
                 exp = Expression.Convert(exp, typeof(object));
-            //exp = exp.ExtendNulls();
-            return ExpressionCompiler.Compile(Expression.Lambda<Func<object>>(exp), true)();
+            return ExpressionCompiler.Compile(Expression.Lambda<Func<object>>(exp))();
         }
 
         public static Expression Simplify(this Expression expression)

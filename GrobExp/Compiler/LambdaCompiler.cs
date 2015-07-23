@@ -13,10 +13,10 @@ namespace GrobExp.Compiler
 {
     public static class LambdaCompiler
     {
-        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options, bool forceDynamic = false)
+        public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
             CompiledLambda[] subLambdas;
-            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) || forceDynamic ? null : DebugInfoGenerator.CreatePdbGenerator();
+            var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
             return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
         }
 

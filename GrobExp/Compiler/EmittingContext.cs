@@ -9,10 +9,23 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
+using GrobExp.Compiler.ExpressionEmitters;
+
 namespace GrobExp.Compiler
 {
     internal class EmittingContext
     {
+        public void LoadCompiledLambdaPointer(CompiledLambda compiledLambda)
+        {
+            if (TypeBuilder != null)
+                Il.Ldftn(compiledLambda.Method);
+            else
+            {
+                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                Il.Ldc_IntPtr(pointer);
+            }
+        }
+
         public void MarkHiddenSP()
         {
             if (DebugInfoGenerator != null)

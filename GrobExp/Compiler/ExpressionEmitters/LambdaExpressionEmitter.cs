@@ -11,12 +11,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class LambdaExpressionEmitter : ExpressionEmitter<LambdaExpression>
     {
-        protected override bool EmitInternal(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        public static CompiledLambda CompileAndLoadConstants(LambdaExpression node, EmittingContext context, out Type[] constantTypes)
         {
-            var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
-            resultType = Extensions.GetDelegateType(parameterTypes, node.ReturnType);
-
-            bool needClosure = context.ClosureParameter != null;
+            var needClosure = context.ClosureParameter != null;
             var needConstants = context.ConstantsParameter != null;
             var constantParameters = new List<ParameterExpression>();
             if(needConstants)
@@ -31,7 +28,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             else
             {
                 var method = context.TypeBuilder.DefineMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
-                for (int i = 0; i < parameters.Count; ++i)
+                for(var i = 0; i < parameters.Count; ++i)
                     method.DefineParameter(i + 1, ParameterAttributes.None, parameters[i].Name);
                 var ilCode = LambdaCompiler.CompileToMethodInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.ConstantsType, context.ConstantsParameter, context.Switches, context.Options, context.CompiledLambdas, method);
                 compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
@@ -47,18 +44,24 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 Type closureType;
                 ExpressionEmittersCollection.Emit(context.ClosureParameter, context, out closureType);
             }
+            constantTypes = constantParameters.Select(exp => exp.Type).ToArray();
+            return compiledLambda;
+        }
+
+        protected override bool EmitInternal(LambdaExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        {
+            var parameterTypes = node.Parameters.Select(parameter => parameter.Type).ToArray();
+
+            Type[] constantTypes;
+            var compiledLambda = CompileAndLoadConstants(node, context, out constantTypes);
+
             var il = context.Il;
-            var constantTypes = constantParameters.Select(exp => exp.Type).ToArray();
+            context.LoadCompiledLambdaPointer(compiledLambda);
+
+            resultType = Extensions.GetDelegateType(parameterTypes, node.ReturnType);
+            var types = constantTypes.Concat(new[] {typeof(IntPtr)}).ToArray();
             var module = (ModuleBuilder)(context.TypeBuilder == null ? null : context.TypeBuilder.Module);
             var subLambdaInvoker = DynamicMethodInvokerBuilder.BuildDynamicMethodInvoker(module, constantTypes, node.Body.Type, parameterTypes);
-            if(context.TypeBuilder != null)
-                il.Ldftn(compiledLambda.Method);
-            else
-            {
-                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
-                il.Ldc_IntPtr(pointer);
-            }
-            var types = constantTypes.Concat(new[] {typeof(IntPtr)}).ToArray();
             il.Newobj(subLambdaInvoker.GetConstructor(types));
             il.Ldftn(subLambdaInvoker.GetMethod("Invoke"));
             il.Newobj(resultType.GetConstructor(new[] {typeof(object), typeof(IntPtr)}));

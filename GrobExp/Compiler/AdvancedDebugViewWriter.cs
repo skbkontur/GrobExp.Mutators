@@ -1515,11 +1515,11 @@ namespace GrobExp.Compiler
                 case ExpressionType.Throw:
                     if (node.Operand == null)
                     {
-                        Out(".Rethrow");
+                        Out("RETHROW");
                     }
                     else
                     {
-                        Out(".Throw", Flow.Space);
+                        Out("THROW", Flow.Space);
                     }
                     break;
                 case ExpressionType.IsFalse:

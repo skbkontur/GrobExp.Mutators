@@ -972,6 +972,7 @@ namespace GrobExp.Mutators
         {
             Expression result;
             var externalExpressions = new HackedExternalExpressionsExtractor(internalParameters).Extract(expression);
+            //var checking = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
             if(externalExpressions.Length == 0)
                 result = resultSelector(expression);
             else

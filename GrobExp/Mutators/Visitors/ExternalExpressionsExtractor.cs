@@ -48,15 +48,14 @@ namespace GrobExp.Mutators.Visitors
             }
         }
 
-        private readonly HashSet<ParameterExpression> givenInternalVariables; 
-        private readonly Dictionary<ParameterExpression, int> internalVariables;
+        private readonly HashSet<ParameterExpression> givenVariables;
+        private readonly Dictionary<ParameterExpression, int> internalVariables = new Dictionary<ParameterExpression, int>();
         private readonly Stack<NodeInfo> nodesStack = new Stack<NodeInfo>();
         private readonly HashSet<Expression> externalNodes = new HashSet<Expression>();
 
         public HackedExternalExpressionsExtractor(IEnumerable<ParameterExpression> internalVariables)
         {
-            this.givenInternalVariables = new HashSet<ParameterExpression>(internalVariables);
-            this.internalVariables = internalVariables.ToDictionary(p => p, p => -1);
+            this.givenVariables = new HashSet<ParameterExpression>(internalVariables);
         }
 
         public Expression[] Extract(Expression expression)
@@ -87,44 +86,44 @@ namespace GrobExp.Mutators.Visitors
 
             if(node.NodeType == ExpressionType.Parameter)
             {
+                var param = (ParameterExpression)node;
                 int declarationHeight;
-                if(internalVariables.TryGetValue((ParameterExpression)node, out declarationHeight))
+                if (internalVariables.TryGetValue(param, out declarationHeight))
                     parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, declarationHeight);
+                else if(givenVariables.Contains(param))
+                    parentInfo.MinimalDeclarationHeight = -1;
                 return node;
             }
-
-            var myInfo = new NodeInfo(height);
-
-            if(node.NodeType == ExpressionType.Invoke || node.NodeType == ExpressionType.New ||
-               node.NodeType == ExpressionType.NewArrayBounds || node.NodeType == ExpressionType.NewArrayInit)
-                myInfo.HasObjectCreation = true;
 
             if(node.NodeType == ExpressionType.Block || node.NodeType == ExpressionType.Lambda)
             {
                 IEnumerable<ParameterExpression> variables = node.NodeType == ExpressionType.Block
                     ? ((BlockExpression)node).Variables
                     : ((LambdaExpression)node).Parameters;
-                foreach (var variable in variables)
-                    if(!givenInternalVariables.Contains(variable))
-                        internalVariables.Add(variable, height);
+                foreach(var variable in variables)
+                    internalVariables.Add(variable, height);
             }
 
+            var myInfo = new NodeInfo(height);
             nodesStack.Push(myInfo);
             base.Visit(node);
             nodesStack.Pop();
-
-            parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, myInfo.MinimalDeclarationHeight);
-            parentInfo.HasObjectCreation |= myInfo.HasObjectCreation;
 
             if (node.NodeType == ExpressionType.Block || node.NodeType == ExpressionType.Lambda)
             {
                 IEnumerable<ParameterExpression> variables = node.NodeType == ExpressionType.Block
                     ? ((BlockExpression)node).Variables
                     : ((LambdaExpression)node).Parameters;
-                foreach (var variable in variables)
-                    if(!givenInternalVariables.Contains(variable))
+                foreach(var variable in variables)
                         internalVariables.Remove(variable);
             }
+
+            if (node.NodeType == ExpressionType.Invoke || node.NodeType == ExpressionType.New ||
+               node.NodeType == ExpressionType.NewArrayBounds || node.NodeType == ExpressionType.NewArrayInit)
+                myInfo.HasObjectCreation = true;
+
+            parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, myInfo.MinimalDeclarationHeight);
+            parentInfo.HasObjectCreation |= myInfo.HasObjectCreation;
 
             if(node.Type == typeof(void) || myInfo.MinimalDeclarationHeight < height || myInfo.HasObjectCreation)
                 return node;

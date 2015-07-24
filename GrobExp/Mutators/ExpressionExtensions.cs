@@ -47,6 +47,31 @@ namespace GrobExp.Mutators
                 Expression.Call(exp, "Add", null, key, value));
         }
 
+        public static List<Expression> SplitToBatches(this List<Expression> expressions, params ParameterExpression[] parameters)
+        {
+            var result = new List<Expression>();
+            var expressionsCounter = new ExpressionNodesCounter();
+
+            var currentBatch = new List<Expression>();
+            var expressionsInBatch = 0;
+
+            foreach(var expression in expressions)
+            {
+                var count = expressionsCounter.Count(expression);
+                if(expressionsInBatch + count > maxNumberOfExpressionsInBatch)
+                {
+                    result.Add(MakeInvocation(currentBatch, parameters));
+                    currentBatch.Clear();
+                    expressionsInBatch = 0;
+                }
+                expressionsInBatch += count;
+                currentBatch.Add(expression);
+            }
+            if(currentBatch.Count > 0)
+                result.Add(MakeInvocation(currentBatch, parameters));
+            return result;
+        }
+
         public static Expression Assign(this Expression path, Expression value)
         {
             if(path.NodeType == ExpressionType.Convert)
@@ -360,6 +385,11 @@ namespace GrobExp.Mutators
             return i == 0 ? null : shards1[i - 1];
         }
 
+        private static InvocationExpression MakeInvocation(List<Expression> currentBatch, params ParameterExpression[] parameters)
+        {
+            return Expression.Invoke(Expression.Lambda(Expression.Block(currentBatch), parameters), parameters.Cast<Expression>());
+        }
+
         private static void Resize<T>(List<T> list, int size)
         {
             // todo emit
@@ -446,5 +476,6 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo singleWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.Single(i => i == 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithoutParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault(i => i == 0))).Body).Method.GetGenericMethodDefinition();
+        private const int maxNumberOfExpressionsInBatch = 1000;
     }
 }

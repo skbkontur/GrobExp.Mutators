@@ -39,6 +39,7 @@ namespace GrobExp.Compiler
 
         public static bool AnalyzeILStack = true;
         public static string DebugOutputDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        public static double TotalJITCompilationTime;
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,
@@ -63,7 +64,7 @@ namespace GrobExp.Compiler
             var method = typeBuilder.DefineMethod(lambda.Name ?? Guid.NewGuid().ToString(), MethodAttributes.Static | MethodAttributes.Public, returnType, parameterTypes);
             for(var i = 0; i < parameters.Length; ++i)
                 method.DefineParameter(i + 1, ParameterAttributes.None, parameters[i].Name);
-            var ilCode = CompileToMethodInternal(lambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, switches, options, compiledLambdas, method);
+            CompileToMethodInternal(lambda, debugInfoGenerator, closureType, closureParameter, constantsType, constantsParameter, switches, options, compiledLambdas, method);
 
             var type = typeBuilder.CreateType();
             var dynamicMethod = new DynamicMethod(Guid.NewGuid().ToString(), returnType, parameterTypes, Module, true);
@@ -77,12 +78,11 @@ namespace GrobExp.Compiler
             return new CompiledLambda
                 {
                     Delegate = dynamicMethod.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                    Method = method,
-                    ILCode = ilCode
+                    Method = method
                 };
         }
 
-        internal static string CompileToMethodInternal(
+        internal static void CompileToMethodInternal(
             LambdaExpression lambda,
             DebugInfoGenerator debugInfoGenerator,
             Type closureType,
@@ -117,7 +117,6 @@ namespace GrobExp.Compiler
                         Il = il
                     };
                 CompileInternal(lambda, context);
-                return il.GetILCode();
             }
         }
 
@@ -201,15 +200,13 @@ namespace GrobExp.Compiler
                         CompiledLambdas = compiledLambdas,
                         Il = il
                     };
-
                 CompileInternal(lambda, context);
-                return new CompiledLambda
-                    {
-                        Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                        Method = method,
-                        ILCode = il.GetILCode()
-                    };
             }
+            return new CompiledLambda
+            {
+                Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                Method = method
+            };
         }
 
         private static AssemblyBuilder CreateAssembly()

@@ -30,8 +30,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 var method = context.TypeBuilder.DefineMethod(Guid.NewGuid().ToString(), MethodAttributes.Public | MethodAttributes.Static, lambda.ReturnType, lambda.Parameters.Select(parameter => parameter.Type).ToArray());
                 for(var i = 0; i < parameters.Count; ++i)
                     method.DefineParameter(i + 1, ParameterAttributes.None, parameters[i].Name);
-                var ilCode = LambdaCompiler.CompileToMethodInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.ConstantsType, context.ConstantsParameter, context.Switches, context.Options, context.CompiledLambdas, method);
-                compiledLambda = new CompiledLambda {Method = method, ILCode = ilCode};
+                LambdaCompiler.CompileToMethodInternal(lambda, context.DebugInfoGenerator, context.ClosureType, context.ClosureParameter, context.ConstantsType, context.ConstantsParameter, context.Switches, context.Options, context.CompiledLambdas, method);
+                compiledLambda = new CompiledLambda {Method = method};
             }
             context.CompiledLambdas.Add(compiledLambda);
             if(needConstants)

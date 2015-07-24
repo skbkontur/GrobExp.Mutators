@@ -7,6 +7,5 @@ namespace GrobExp.Compiler
     {
         public Delegate Delegate { get; set; }
         public MethodInfo Method { get; set; }
-        public string ILCode { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
@@ -21,7 +22,9 @@ namespace GrobExp.Compiler
                 Il.Ldftn(compiledLambda.Method);
             else
             {
+                var stopwatch = Stopwatch.StartNew();
                 var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                LambdaCompiler.TotalJITCompilationTime += stopwatch.Elapsed.TotalSeconds;
                 Il.Ldc_IntPtr(pointer);
             }
         }

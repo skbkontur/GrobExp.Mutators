@@ -871,6 +871,26 @@ namespace Mutators.Tests
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
+        private static int numberOfCalls;
+
+        private static string Format(string z)
+        {
+            ++numberOfCalls;
+            return z;
+        }
+
+        [Test]
+        public void TestCachingExternalExpressions()
+        {
+            numberOfCalls = 0;
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
+                configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S + Format(data2.T.S)));
+            var converter = collection.GetConverter(MutatorsContext.Empty);
+
+            converter(new TestData2 {T = new T {R = new[] {new R(), new R(), new R(),}}});
+            Assert.AreEqual(1, numberOfCalls);
+        }
+
         [Test]
         public void TestConvertDestArrayIsIncreasedToSource()
         {

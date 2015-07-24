@@ -89,6 +89,13 @@ namespace GrobExp.Mutators.Visitors
             return base.VisitNew(node);
         }
 
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if(node.Method.IsDynamicMethod())
+                result = true;
+            return base.VisitMethodCall(node);
+        }
+
         private bool result;
     }
 }

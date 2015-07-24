@@ -971,7 +971,7 @@ namespace GrobExp.Mutators
         private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, IEnumerable<ParameterExpression> internalParameters)
         {
             Expression result;
-            var externalExpressions = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
+            var externalExpressions = new HackedExternalExpressionsExtractor(internalParameters).Extract(expression);
             if(externalExpressions.Length == 0)
                 result = resultSelector(expression);
             else

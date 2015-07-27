@@ -119,7 +119,7 @@ namespace GrobExp.Mutators.Visitors
             }
 
             if (node.NodeType == ExpressionType.Invoke || node.NodeType == ExpressionType.New ||
-               node.NodeType == ExpressionType.NewArrayBounds || node.NodeType == ExpressionType.NewArrayInit)
+               node.NodeType == ExpressionType.NewArrayBounds || node.NodeType == ExpressionType.NewArrayInit || node.NodeType == ExpressionType.Label || node.NodeType == ExpressionType.Goto)
                 myInfo.HasObjectCreation = true;
 
             parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, myInfo.MinimalDeclarationHeight);

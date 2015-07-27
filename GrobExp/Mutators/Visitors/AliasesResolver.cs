@@ -5,6 +5,42 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
+    public class ExpressionNodesCounter : ExpressionVisitor
+    {
+        public int Count(Expression expression)
+        {
+            count = 0;
+            Visit(expression);
+            return count;
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            if(node == null)
+                return null;
+            ++count;
+            return node.NodeType == ExpressionType.Invoke ? node : base.Visit(node);
+        }
+
+        private int count;
+    }
+
+    public class ExpressionReplacer : ExpressionVisitor
+    {
+        public ExpressionReplacer(Dictionary<Expression, Expression> replacements)
+        {
+            this.replacements = replacements;
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            Expression replacement;
+            return node != null && replacements.TryGetValue(node, out replacement) ? replacement : base.Visit(node);
+        }
+
+        private readonly Dictionary<Expression, Expression> replacements;
+    }
+
     public class AliasesResolver : ExpressionVisitor
     {
         public AliasesResolver(List<KeyValuePair<Expression, Expression>> aliases, bool strictly)
@@ -38,7 +74,7 @@ namespace GrobExp.Mutators.Visitors
             }
             if(alias == null)
                 return base.Visit(chain);
-            Expression result = alias;
+            var result = alias;
             for(++index; index < shards.Length; ++index)
             {
                 var shard = shards[index];
@@ -52,7 +88,7 @@ namespace GrobExp.Mutators.Visitors
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)shard;
-                    Expression[] arguments = GetArguments(methodCallExpression).Select(Visit).ToArray();
+                    var arguments = GetArguments(methodCallExpression).Select(Visit).ToArray();
                     result = methodCallExpression.Method.IsExtension()
                                  ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(arguments))
                                  : Expression.Call(result, methodCallExpression.Method, arguments);

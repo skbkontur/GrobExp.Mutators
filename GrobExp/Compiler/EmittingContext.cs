@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
@@ -9,10 +10,25 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
+using GrobExp.Compiler.ExpressionEmitters;
+
 namespace GrobExp.Compiler
 {
     internal class EmittingContext
     {
+        public void LoadCompiledLambdaPointer(CompiledLambda compiledLambda)
+        {
+            if (TypeBuilder != null)
+                Il.Ldftn(compiledLambda.Method);
+            else
+            {
+                var stopwatch = Stopwatch.StartNew();
+                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                LambdaCompiler.TotalJITCompilationTime += stopwatch.Elapsed.TotalSeconds;
+                Il.Ldc_IntPtr(pointer);
+            }
+        }
+
         public void MarkHiddenSP()
         {
             if (DebugInfoGenerator != null)

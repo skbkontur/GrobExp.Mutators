@@ -74,7 +74,9 @@ namespace GrobExp.Mutators
             root = GetArrays(RootType, Path, new MutatorConfiguration[0]).Aggregate(root, (current, array) => current.Traverse(array));
 
             var validationResults = new List<Expression>();
-            root.BuildValidator(pathFormatter, this, aliases, result, priority, validationResults);
+            root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, result, priority, validationResults);
+
+            validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
             Expression body;
             switch(validationResults.Count)
@@ -90,7 +92,7 @@ namespace GrobExp.Mutators
                 break;
             }
             body = CacheExternalExpressions(body, expression => expression, parameter, result, priority);
-            var lambda = Expression.Lambda(body.ExtendSelectMany(), parameter, result, priority);
+            var lambda = Expression.Lambda(body, parameter, result, priority);
             return lambda;
         }
 
@@ -888,6 +890,7 @@ namespace GrobExp.Mutators
             var mutators = new List<Expression>();
             var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameters[0], Path)};
             BuildTreeMutator(null, this, Path, aliases, mutators, visitedNodes, processedNodes, mutators);
+            mutators = mutators.SplitToBatches(parameters.ToArray());
             mutators.Add(Expression.Empty());
             Expression body = Expression.Block(mutators);
             CacheExternalExpressions(body, expression => expression, parameters);
@@ -897,7 +900,7 @@ namespace GrobExp.Mutators
                 if(actualParameter != expectedParameter)
                     body = new ParameterReplacer(actualParameter, expectedParameter).Visit(body);
             }
-            var result = Expression.Lambda(body.ExtendSelectMany(), parameters);
+            var result = Expression.Lambda(body, parameters);
             return result;
         }
 
@@ -968,28 +971,29 @@ namespace GrobExp.Mutators
         private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, IEnumerable<ParameterExpression> internalParameters)
         {
             Expression result;
-            var externalExpressions = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
+            var externalExpressions = new HackedExternalExpressionsExtractor(internalParameters).Extract(expression);
+            //var checking = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
             if(externalExpressions.Length == 0)
                 result = resultSelector(expression);
             else
             {
-                var aliases = new List<KeyValuePair<Expression, Expression>>();
+                var aliases = new Dictionary<Expression, Expression>();
                 var variables = new List<ParameterExpression>();
                 foreach(var exp in externalExpressions)
                 {
                     var variable = Expression.Variable(exp.Type);
                     variables.Add(variable);
-                    aliases.Add(new KeyValuePair<Expression, Expression>(variable, exp));
+                    aliases.Add(exp, variable);
                 }
-                var optimizedExpression = expression.ResolveAliases(aliases, true);
-                result = Expression.Block(variables, aliases.Select(pair => Expression.Assign(pair.Key, pair.Value)).Concat(new[] {resultSelector(optimizedExpression)}));
+                var optimizedExpression = new ExpressionReplacer(aliases).Visit(expression);
+                result = Expression.Block(variables, aliases.Select(pair => Expression.Assign(pair.Value, pair.Key)).Concat(new[] {resultSelector(optimizedExpression)}));
             }
             return result;
         }
 
         private static void CheckDependencies(ModelConfigurationNode root, MutatorConfiguration mutator)
         {
-            if(mutator == null || mutator.Dependencies == null)
+            if(root == null || mutator == null || mutator.Dependencies == null)
                 return;
             foreach(var dependency in mutator.Dependencies)
             {
@@ -1054,7 +1058,7 @@ namespace GrobExp.Mutators
                     if(childResult.Count > 0)
                     {
                         childResult.Add(childParameter);
-                        var action = Expression.Block(new ParameterExpression[] {}, childResult);
+                        var action = Expression.Block(childResult.SplitToBatches()); //Expression.Block(new ParameterExpression[] {}, childResult);
                         var forEach = CacheExternalExpressions(action,
                                                                exp => Expression.Call(null, forEachMethod.MakeGenericMethod(child.NodeType), new[] {path, Expression.Lambda(exp, new[] {childParameter, indexParameter})}),
                                                                childParameter, indexParameter);
@@ -1151,7 +1155,7 @@ namespace GrobExp.Mutators
                         childResult.RemoveAt(indexOfKeyAssigner);
 
                         childResult.Add(destValueParameter);
-                        var action = Expression.Block(new ParameterExpression[] {}, childResult);
+                        var action = Expression.Block(childResult.SplitToBatches()); // Expression.Block(new ParameterExpression[] {}, childResult);
                         var forEach = CacheExternalExpressions(action,
                                                                exp => Expression.Call(null, forEachOverDictionaryMethod.MakeGenericMethod(sourceKeyType, destKeyType, sourceValueType, destValueType), new[] {array, path, keySelector, Expression.Lambda(exp, new[] {sourceValueParameter, destValueParameter})}),
                                                                sourceValueParameter, destValueParameter);
@@ -1249,7 +1253,7 @@ namespace GrobExp.Mutators
                 }
                 (selfDependent ? selfDependentMutators : otherMutators).Add((AutoEvaluatorConfiguration)mutator.Value);
             }
-            localResult.AddRange(otherMutators.Concat(selfDependentMutators).Select(mutator => mutator.Apply(path, aliases)).Where(expression => expression != null));
+            localResult.AddRange(otherMutators.Concat(selfDependentMutators).Select(mutator => mutator.Apply(path, aliases).ExtendSelectMany()).Where(expression => expression != null));
             processedNodes.Add(this);
         }
 
@@ -1362,7 +1366,7 @@ namespace GrobExp.Mutators
                     aliases.RemoveAt(aliases.Count - 1);
                     if(childValidationResults.Count > 0)
                     {
-                        Expression action = Expression.Block(new ParameterExpression[] {}, childValidationResults);
+                        Expression action = Expression.Block(childValidationResults.SplitToBatches()); //Expression.Block(new ParameterExpression[] {}, childValidationResults);
                         if(predicate != null)
                         {
                             var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
@@ -1439,10 +1443,8 @@ namespace GrobExp.Mutators
                     Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
-                    localResults.Add(
-                        Expression.IfThen(
-                            Expression.Not(Expression.Property(result, validationResultTreeNodeExhaustedProperty)),
-                            Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition)));
+                    var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition));
+                    localResults.Add(localResult.ExtendSelectMany());
                 }
                 if(isDisabled == null)
                     validationResults.AddRange(localResults);

@@ -10,7 +10,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class UnaryAssignExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             GroboIL il = context.Il;
             var result = false;
@@ -180,12 +180,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     var doneLabel = il.DefineLabel("done");
                     il.Br(doneLabel);
-                    il.MarkLabel(returnNullLabel);
+                    context.MarkLabelAndSurroundWithSP(returnNullLabel);
                     if(assigneeType != null)
                         il.Pop();
                     if(whatReturn != ResultType.Void)
                         il.Ldloc(value);
-                    il.MarkLabel(doneLabel);
+                    context.MarkLabelAndSurroundWithSP(doneLabel);
                 }
             }
             resultType = whatReturn == ResultType.Void ? typeof(void) : operand.Type;
@@ -237,7 +237,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Ldarg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Ldloc(variable);
                     else
@@ -328,7 +328,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else
@@ -431,7 +431,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else

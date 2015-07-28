@@ -61,7 +61,7 @@ namespace Compiler.Tests.AssignTests.PostIncrementAssign
             Assert.IsNull(TestClassA.NullableIntProp);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static int? NullableIntProp { get; set; }

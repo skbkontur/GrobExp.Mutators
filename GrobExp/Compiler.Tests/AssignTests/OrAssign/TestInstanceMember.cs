@@ -88,7 +88,7 @@ namespace Compiler.Tests.AssignTests.OrAssign
             Assert.IsNull(o.NullableIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int IntProp { get; set; }
             public int? NullableIntField;

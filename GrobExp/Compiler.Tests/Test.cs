@@ -15,7 +15,7 @@ namespace Compiler.Tests
     [TestFixture]
     public class Test // todo растащить на куски
     {
-        private class Qzz
+        public class Qzz
         {
             public int? X { get; set; }
         }
@@ -601,26 +601,26 @@ namespace Compiler.Tests
             }
         }
 
-        private int zzz(bool qxx)
+        public int zzz(bool qxx)
         {
             return qxx ? 1 : 0;
         }
 
-        private static int NotExtension(TestClassA x, TestClassA y)
+        public static int NotExtension(TestClassA x, TestClassA y)
         {
             if(x == null) return 1;
             if(y == null) return 2;
             return 3;
         }
 
-        private static TestClassA NotExtension2(TestClassA x, TestClassA y)
+        public static TestClassA NotExtension2(TestClassA x, TestClassA y)
         {
             if(x == null) return new TestClassA {Y = 1};
             if(y == null) return new TestClassA {Y = 2};
             return new TestClassA {Y = 3};
         }
 
-        private static int Y(TestClassA a)
+        public static int Y(TestClassA a)
         {
             return a.Y;
         }

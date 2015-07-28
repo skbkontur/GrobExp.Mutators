@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrEmit;
 
@@ -8,7 +9,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class InvocationExpressionEmitter : ExpressionEmitter<InvocationExpression>
     {
-        protected override bool Emit(InvocationExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(InvocationExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             bool result;
             if(node.Expression.NodeType != ExpressionType.Lambda)
@@ -21,13 +22,13 @@ namespace GrobExp.Compiler.ExpressionEmitters
             }
             else
             {
-                throw new InvalidOperationException();
-                /*result = false;
+                result = false;
                 var lambda = (LambdaExpression)node.Expression;
-                var expressions = lambda.Parameters.Select((t, i) => Expression.Assign(t, node.Arguments[i])).Cast<Expression>().ToList();
-                expressions.Add(lambda.Body);
-                var block = Expression.Block(lambda.Body.Type, lambda.Parameters, expressions);
-                ExpressionEmittersCollection.Emit(block, context, out resultType);*/
+                Type[] constantTypes;
+                var compiledLambda = LambdaExpressionEmitter.CompileAndLoadConstants(lambda, context, out constantTypes);
+                context.EmitLoadArguments(node.Arguments.ToArray());
+                context.LoadCompiledLambdaPointer(compiledLambda);
+                context.Il.Calli(CallingConventions.Standard, lambda.ReturnType, constantTypes.Concat(lambda.Parameters.Select(parameter => parameter.Type)).ToArray());
             }
             resultType = node.Type;
             return result;

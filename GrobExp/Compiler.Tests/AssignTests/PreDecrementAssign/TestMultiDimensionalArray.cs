@@ -112,7 +112,7 @@ namespace Compiler.Tests.AssignTests.PreDecrementAssign
             Assert.Throws<NullReferenceException>(() => f(null));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[,] IntArray { get; set; }
             public int?[,] NullableIntArray { get; set; }

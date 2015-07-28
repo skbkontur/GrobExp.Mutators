@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class ParameterExpressionEmitter : ExpressionEmitter<ParameterExpression>
     {
-        protected override bool Emit(ParameterExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(ParameterExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(whatReturn == ResultType.Void)
             {
@@ -28,7 +28,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Il.Ldarga(index);
                     context.Create(node.Type);
                     context.Il.Stind(node.Type);
-                    context.Il.MarkLabel(parameterIsNotNullLabel);
+                    context.MarkLabelAndSurroundWithSP(parameterIsNotNullLabel);
                 }
 
                 switch(whatReturn)
@@ -58,7 +58,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 }
                 return false;
             }
-            EmittingContext.LocalHolder variable;
+            GroboIL.Local variable;
             if(context.VariablesToLocals.TryGetValue(node, out variable))
             {
                 if(extend)
@@ -68,7 +68,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     context.Il.Brtrue(parameterIsNotNullLabel);
                     context.Create(node.Type);
                     context.Il.Stloc(variable);
-                    context.Il.MarkLabel(parameterIsNotNullLabel);
+                    context.MarkLabelAndSurroundWithSP(parameterIsNotNullLabel);
                 }
                 switch(whatReturn)
                 {

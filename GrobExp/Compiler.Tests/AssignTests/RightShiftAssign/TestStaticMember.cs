@@ -188,7 +188,7 @@ namespace Compiler.Tests.AssignTests.RightShiftAssign
             Assert.IsNull(TestClassA.NullableUIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static uint UIntProp { get; set; }

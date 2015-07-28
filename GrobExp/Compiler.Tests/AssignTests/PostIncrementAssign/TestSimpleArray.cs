@@ -106,7 +106,7 @@ namespace Compiler.Tests.AssignTests.PostIncrementAssign
             Assert.Throws<NullReferenceException>(() => f(null));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[] IntArray { get; set; }
             public int?[] NullableIntArray { get; set; }

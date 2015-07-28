@@ -1,5 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.SymbolStore;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using GrEmit;
 
@@ -7,7 +13,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class ConditionalExpressionEmitter : ExpressionEmitter<ConditionalExpression>
     {
-        protected override bool Emit(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(ConditionalExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var test = node.Test;
             var ifTrue = node.IfTrue;
@@ -40,10 +46,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
             il.Br(doneLabel);
             if(testIsNullLabelUsed)
             {
-                il.MarkLabel(testIsNullLabel);
+                context.MarkLabelAndSurroundWithSP(testIsNullLabel);
                 il.Pop();
             }
-            il.MarkLabel(ifFalseLabel);
+            context.MarkLabelAndSurroundWithSP(ifFalseLabel);
             Type ifFalseType;
             result |= ExpressionEmittersCollection.Emit(ifFalse, context, returnDefaultValueLabel, whatReturn, extend, out ifFalseType);
             if(node.Type == typeof(void) && ifFalseType != typeof(void))
@@ -51,7 +57,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var temp = context.DeclareLocal(ifFalseType))
                     il.Stloc(temp);
             }
-            il.MarkLabel(doneLabel);
+            context.MarkLabelAndSurroundWithSP(doneLabel);
             if(ifTrueType != typeof(void) && ifFalseType != typeof(void) && ifTrueType != ifFalseType)
                 throw new InvalidOperationException(string.Format("ifTrue type '{0}' is not equal to ifFalse type '{1}'", ifTrueType, ifFalseType));
             resultType = node.Type == typeof(void) ? typeof(void) : ifTrueType;

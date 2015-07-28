@@ -88,7 +88,7 @@ namespace Compiler.Tests.AssignTests.AndAssign
             Assert.IsNull(o.NullableIntArray[0]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[] IntArray { get; set; }
             public int?[] NullableIntArray;

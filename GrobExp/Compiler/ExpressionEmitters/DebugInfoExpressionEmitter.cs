@@ -8,19 +8,26 @@ using GrEmit;
 
 namespace GrobExp.Compiler.ExpressionEmitters
 {
-    internal class DebugInfoExpressionEmitter : ExpressionEmitter<DebugInfoExpression>
+    internal class DebugInfoExpressionEmitter : ExpressionEmitter<Expression>
     {
-        protected override bool Emit(DebugInfoExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(Expression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             resultType = typeof(void);
             if(context.DebugInfoGenerator == null)
                 return false;
-            if(node.IsClear && context.SequencePointCleared)
-                return false;
-            markSequencePoint(context.DebugInfoGenerator, context.Lambda, context.Method, context.Il, node);
+            var result = false;
+            DebugInfoExpression debugInfo;
+            if(!(node is TypedDebugInfoExpression))
+                debugInfo = (DebugInfoExpression)node;
+            else
+            {
+                var typedNode = node as TypedDebugInfoExpression;
+                result = ExpressionEmittersCollection.Emit(typedNode.Expression, context, returnDefaultValueLabel, out resultType);
+                debugInfo = typedNode.DebugInfo;
+            }
+            markSequencePoint(context.DebugInfoGenerator, context.Lambda, context.Method, context.Il, debugInfo);
             context.Il.Nop();
-            context.SequencePointCleared = node.IsClear;
-            return false;
+            return result;
         }
 
         private static Action<DebugInfoGenerator, LambdaExpression, MethodBase, GroboIL, DebugInfoExpression> BuildSequencePointMarker()

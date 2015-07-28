@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class ArrayIndexExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var arrayType = node.Left.Type;
             if(!arrayType.IsArray)
@@ -129,7 +129,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         throw new InvalidOperationException("Unable to assign array to an expression with node type '" + node.Left.NodeType);
                     }
                     il.Ldloc(array);
-                    il.MarkLabel(bigEnoughLabel);
+                    context.MarkLabelAndSurroundWithSP(bigEnoughLabel);
                 }
             }
 
@@ -151,7 +151,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Ldloc(arrayIndex);
                         context.Create(node.Type);
                         il.Stelem(node.Type);
-                        il.MarkLabel(elementIsNotNullLabel);
+                        context.MarkLabelAndSurroundWithSP(elementIsNotNullLabel);
                         il.Ldloc(array);
                     }
                 }
@@ -217,10 +217,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
             {
                 var indexIsNotNullLabel = il.DefineLabel("indexIsNotNull");
                 il.Br(indexIsNotNullLabel);
-                il.MarkLabel(indexIsNullLabel);
+                context.MarkLabelAndSurroundWithSP(indexIsNullLabel);
                 il.Pop();
                 il.Ldc_I4(0);
-                il.MarkLabel(indexIsNotNullLabel);
+                context.MarkLabelAndSurroundWithSP(indexIsNotNullLabel);
             }
         }
 

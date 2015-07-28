@@ -57,12 +57,12 @@ namespace Compiler.Tests
             Assert.Throws<NullReferenceException>(() => f(null));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public object X;
         }
 
-        private enum TestEnum
+        public enum TestEnum
         {
             Zero,
             One,

@@ -366,7 +366,7 @@ namespace Compiler.Tests.AssignTests.AddAssign
             Assert.IsNull(o.NullableUIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int IntProp { get; set; }
             public int? NullableIntProp { get; set; }

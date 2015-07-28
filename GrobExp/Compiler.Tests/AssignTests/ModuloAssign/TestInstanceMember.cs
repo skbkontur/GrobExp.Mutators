@@ -119,7 +119,7 @@ namespace Compiler.Tests.AssignTests.ModuloAssign
             Assert.Throws<NullReferenceException>(() => f(null, 1));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int IntProp { get; set; }
             public int? NullableIntProp { get; set; }

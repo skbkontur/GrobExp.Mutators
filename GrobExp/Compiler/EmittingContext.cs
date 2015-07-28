@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,10 +10,47 @@ using System.Runtime.CompilerServices;
 
 using GrEmit;
 
+using GrobExp.Compiler.ExpressionEmitters;
+
 namespace GrobExp.Compiler
 {
     internal class EmittingContext
     {
+        public void LoadCompiledLambdaPointer(CompiledLambda compiledLambda)
+        {
+            if (TypeBuilder != null)
+                Il.Ldftn(compiledLambda.Method);
+            else
+            {
+                var stopwatch = Stopwatch.StartNew();
+                var pointer = DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor((DynamicMethod)compiledLambda.Method);
+                LambdaCompiler.TotalJITCompilationTime += stopwatch.Elapsed.TotalSeconds;
+                Il.Ldc_IntPtr(pointer);
+            }
+        }
+
+        public void MarkHiddenSP()
+        {
+            if (DebugInfoGenerator != null)
+            {
+                if (symbolDocumentWriter == null)
+                {
+                    var symbolDocumentGeneratorType = typeof(DebugInfoGenerator).Assembly.GetTypes().FirstOrDefault(type => type.Name == "SymbolDocumentGenerator");
+                    var dict = (Dictionary<SymbolDocumentInfo, ISymbolDocumentWriter>)symbolDocumentGeneratorType.GetField("_symbolWriters", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(DebugInfoGenerator);
+                    symbolDocumentWriter = dict.Values.Single();
+                }
+                Il.MarkSequencePoint(symbolDocumentWriter, 0xFeeFee, 1, 0xFeeFee, 100);
+                Il.Nop();
+            }
+        }
+
+        public void MarkLabelAndSurroundWithSP(GroboIL.Label label)
+        {
+            MarkHiddenSP();
+            Il.MarkLabel(label);
+            MarkHiddenSP();
+        }
+
         public bool EmitNullChecking(Type type, GroboIL.Label objIsNullLabel)
         {
             if(!type.IsValueType)
@@ -131,7 +170,7 @@ namespace GrobExp.Compiler
                         EmitMemberAssign(type, node.Member);
                         il.Ldloc(newobj);
                     }
-                    il.MarkLabel(memberIsNotNullLabel);
+                    MarkLabelAndSurroundWithSP(memberIsNotNullLabel);
                 }
                 else
                 {
@@ -152,7 +191,7 @@ namespace GrobExp.Compiler
                         EmitMemberAssign(type, node.Member);
                         il.Ldloc(newobj);
                     }
-                    il.MarkLabel(memberIsNotNullLabel);
+                    MarkLabelAndSurroundWithSP(memberIsNotNullLabel);
                 }
             }
             return result;
@@ -280,10 +319,10 @@ namespace GrobExp.Compiler
         public void EmitReturnDefaultValue(Type type, GroboIL.Label valueIsNullLabel, GroboIL.Label valueIsNotNullLabel)
         {
             Il.Br(valueIsNotNullLabel);
-            Il.MarkLabel(valueIsNullLabel);
+            MarkLabelAndSurroundWithSP(valueIsNullLabel);
             Il.Pop();
             EmitLoadDefaultValue(type);
-            Il.MarkLabel(valueIsNotNullLabel);
+            MarkLabelAndSurroundWithSP(valueIsNotNullLabel);
         }
 
         public void EmitArithmeticOperation(ExpressionType nodeType, Type resultType, Type leftType, Type rightType, MethodInfo method)
@@ -344,9 +383,9 @@ namespace GrobExp.Compiler
 
                     var doneLabel = Il.DefineLabel("done");
                     Il.Br(doneLabel);
-                    Il.MarkLabel(returnNullLabel);
+                    MarkLabelAndSurroundWithSP(returnNullLabel);
                     EmitLoadDefaultValue(resultType);
-                    Il.MarkLabel(doneLabel);
+                    MarkLabelAndSurroundWithSP(doneLabel);
                 }
             }
         }
@@ -395,9 +434,9 @@ namespace GrobExp.Compiler
                                 Il.Newobj(to.GetConstructor(new[] {toArgument}));
                                 var doneLabel = Il.DefineLabel("done");
                                 Il.Br(doneLabel);
-                                Il.MarkLabel(valueIsNullLabel);
+                                MarkLabelAndSurroundWithSP(valueIsNullLabel);
                                 EmitLoadDefaultValue(to);
-                                Il.MarkLabel(doneLabel);
+                                MarkLabelAndSurroundWithSP(doneLabel);
                             }
                         }
                         else
@@ -422,9 +461,9 @@ namespace GrobExp.Compiler
                                 EmitConvert(fromArgument, to, check);
                             var doneLabel = Il.DefineLabel("done");
                             Il.Br(doneLabel);
-                            Il.MarkLabel(valueIsNullLabel);
+                            MarkLabelAndSurroundWithSP(valueIsNullLabel);
                             EmitLoadDefaultValue(to);
-                            Il.MarkLabel(doneLabel);
+                            MarkLabelAndSurroundWithSP(doneLabel);
                         }
                     }
                     else if(to.IsEnum || to == typeof(Enum))
@@ -473,7 +512,7 @@ namespace GrobExp.Compiler
         public CompilerOptions Options { get; set; }
         public TypeBuilder TypeBuilder { get; set; }
         public DebugInfoGenerator DebugInfoGenerator { get; set; }
-        public bool SequencePointCleared { get; set; }
+        private ISymbolDocumentWriter symbolDocumentWriter;
         public LambdaExpression Lambda { get; set; }
         public MethodInfo Method { get; set; }
         public bool SkipVisibility { get; set; }
@@ -485,7 +524,7 @@ namespace GrobExp.Compiler
         public Dictionary<SwitchExpression, Tuple<FieldInfo, FieldInfo, int>> Switches { get; set; }
         public List<CompiledLambda> CompiledLambdas { get; set; }
         public GroboIL Il { get; set; }
-        public Dictionary<ParameterExpression, LocalHolder> VariablesToLocals { get { return variablesToLocals; } }
+        public Dictionary<ParameterExpression, GroboIL.Local> VariablesToLocals { get { return variablesToLocals; } }
         public Dictionary<LabelTarget, GroboIL.Label> Labels { get { return labels; } }
         public Stack<ParameterExpression> Variables { get { return variables; } }
 
@@ -747,7 +786,7 @@ namespace GrobExp.Compiler
             }
         }
 
-        private readonly Dictionary<ParameterExpression, LocalHolder> variablesToLocals = new Dictionary<ParameterExpression, LocalHolder>();
+        private readonly Dictionary<ParameterExpression, GroboIL.Local> variablesToLocals = new Dictionary<ParameterExpression, GroboIL.Local>();
         private readonly Stack<ParameterExpression> variables = new Stack<ParameterExpression>();
         private readonly Dictionary<LabelTarget, GroboIL.Label> labels = new Dictionary<LabelTarget, GroboIL.Label>();
 

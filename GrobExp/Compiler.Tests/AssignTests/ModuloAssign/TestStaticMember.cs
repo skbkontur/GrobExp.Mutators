@@ -69,7 +69,7 @@ namespace Compiler.Tests.AssignTests.ModuloAssign
             Assert.AreEqual(1, TestClassA.UIntField);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public static int IntProp { get; set; }
             public static int? NullableIntProp { get; set; }

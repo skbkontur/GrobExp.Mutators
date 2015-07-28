@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class NewExpressionEmitter : ExpressionEmitter<NewExpression>
     {
-        protected override bool Emit(NewExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(NewExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             context.EmitLoadArguments(node.Arguments.ToArray());
             // note ich: баг решарпера

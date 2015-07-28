@@ -9,6 +9,8 @@ using System.Reflection.Emit;
 using GrEmit;
 using GrEmit.Utils;
 
+using GrobExp.Compiler;
+
 namespace GrobExp.Mutators.Visitors
 {
     public class ArrayIndexResolver
@@ -91,64 +93,8 @@ namespace GrobExp.Mutators.Visitors
             return exp.NodeType == ExpressionType.ArrayIndex || (exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsEachMethod());
         }
 
-        private static Type CreateAnonymousType(Type[] types, string[] names)
-        {
-            var array = new TypesWithNamesArray(types, names);
-            var type = (Type)anonymousTypes[array];
-            if(type == null)
-            {
-                lock(anonymousTypesLock)
-                {
-                    type = (Type)anonymousTypes[array];
-                    if(type == null)
-                    {
-                        type = BuildType(types, names);
-                        anonymousTypes[array] = type;
-                    }
-                }
-            }
-            return type;
-        }
-
-        private static bool IsDynamicAnonymousType(Type type)
-        {
-            return type.Name.StartsWith("<>f__DynamicAnonymousType_");
-        }
-
-        private static Type BuildType(Type[] types, string[] names)
-        {
-            int length = types.Length;
-            if(names.Length != length)
-                throw new InvalidOperationException();
-            var typeBuilder = module.DefineType("<>f__DynamicAnonymousType_" + Guid.NewGuid(), TypeAttributes.Public | TypeAttributes.Class);
-            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, types);
-            var constructorIl = constructor.GetILGenerator();
-            for(int i = 0; i < length; ++i)
-            {
-                var field = typeBuilder.DefineField(names[i] + "_" + Guid.NewGuid(), types[i], FieldAttributes.Private | FieldAttributes.InitOnly);
-                var property = typeBuilder.DefineProperty(names[i], PropertyAttributes.None, types[i], Type.EmptyTypes);
-                var setter = typeBuilder.DefineMethod(names[i] + "_setter" + Guid.NewGuid(), MethodAttributes.Public, CallingConventions.HasThis, typeof(void), new[] {types[i]});
-                var il = setter.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_0); // stack: [this]
-                il.Emit(OpCodes.Ldarg_1); // stack: [this, value]
-                il.Emit(OpCodes.Stfld, field); // this.field = value
-                il.Emit(OpCodes.Ret);
-                property.SetSetMethod(setter);
-
-                var getter = typeBuilder.DefineMethod(names[i] + "_getter" + Guid.NewGuid(), MethodAttributes.Public, CallingConventions.HasThis, types[i], Type.EmptyTypes);
-                il = getter.GetILGenerator();
-                il.Emit(OpCodes.Ldarg_0); // stack: [this]
-                il.Emit(OpCodes.Ldfld, field); // stack: [this.field]
-                il.Emit(OpCodes.Ret);
-                property.SetGetMethod(getter);
-
-                constructorIl.Emit(OpCodes.Ldarg_0); // stack: [this]
-                constructorIl.Emit(OpCodes.Ldarg_S, i + 1); // stack: [this, arg_i]
-                constructorIl.Emit(OpCodes.Call, setter); // this.setter(arg_i)
-            }
-            constructorIl.Emit(OpCodes.Ret);
-            return typeBuilder.CreateType();
-        }
+        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         private Expression ResolveInternal(Expression exp, bool wrapCollections)
         {
@@ -160,7 +106,7 @@ namespace GrobExp.Mutators.Visitors
                 var resolvedArguments = ((NewExpression)exp).Arguments.Select(arg => ResolveInternal(arg, wrapCollections)).ToArray();
                 var types = resolvedArguments.Select(arg => arg.Type).ToArray();
                 var names = exp.Type.GetProperties().Select(property => property.Name).ToArray();
-                var type = CreateAnonymousType(types, names);
+                var type = AnonymousTypeBuilder.CreateAnonymousType(types, names, module);
                 var constructor = type.GetConstructor(types);
                 if(constructor == null)
                     throw new Exception("Missing constructor of type '" + Formatter.Format(type) + "' with parameters {" + string.Join(", ", types.Select(Formatter.Format)) + "}");
@@ -198,7 +144,7 @@ namespace GrobExp.Mutators.Visitors
                         ParameterExpression parameter = Expression.Parameter(elementType);
                         ParameterExpression index = Expression.Parameter(typeof(int));
                         var types = new[] {elementType, typeof(IEnumerable<int>)};
-                        var type = typeof(IndexedValue<>).MakeGenericType(elementType);
+                        var type = typeof(ArrayIndexResolver.IndexedValue<>).MakeGenericType(elementType);
                         ConstructorInfo constructor = type.GetConstructor(types);
                         if(constructor == null)
                             throw new Exception("Missing constructor of type '" + Formatter.Format(type) + "' with parameters {" + string.Join(", ", types.Select(Formatter.Format)) + "}");
@@ -214,7 +160,7 @@ namespace GrobExp.Mutators.Visitors
                         if(!current.Type.IsArray)
                             current = Expression.Call(toArrayMethod.MakeGenericMethod(itemType), current);
                         current = Expression.ArrayIndex(current, ((BinaryExpression)shard).Right);
-                        if(itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(IndexedValue<>))
+                        if(itemType.IsGenericType && itemType.GetGenericTypeDefinition() == typeof(ArrayIndexResolver.IndexedValue<>))
                             current = Expression.MakeMemberAccess(current, itemType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance));
                     }
                     break;
@@ -350,7 +296,7 @@ namespace GrobExp.Mutators.Visitors
         private static LambdaExpression Merge(LambdaExpression lambda, Type type)
         {
             if(lambda == null) return null;
-            if(!IsDynamicAnonymousType(type))
+            if(!AnonymousTypeBuilder.IsDynamicAnonymousType(type))
             {
                 var parameter = Expression.Parameter(type);
                 return Expression.Lambda(Expression.MakeMemberAccess(parameter, type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance)), parameter).Merge(lambda);
@@ -374,50 +320,13 @@ namespace GrobExp.Mutators.Visitors
             return merger.Merge(lambda);
         }
 
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
-        private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
-        private static readonly Hashtable anonymousTypes = new Hashtable();
-        private static readonly object anonymousTypesLock = new object();
-
         private static readonly MethodInfo selectMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>>>)(arr => arr.Select(i => i))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo selectWithIndexMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>>>)(arr => arr.Select((i, index) => index))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo concatIntsMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>, IEnumerable<int>>>)((ints1, ints2) => ints1.Concat(ints2))).Body).Method;
         private static readonly MethodInfo listIntsAddRangeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(list => list.AddRange(new int[0]))).Body).Method;
         private static readonly MethodInfo toArrayMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, int[]>>)(enumerable => enumerable.ToArray())).Body).Method.GetGenericMethodDefinition();
-
-        private class TypesWithNamesArray
-        {
-            public TypesWithNamesArray(Type[] types, string[] names)
-            {
-                Types = types;
-                Names = names;
-            }
-
-            public override int GetHashCode()
-            {
-                return Names.Aggregate(Types.Aggregate(0, (current, t) => current * 314159265 + t.GetHashCode()), (current, t) => current * 271828459 + t.GetHashCode());
-            }
-
-            public override bool Equals(object obj)
-            {
-                if(!(obj is TypesWithNamesArray))
-                    return false;
-                if(ReferenceEquals(this, obj)) return true;
-                var other = (TypesWithNamesArray)obj;
-                if(Types.Length != other.Types.Length || Names.Length != other.Names.Length)
-                    return false;
-                if(Types.Where((t, i) => t != other.Types[i]).Any())
-                    return false;
-                if(Names.Where((s, i) => s != other.Names[i]).Any())
-                    return false;
-                return true;
-            }
-
-            public Type[] Types { get; private set; }
-            public string[] Names { get; private set; }
-        }
-
-        private class IndexedValue<T>
+        
+        public class IndexedValue<T>
         {
             public IndexedValue(T value, IEnumerable<int> indexes)
             {

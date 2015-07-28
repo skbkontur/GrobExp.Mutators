@@ -361,13 +361,13 @@ namespace Mutators.Tests
         private TestConverterCollectionFactory converterCollectionFactory;
         private PathFormatterCollection pathFormatterCollection;
 
-        private class ComplexCustomFieldSubClass
+        public class ComplexCustomFieldSubClass
         {
             [CustomField]
             public string S { get; set; }
         }
 
-        private class ComplexCustomField
+        public class ComplexCustomField
         {
             [CustomField()]
             public int X { get; set; }
@@ -376,7 +376,7 @@ namespace Mutators.Tests
             public ComplexCustomFieldSubClass Z { get; set; }
         }
 
-        private class DataItem
+        public class DataItem
         {
             public string Id { get; set; }
 
@@ -393,7 +393,7 @@ namespace Mutators.Tests
             public string S { get; set; }
         }
 
-        private class Data
+        public class Data
         {
             [CustomField]
             public int X { get; set; }
@@ -422,7 +422,7 @@ namespace Mutators.Tests
             public DataItem[] Items { get; set; }
         }
 
-        private class WebDataItem
+        public class WebDataItem
         {
             public string Id { get; set; }
 
@@ -430,7 +430,7 @@ namespace Mutators.Tests
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }
         }
 
-        private class WebData
+        public class WebData
         {
             [CustomFieldsContainer]
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }
@@ -439,7 +439,7 @@ namespace Mutators.Tests
             public Dictionary<string, CustomFieldValue> CustomFieldsCopy { get; set; }
         }
 
-        private class ModelDataItem
+        public class ModelDataItem
         {
             public string Id { get; set; }
 
@@ -447,7 +447,7 @@ namespace Mutators.Tests
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }
         }
 
-        private class ModelData
+        public class ModelData
         {
             [CustomFieldsContainer]
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }

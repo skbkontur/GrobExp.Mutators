@@ -7,7 +7,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class LabelExpressionEmitter : ExpressionEmitter<LabelExpression>
     {
-        protected override bool Emit(LabelExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(LabelExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             bool result = false;
             if(node.DefaultValue != null)
@@ -17,7 +17,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             GroboIL.Label label;
             if(!context.Labels.TryGetValue(node.Target, out label))
                 context.Labels.Add(node.Target, label = context.Il.DefineLabel(node.Target.Name));
-            context.Il.MarkLabel(label);
+            context.MarkLabelAndSurroundWithSP(label);
             return result;
         }
     }

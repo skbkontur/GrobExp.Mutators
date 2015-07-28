@@ -28,7 +28,7 @@ namespace Compiler.Tests
             Assert.That(compiledExp(new TestClassA {Y = 1}), Is.EqualTo(1));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public string S { get; set; }
             public int Y { get; set; }

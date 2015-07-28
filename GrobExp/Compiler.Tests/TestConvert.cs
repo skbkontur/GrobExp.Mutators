@@ -348,7 +348,7 @@ namespace Compiler.Tests
             return f(value);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public object X { get; set; }
         }

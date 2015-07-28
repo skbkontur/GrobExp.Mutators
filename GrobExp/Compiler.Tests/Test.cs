@@ -15,7 +15,7 @@ namespace Compiler.Tests
     [TestFixture]
     public class Test // todo растащить на куски
     {
-        private class Qzz
+        public class Qzz
         {
             public int? X { get; set; }
         }
@@ -33,7 +33,7 @@ namespace Compiler.Tests
         {
             Expression<Action<TestClassA>> exp = a => Array.Resize(ref a.IntArray2, 5);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
-            var o = new TestClassA { IntArray2 = new int[] { 1, 2, 3 } };
+            var o = new TestClassA {IntArray2 = new int[] {1, 2, 3}};
             f(o);
             Assert.AreEqual(5, o.IntArray2.Length);
             Assert.AreEqual(1, o.IntArray2[0]);
@@ -243,6 +243,15 @@ namespace Compiler.Tests
         }
 
         [Test]
+        public void TestConditional4()
+        {
+            Expression<Func<TestClassA, string>> exp = a => (a.S == "zzz" ? a.Y : a.Y2).ToString();
+            var func = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            Assert.AreEqual("1", func(new TestClassA{Y = 1, Y2 = 2, S = "zzz"}));
+            Assert.AreEqual("2", func(new TestClassA{Y = 1, Y2 = 2, S = "qxx"}));
+        }
+
+        [Test]
         public void TestToStringOfGuid()
         {
             Expression<Func<TestClassA, string>> exp = f => "_xxx_" + f.Guid.ToString();
@@ -418,6 +427,7 @@ namespace Compiler.Tests
             public Guid? NullableGuid;
             public bool? NullableBool;
             public int Y;
+            public int Y2;
             public bool Bool;
             public long Z;
 
@@ -591,26 +601,26 @@ namespace Compiler.Tests
             }
         }
 
-        private int zzz(bool qxx)
+        public int zzz(bool qxx)
         {
             return qxx ? 1 : 0;
         }
 
-        private static int NotExtension(TestClassA x, TestClassA y)
+        public static int NotExtension(TestClassA x, TestClassA y)
         {
             if(x == null) return 1;
             if(y == null) return 2;
             return 3;
         }
 
-        private static TestClassA NotExtension2(TestClassA x, TestClassA y)
+        public static TestClassA NotExtension2(TestClassA x, TestClassA y)
         {
             if(x == null) return new TestClassA {Y = 1};
             if(y == null) return new TestClassA {Y = 2};
             return new TestClassA {Y = 3};
         }
 
-        private static int Y(TestClassA a)
+        public static int Y(TestClassA a)
         {
             return a.Y;
         }

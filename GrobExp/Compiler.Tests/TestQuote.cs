@@ -33,18 +33,18 @@ namespace Compiler.Tests
         {
             ParameterExpression x = Expression.Parameter(typeof(int));
             ParameterExpression y = Expression.Parameter(typeof(int));
-            Expression body = Expression.Call(typeof(TestQuote).GetMethod("F2", BindingFlags.NonPublic | BindingFlags.Static), Expression.Quote(Expression.Lambda<Func<int, IRuntimeVariables>>(Expression.RuntimeVariables(x, y), y)));
+            Expression body = Expression.Call(typeof(TestQuote).GetMethod("F2", BindingFlags.Public | BindingFlags.Static), Expression.Quote(Expression.Lambda<Func<int, IRuntimeVariables>>(Expression.RuntimeVariables(x, y), y)));
             Expression<Func<int, int>> exp = Expression.Lambda<Func<int, int>>(body, x);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
             Assert.AreEqual(10, f(10));
         }
 
-        private static int F(Expression<Func<int, int>> exp)
+        public static int F(Expression<Func<int, int>> exp)
         {
             return LambdaCompiler.Compile(exp, CompilerOptions.All)(5);
         }
 
-        private static int F2(Expression<Func<int, IRuntimeVariables>> exp)
+        public static int F2(Expression<Func<int, IRuntimeVariables>> exp)
         {
             return (int)LambdaCompiler.Compile(exp, CompilerOptions.All)(5)[0];
         }

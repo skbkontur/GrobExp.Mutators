@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace GrobExp.Compiler.ExpressionEmitters
 {
-    internal class RuntimeVariables : IRuntimeVariables
+    public class RuntimeVariables : IRuntimeVariables
     {
         public RuntimeVariables(object[] values)
         {

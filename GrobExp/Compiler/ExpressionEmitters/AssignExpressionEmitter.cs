@@ -10,7 +10,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class AssignExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var il = context.Il;
             var left = node.Left;
@@ -130,9 +130,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         EmitAssign(assigneeKind, left, context, null, right);
                         var returnLabel = il.DefineLabel("return");
                         il.Br(returnLabel);
-                        il.MarkLabel(skipAssigneeLabel);
+                        context.MarkLabelAndSurroundWithSP(skipAssigneeLabel);
                         il.Pop();
-                        il.MarkLabel(returnLabel);
+                        context.MarkLabelAndSurroundWithSP(returnLabel);
                     }
                     else
                     {
@@ -153,9 +153,9 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             EmitAssign(assigneeKind, left, context, null, value);
                             var returnValueLabel = il.DefineLabel("returnValue");
                             il.Br(returnValueLabel);
-                            il.MarkLabel(skipAssigneeLabel);
+                            context.MarkLabelAndSurroundWithSP(skipAssigneeLabel);
                             il.Pop();
-                            il.MarkLabel(returnValueLabel);
+                            context.MarkLabelAndSurroundWithSP(returnValueLabel);
                             il.Ldloc(value);
                         }
                     }
@@ -212,7 +212,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Ldarg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Ldloc(variable);
                     else
@@ -303,7 +303,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else
@@ -406,7 +406,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else
@@ -504,7 +504,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Starg(index);
                 else
                 {
-                    EmittingContext.LocalHolder variable;
+                    GroboIL.Local variable;
                     if(context.VariablesToLocals.TryGetValue((ParameterExpression)node, out variable))
                         il.Stloc(variable);
                     else

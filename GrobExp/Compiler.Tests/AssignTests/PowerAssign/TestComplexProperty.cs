@@ -105,13 +105,13 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             Assert.IsNull(o.NullableDoubleArray["zzz", 1]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public NullableIntArray NullableDoubleArray { get; set; }
             public DoubleArray DoubleArray;
         }
 
-        private class IntArray
+        public class IntArray
         {
             public int this[string key, int index]
             {
@@ -134,7 +134,7 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             private readonly Dictionary<string, int[]> dict = new Dictionary<string, int[]>();
         }
 
-        private class NullableIntArray
+        public class NullableIntArray
         {
             public double? this[string key, int index]
             {
@@ -157,7 +157,7 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             private readonly Dictionary<string, double?[]> dict = new Dictionary<string, double?[]>();
         }
 
-        private class UIntArray
+        public class UIntArray
         {
             public uint this[string key, int index]
             {
@@ -180,7 +180,7 @@ namespace Compiler.Tests.AssignTests.PowerAssign
             private readonly Dictionary<string, uint[]> dict = new Dictionary<string, uint[]>();
         }
 
-        private class DoubleArray
+        public class DoubleArray
         {
             public double this[string key, int index]
             {

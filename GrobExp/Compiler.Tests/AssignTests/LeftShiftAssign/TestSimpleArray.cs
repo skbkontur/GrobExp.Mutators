@@ -348,7 +348,7 @@ namespace Compiler.Tests.AssignTests.LeftShiftAssign
             Assert.IsNull(o.NullableUIntArray[0]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[] IntArray { get; set; }
             public uint[] UIntArray { get; set; }

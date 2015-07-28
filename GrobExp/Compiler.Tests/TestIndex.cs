@@ -123,7 +123,7 @@ namespace Compiler.Tests
             Assert.AreEqual("123", f(new TestClassA {IntArray = new[] {123}}));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -166,7 +166,7 @@ namespace Compiler.Tests
             private readonly Dictionary<string, string[]> dict = new Dictionary<string, string[]>();
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -206,7 +206,7 @@ namespace Compiler.Tests
             private readonly Dictionary<string, string[]> dict = new Dictionary<string, string[]>();
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -215,7 +215,7 @@ namespace Compiler.Tests
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -226,13 +226,13 @@ namespace Compiler.Tests
             public string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private struct TestStructA
+        public struct TestStructA
         {
             public string S { get; set; }
             public TestStructB[] ArrayB { get; set; }
@@ -240,7 +240,7 @@ namespace Compiler.Tests
             public int Y { get; set; }
         }
 
-        private struct TestStructB
+        public struct TestStructB
         {
             public string S { get; set; }
             public int Y { get; set; }

@@ -43,12 +43,12 @@ namespace Mutators.Tests
             }
         }
 
-        private class Z
+        public class Z
         {
             public Q[] Q { get; set; }
         }
 
-        private class Q
+        public class Q
         {
             public int Zzz { get; set; }
             public string Qzz { get; set; }

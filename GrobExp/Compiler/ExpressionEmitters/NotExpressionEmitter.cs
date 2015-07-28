@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class NotExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(node.Type != typeof(bool) && node.Type != typeof(bool?))
                 return ExpressionEmittersCollection.Emit(Expression.OnesComplement(node.Operand, node.Method), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
@@ -38,7 +38,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     il.Xor();
                     il.Newobj(nullableBoolConstructor);
                     il.Stloc(value);
-                    il.MarkLabel(returnLabel);
+                    context.MarkLabelAndSurroundWithSP(returnLabel);
                     il.Ldloc(value);
                 }
             }

@@ -85,15 +85,15 @@ namespace Compiler.Tests
             Assert.IsTrue(f(TestEnum.One));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
         }
 
-        private class TestClassB : TestClassA
+        public class TestClassB : TestClassA
         {
         }
 
-        private enum TestEnum
+        public enum TestEnum
         {
             One,
             Two

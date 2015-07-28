@@ -113,14 +113,14 @@ namespace Compiler.Tests.AssignTests.PostIncrementAssign
             Assert.Throws<NullReferenceException>(() => f(null));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public IntArray IntArray { get; set; }
             public NullableIntArray NullableIntArray { get; set; }
             public DoubleArray DoubleArray;
         }
 
-        private class IntArray
+        public class IntArray
         {
             public int this[string key, int index]
             {
@@ -143,7 +143,7 @@ namespace Compiler.Tests.AssignTests.PostIncrementAssign
             private readonly Dictionary<string, int[]> dict = new Dictionary<string, int[]>();
         }
 
-        private class NullableIntArray
+        public class NullableIntArray
         {
             public int? this[string key, int index]
             {
@@ -166,7 +166,7 @@ namespace Compiler.Tests.AssignTests.PostIncrementAssign
             private readonly Dictionary<string, int?[]> dict = new Dictionary<string, int?[]>();
         }
 
-        private class DoubleArray
+        public class DoubleArray
         {
             public double this[string key, int index]
             {

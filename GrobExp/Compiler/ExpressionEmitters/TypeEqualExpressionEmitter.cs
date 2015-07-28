@@ -7,7 +7,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class TypeEqualExpressionEmitter : ExpressionEmitter<TypeBinaryExpression>
     {
-        protected override bool Emit(TypeBinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(TypeBinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             bool result;
             GroboIL il = context.Il;
@@ -42,10 +42,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Ceq();
                 var doneLabel = il.DefineLabel("done");
                 il.Br(doneLabel);
-                il.MarkLabel(returnFalseLabel);
+                context.MarkLabelAndSurroundWithSP(returnFalseLabel);
                 il.Pop();
                 il.Ldc_I4(0);
-                il.MarkLabel(doneLabel);
+                context.MarkLabelAndSurroundWithSP(doneLabel);
             }
             resultType = typeof(bool);
             return result;

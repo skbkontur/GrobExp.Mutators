@@ -155,7 +155,7 @@ namespace Compiler.Tests
             public string S { get; set; }
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public string S { get; set; }
             public TestClassB B { get; set; }
@@ -164,7 +164,7 @@ namespace Compiler.Tests
             public int Y;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public string S { get; set; }
         }

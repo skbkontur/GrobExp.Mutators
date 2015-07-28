@@ -288,16 +288,16 @@ namespace Compiler.Tests.AssignTests.Assign
             Assert.AreEqual(-123, TwoDimensionalIntArray[1, 2]);
         }
 
-        private static int[,] TwoDimensionalIntArray { get; set; }
+        public static int[,] TwoDimensionalIntArray { get; set; }
 
-        private static DateTime MyBirthDate { get { return new DateTime(1986, 2, 16); } }
-        private static string S { get; set; }
+        public static DateTime MyBirthDate { get { return new DateTime(1986, 2, 16); } }
+        public static string S { get; set; }
 
-        private static int[] intArray;
-        private static int x;
-        private static bool b;
+        public static int[] intArray;
+        public static int x;
+        public static bool b;
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -324,7 +324,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestStructA structA;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -345,7 +345,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -354,7 +354,7 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -367,13 +367,13 @@ namespace Compiler.Tests.AssignTests.Assign
             public readonly string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private struct TestStructA
+        public struct TestStructA
         {
             public string S { get; set; }
             public int? X { get; set; }
@@ -381,12 +381,12 @@ namespace Compiler.Tests.AssignTests.Assign
             public TestStructB b;
         }
 
-        private struct TestStructB
+        public struct TestStructB
         {
             public string S { get; set; }
         }
 
-        private struct Qzz
+        public struct Qzz
         {
             public long X;
         }

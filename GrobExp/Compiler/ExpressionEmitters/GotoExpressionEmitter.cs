@@ -7,7 +7,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class GotoExpressionEmitter : ExpressionEmitter<GotoExpression>
     {
-        protected override bool Emit(GotoExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(GotoExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             bool result = false;
             if(node.Value != null)

@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Compiler;
+
 namespace GrobExp.Mutators.Visitors
 {
     public class ExpressionMerger : ExpressionVisitor

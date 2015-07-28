@@ -7,6 +7,8 @@ using NUnit.Framework;
 
 using System.Linq;
 
+using GrobExp.Compiler;
+
 namespace Mutators.Tests
 {
     public class ExpressionHashCalculatorTest: TestBase

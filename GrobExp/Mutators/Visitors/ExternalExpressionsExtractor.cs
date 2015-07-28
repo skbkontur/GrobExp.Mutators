@@ -1,9 +1,138 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
+    public class HackedExternalExpressionsExtractor : ExpressionVisitor
+    {
+        private class ExternalExpressionsTaker : ExpressionVisitor
+        {
+            private readonly HashSet<Expression> externalNodes;
+            private readonly List<Expression> externalList = new List<Expression>();
+
+            public ExternalExpressionsTaker(HashSet<Expression> externalNodes)
+            {
+                this.externalNodes = externalNodes;
+            }
+
+            public List<Expression> Take(Expression expression)
+            {
+                Visit(expression);
+                return externalList;
+            }
+
+            public override Expression Visit(Expression node)
+            {
+                if(externalNodes.Contains(node))
+                {
+                    externalList.Add(node);
+                    return node;
+                }
+                return base.Visit(node);
+            }
+        }
+
+        private class NodeInfo
+        {
+            public int Height { get; private set; }
+            public int MinimalDeclarationHeight { get; set; }
+            public bool HasObjectCreation { get; set; }
+
+            public NodeInfo(int height)
+            {
+                Height = height;
+                MinimalDeclarationHeight = int.MaxValue;
+                HasObjectCreation = false;
+            }
+        }
+
+        private readonly HashSet<ParameterExpression> givenVariables;
+        private readonly Dictionary<ParameterExpression, int> internalVariables = new Dictionary<ParameterExpression, int>();
+        private readonly Stack<NodeInfo> nodesStack = new Stack<NodeInfo>();
+        private readonly HashSet<Expression> externalNodes = new HashSet<Expression>();
+
+        public HackedExternalExpressionsExtractor(IEnumerable<ParameterExpression> internalVariables)
+        {
+            this.givenVariables = new HashSet<ParameterExpression>(internalVariables);
+        }
+
+        public Expression[] Extract(Expression expression)
+        {
+            nodesStack.Push(new NodeInfo(-1));
+            Visit(expression);
+            var externalExpressions = new ExternalExpressionsTaker(externalNodes).Take(expression);
+            var result = externalExpressions.GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp))
+                .Select(grouping => grouping.First()).ToArray();
+            externalExpressions.Clear();
+            return result;
+        }
+
+        public override Expression Visit(Expression node)
+        {
+            var parentInfo = nodesStack.Peek();
+            int height = parentInfo.Height + 1;
+
+            // todo обработать константы сложных типов правильно
+            if(node == null || node.NodeType == ExpressionType.Constant || node.NodeType == ExpressionType.Default)
+                return node;
+
+            if(node.NodeType == ExpressionType.Call && ((MethodCallExpression)node).Method.IsDynamicMethod())
+            {
+                parentInfo.HasObjectCreation = true;
+                return node;
+            }
+
+            if(node.NodeType == ExpressionType.Parameter)
+            {
+                var param = (ParameterExpression)node;
+                int declarationHeight;
+                if (internalVariables.TryGetValue(param, out declarationHeight))
+                    parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, declarationHeight);
+                else if(givenVariables.Contains(param))
+                    parentInfo.MinimalDeclarationHeight = -1;
+                return node;
+            }
+
+            if(node.NodeType == ExpressionType.Block || node.NodeType == ExpressionType.Lambda)
+            {
+                IEnumerable<ParameterExpression> variables = node.NodeType == ExpressionType.Block
+                    ? ((BlockExpression)node).Variables
+                    : ((LambdaExpression)node).Parameters;
+                foreach(var variable in variables)
+                    internalVariables.Add(variable, height);
+            }
+
+            var myInfo = new NodeInfo(height);
+            nodesStack.Push(myInfo);
+            base.Visit(node);
+            nodesStack.Pop();
+
+            if (node.NodeType == ExpressionType.Block || node.NodeType == ExpressionType.Lambda)
+            {
+                IEnumerable<ParameterExpression> variables = node.NodeType == ExpressionType.Block
+                    ? ((BlockExpression)node).Variables
+                    : ((LambdaExpression)node).Parameters;
+                foreach(var variable in variables)
+                        internalVariables.Remove(variable);
+            }
+
+            if (node.NodeType == ExpressionType.Invoke || node.NodeType == ExpressionType.New ||
+               node.NodeType == ExpressionType.NewArrayBounds || node.NodeType == ExpressionType.NewArrayInit || node.NodeType == ExpressionType.Label || node.NodeType == ExpressionType.Goto)
+                myInfo.HasObjectCreation = true;
+
+            parentInfo.MinimalDeclarationHeight = Math.Min(parentInfo.MinimalDeclarationHeight, myInfo.MinimalDeclarationHeight);
+            parentInfo.HasObjectCreation |= myInfo.HasObjectCreation;
+
+            if(node.Type == typeof(void) || myInfo.MinimalDeclarationHeight < height || myInfo.HasObjectCreation)
+                return node;
+
+            externalNodes.Add(node);
+            return node;
+        }
+    }
+
     public class ExternalExpressionsExtractor : ExpressionVisitor
     {
         public ExternalExpressionsExtractor(IEnumerable<ParameterExpression> internalVariables)
@@ -87,6 +216,13 @@ namespace GrobExp.Mutators.Visitors
         {
             result = true;
             return base.VisitNew(node);
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if(node.Method.IsDynamicMethod())
+                result = true;
+            return base.VisitMethodCall(node);
         }
 
         private bool result;

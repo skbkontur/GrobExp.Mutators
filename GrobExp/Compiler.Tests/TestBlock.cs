@@ -49,7 +49,7 @@ namespace Compiler.Tests
             Assert.AreEqual(true, f(new TestClassA {X = 1}));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int F(bool b)
             {
@@ -70,7 +70,7 @@ namespace Compiler.Tests
             public TestStructA structA;
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public int? F2(int? x)
             {
@@ -89,7 +89,7 @@ namespace Compiler.Tests
             public int Y;
         }
 
-        private class TestClassC
+        public class TestClassC
         {
             public string S { get; set; }
 
@@ -98,7 +98,7 @@ namespace Compiler.Tests
             public TestClassD[] ArrayD { get; set; }
         }
 
-        private class TestClassD
+        public class TestClassD
         {
             public TestClassE E { get; set; }
             public TestClassE[] ArrayE { get; set; }
@@ -109,13 +109,13 @@ namespace Compiler.Tests
             public readonly string S;
         }
 
-        private class TestClassE
+        public class TestClassE
         {
             public string S { get; set; }
             public int X { get; set; }
         }
 
-        private struct TestStructA
+        public struct TestStructA
         {
             public string S { get; set; }
             public int? X { get; set; }
@@ -123,12 +123,12 @@ namespace Compiler.Tests
             public TestStructB b;
         }
 
-        private struct TestStructB
+        public struct TestStructB
         {
             public string S { get; set; }
         }
 
-        private struct Qzz
+        public struct Qzz
         {
             public long X;
         }

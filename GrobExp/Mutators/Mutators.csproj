@@ -126,7 +126,6 @@
     <Compile Include="Visitors\DependenciesExtractor.cs" />
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
-    <Compile Include="Visitors\ExpressionHashCalculator.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
@@ -136,7 +135,6 @@
     <Compile Include="Visitors\IsConstantChecker.cs" />
     <Compile Include="Visitors\IsNullOrEmptyExtender.cs" />
     <Compile Include="Visitors\CompositionPerformer.cs" />
-    <Compile Include="Visitors\LambdaExpressionCreator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
     <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
     <Compile Include="Visitors\ParameterCanonizer.cs" />

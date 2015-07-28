@@ -125,7 +125,7 @@ namespace Compiler.Tests.AssignTests.ModuloAssign
             Assert.Throws<NullReferenceException>(() => f(null, 1));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[,] IntArray { get; set; }
             public int?[,] NullableIntArray { get; set; }

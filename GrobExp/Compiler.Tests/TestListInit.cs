@@ -48,7 +48,7 @@ namespace Compiler.Tests
             Assert.AreEqual(2, list[1]);
         }
 
-        private struct TestStructA : IEnumerable<int>
+        public struct TestStructA : IEnumerable<int>
         {
             public TestStructA(int x)
             {

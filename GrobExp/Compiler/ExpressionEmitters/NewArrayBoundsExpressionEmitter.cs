@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class NewArrayBoundsExpressionEmitter : ExpressionEmitter<NewArrayExpression>
     {
-        protected override bool Emit(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(NewArrayExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var il = context.Il;
 
@@ -28,10 +28,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 {
                     var lengthIsNotNullLabel = il.DefineLabel("lengthIsNotNull");
                     il.Br(lengthIsNotNullLabel);
-                    il.MarkLabel(lengthIsNullLabel);
+                    context.MarkLabelAndSurroundWithSP(lengthIsNullLabel);
                     il.Pop();
                     il.Ldc_I4(0);
-                    il.MarkLabel(lengthIsNotNullLabel);
+                    context.MarkLabelAndSurroundWithSP(lengthIsNotNullLabel);
                 }
                 il.Newarr(node.Type.GetElementType());
             }

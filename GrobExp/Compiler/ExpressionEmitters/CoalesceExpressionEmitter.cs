@@ -7,7 +7,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class CoalesceExpressionEmitter : ExpressionEmitter<BinaryExpression>
     {
-        protected override bool Emit(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(node.Conversion != null)
                 throw new NotSupportedException("Coalesce with conversion is not supported");
@@ -41,12 +41,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
             il.Br(valueIsNotNullLabel);
             if(labelUsed)
             {
-                il.MarkLabel(valueIsNullLabel);
+                context.MarkLabelAndSurroundWithSP(valueIsNullLabel);
                 il.Pop();
             }
             Type rightType;
             var result = ExpressionEmittersCollection.Emit(right, context, returnDefaultValueLabel, out rightType);
-            il.MarkLabel(valueIsNotNullLabel);
+            context.MarkLabelAndSurroundWithSP(valueIsNotNullLabel);
             resultType = node.Type;
             return result;
             // ReSharper restore HeuristicUnreachableCode

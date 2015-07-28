@@ -9,7 +9,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class IndexExpressionEmitter : ExpressionEmitter<IndexExpression>
     {
-        protected override bool Emit(IndexExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(IndexExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             if(node.Object != null && node.Object.Type.IsArray && node.Object.Type.GetArrayRank() == 1)
                 return ExpressionEmittersCollection.Emit(Expression.ArrayIndex(node.Object, node.Arguments.Single()), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
@@ -76,12 +76,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
                                 throw new MissingMethodException(node.Indexer.ReflectedType.ToString(), "set_" + node.Indexer.Name);
                             context.Il.Call(setter, node.Object.Type); // dict.set_Item(key, default(valueType)); stack: []
                         }
-                        context.Il.MarkLabel(loadResultLabel);
+                        context.MarkLabelAndSurroundWithSP(loadResultLabel);
                         context.Il.Ldloc(value);
                     }
                 }
                 if(doneLabel != null)
-                    context.Il.MarkLabel(doneLabel);
+                    context.MarkLabelAndSurroundWithSP(doneLabel);
                 else
                     context.Il.Call(getter, node.Object.Type);
             }

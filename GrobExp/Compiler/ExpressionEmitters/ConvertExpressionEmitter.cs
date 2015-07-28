@@ -8,7 +8,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
 {
     internal class ConvertExpressionEmitter : ExpressionEmitter<UnaryExpression>
     {
-        protected override bool Emit(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        protected override bool EmitInternal(UnaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
             var il = context.Il;
             GroboIL.Label operandIsNullLabel = context.CanReturn ? il.DefineLabel("operandIsNull") : null;
@@ -32,10 +32,10 @@ namespace GrobExp.Compiler.ExpressionEmitters
                             il.Stloc(temp);
                             il.Ldloca(temp);
                             il.Dup();
-                            il.Ldfld(resultType.GetField("hasValue", BindingFlags.Instance | BindingFlags.NonPublic));
+                            context.EmitHasValueAccess(resultType);
                             var valueIsNullLabel = operandIsNullLabelUsed ? operandIsNullLabel : il.DefineLabel("valueIsNull");
                             il.Brfalse(valueIsNullLabel);
-                            il.Ldfld(resultType.GetField("value", BindingFlags.Instance | BindingFlags.NonPublic));
+                            context.EmitValueAccess(resultType);
                             il.Call(node.Method);
                             il.Newobj(node.Type.GetConstructor(new[] {node.Method.ReturnType}));
                             if(!operandIsNullLabelUsed)

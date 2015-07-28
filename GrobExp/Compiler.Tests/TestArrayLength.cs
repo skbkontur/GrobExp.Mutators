@@ -20,14 +20,14 @@ namespace Compiler.Tests
             Assert.AreEqual(1, f(new TestClassA {ArrayB = new TestClassB[1]}));
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public string S { get; set; }
             public int Y { get; set; }
             public TestClassB[] ArrayB { get; set; }
         }
 
-        private class TestClassB
+        public class TestClassB
         {
             public string S { get; set; }
         }

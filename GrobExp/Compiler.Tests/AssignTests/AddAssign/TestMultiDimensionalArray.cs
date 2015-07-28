@@ -332,7 +332,7 @@ namespace Compiler.Tests.AssignTests.AddAssign
             Assert.IsNull(o.NullableUIntArray[0, 0]);
         }
 
-        private class TestClassA
+        public class TestClassA
         {
             public int[,] IntArray { get; set; }
             public int?[,] NullableIntArray { get; set; }

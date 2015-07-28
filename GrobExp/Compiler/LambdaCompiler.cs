@@ -38,8 +38,8 @@ namespace GrobExp.Compiler
         }
 
         public static bool AnalyzeILStack = true;
-        public static string DebugOutputDirectory = AppDomain.CurrentDomain.BaseDirectory;
-        public static double TotalJITCompilationTime;
+        public static string DebugOutputDirectory = null;
+        public static double TotalJITCompilationTime = 0;
 
         internal static CompiledLambda CompileInternal(
             LambdaExpression lambda,

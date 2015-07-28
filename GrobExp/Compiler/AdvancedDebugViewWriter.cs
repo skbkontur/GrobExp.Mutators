@@ -165,10 +165,11 @@ namespace GrobExp.Compiler
 
         Expression GetBlock(Expression e)
         {
+            var sel = EndSelection();
             if(e.NodeType == ExpressionType.Block ||
                e.NodeType == ExpressionType.Conditional)
                 return e;
-            return Expression.Block(EndSelection(), e);
+            return Expression.Block(sel, e);
         }
         // End DebugInfo section
 

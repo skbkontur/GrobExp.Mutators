@@ -64,10 +64,5 @@ namespace GrobExp.Mutators.Aggregators
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
         }
-
-        protected override Expression GetLCP()
-        {
-            return Condition == null ? null : Condition.Body.CutToChains(false, false).FindLCP();
-        }
     }
 }

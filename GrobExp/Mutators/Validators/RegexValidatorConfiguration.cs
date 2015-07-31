@@ -104,14 +104,6 @@ namespace GrobExp.Mutators.Validators
                 .ToArray();
         }
 
-        protected override Expression GetLCP()
-        {
-            var condition = GetFullCondition();
-            return (condition.Body.CutToChains(false, false))
-                .Concat(Message == null ? new Expression[0] : Message.Body.CutToChains(false, false))
-                .FindLCP();
-        }
-
         private static string PreparePattern(string pattern)
         {
             if(pattern[0] != '^')

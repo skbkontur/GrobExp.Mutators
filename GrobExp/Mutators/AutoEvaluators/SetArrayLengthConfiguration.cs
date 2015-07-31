@@ -79,11 +79,6 @@ namespace GrobExp.Mutators.AutoEvaluators
                 .ToArray();
         }
 
-        protected override Expression GetLCP()
-        {
-            return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false)).Concat(Length == null ? new Expression[0] : Length.Body.CutToChains(false, false)).FindLCP();
-        }
-
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 1))).Body).Method;
     }
 }

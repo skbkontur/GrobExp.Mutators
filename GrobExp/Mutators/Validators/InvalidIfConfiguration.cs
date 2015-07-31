@@ -80,11 +80,6 @@ namespace GrobExp.Mutators.Validators
                 .ToArray();
         }
 
-        protected override Expression GetLCP()
-        {
-            return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false)).Concat(Message == null ? new Expression[0] : Message.Body.CutToChains(false, false)).FindLCP();
-        }
-
         private readonly ValidationResultType validationResultType;
 
         private static readonly ConstructorInfo validationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult>>)(() => new ValidationResult(ValidationResultType.Ok, null))).Body).Constructor;

@@ -81,11 +81,6 @@ namespace GrobExp.Mutators.AutoEvaluators
             return Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type));
         }
 
-        protected override Expression GetLCP()
-        {
-            return Value == null ? null : Value.Body.CutToChains(false, false).FindLCP();
-        }
-
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
     }
 }

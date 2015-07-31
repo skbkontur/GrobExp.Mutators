@@ -21,7 +21,7 @@ namespace Mutators.Tests
         {
             var expectedBytes = serializer.Serialize(expected);
             var actualBytes = serializer.Serialize(actual);
-            CollectionAssert.AreEqual(expectedBytes, actualBytes, message, args);
+            Assert.AreEqual(DebugViewBuilder.DebugView(expectedBytes), DebugViewBuilder.DebugView(actualBytes), message, args);
         }
 
         public static void AssertEqualsExpression(this Expression actual, Expression expected)

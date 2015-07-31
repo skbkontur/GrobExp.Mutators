@@ -10,6 +10,7 @@ using GrEmit.Utils;
 using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
+using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
@@ -334,23 +335,15 @@ namespace GrobExp.Mutators
             var sourceParameter = Expression.Parameter(typeof(TSource));
             var destParameter = Expression.Parameter(typeof(TDest));
             var tree = configurator.GetTree();
-            var newTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
             var subNodes = new List<ModelConfigurationNode>();
             tree.FindSubNodes(subNodes);
             var dependencies = from node in subNodes
                                from mutator in node.GetMutators()
                                where mutator is EqualsToConfiguration
-                               from dependency in ((EqualsToConfiguration)mutator).Value.ExtractDependencies()
-                               select dependency;
-            foreach(var dependency in dependencies)
-                newTree.Traverse(dependency.Body, true).AddMutator(new EqualsToIfConfiguration(typeof(TSource), null, dependency, null));
-            Func<Expression, bool> sourceCustomFieldFits = path =>
-                {
-                    var node = newTree.Traverse(path, false);
-                    if(node == null)
-                        return true;
-                    return node.GetMutators().Length == 0;
-                };
+                               from dependency in ((EqualsToConfiguration)mutator).Value.ExtractPrimaryDependencies()
+                               select new ExpressionWrapper(dependency.Body, false);
+            var hashset = new HashSet<ExpressionWrapper>(dependencies);
+            Func<Expression, bool> sourceCustomFieldFits = path => !hashset.Contains(new ExpressionWrapper(path, false));
             Func<Expression, bool> destCustomFieldFits = path =>
                 {
                     var node = tree.Traverse(path, false);

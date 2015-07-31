@@ -40,6 +40,14 @@ namespace GrobExp.Mutators
             throw new ArgumentException("Unable to extract item type of '" + type + "'");
         }
 
+        public static bool IsEnumerable(this Type type)
+        {
+            if (type.IsArray) return true;
+            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return true;
+            return type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        }
+
         public static bool IsAnonymousType(this Type type)
         {
             return type.Name.StartsWith("<>f__AnonymousType");

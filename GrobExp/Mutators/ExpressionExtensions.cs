@@ -73,6 +73,11 @@ namespace GrobExp.Mutators
             return result;
         }
 
+        public static Expression EliminateLinq(this Expression expression)
+        {
+            return expression == null ? null : new LinqEliminator().Eliminate(expression);
+        }
+
         public static Expression Assign(this Expression path, Expression value)
         {
             if(path.NodeType == ExpressionType.Convert)

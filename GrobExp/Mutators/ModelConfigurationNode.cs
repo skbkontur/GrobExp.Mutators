@@ -1045,7 +1045,7 @@ namespace GrobExp.Mutators
                         var arrayEach = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), new[] {array});
                         aliases.Add(new KeyValuePair<Expression, Expression>(Expression.ArrayIndex(arrayParameter, indexParameter), arrayEach));
                         aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(itemType), new Expression[] {arrayEach})));
-                        array = array.ResolveAliases(aliases);
+                        array = array.ResolveAliases(aliases).EliminateLinq();
                     }
                     var childResult = new List<Expression>();
                     child.BuildTreeMutator(edges, root, item, aliases, childResult, visitedNodes, processedNodes, globalResult);
@@ -1130,7 +1130,7 @@ namespace GrobExp.Mutators
                     var sourceKey = Expression.Property(sourceArrayEach, "Key");
                     aliases.Add(new KeyValuePair<Expression, Expression>(sourceValueParameter, sourceValue));
                     aliases.Add(new KeyValuePair<Expression, Expression>(sourceKeyParameter, sourceKey));
-                    array = array.ResolveAliases(aliases);
+                    array = array.ResolveAliases(aliases).EliminateLinq();
 
                     var childResult = new List<Expression>();
                     child.BuildTreeMutator(edges, root, destArrayEach, aliases, childResult, visitedNodes, processedNodes, globalResult);
@@ -1254,7 +1254,7 @@ namespace GrobExp.Mutators
                 }
                 (selfDependent ? selfDependentMutators : otherMutators).Add((AutoEvaluatorConfiguration)mutator.Value);
             }
-            localResult.AddRange(otherMutators.Concat(selfDependentMutators).Select(mutator => mutator.Apply(path, aliases).ExtendSelectMany()).Where(expression => expression != null));
+            localResult.AddRange(otherMutators.Concat(selfDependentMutators).Select(mutator => mutator.Apply(path, aliases).EliminateLinq()).Where(expression => expression != null));
             processedNodes.Add(this);
         }
 
@@ -1459,9 +1459,8 @@ namespace GrobExp.Mutators
                 foreach(var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
-                    var appliedValidator = validator.Apply(aliases);
+                    var appliedValidator = validator.Apply(aliases).EliminateLinq();
                     if(appliedValidator == null) continue;
-                    appliedValidator = new LinqEliminator().Eliminate(appliedValidator);
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if(validator.Priority < 0)
                         throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
@@ -1474,7 +1473,7 @@ namespace GrobExp.Mutators
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
                     var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, appliedValidator), condition));
-                    localResults.Add(localResult.ExtendSelectMany());
+                    localResults.Add(localResult);
                 }
                 var appliedValidators = Expression.Block(new[] {value}.Concat(currentIndexes), localResults);
                 if(isDisabled == null)

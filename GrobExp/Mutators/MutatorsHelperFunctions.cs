@@ -73,14 +73,14 @@ namespace GrobExp.Mutators
         public static void ForEach<T>(IList<T> arr, Func<T, int, T> func)
         {
             if(arr == null) return;
-            for(int index = 0; index < arr.Count; ++index)
+            for(var index = 0; index < arr.Count; ++index)
                 arr[index] = func(arr[index], index);
         }
 
         public static void ForEach<T>(IEnumerable<T> enumerable, Action<T, int> action)
         {
             if(enumerable == null) return;
-            int index = 0;
+            var index = 0;
             foreach(var item in enumerable)
                 action(item, index++);
         }
@@ -122,31 +122,29 @@ namespace GrobExp.Mutators
             return serializer.ChangeType<TFrom, TTo>(value);
         }
 
-        private static ISerializer serializer = new Serializer(new AllPropertiesExtractor());
-
-        public static bool IsEachMethod(this MethodInfo methodInfo)
+        public static bool IsEachMethod(this MethodInfo method)
         {
-            return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == EachMethod;
+            return method.IsGenericMethod && method.GetGenericMethodDefinition() == EachMethod;
         }
 
-        public static bool IsCurrentMethod(this MethodInfo methodInfo)
+        public static bool IsCurrentMethod(this MethodInfo method)
         {
-            return methodInfo == NonGenericTemplateIndexMethod || (methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == CurrentMethod);
+            return method == NonGenericTemplateIndexMethod || (method.IsGenericMethod && method.GetGenericMethodDefinition() == CurrentMethod);
         }
 
-        public static bool IsStringIsNullOrEmptyMethod(this MethodInfo methodInfo)
+        public static bool IsStringIsNullOrEmptyMethod(this MethodInfo method)
         {
-            return methodInfo == StringIsNullOrEmptyMethod;
+            return method == StringIsNullOrEmptyMethod;
         }
 
-        public static bool IsCurrentIndexMethod(this MethodInfo methodInfo)
+        public static bool IsCurrentIndexMethod(this MethodInfo method)
         {
-            return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == CurrentIndexMethod;
+            return method.IsGenericMethod && method.GetGenericMethodDefinition() == CurrentIndexMethod;
         }
 
-        public static bool IsTemplateIndexMethod(this MethodInfo methodInfo)
+        public static bool IsTemplateIndexMethod(this MethodInfo method)
         {
-            return methodInfo == NonGenericTemplateIndexMethod || (methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == TemplateIndexMethod);
+            return method == NonGenericTemplateIndexMethod || (method.IsGenericMethod && method.GetGenericMethodDefinition() == TemplateIndexMethod);
         }
 
         public static bool IsNotNullMethod(this MethodInfo methodInfo)
@@ -154,36 +152,36 @@ namespace GrobExp.Mutators
             return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == NotNullMethod;
         }
 
-        public static bool IsDynamicMethod(this MethodInfo methodInfo)
+        public static bool IsDynamicMethod(this MethodInfo method)
         {
-            return methodInfo.IsGenericMethod && methodInfo.GetGenericMethodDefinition() == DynamicMethod;
+            return method.IsGenericMethod && method.GetGenericMethodDefinition() == DynamicMethod;
         }
 
-        public static bool IsWhereMethod(this MethodInfo methodInfo)
+        public static bool IsWhereMethod(this MethodInfo method)
         {
-            if(methodInfo.DeclaringType != typeof(Enumerable))
+            if(method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!methodInfo.IsGenericMethod)
+            if(!method.IsGenericMethod)
                 return false;
-            return methodInfo.GetGenericMethodDefinition().Name == "Where";
+            return method.GetGenericMethodDefinition().Name == "Where";
         }
 
-        public static bool IsToArrayMethod(this MethodInfo methodInfo)
+        public static bool IsToArrayMethod(this MethodInfo method)
         {
-            if(methodInfo.DeclaringType != typeof(Enumerable))
+            if(method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!methodInfo.IsGenericMethod)
+            if(!method.IsGenericMethod)
                 return false;
-            return methodInfo.GetGenericMethodDefinition().Name == "ToArray";
+            return method.GetGenericMethodDefinition().Name == "ToArray";
         }
 
-        public static bool IsSelectMethod(this MethodInfo methodInfo)
+        public static bool IsSelectMethod(this MethodInfo method)
         {
-            if(methodInfo.DeclaringType != typeof(Enumerable))
+            if(method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!methodInfo.IsGenericMethod)
+            if(!method.IsGenericMethod)
                 return false;
-            return methodInfo.GetGenericMethodDefinition().Name == "Select";
+            return method.GetGenericMethodDefinition().Name == "Select";
         }
 
         public static readonly MethodInfo DynamicMethod = ((MethodCallExpression)((Expression<Func<int, int>>)(i => i.Dynamic())).Body).Method.GetGenericMethodDefinition();
@@ -207,5 +205,6 @@ namespace GrobExp.Mutators
         public static readonly MethodInfo JoinIgnoreEmptyMethod = ((MethodCallExpression)((Expression<Func<string[], string>>)(arr => arr.JoinIgnoreEmpty(""))).Body).Method;
 
         public static readonly MethodInfo StringIsNullOrEmptyMethod = ((MethodCallExpression)((Expression<Func<string, bool>>)(s => string.IsNullOrEmpty(s))).Body).Method;
+        private static readonly ISerializer serializer = new Serializer(new AllPropertiesExtractor());
     }
 }

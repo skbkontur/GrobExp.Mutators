@@ -74,7 +74,7 @@ namespace GrobExp.Mutators
             root = GetArrays(RootType, Path, new MutatorConfiguration[0]).Aggregate(root, (current, array) => current.Traverse(array));
 
             var validationResults = new List<Expression>();
-            root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, result, priority, validationResults);
+            root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, new Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths>(), result, priority, validationResults);
 
             validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
@@ -970,6 +970,7 @@ namespace GrobExp.Mutators
 
         private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, IEnumerable<ParameterExpression> internalParameters)
         {
+            return resultSelector(expression);
             Expression result;
             var externalExpressions = new HackedExternalExpressionsExtractor(internalParameters).Extract(expression);
             //var checking = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
@@ -1328,10 +1329,16 @@ namespace GrobExp.Mutators
                 return child;
             }
 
-            public void BuildValidator(IPathFormatter pathFormatter, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, ParameterExpression result, ParameterExpression priority, List<Expression> validationResults)
+            public void BuildValidator(IPathFormatter pathFormatter,
+                ModelConfigurationNode root,
+                List<KeyValuePair<Expression, Expression>> aliases,
+                Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths> paths,
+                ParameterExpression result,
+                ParameterExpression priority,
+                List<Expression> validationResults)
             {
                 foreach(var pair in mutators)
-                    BuildNodeValidator(pathFormatter, pair.Key, pair.Value, root, aliases, result, priority, validationResults);
+                    BuildNodeValidator(pathFormatter, pair.Key, pair.Value, root, aliases, paths, result, priority, validationResults);
                 foreach(var pair in children)
                 {
                     var edge = pair.Key.Expression;
@@ -1360,23 +1367,37 @@ namespace GrobExp.Mutators
                             }
                         }
                     }
+                    ParameterExpression[] currentIndexes;
+                    var resolvedArrayWithLinqEliminated = new LinqEliminator().Eliminate(resolvedArray, out currentIndexes);
+                    var currentPaths = ExpressionPathsBuilder.BuildPaths(resolvedArray, currentIndexes, paths);
+                    currentPaths.Add(indexParameter);
+                    paths.Add(childParameter, currentPaths);
+                    resolvedArray = resolvedArrayWithLinqEliminated;
+
                     var childValidationResults = new List<Expression>();
-                    child.BuildValidator(pathFormatter, root, aliases, result, priority, childValidationResults);
+                    child.BuildValidator(pathFormatter, root, aliases, paths, result, priority, childValidationResults);
                     aliases.RemoveAt(aliases.Count - 1);
                     aliases.RemoveAt(aliases.Count - 1);
-                    if(childValidationResults.Count > 0)
+                    paths.Remove(childParameter);
+                    if(childValidationResults.Count == 0)
+                        continue;
+
+                    Expression action = Expression.Block(childValidationResults.SplitToBatches());
+                    if(predicate != null)
                     {
-                        Expression action = Expression.Block(childValidationResults.SplitToBatches()); //Expression.Block(new ParameterExpression[] {}, childValidationResults);
-                        if(predicate != null)
-                        {
-                            var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
-                            action = Expression.IfThen(Expression.Equal(Expression.Convert(condition, typeof(bool?)), Expression.Constant(true, typeof(bool?))), action);
-                        }
-                        var forEach = CacheExternalExpressions(action,
-                                                               exp => Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] {resolvedArray, Expression.Lambda(exp, new[] {childParameter, indexParameter})}),
-                                                               childParameter, indexParameter);
-                        validationResults.Add(forEach);
+                        var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
+                        action = Expression.IfThen(Expression.Equal(Expression.Convert(condition, typeof(bool?)), Expression.Constant(true, typeof(bool?))), action);
                     }
+                    var forEach = CacheExternalExpressions(action,
+                                                           exp =>
+                                                               {
+                                                                   Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] {resolvedArray, Expression.Lambda(exp, new[] {childParameter, indexParameter})});
+                                                                   if(currentIndexes.Length > 0)
+                                                                       res = Expression.Block(currentIndexes, res);
+                                                                   return res;
+                                                               },
+                                                           new[] {childParameter, indexParameter}.Concat(currentIndexes));
+                    validationResults.Add(forEach);
                 }
             }
 
@@ -1384,13 +1405,14 @@ namespace GrobExp.Mutators
             public readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
 
             private static void BuildNodeValidator(IPathFormatter pathFormatter,
-                                                   Expression path,
-                                                   List<MutatorConfiguration> mutators,
-                                                   ModelConfigurationNode root,
-                                                   List<KeyValuePair<Expression, Expression>> aliases,
-                                                   ParameterExpression result,
-                                                   ParameterExpression priority,
-                                                   List<Expression> validationResults)
+                Expression path,
+                List<MutatorConfiguration> mutators,
+                ModelConfigurationNode root,
+                List<KeyValuePair<Expression, Expression>> aliases,
+                Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths> paths,
+                ParameterExpression result,
+                ParameterExpression priority,
+                List<Expression> validationResults)
             {
                 if(mutators.All(mutator => !(mutator is ValidatorConfiguration)))
                     return;
@@ -1405,19 +1427,20 @@ namespace GrobExp.Mutators
                         isDisabled = isDisabled == null ? current : Expression.OrElse(current, isDisabled);
                 }
 
-
                 var firstAlias = new List<KeyValuePair<Expression, Expression>> {aliases.First()};
                 var aliasesInTermsOfFirst = aliases.Count > 1 ? aliases.Skip(1).ToList() : new List<KeyValuePair<Expression, Expression>>();
                 aliasesInTermsOfFirst = aliasesInTermsOfFirst.Select(pair => new KeyValuePair<Expression, Expression>(pair.Key, pair.Value.ResolveAliases(firstAlias))).ToList();
 
-                var eachesResolver = new EachesResolver(new int[aliasesInTermsOfFirst.Count / 2].Select((x, i) => aliasesInTermsOfFirst[i * 2 + 1].Key).ToArray());
+                //var eachesResolver = new EachesResolver(new int[aliasesInTermsOfFirst.Count / 2].Select((x, i) => aliasesInTermsOfFirst[i * 2 + 1].Key).ToArray());
 
 
                 // Replace LINQ methods with cycles to obtain indexes
-                ParameterExpression[] indexes;
-                var resolvedPath = eachesResolver.Visit(path.ResolveAliases(firstAlias));
-                Expression value = Expression.Convert(new LinqEliminator().Eliminate(resolvedPath, out indexes), typeof(object));
-                Expression cutChains = ExpressionPathsBuilder.BuildPaths(resolvedPath, indexes);
+                ParameterExpression[] currentIndexes;
+                //var resolvedPath = eachesResolver.Visit(path.ResolveAliases(firstAlias));
+                var currentPath = path.ResolveAliases(aliases);
+                var value = Expression.Parameter(typeof(object));
+                Expression valueAssignment = Expression.Assign(value, Expression.Convert(new LinqEliminator().Eliminate(currentPath, out currentIndexes), typeof(object)));
+                var cutChains = ExpressionPathsBuilder.BuildPaths(currentPath, currentIndexes, paths).ToExpression();
 
                 var chains = path.CutToChains(true, true).GroupBy(exp => new ExpressionWrapper(exp, false)).Select(grouping => grouping.Key.Expression.ResolveAliases(firstAlias)).ToArray();
                 //Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
@@ -1432,12 +1455,13 @@ namespace GrobExp.Mutators
                     formattedChains = formattedChains.ResolveAliases(aliasesInTermsOfFirst);
                 }
 
-                var localResults = new List<Expression>();
+                var localResults = new List<Expression>{valueAssignment};
                 foreach(var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
-                    var current = validator.Apply(aliases);
-                    if(current == null) continue;
+                    var appliedValidator = validator.Apply(aliases);
+                    if(appliedValidator == null) continue;
+                    appliedValidator = new LinqEliminator().Eliminate(appliedValidator);
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if(validator.Priority < 0)
                         throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
@@ -1445,19 +1469,20 @@ namespace GrobExp.Mutators
                         throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
                     var validatorPriority = Expression.Constant(validator.Priority);
                     Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
-                    Expression addValidationResult = Expression.Block(indexes, Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains}));
+                    Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains});
                     Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
-                    var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition));
+                    var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, appliedValidator), condition));
                     localResults.Add(localResult.ExtendSelectMany());
                 }
+                var appliedValidators = Expression.Block(new[] {value}.Concat(currentIndexes), localResults);
                 if(isDisabled == null)
-                    validationResults.AddRange(localResults);
+                    validationResults.Add(appliedValidators);
                 else
                 {
                     Expression test = Expression.NotEqual(Expression.Convert(isDisabled, typeof(bool?)), Expression.Constant(true, typeof(bool?)));
-                    validationResults.Add(Expression.IfThen(test, Expression.Block(new ParameterExpression[] {}, localResults)));
+                    validationResults.Add(Expression.IfThen(test, appliedValidators));
                 }
             }
 

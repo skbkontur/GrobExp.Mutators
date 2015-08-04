@@ -10,18 +10,17 @@ namespace GrobExp.Mutators.Visitors
     {
         public static Expression BuildPaths(Expression node, ParameterExpression[] indexes)
         {
+            return BuildPaths(node, indexes, new Dictionary<ParameterExpression, SinglePaths>()).ToExpression();
+        }
+
+        public static SinglePaths BuildPaths(Expression node, ParameterExpression[] indexes, Dictionary<ParameterExpression, SinglePaths> paths)
+        {
             var context = new Context(indexes);
-            var paths = ((SinglePaths)BuildPaths(node, context)).paths;
-            paths.AddRange(context.paths);
-            var result = new List<Expression>();
-            foreach(var path in paths)
-            {
-                var pieces = new List<Expression>();
-                foreach(var piece in path)
-                    pieces.Add(Expression.Call(piece, "ToString", Type.EmptyTypes));
-                result.Add(Expression.NewArrayInit(typeof(string), pieces));
-            }
-            return Expression.NewArrayInit(typeof(string[]), result);
+            foreach(var pair in paths)
+                context.parameters.Add(pair.Key, pair.Value);
+            var result = (SinglePaths)BuildPaths(node, context);
+            result.MergeWith(new SinglePaths{paths = context.paths});
+            return result;
         }
 
         private static Paths BuildPaths(IEnumerable<Expression> list, Context context)
@@ -168,13 +167,14 @@ namespace GrobExp.Mutators.Visitors
             Paths paths;
             if(!context.parameters.TryGetValue((ParameterExpression)smithereens[0], out paths))
                 paths = new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
-            for(int i = 1; i < smithereens.Length; ++i)
+            for(var i = 1; i < smithereens.Length; ++i)
             {
                 var shard = smithereens[i];
                 if(IsLinqCall(shard))
                 {
                     var methodCallExpression = (MethodCallExpression)shard;
                     var method = methodCallExpression.Method;
+
                     if(!IsLinqCall(smithereens[i - 1]))
                     {
                         paths.Add(context.indexes[context.index]);
@@ -263,7 +263,7 @@ namespace GrobExp.Mutators.Visitors
         {
             return node.NodeType == ExpressionType.Call && IsLinqMethod(((MethodCallExpression)node).Method);
         }
-        
+
         private static bool IsLinqMethod(MethodInfo method)
         {
             if(method.IsGenericMethod)
@@ -403,7 +403,7 @@ namespace GrobExp.Mutators.Visitors
             {
                 var paths = new Dictionary<MemberInfo, List<List<Expression>>>();
                 var properties = node.Type.GetProperties();
-                for(int i = 0; i < properties.Length; ++i)
+                for(var i = 0; i < properties.Length; ++i)
                 {
                     var arg = BuildPaths(node.Arguments[i], context);
                     var singlePath = arg as SinglePaths;
@@ -411,7 +411,7 @@ namespace GrobExp.Mutators.Visitors
                         throw new NotSupportedException();
                     paths.Add(properties[i], singlePath.paths);
                 }
-                return new MultiplePaths{paths = paths};
+                return new MultiplePaths {paths = paths};
             }
             return BuildPaths(node.Arguments, context);
         }
@@ -441,16 +441,14 @@ namespace GrobExp.Mutators.Visitors
             throw new NotImplementedException();
         }
 
-        private abstract class Paths
+        public abstract class Paths
         {
             public abstract void Add(Expression piece);
             public abstract void MergeWith(Paths other);
         }
 
-        private class SinglePaths: Paths
+        public class SinglePaths : Paths
         {
-            public List<List<Expression>> paths;
-
             public override void Add(Expression piece)
             {
                 foreach(var path in paths)
@@ -464,12 +462,22 @@ namespace GrobExp.Mutators.Visitors
                     throw new InvalidOperationException();
                 paths.AddRange(singlePaths.paths);
             }
+
+            public Expression ToExpression()
+            {
+            return Expression.NewArrayInit(typeof(string[]), from path in paths
+                                                             select Expression.NewArrayInit(typeof(string),
+                                                                                            from piece in path
+                                                                                            select piece.Type == typeof(string)
+                                                                                                       ? piece
+                                                                                                       : Expression.Call(piece, "ToString", Type.EmptyTypes)));
+            }
+
+            public List<List<Expression>> paths;
         }
 
-        private class MultiplePaths: Paths
+        public class MultiplePaths : Paths
         {
-            public Dictionary<MemberInfo, List<List<Expression>>> paths;
-
             public override void Add(Expression piece)
             {
                 foreach(var path in paths.Values.SelectMany(path => path))
@@ -489,6 +497,8 @@ namespace GrobExp.Mutators.Visitors
                     list.AddRange(pair.Value);
                 }
             }
+
+            public Dictionary<MemberInfo, List<List<Expression>>> paths;
         }
 
         private class Context

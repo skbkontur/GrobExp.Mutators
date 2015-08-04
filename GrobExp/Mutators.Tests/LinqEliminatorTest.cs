@@ -50,6 +50,53 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestAny1()
+        {
+            Expression<Func<TestData, bool>> exp = data => data.A.Any(a => a.X > 0);
+            var withoutLinq = EliminateLinq(exp);
+            Assert.IsFalse(withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.IsTrue(withoutLinq(new TestData {A = new[] {new A{X = 1},}}));
+        }
+
+        [Test]
+        public void TestAny2()
+        {
+            Expression<Func<TestData, bool>> exp = data => data.A.Any();
+            var withoutLinq = EliminateLinq(exp);
+            Assert.IsTrue(withoutLinq(new TestData {A = new[] {new A(),}}));
+        }
+
+        [Test]
+        public void TestAll1()
+        {
+            Expression<Func<TestData, bool>> exp = data => data.A.All(a => a.X > 0);
+            var withoutLinq = EliminateLinq(exp);
+            Assert.IsFalse(withoutLinq(new TestData { A = new[] { new A(), } }));
+            Assert.IsTrue(withoutLinq(new TestData { A = new[] { new A { X = 1 }, } }));
+            Assert.IsFalse(withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = -1 } } }));
+        }
+
+        [Test]
+        public void TestSum1()
+        {
+            Expression<Func<TestData, int>> exp = data => data.A.Sum(a => a.X);
+            var withoutLinq = EliminateLinq(exp);
+            Assert.AreEqual(0, withoutLinq(new TestData()));
+            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
+            Assert.AreEqual(3, withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = 2 } } }));
+        }
+
+        [Test]
+        public void TestSum2()
+        {
+            Expression<Func<TestData, int?>> exp = data => data.A.Sum(a => a.Y);
+            var withoutLinq = EliminateLinq(exp);
+            Assert.AreEqual(0, withoutLinq(new TestData()));
+            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
+            Assert.AreEqual(3, withoutLinq(new TestData { A = new[] { new A { Y = 1 }, new A { Y = 2 }, new A() } }));
+        }
+
+        [Test]
         public void TestSelectWithIndex()
         {
             Expression<Func<TestData, string>> exp = data => data.A.Where(a => a.X > 0).Select((a, i) => a.S + "_" + (i + 1)).First();
@@ -399,6 +446,7 @@ namespace Mutators.Tests
         {
             public string S { get; set; }
             public int X { get; set; }
+            public int? Y { get; set; }
             public B[] B { get; set; }
         }
 

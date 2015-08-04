@@ -60,7 +60,8 @@ namespace GrobExp.Mutators
                 var count = expressionsCounter.Count(expression);
                 if(expressionsInBatch + count > maxNumberOfExpressionsInBatch)
                 {
-                    result.Add(MakeInvocation(currentBatch, parameters));
+                    if(currentBatch.Count > 0)
+                        result.Add(MakeInvocation(currentBatch, parameters));
                     currentBatch.Clear();
                     expressionsInBatch = 0;
                 }

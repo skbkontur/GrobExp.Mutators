@@ -51,6 +51,7 @@
     <Compile Include="Aggregators\AggregatorConfiguration.cs" />
     <Compile Include="Aggregators\ConditionalAggregatorConfiguration.cs" />
     <Compile Include="Aggregators\SetSourceArrayConfiguration.cs" />
+    <Compile Include="AssignRecorderInitializer.cs" />
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="IConverterCollectionFactory.cs" />
     <Compile Include="IDataConfiguratorCollection.cs" />
     <Compile Include="IDataConfiguratorCollectionFactory.cs" />
+    <Compile Include="IMutatorsAssignRecorder.cs" />
     <Compile Include="IPathFormatterCollection.cs" />
     <Compile Include="KeyLeafAttribute.cs" />
     <Compile Include="MethodInfoExtensions.cs" />

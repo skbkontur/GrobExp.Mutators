@@ -31,7 +31,7 @@ namespace GrobExp.Mutators
 
         public static ModelConfigurationNode CreateRoot(Type type)
         {
-            return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type));
+            return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type, type.Name));
         }
 
         public ModelConfigurationNode Traverse(Expression path, bool create)
@@ -50,7 +50,7 @@ namespace GrobExp.Mutators
 
         public void Migrate(Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
         {
-            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType), false);
+            MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType, NodeType.Name), false);
         }
 
         public LambdaExpression BuildTreeValidator(IPathFormatter pathFormatter)
@@ -66,7 +66,7 @@ namespace GrobExp.Mutators
                 node.mutators.Add(new KeyValuePair<Expression, List<MutatorConfiguration>>(pair.Key.Expression, pair.Value));
             }
 
-            var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType);
+            var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name);
             var result = Expression.Parameter(typeof(ValidationResultTreeNode), "tree");
             var priority = Expression.Parameter(typeof(int), "priority");
             var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Path)};
@@ -98,7 +98,7 @@ namespace GrobExp.Mutators
 
         public LambdaExpression BuildStaticNodeValidator()
         {
-            var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType);
+            var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name);
             var result = Expression.Variable(typeof(List<ValidationResult>), "result");
             Expression initResult = Expression.Assign(result, Expression.New(listValidationResultConstructor));
             var validationResults = new List<Expression> {initResult};
@@ -129,12 +129,12 @@ namespace GrobExp.Mutators
 
         public LambdaExpression BuildTreeMutator()
         {
-            return BuildTreeMutator(new List<ParameterExpression> {Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType)});
+            return BuildTreeMutator(new List<ParameterExpression> {Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name)});
         }
 
         public LambdaExpression BuildTreeMutator(Type type)
         {
-            return BuildTreeMutator(new List<ParameterExpression> {Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType), Expression.Parameter(type)});
+            return BuildTreeMutator(new List<ParameterExpression> {Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name), Expression.Parameter(type, type.Name)});
         }
 
         public ModelConfigurationNode GotoEachArrayElement(bool create)
@@ -1025,7 +1025,7 @@ namespace GrobExp.Mutators
                 var path = fullPath.ResolveAliases(aliases);
                 if(!NodeType.IsDictionary())
                 {
-                    var childParameter = Expression.Parameter(child.NodeType);
+                    var childParameter = Expression.Parameter(child.NodeType, child.NodeType.Name);
                     var indexParameter = Expression.Parameter(typeof(int));
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(child.NodeType), new[] {fullPath});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(child.NodeType), new Expression[] {item});
@@ -1073,7 +1073,7 @@ namespace GrobExp.Mutators
                             if(path.Type.IsArray)
                             {
                                 Expression lengthsAreDifferent = Expression.OrElse(destArrayIsNull, Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter)));
-                                var temp = Expression.Parameter(path.Type);
+                                var temp = Expression.Parameter(path.Type, path.Type.Name);
                                 resizeIfNeeded = Expression.IfThen(
                                     lengthsAreDifferent,
                                     Expression.IfThenElse(destArrayIsNull,
@@ -1341,7 +1341,7 @@ namespace GrobExp.Mutators
                     LambdaExpression predicate = null;
                     var resolvedArray = array.ResolveAliases(aliases);
                     var itemType = resolvedArray.Type.GetItemType();
-                    var childParameter = Expression.Parameter(itemType);
+                    var childParameter = Expression.Parameter(itemType, itemType.Name);
                     var indexParameter = Expression.Parameter(typeof(int));
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), new[] {array});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(itemType), new Expression[] {item});

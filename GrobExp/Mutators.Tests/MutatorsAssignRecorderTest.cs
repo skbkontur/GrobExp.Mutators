@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-using GrobExp.Mutators;
+﻿using GrobExp.Mutators;
 
 using NUnit.Framework;
 
@@ -22,8 +19,11 @@ namespace Mutators.Tests
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator => configurator.Target(x => x.C).Set(x => x.A)
-                );
+                configurator =>
+                {
+                    configurator.Target(x => x.C).Set(x => x.A);
+                    configurator.Target(x => x.D).Set(x => x.B);
+                });
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
 
             var testDataSource = new TestDataSource();
@@ -31,10 +31,26 @@ namespace Mutators.Tests
 
             recorder.Stop();
             Assert.AreEqual(actualData.C, 12);
-            var compiledRecords = recorder.GetCompiledRecords();
-            var executedRecords = recorder.GetExecutedRecords();
-            Assert.IsNotEmpty(compiledRecords);
-            Assert.IsNotEmpty(executedRecords);
+
+            Assert.IsNotEmpty(recorder.GetNotCoveredRecords());
+
+            var converterNode = recorder.GetNotCoveredRecords()[0];
+            Assert.AreEqual(1, converterNode.Records.Count);
+            Assert.AreEqual("TestConverterCollection`2", converterNode.Name);
+
+            var objectTypeNode = converterNode.Records[0];
+            Assert.AreEqual(2, objectTypeNode.Records.Count);
+            Assert.AreEqual("TestDataDest", objectTypeNode.Name);
+
+            var dataCNode = objectTypeNode.Records[0];
+            Assert.AreEqual("C ", dataCNode.Name);
+            Assert.AreEqual(1, dataCNode.Records.Count);
+            Assert.AreEqual(" source.A", dataCNode.Records[0].Name);
+
+            var dataDNode = objectTypeNode.Records[1];
+            Assert.AreEqual("D ", dataDNode.Name);
+            Assert.AreEqual(1, dataDNode.Records.Count);
+            Assert.AreEqual(" source.B", dataDNode.Records[0].Name);
         }
 
         [Test]
@@ -53,11 +69,12 @@ namespace Mutators.Tests
             recorder.Stop();
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
             converter(new TestDataSource());
-            Assert.IsEmpty(recorder.GetExecutedRecords());
+
+            Assert.IsEmpty(recorder.GetNotCoveredRecords());
         }
 
         [Test]
-        [Description("Повторная компиляция/исполнение строк не логируются")]
+        [Description("Повторная компиляция/исполнение строк не логируются заново, но считаются")]
         public void TestRecordsAreDistinct()
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
@@ -73,11 +90,10 @@ namespace Mutators.Tests
             converter(new TestDataSource());
             converter(new TestDataSource());
             recorder.Stop();
-            var executedRecords = recorder.GetExecutedRecords();
-            var compiledWithoutAliases = ListWithoutAliases(recorder.GetCompiledRecords());
-            Assert.AreEqual(executedRecords.Distinct().ToList(), executedRecords);
-            Assert.AreEqual(compiledWithoutAliases.Distinct().ToList(), compiledWithoutAliases);
-            
+
+            var converterNode = recorder.GetNotCoveredRecords()[0];
+            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
+            Assert.AreEqual(4, converterNode.ExecutedCount);
         }
 
         [Test]
@@ -100,10 +116,10 @@ namespace Mutators.Tests
             Assert.AreEqual(12, actualData.C);
             Assert.AreEqual(13, actualData.D);
 
-            var compiledWithoutAliases = ListWithoutAliases(recorder.GetCompiledRecords());
-            var expectedRecords = new List<string> { "TestDataDest.C = source.A", "TestDataDest.D = source.B" };
-            Assert.AreEqual(expectedRecords, recorder.GetExecutedRecords());
-            Assert.AreEqual(expectedRecords, compiledWithoutAliases);
+            var converterNode = recorder.GetNotCoveredRecords()[0];
+            Assert.AreEqual(2, converterNode.ExecutedCount);
+            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
+            Assert.AreEqual(100, converterNode.GetPercent());
         }
 
         [Test]
@@ -126,18 +142,13 @@ namespace Mutators.Tests
             Assert.AreEqual(12, actualData.C);
             Assert.AreEqual(2, actualData.D);
 
-            var compiledWithoutAliases = ListWithoutAliases(recorder.GetCompiledRecords());
-            var executedRecords = recorder.GetExecutedRecords();
-            var expectedCompiledRecords = new List<string> { "TestDataDest.C = source.A", "TestDataDest.D = source.B" };
-            var expectedExecutedRecords = new List<string> { "TestDataDest.C = source.A" };
-            Assert.AreEqual(expectedCompiledRecords, compiledWithoutAliases);
-            Assert.AreEqual(expectedExecutedRecords, executedRecords);
+            var converterNode = recorder.GetNotCoveredRecords()[0];
+            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
+            Assert.AreEqual(1, converterNode.ExecutedCount);
+            Assert.AreEqual(50, converterNode.GetPercent());
+            Assert.AreEqual(100, converterNode.Records[0].Records[0].GetPercent());
+            Assert.AreEqual(0, converterNode.Records[0].Records[1].GetPercent());
         }
-
-        private List<string> ListWithoutAliases(List<string> source)
-        {
-            return source.Select(x => x).Where(x => !x.StartsWith("Aliases") && x != "").ToList();
-        } 
     }
 
     public class TestDataSource

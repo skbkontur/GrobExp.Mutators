@@ -74,7 +74,7 @@ namespace GrobExp.Mutators
 
         public static Expression Assign(this Expression path, Expression value, string messageToLog = null)
         {
-            if (MutatorsAssignRecorder.Instance == null || messageToLog == null)
+            if (!MutatorsAssignRecorder.IsRecording() || messageToLog == null)
                 return _Assign(path, value);
 
             MutatorsAssignRecorder.RecordCompiledExpression(messageToLog);

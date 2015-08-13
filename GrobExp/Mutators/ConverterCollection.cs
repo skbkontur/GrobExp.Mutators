@@ -23,7 +23,10 @@ namespace GrobExp.Mutators
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
         {
-            return GetOrCreateHashtableSlot(context).Converter;
+            if (MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
+            var converter = GetOrCreateHashtableSlot(context).Converter;
+            return converter;
         }
 
         public Action<TSource, TDest> GetMerger(MutatorsContext context)

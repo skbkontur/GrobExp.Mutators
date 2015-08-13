@@ -64,8 +64,6 @@ namespace GrobExp.Mutators.AutoEvaluators
             if(Value == null) return null;
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            if (MutatorsAssignRecorder.Instance != null)
-                MutatorsAssignRecorder.RecordCompiledExpression("Aliases: " + String.Join(" ; ", aliases.Select(x => x.Key + " " + x.Value)));
             return path.Assign(value, path.UnrollAliases(aliases) + " = " + Value.Body);
         }
 

@@ -6,8 +6,6 @@ namespace Mutators.Tests
 {
     public class MutatorsAssignRecorderTest : TestBase
     {
-        private IPathFormatterCollection pathFormatterCollection;
-
         protected override void SetUp()
         {
             base.SetUp();
@@ -149,6 +147,8 @@ namespace Mutators.Tests
             Assert.AreEqual(100, converterNode.Records[0].Records[0].GetPercent());
             Assert.AreEqual(0, converterNode.Records[0].Records[1].GetPercent());
         }
+
+        private IPathFormatterCollection pathFormatterCollection;
     }
 
     public class TestDataSource

@@ -36,7 +36,7 @@ namespace GrobExp.Mutators.AssignRecording
 
         public void ExtractRecord(string path, string value)
         {
-            currentConverterRecord.ExtractRecord(path, value);
+            currentConverterRecord.MarkExecutedRecord(path, value);
         }
 
         public List<RecordNode> GetRecords()

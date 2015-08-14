@@ -50,21 +50,21 @@ namespace GrobExp.Mutators.AssignRecording
                 node.AddRecord(dividedPath[1], value);
         }
 
-        public void AddRecord(string value)
+        private void AddRecord(string value)
         {
             CompiledCount++;
             if (!ContainsRecord(value))
                 Records.Add(new RecordNode(value));
         }
 
-        public void ExtractRecord(string value)
+        private void MarkExecutedRecord(string value)
         {
             ExecutedCount++;
             if(ContainsRecord(value))
                 GetRecordByName(value).ExecutedCount++;
         }
 
-        public void ExtractRecord(string path, string value)
+        public void MarkExecutedRecord(string path, string value)
         {
             ExecutedCount++;
             var dividedPath = path.Split(new[] {'.'}, 2);
@@ -74,9 +74,9 @@ namespace GrobExp.Mutators.AssignRecording
 
             var node = GetRecordByName(recordName);
             if(dividedPath.Count() == 1)
-                node.ExtractRecord(value);
+                node.MarkExecutedRecord(value);
             else
-                node.ExtractRecord(dividedPath[1], value);
+                node.MarkExecutedRecord(dividedPath[1], value);
         }
 
         public double GetPercent()

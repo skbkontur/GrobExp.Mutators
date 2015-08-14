@@ -1,4 +1,7 @@
-﻿using GrobExp.Mutators;
+﻿using System.Linq;
+using System.Threading.Tasks;
+
+using GrobExp.Mutators;
 
 using NUnit.Framework;
 
@@ -30,9 +33,9 @@ namespace Mutators.Tests
             recorder.Stop();
             Assert.AreEqual(actualData.C, 12);
 
-            Assert.IsNotEmpty(recorder.GetNotCoveredRecords());
+            Assert.IsNotEmpty(recorder.GetRecords());
 
-            var converterNode = recorder.GetNotCoveredRecords()[0];
+            var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(1, converterNode.Records.Count);
             Assert.AreEqual("TestConverterCollection`2", converterNode.Name);
 
@@ -68,7 +71,7 @@ namespace Mutators.Tests
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
             converter(new TestDataSource());
 
-            Assert.IsEmpty(recorder.GetNotCoveredRecords());
+            Assert.IsEmpty(recorder.GetRecords());
         }
 
         [Test]
@@ -89,7 +92,7 @@ namespace Mutators.Tests
             converter(new TestDataSource());
             recorder.Stop();
 
-            var converterNode = recorder.GetNotCoveredRecords()[0];
+            var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(4, converterNode.ExecutedCount);
         }
@@ -114,7 +117,7 @@ namespace Mutators.Tests
             Assert.AreEqual(12, actualData.C);
             Assert.AreEqual(13, actualData.D);
 
-            var converterNode = recorder.GetNotCoveredRecords()[0];
+            var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(2, converterNode.ExecutedCount);
             Assert.AreEqual(3, converterNode.CompiledCount);
         }
@@ -139,7 +142,7 @@ namespace Mutators.Tests
             Assert.AreEqual(12, actualData.C);
             Assert.AreEqual(2, actualData.D);
 
-            var converterNode = recorder.GetNotCoveredRecords()[0];
+            var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(1, converterNode.ExecutedCount);
             Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);

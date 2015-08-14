@@ -7,7 +7,7 @@ namespace GrobExp.Mutators
 {
     public interface IMutatorsAssignRecorder
     {
-        List<RecordNode> GetNotCoveredRecords();
+        List<RecordNode> GetRecords();
         void Stop();
     }
 
@@ -16,18 +16,18 @@ namespace GrobExp.Mutators
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
 
-        private static AssignRecordCollection notCoveredRecords;
+        private static AssignRecordCollection records;
 
         public MutatorsAssignRecorder()
         {
-            notCoveredRecords = new AssignRecordCollection();
+            records = new AssignRecordCollection();
         }
 
         public static MutatorsAssignRecorder Instance { get { return instance; } }
 
-        public List<RecordNode> GetNotCoveredRecords()
+        public List<RecordNode> GetRecords()
         {
-            return notCoveredRecords.GetRecords();
+            return records.GetRecords();
         }
 
         public void Stop()
@@ -43,17 +43,17 @@ namespace GrobExp.Mutators
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            notCoveredRecords.AddRecord(toLog.path, toLog.value);
+            records.AddRecord(toLog.path, toLog.value);
         }
 
         public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            notCoveredRecords.MarkExecutedRecord(toLog.path, toLog.value);
+            records.MarkExecutedRecord(toLog.path, toLog.value);
         }
 
         public static void RecordConverter(string converter)
         {
-            notCoveredRecords.AddConverterToRecord(converter);
+            records.AddConverterToRecord(converter);
         }
 
         public static bool IsRecording()

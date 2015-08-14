@@ -16,7 +16,7 @@ namespace GrobExp.Mutators
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
 
-        private static AssignRecordCollection records;
+        private AssignRecordCollection records;
 
         public MutatorsAssignRecorder()
         {
@@ -43,17 +43,17 @@ namespace GrobExp.Mutators
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            records.AddRecord(toLog.path, toLog.value);
+            instance.records.AddRecord(toLog.path, toLog.value);
         }
 
         public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            records.MarkExecutedRecord(toLog.path, toLog.value);
+            instance.records.MarkExecutedRecord(toLog.path, toLog.value);
         }
 
         public static void RecordConverter(string converter)
         {
-            records.AddConverterToRecord(converter);
+            instance.records.AddConverterToRecord(converter);
         }
 
         public static bool IsRecording()

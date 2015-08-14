@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 using GrobExp.Mutators;
@@ -147,37 +148,54 @@ namespace Mutators.Tests
             Assert.AreEqual(1, converterNode.ExecutedCount);
             Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
             Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
-        }
+        }      
 
         [Test]
         [Description("Для каждого потока отдельный лог")]
         public void MultithreadingTest()
-        {
-            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+        {          
             var actualDataList = new List<TestDataDest>();
+            var threads = new List<Thread>();
             for(var i = 0; i < 10; i++)
             {
                 var thread = new Thread(() =>
                 {
-                    var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                    while (!start) { }
+                    try
+                    {
+                        var recorder = AssignRecorderInitializer.StartAssignRecorder();
+                        var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
                         configurator =>
                         {
                             configurator.Target(x => x.C).Set(x => x.A);
                         }).GetConverter(MutatorsContext.Empty);
-                    actualDataList.Add(converter(new TestDataSource()));
-                    Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
-                    Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
+                        actualDataList.Add(converter(new TestDataSource()));
+                        recorder.Stop();
+                        Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
+                        Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
+                    }
+                    catch(Exception e)
+                    {
+                        lastException = e;
+                        Console.WriteLine(e);
+                    }
                 });
                 thread.Start();
-                thread.Join();
+                threads.Add(thread);
             }
 
-            recorder.Stop();
+            start = true;
+            threads.ForEach(thread => thread.Join());
 
             Assert.AreEqual(10, actualDataList.Count);
             actualDataList.ForEach(data => Assert.AreEqual(12, data.C));
+
+            if(lastException != null)
+                throw lastException;
         }
 
+        private volatile bool start;
+        private volatile Exception lastException;
         private IPathFormatterCollection pathFormatterCollection;
     }
 

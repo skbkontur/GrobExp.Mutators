@@ -41,16 +41,14 @@ namespace GrobExp.Mutators
                 instance = new MutatorsAssignRecorder();
         }
 
-        public static void RecordCompiledExpression(string toLog)
+        public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            var pathValue = toLog.Split(new[] {'='}, 2);
-            notCoveredRecords.AddRecord(pathValue[0], pathValue[1]);
+            notCoveredRecords.AddRecord(toLog.path, toLog.value);
         }
 
-        public static void RecordExecutedExpression(string toLog)
+        public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            var pathValue = toLog.Split(new[] {'='}, 2);
-            notCoveredRecords.ExtractRecord(pathValue[0], pathValue[1]);
+            notCoveredRecords.MarkExecutedRecord(toLog.path, toLog.value);
         }
 
         public static void RecordConverter(string converter)

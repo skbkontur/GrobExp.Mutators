@@ -34,7 +34,7 @@ namespace GrobExp.Mutators.AssignRecording
             currentConverterRecord.AddRecord(path, value);
         }
 
-        public void ExtractRecord(string path, string value)
+        public void MarkExecutedRecord(string path, string value)
         {
             currentConverterRecord.MarkExecutedRecord(path, value);
         }

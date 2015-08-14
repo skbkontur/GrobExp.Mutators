@@ -41,14 +41,14 @@ namespace Mutators.Tests
             Assert.AreEqual("TestDataDest", objectTypeNode.Name);
 
             var dataCNode = objectTypeNode.Records[0];
-            Assert.AreEqual("C ", dataCNode.Name);
+            Assert.AreEqual("C", dataCNode.Name);
             Assert.AreEqual(1, dataCNode.Records.Count);
-            Assert.AreEqual(" source.A", dataCNode.Records[0].Name);
+            Assert.AreEqual("source.A", dataCNode.Records[0].Name);
 
             var dataDNode = objectTypeNode.Records[1];
-            Assert.AreEqual("D ", dataDNode.Name);
+            Assert.AreEqual("D", dataDNode.Name);
             Assert.AreEqual(1, dataDNode.Records.Count);
-            Assert.AreEqual(" source.B", dataDNode.Records[0].Name);
+            Assert.AreEqual("source.B", dataDNode.Records[0].Name);
         }
 
         [Test]

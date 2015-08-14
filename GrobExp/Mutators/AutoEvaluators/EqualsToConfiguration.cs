@@ -8,6 +8,7 @@ using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.AssignRecording;
 
 namespace GrobExp.Mutators.AutoEvaluators
 {
@@ -62,9 +63,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            var infoToLog = new AssignLogInfo(path.ToString(), Value.Body.ToString());
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            return path.Assign(value, path.UnrollAliases(aliases) + " = " + Value.Body);
+            return path.Assign(value, infoToLog);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

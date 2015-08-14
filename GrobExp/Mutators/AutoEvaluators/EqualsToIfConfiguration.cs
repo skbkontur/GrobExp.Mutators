@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
@@ -61,9 +61,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            var infoToLog = new AssignLogInfo(path.ToString(), Value.Body.ToString());
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            var assignment = path.Assign(value, path.UnrollAliases(aliases) + " = " + Value.Body);
+            var assignment = path.Assign(value, infoToLog);
             if(Condition == null)
                 return assignment;
             var condition = Condition.Body;

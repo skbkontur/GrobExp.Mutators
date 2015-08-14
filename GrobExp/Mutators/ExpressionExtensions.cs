@@ -7,6 +7,7 @@ using System.Reflection;
 using GroBuf.Readers;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -72,21 +73,21 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        public static Expression Assign(this Expression path, Expression value, string messageToLog = null)
+        public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)
         {
-            if (!MutatorsAssignRecorder.IsRecording() || messageToLog == null)
-                return _Assign(path, value);
+            if (!MutatorsAssignRecorder.IsRecording() || toLog == null)
+                return InternalAssign(path, value);
 
-            MutatorsAssignRecorder.RecordCompiledExpression(messageToLog);
+            MutatorsAssignRecorder.RecordCompiledExpression(toLog);
             var temp = Expression.Parameter(value.Type, "temp");
             return Expression.Block(new []{ temp },
                 Expression.Assign(temp, value),
-                _Assign(path, temp),
-                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutedExpression"), Expression.Constant(messageToLog)),
+                InternalAssign(path, temp),
+                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutedExpression"), Expression.Constant(toLog)),
                 temp);
         }
 
-        private static Expression _Assign(this Expression path, Expression value)
+        private static Expression InternalAssign(this Expression path, Expression value)
         {
             if(path.NodeType == ExpressionType.Convert)
                 path = ((UnaryExpression)path).Operand;
@@ -342,11 +343,6 @@ namespace GrobExp.Mutators
             if(aliases == null || aliases.Count == 0)
                 return expression;
             return new AliasesResolver(aliases, strictly).Visit(expression);
-        }
-
-        public static Expression UnrollAliases(this Expression expression, List<KeyValuePair<Expression, Expression>> aliases)
-        {
-            return new AliasesResolver(aliases, false).Visit(expression);
         }
 
         public static Expression ResolveArrayIndexes(this Expression exp)

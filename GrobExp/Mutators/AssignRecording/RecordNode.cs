@@ -14,10 +14,8 @@ namespace GrobExp.Mutators.AssignRecording
 
         public List<RecordNode> Records { get; private set; }
         public int CompiledCount { get; private set; }
-        public int DistinctCompiledCount { get; private set; }
         public int ExecutedCount { get; private set; }
         public string Name { get; private set; }
-        public int NotCoveredCount { get; private set; }
 
         private bool ContainsRecord(string recordName)
         {
@@ -77,23 +75,6 @@ namespace GrobExp.Mutators.AssignRecording
                 node.MarkExecutedRecord(value);
             else
                 node.MarkExecutedRecord(dividedPath[1], value);
-        }
-
-        public double GetPercent()
-        {
-            return (DistinctCompiledCount - NotCoveredCount) * 100.0 / DistinctCompiledCount;
-        }
-
-        public int SetDistinctCompilesCount()
-        {
-            return DistinctCompiledCount = Records.Any() ? Records.Sum(x => x.SetDistinctCompilesCount()) : 1;
-        }
-
-        public int SetNotCoveredCount()
-        {
-            if(!Records.Any())
-                return NotCoveredCount = ExecutedCount == 0 ? 1 : 0;
-            return NotCoveredCount = Records.Sum(record => record.SetNotCoveredCount());
         }
     }
 }

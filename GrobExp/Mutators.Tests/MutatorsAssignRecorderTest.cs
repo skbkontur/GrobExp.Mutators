@@ -72,7 +72,7 @@ namespace Mutators.Tests
         }
 
         [Test]
-        [Description("Повторная компиляция/исполнение строк не логируются заново, но считаются")]
+        [Description("Повторная компиляция/исполнение строк не логируются заново, но считаются. Создание конвертора считается за компиляцию.")]
         public void TestRecordsAreDistinct()
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
@@ -90,7 +90,7 @@ namespace Mutators.Tests
             recorder.Stop();
 
             var converterNode = recorder.GetNotCoveredRecords()[0];
-            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
+            Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(4, converterNode.ExecutedCount);
         }
 
@@ -116,8 +116,7 @@ namespace Mutators.Tests
 
             var converterNode = recorder.GetNotCoveredRecords()[0];
             Assert.AreEqual(2, converterNode.ExecutedCount);
-            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
-            Assert.AreEqual(100, converterNode.GetPercent());
+            Assert.AreEqual(3, converterNode.CompiledCount);
         }
 
         [Test]
@@ -141,11 +140,10 @@ namespace Mutators.Tests
             Assert.AreEqual(2, actualData.D);
 
             var converterNode = recorder.GetNotCoveredRecords()[0];
-            Assert.AreEqual(2, converterNode.DistinctCompiledCount);
+            Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(1, converterNode.ExecutedCount);
-            Assert.AreEqual(50, converterNode.GetPercent());
-            Assert.AreEqual(100, converterNode.Records[0].Records[0].GetPercent());
-            Assert.AreEqual(0, converterNode.Records[0].Records[1].GetPercent());
+            Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
+            Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
         }
 
         private IPathFormatterCollection pathFormatterCollection;

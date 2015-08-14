@@ -41,17 +41,7 @@ namespace GrobExp.Mutators.AssignRecording
 
         public List<RecordNode> GetRecords()
         {
-            SummarizeStatistics();
             return converterRecords;
-        }
-
-        private void SummarizeStatistics()
-        {
-            foreach(var converter in converterRecords)
-            {
-                converter.SetDistinctCompilesCount();
-                converter.SetNotCoveredCount();
-            }
-        }
+        }       
     }
 }

@@ -5,7 +5,7 @@
         public static IMutatorsAssignRecorder StartAssignRecorder()
         {
             MutatorsAssignRecorder.StartRecording();
-            return new MutatorsAssignRecorder();
+            return MutatorsAssignRecorder.Instance;
         }
     }
 }

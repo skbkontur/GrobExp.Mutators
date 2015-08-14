@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading;
 
 using GrobExp.Mutators;
 
@@ -147,6 +147,35 @@ namespace Mutators.Tests
             Assert.AreEqual(1, converterNode.ExecutedCount);
             Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
             Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
+        }
+
+        [Test]
+        [Description("Для каждого потока отдельный лог")]
+        public void MultithreadingTest()
+        {
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+            var actualDataList = new List<TestDataDest>();
+            for(var i = 0; i < 10; i++)
+            {
+                var thread = new Thread(() =>
+                {
+                    var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                        configurator =>
+                        {
+                            configurator.Target(x => x.C).Set(x => x.A);
+                        }).GetConverter(MutatorsContext.Empty);
+                    actualDataList.Add(converter(new TestDataSource()));
+                    Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
+                    Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
+                });
+                thread.Start();
+                thread.Join();
+            }
+
+            recorder.Stop();
+
+            Assert.AreEqual(10, actualDataList.Count);
+            actualDataList.ForEach(data => Assert.AreEqual(12, data.C));
         }
 
         private IPathFormatterCollection pathFormatterCollection;

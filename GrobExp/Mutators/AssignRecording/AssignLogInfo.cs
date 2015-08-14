@@ -1,11 +1,13 @@
-﻿namespace GrobExp.Mutators.AssignRecording
+﻿using System.Linq.Expressions;
+
+namespace GrobExp.Mutators.AssignRecording
 {
     public class AssignLogInfo
     {
-        public string path;
-        public string value;
+        public Expression path;
+        public Expression value;
 
-        public AssignLogInfo(string path, string value)
+        public AssignLogInfo(Expression path, Expression value)
         {
             this.path = path;
             this.value = value;

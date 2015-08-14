@@ -43,12 +43,12 @@ namespace GrobExp.Mutators
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            instance.records.AddRecord(toLog.path, toLog.value);
+            instance.records.AddRecord(toLog.path.ToString(), toLog.value.ToString());
         }
 
         public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            instance.records.MarkExecutedRecord(toLog.path, toLog.value);
+            instance.records.MarkExecutedRecord(toLog.path.ToString(), toLog.value.ToString());
         }
 
         public static void RecordConverter(string converter)

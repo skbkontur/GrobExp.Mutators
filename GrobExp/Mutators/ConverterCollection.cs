@@ -8,6 +8,7 @@ using System.Reflection;
 using GrEmit.Utils;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Visitors;

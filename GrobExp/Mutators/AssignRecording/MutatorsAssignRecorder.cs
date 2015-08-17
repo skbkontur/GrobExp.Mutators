@@ -1,16 +1,8 @@
 using System;
 using System.Collections.Generic;
 
-using GrobExp.Mutators.AssignRecording;
-
-namespace GrobExp.Mutators
+namespace GrobExp.Mutators.AssignRecording
 {
-    public interface IMutatorsAssignRecorder
-    {
-        List<RecordNode> GetRecords();
-        void Stop();
-    }
-
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {
         public MutatorsAssignRecorder()

@@ -149,27 +149,26 @@ namespace Mutators.Tests
             Assert.AreEqual(1, converterNode.ExecutedCount);
             Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
             Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
-        }      
+        }
 
         [Test]
         [Description("Для каждого потока отдельный лог")]
         public void MultithreadingTest()
-        {          
+        {
             var actualDataList = new List<TestDataDest>();
             var threads = new List<Thread>();
             for(var i = 0; i < 10; i++)
             {
                 var thread = new Thread(() =>
                 {
-                    while (!start) { }
+                    while(!start)
+                    {
+                    }
                     try
                     {
                         var recorder = AssignRecorderInitializer.StartAssignRecorder();
                         var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                        configurator =>
-                        {
-                            configurator.Target(x => x.C).Set(x => x.A);
-                        }).GetConverter(MutatorsContext.Empty);
+                            configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
                         actualDataList.Add(converter(new TestDataSource()));
                         recorder.Stop();
                         Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
@@ -195,9 +194,55 @@ namespace Mutators.Tests
                 throw lastException;
         }
 
-        private volatile bool start;
+        [Test]
+        [Description("После повторного запуска не должны появляться записи с предыдущего. После повторного взятия конвертора все компиляции должны логироваться.")]
+        public void TestDoubleGettingConverter()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.C).Set(x => x.A);
+                    configurator.Target(x => x.D).Set(x => x.B);
+                });
+            for(var i = 0; i < 2; i++)
+            {
+                var recorder = AssignRecorderInitializer.StartAssignRecorder();
+                var converter = converterCollection.GetConverter(MutatorsContext.Empty);
+                converter(new TestDataSource());
+                recorder.Stop();
+
+                var records = recorder.GetRecords();
+                Assert.AreEqual(1, records.Count);
+                Assert.AreEqual(3, records[0].CompiledCount);
+                Assert.AreEqual(2, records[0].ExecutedCount);
+            }
+        }
+
+        [Test]
+        [Description("При включенном рекордере кэш конверторов не используется")]
+        public void TestCacheConverter()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.C).Set(x => x.A);
+                    configurator.Target(x => x.D).Set(x => x.B);
+                });
+
+            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
+            Assert.AreEqual(converter, converterCollection.GetConverter(MutatorsContext.Empty));
+
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+            var converterWhileRecording = converterCollection.GetConverter(MutatorsContext.Empty);
+            Assert.AreNotEqual(converterWhileRecording, converter);
+
+            recorder.Stop();
+            Assert.AreEqual(converter, converterCollection.GetConverter(MutatorsContext.Empty));
+        }
+
         private volatile Exception lastException;
         private IPathFormatterCollection pathFormatterCollection;
+        private volatile bool start;
     }
 
     public class TestDataSource

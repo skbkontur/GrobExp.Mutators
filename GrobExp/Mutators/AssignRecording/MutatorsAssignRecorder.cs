@@ -27,12 +27,12 @@ namespace GrobExp.Mutators.AssignRecording
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordCompiledExpression(toLog.path.ToString(), toLog.value.ToString());
+            instance.recordsCollection.RecordCompiledExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
         public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordExecutedExpression(toLog.path.ToString(), toLog.value.ToString());
+            instance.recordsCollection.RecordExecutedExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
         public static void RecordConverter(string converter)

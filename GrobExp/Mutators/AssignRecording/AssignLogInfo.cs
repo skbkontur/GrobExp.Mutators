@@ -4,13 +4,13 @@ namespace GrobExp.Mutators.AssignRecording
 {
     public class AssignLogInfo
     {
-        public Expression path;
-        public Expression value;
+        public Expression Path { get; private set; }
+        public Expression Value { get; private set; }
 
         public AssignLogInfo(Expression path, Expression value)
         {
-            this.path = path;
-            this.value = value;
+            Path = path;
+            Value = value;
         }
     }
 }

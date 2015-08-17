@@ -18,8 +18,6 @@ namespace GrobExp.Mutators
             records = new AssignRecordCollection();
         }
 
-        public static MutatorsAssignRecorder Instance { get { return instance; } }
-
         public List<RecordNode> GetRecords()
         {
             return records.GetRecords();
@@ -30,10 +28,9 @@ namespace GrobExp.Mutators
             instance = null;
         }
 
-        public static void StartRecording()
+        public static MutatorsAssignRecorder StartRecording()
         {
-            if(instance == null)
-                instance = new MutatorsAssignRecorder();
+            return instance ?? (instance = new MutatorsAssignRecorder());
         }
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)

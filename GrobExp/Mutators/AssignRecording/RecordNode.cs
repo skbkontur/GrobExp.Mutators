@@ -27,7 +27,7 @@ namespace GrobExp.Mutators.AssignRecording
             return Records.FirstOrDefault(record => record.Name == recordName);
         }
 
-        public void AddRecord(string path, string value)
+        public void RecordCompiledExpression(string path, string value)
         {
             CompiledCount++;
             var dividedPath = path.Split(new[] {'.'}, 2);
@@ -43,26 +43,26 @@ namespace GrobExp.Mutators.AssignRecording
             }
 
             if(dividedPath.Count() == 1)
-                node.AddRecord(value);
+                node.RecordCompiledExpression(value);
             else
-                node.AddRecord(dividedPath[1], value);
+                node.RecordCompiledExpression(dividedPath[1], value);
         }
 
-        private void AddRecord(string value)
+        private void RecordCompiledExpression(string value)
         {
             CompiledCount++;
             if (!ContainsRecord(value))
                 Records.Add(new RecordNode(value));
         }
 
-        private void MarkExecutedRecord(string value)
+        private void RecordExecutedExpression(string value)
         {
             ExecutedCount++;
             if(ContainsRecord(value))
                 GetRecordByName(value).ExecutedCount++;
         }
 
-        public void MarkExecutedRecord(string path, string value)
+        public void RecordExecutedExpression(string path, string value)
         {
             ExecutedCount++;
             var dividedPath = path.Split(new[] {'.'}, 2);
@@ -72,9 +72,9 @@ namespace GrobExp.Mutators.AssignRecording
 
             var node = GetRecordByName(recordName);
             if(dividedPath.Count() == 1)
-                node.MarkExecutedRecord(value);
+                node.RecordExecutedExpression(value);
             else
-                node.MarkExecutedRecord(dividedPath[1], value);
+                node.RecordExecutedExpression(dividedPath[1], value);
         }
     }
 }

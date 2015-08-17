@@ -26,14 +26,14 @@ namespace GrobExp.Mutators.AssignRecording
             return converterRecords.FirstOrDefault(converter => converter.Name == converterName);
         }
 
-        public void AddRecord(string path, string value)
+        public void RecordCompiledExpression(string path, string value)
         {
-            currentConverterRecord.AddRecord(path, value);
+            currentConverterRecord.RecordCompiledExpression(path, value);
         }
 
-        public void MarkExecutedRecord(string path, string value)
+        public void RecordExecutedExpression(string path, string value)
         {
-            currentConverterRecord.MarkExecutedRecord(path, value);
+            currentConverterRecord.RecordExecutedExpression(path, value);
         }
 
         public List<RecordNode> GetRecords()

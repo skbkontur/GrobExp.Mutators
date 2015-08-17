@@ -7,12 +7,12 @@ namespace GrobExp.Mutators.AssignRecording
     {
         public MutatorsAssignRecorder()
         {
-            records = new AssignRecordCollection();
+            recordsCollection = new AssignRecordCollection();
         }
 
         public List<RecordNode> GetRecords()
         {
-            return records.GetRecords();
+            return recordsCollection.GetRecords();
         }
 
         public void Stop()
@@ -27,17 +27,17 @@ namespace GrobExp.Mutators.AssignRecording
 
         public static void RecordCompiledExpression(AssignLogInfo toLog)
         {
-            instance.records.AddRecord(toLog.path.ToString(), toLog.value.ToString());
+            instance.recordsCollection.RecordCompiledExpression(toLog.path.ToString(), toLog.value.ToString());
         }
 
         public static void RecordExecutedExpression(AssignLogInfo toLog)
         {
-            instance.records.MarkExecutedRecord(toLog.path.ToString(), toLog.value.ToString());
+            instance.recordsCollection.RecordExecutedExpression(toLog.path.ToString(), toLog.value.ToString());
         }
 
         public static void RecordConverter(string converter)
         {
-            instance.records.AddConverterToRecord(converter);
+            instance.recordsCollection.AddConverterToRecord(converter);
         }
 
         public static bool IsRecording()
@@ -47,6 +47,6 @@ namespace GrobExp.Mutators.AssignRecording
 
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
-        private readonly AssignRecordCollection records;
+        private readonly AssignRecordCollection recordsCollection;
     }
 }

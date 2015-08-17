@@ -5,9 +5,6 @@ namespace GrobExp.Mutators.AssignRecording
 {
     public class AssignRecordCollection
     {
-        private readonly List<RecordNode> converterRecords;
-        private RecordNode currentConverterRecord;
-
         public AssignRecordCollection()
         {
             converterRecords = new List<RecordNode>();
@@ -42,6 +39,9 @@ namespace GrobExp.Mutators.AssignRecording
         public List<RecordNode> GetRecords()
         {
             return converterRecords;
-        }       
+        }
+
+        private readonly List<RecordNode> converterRecords;
+        private RecordNode currentConverterRecord;
     }
 }

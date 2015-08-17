@@ -13,11 +13,6 @@ namespace GrobExp.Mutators
 
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {
-        [ThreadStatic]
-        private static MutatorsAssignRecorder instance;
-
-        private AssignRecordCollection records;
-
         public MutatorsAssignRecorder()
         {
             records = new AssignRecordCollection();
@@ -60,5 +55,9 @@ namespace GrobExp.Mutators
         {
             return instance != null;
         }
+
+        [ThreadStatic]
+        private static MutatorsAssignRecorder instance;
+        private readonly AssignRecordCollection records;
     }
 }

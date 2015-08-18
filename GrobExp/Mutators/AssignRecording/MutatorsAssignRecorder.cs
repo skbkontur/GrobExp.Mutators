@@ -25,14 +25,14 @@ namespace GrobExp.Mutators.AssignRecording
             return instance ?? (instance = new MutatorsAssignRecorder());
         }
 
-        public static void RecordCompiledExpression(AssignLogInfo toLog)
+        public static void RecordCompilingExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordCompiledExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
-        public static void RecordExecutedExpression(AssignLogInfo toLog)
+        public static void RecordExecutingExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordExecutedExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
         public static void RecordConverter(string converter)

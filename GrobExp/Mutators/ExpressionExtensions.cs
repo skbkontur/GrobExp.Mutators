@@ -78,12 +78,12 @@ namespace GrobExp.Mutators
             if (!MutatorsAssignRecorder.IsRecording() || toLog == null)
                 return InternalAssign(path, value);
 
-            MutatorsAssignRecorder.RecordCompiledExpression(toLog);
+            MutatorsAssignRecorder.RecordCompilingExpression(toLog);
             var temp = Expression.Parameter(value.Type, "temp");
             return Expression.Block(new []{ temp },
                 Expression.Assign(temp, value),
                 InternalAssign(path, temp),
-                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutedExpression"), Expression.Constant(toLog)),
+                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog)),
                 temp);
         }
 

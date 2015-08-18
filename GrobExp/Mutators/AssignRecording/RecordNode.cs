@@ -27,7 +27,7 @@ namespace GrobExp.Mutators.AssignRecording
             return Records.FirstOrDefault(record => record.Name == recordName);
         }
 
-        public void RecordCompiledExpression(string path, string value)
+        public void RecordCompilingExpression(string path, string value)
         {
             CompiledCount++;
             var dividedPath = path.Split(new[] {'.'}, 2);
@@ -43,26 +43,26 @@ namespace GrobExp.Mutators.AssignRecording
             }
 
             if(dividedPath.Count() == 1)
-                node.RecordCompiledExpression(value);
+                node.RecordCompilingExpression(value);
             else
-                node.RecordCompiledExpression(dividedPath[1], value);
+                node.RecordCompilingExpression(dividedPath[1], value);
         }
 
-        private void RecordCompiledExpression(string value)
+        private void RecordCompilingExpression(string value)
         {
             CompiledCount++;
             if (!ContainsRecord(value))
                 Records.Add(new RecordNode(value));
         }
 
-        private void RecordExecutedExpression(string value)
+        private void RecordExecutingExpression(string value)
         {
             ExecutedCount++;
             if(ContainsRecord(value))
                 GetRecordByName(value).ExecutedCount++;
         }
 
-        public void RecordExecutedExpression(string path, string value)
+        public void RecordExecutingExpression(string path, string value)
         {
             ExecutedCount++;
             var dividedPath = path.Split(new[] {'.'}, 2);
@@ -72,9 +72,9 @@ namespace GrobExp.Mutators.AssignRecording
 
             var node = GetRecordByName(recordName);
             if(dividedPath.Count() == 1)
-                node.RecordExecutedExpression(value);
+                node.RecordExecutingExpression(value);
             else
-                node.RecordExecutedExpression(dividedPath[1], value);
+                node.RecordExecutingExpression(dividedPath[1], value);
         }
     }
 }

@@ -18,14 +18,14 @@ namespace GrobExp.Mutators.AssignRecording
             converterRecords.Add(currentConverterRecord);
         }
 
-        public void RecordCompiledExpression(string path, string value)
+        public void RecordCompilingExpression(string path, string value)
         {
-            currentConverterRecord.RecordCompiledExpression(path, value);
+            currentConverterRecord.RecordCompilingExpression(path, value);
         }
 
-        public void RecordExecutedExpression(string path, string value)
+        public void RecordExecutingExpression(string path, string value)
         {
-            currentConverterRecord.RecordExecutedExpression(path, value);
+            currentConverterRecord.RecordExecutingExpression(path, value);
         }
 
         public List<RecordNode> GetRecords()

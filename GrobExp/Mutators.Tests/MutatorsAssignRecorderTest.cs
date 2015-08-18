@@ -230,14 +230,14 @@ namespace Mutators.Tests
                 });
 
             var converter = converterCollection.GetConverter(MutatorsContext.Empty);
-            Assert.AreEqual(converter, converterCollection.GetConverter(MutatorsContext.Empty));
+            Assert.AreSame(converter, converterCollection.GetConverter(MutatorsContext.Empty));
 
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var converterWhileRecording = converterCollection.GetConverter(MutatorsContext.Empty);
-            Assert.AreNotEqual(converterWhileRecording, converter);
+            Assert.AreNotSame(converterWhileRecording, converter);
 
             recorder.Stop();
-            Assert.AreEqual(converter, converterCollection.GetConverter(MutatorsContext.Empty));
+            Assert.AreSame(converter, converterCollection.GetConverter(MutatorsContext.Empty));
         }
 
         private volatile Exception lastException;

@@ -19,7 +19,7 @@ namespace GrobExp.Mutators.AssignRecording
 
         private bool ContainsRecord(string recordName)
         {
-            return Records.Select(r => r.Name).Contains(recordName);
+            return Records.Any(node => node.Name == recordName);
         }
 
         private RecordNode GetRecordByName(string recordName)

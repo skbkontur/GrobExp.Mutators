@@ -12,18 +12,10 @@ namespace GrobExp.Mutators.AssignRecording
 
         public void AddConverterToRecord(string converterName)
         {
-            if(converterRecords.Select(converter => converter.Name).Contains(converterName))
-                currentConverterRecord = GetConverterByName(converterName);
-            else
-            {
-                currentConverterRecord = new RecordNode(converterName);
-                converterRecords.Add(currentConverterRecord);
-            }
-        }
-
-        private RecordNode GetConverterByName(string converterName)
-        {
-            return converterRecords.FirstOrDefault(converter => converter.Name == converterName);
+            currentConverterRecord = converterRecords.FirstOrDefault(converter => converter.Name == converterName);
+            if(currentConverterRecord != null) return;
+            currentConverterRecord = new RecordNode(converterName);
+            converterRecords.Add(currentConverterRecord);
         }
 
         public void RecordCompiledExpression(string path, string value)

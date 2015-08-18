@@ -50,10 +50,5 @@ namespace GrobExp.Mutators.Aggregators
         {
             return new LambdaExpression[0];
         }
-
-        protected override Expression GetLCP()
-        {
-            return null;
-        }
     }
 }

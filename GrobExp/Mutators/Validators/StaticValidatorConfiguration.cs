@@ -82,11 +82,6 @@ namespace GrobExp.Mutators.Validators
                 .ToArray();
         }
 
-        protected override Expression GetLCP()
-        {
-            return (Condition == null ? new LambdaExpression[0] : Condition.Body.CutToChains(false, false)).Concat(validatorFromRoot == null ? new Expression[0] : validatorFromRoot.Body.CutToChains(false, false)).FindLCP();
-        }
-
         private readonly LambdaExpression validatorFromRoot;
         private readonly LambdaExpression validator;
     }

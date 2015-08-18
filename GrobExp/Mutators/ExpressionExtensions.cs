@@ -30,7 +30,7 @@ namespace GrobExp.Mutators
                     || (node.NodeType == ExpressionType.Constant && !rootOnlyParameter)
                     || IsLinkOfChain(node as MemberExpression, rootOnlyParameter, hard)
                     || IsLinkOfChain(node as UnaryExpression, rootOnlyParameter, hard)
-                    || node.NodeType == ExpressionType.ArrayIndex
+                    || IsLinkOfChain(node as BinaryExpression, rootOnlyParameter, hard)
                     || IsLinkOfChain(node as MethodCallExpression, rootOnlyParameter, hard));
         }
 
@@ -449,6 +449,13 @@ namespace GrobExp.Mutators
             return node != null && node.NodeType == ExpressionType.Convert;
         }
 
+        private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)
+        {
+            if(hard)
+                return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, rootOnlyParameter, true);
+            return node != null && node.NodeType == ExpressionType.ArrayIndex;
+        }
+
         private static bool IsLinkOfChain(MemberExpression node, bool rootOnlyParameter, bool hard)
         {
             if(hard)
@@ -458,9 +465,16 @@ namespace GrobExp.Mutators
 
         private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)
         {
+            if(node == null || !IsAllowedMethod(node.Method))
+                return false;
             if(hard)
-                return node != null && ((node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (node.Method.IsExtension() && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true)));
-            return node != null && (node.Object != null || node.Method.IsExtension());
+                return (node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (node.Method.IsExtension() && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true));
+            return node.Object != null || node.Method.IsExtension();
+        }
+
+        private static bool IsAllowedMethod(MethodInfo method)
+        {
+            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();

@@ -70,10 +70,14 @@ namespace GrobExp.Mutators
 
         protected virtual void BeforeConvert(TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
         }
 
         protected virtual void AfterConvert(TDest dest, TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.StopRecordingConverter();
         }
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)

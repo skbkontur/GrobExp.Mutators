@@ -51,6 +51,12 @@
     <Compile Include="Aggregators\AggregatorConfiguration.cs" />
     <Compile Include="Aggregators\ConditionalAggregatorConfiguration.cs" />
     <Compile Include="Aggregators\SetSourceArrayConfiguration.cs" />
+    <Compile Include="AssignRecording\AssignLogInfo.cs" />
+    <Compile Include="AssignRecording\AssignRecordCollection.cs" />
+    <Compile Include="AssignRecording\AssignRecorderInitializer.cs" />
+    <Compile Include="AssignRecording\IMutatorsAssignRecorder.cs" />
+    <Compile Include="AssignRecording\MutatorsAssignRecorder.cs" />
+    <Compile Include="AssignRecording\RecordNode.cs" />
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />

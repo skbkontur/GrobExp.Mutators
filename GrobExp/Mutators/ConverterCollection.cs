@@ -8,6 +8,7 @@ using System.Reflection;
 using GrEmit.Utils;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Visitors;
@@ -23,7 +24,10 @@ namespace GrobExp.Mutators
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
         {
-            return GetOrCreateHashtableSlot(context).Converter;
+            if (MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
+            var converter = GetOrCreateHashtableSlot(context).Converter;
+            return converter;
         }
 
         public Action<TSource, TDest> GetMerger(MutatorsContext context)
@@ -66,22 +70,26 @@ namespace GrobExp.Mutators
 
         protected virtual void BeforeConvert(TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
         }
 
         protected virtual void AfterConvert(TDest dest, TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.StopRecordingConverter();
         }
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if(slot == null)
+            if (slot == null || MutatorsAssignRecorder.IsRecording())
             {
                 lock(lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if(slot == null)
+                    if (slot == null || MutatorsAssignRecorder.IsRecording())
                     {
                         var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
@@ -89,7 +97,7 @@ namespace GrobExp.Mutators
                         tree.ExtractValidationsFromConverters(validationsTree);
                         var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
                         var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
-                        hashtable[key] = slot = new HashtableSlot
+                        slot = new HashtableSlot
                             {
                                 ConverterTree = tree,
                                 ValidationsTree = validationsTree,
@@ -108,6 +116,8 @@ namespace GrobExp.Mutators
                                         AfterConvert(dest, source);
                                     })
                             };
+                        if(!MutatorsAssignRecorder.IsRecording())
+                            hashtable[key] = slot;
                     }
                 }
             }

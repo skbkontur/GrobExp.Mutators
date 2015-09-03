@@ -72,13 +72,19 @@ namespace Mutators.Tests
         [Test]
         public void TestWebDataToDataConverter()
         {
-            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator => configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id));
+            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id);
+                    configurator.Target(x => x.F).Set(x => x.F);
+                });
             var converter = webDataToDataConverterCollection.GetConverter(MutatorsContext.Empty);
             var data = converter(new WebData
                 {
+                    F = "qxx",
                     CustomFields = new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
+                            {"F", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"StrArr", new CustomFieldValue{TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
                             {"Q", new CustomFieldValue{TypeCode = TypeCode.Double, Value = 2.0}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
@@ -93,6 +99,7 @@ namespace Mutators.Tests
                         }
                 });
             Assert.AreEqual("zzz", data.S);
+            Assert.AreEqual("qxx", data.F);
             Assert.AreEqual(2.0m, data.Q);
             Assert.IsNotNull(data.ComplexField);
             Assert.AreEqual(123, data.ComplexField.X);
@@ -117,16 +124,23 @@ namespace Mutators.Tests
         [Test]
         public void TestDataToWebDataConverter()
         {
-            var dataToWebDataConverterCollection = new TestConverterCollection<Data, WebData>(pathFormatterCollection, configurator => configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id));
+            var dataToWebDataConverterCollection = new TestConverterCollection<Data, WebData>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id);
+                    configurator.Target(x => x.F).Set(x => x.F);
+                });
             var converter = dataToWebDataConverterCollection.GetConverter(MutatorsContext.Empty);
             var data = converter(new Data
                 {
                     S = "zzz",
+                    F = "qxx",
                     StrArr = new [] {"zzz", "qxx"},
                     ComplexField = new ComplexCustomField{ X = 123},
                     ComplexArr = new[] {new ComplexCustomField{X = 314, Z = new ComplexCustomFieldSubClass{S = "qzz"}}, new ComplexCustomField{X = 271, Z = new ComplexCustomFieldSubClass{S = "xxx"}}}
                 });
             Assert.IsNotNull(data.CustomFields);
+            Assert.IsFalse(data.CustomFields.ContainsKey("F"));
+            Assert.AreEqual("qxx", data.F);
             Assert.That(data.CustomFields.ContainsKey("S"));
             Assert.IsNotNull(data.CustomFields["S"]);
             Assert.AreEqual("zzz", data.CustomFields["S"].Value);
@@ -419,6 +433,9 @@ namespace Mutators.Tests
             [CustomField]
             public ComplexCustomField[] ComplexArr { get; set; }
 
+            [CustomField]
+            public string F { get; set; }
+
             public DataItem[] Items { get; set; }
         }
 
@@ -437,6 +454,7 @@ namespace Mutators.Tests
 
             public WebDataItem[] Items { get; set; }
             public Dictionary<string, CustomFieldValue> CustomFieldsCopy { get; set; }
+            public string F { get; set; }
         }
 
         public class ModelDataItem

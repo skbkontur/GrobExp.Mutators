@@ -21,10 +21,8 @@ namespace GrobExp.Mutators
         public Type Type { get; private set; }
 
         public LambdaExpression[] Dependencies { get { return dependencies ?? (dependencies = GetDependencies()); } }
-        public Expression LCP { get { return lcp ?? (lcp = GetLCP()); } }
 
         protected abstract LambdaExpression[] GetDependencies();
-        protected abstract Expression GetLCP();
 
         protected static LambdaExpression Prepare(LambdaExpression expression)
         {

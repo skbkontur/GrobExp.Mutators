@@ -573,7 +573,7 @@ namespace GrobExp.Mutators
 
         private static readonly MemberInfo lengthNotExactlyEqualsTextExacltyProperty = ((MemberExpression)((Expression<Func<LengthNotExactlyEqualsText, int?>>)(text => text.Exactly)).Body).Member;
         private static readonly MemberInfo lengthNotExactlyEqualsTextTitleProperty = ((MemberExpression)((Expression<Func<LengthNotExactlyEqualsText, MultiLanguageTextBase>>)(text => text.Title)).Body).Member;
-        private static readonly MemberInfo lengthNotExactlyEqualsTextValueProperty = ((MemberExpression)((Expression<Func<LengthNotExactlyEqualsText, string>>)(text => text.Value)).Body).Member;
+        private static readonly MemberInfo lengthNotExactlyEqualsTextValueProperty = ((MemberExpression)((Expression<Func<LengthNotExactlyEqualsText, object>>)(text => text.Value)).Body).Member;
 
         private static readonly MemberInfo lengthOutOfRangeTextToProperty = ((MemberExpression)((Expression<Func<LengthOutOfRangeText, int?>>)(text => text.To)).Body).Member;
         private static readonly MemberInfo lengthOutOfRangeTextFromProperty = ((MemberExpression)((Expression<Func<LengthOutOfRangeText, int?>>)(text => text.From)).Body).Member;

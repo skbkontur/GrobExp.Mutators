@@ -14,7 +14,7 @@ namespace GrobExp.Mutators.AssignRecording
         {
             currentConverterRecord = converterRecords.FirstOrDefault(converter => converter.Name == converterName);
             if(currentConverterRecord != null) return;
-            currentConverterRecord = new RecordNode(converterName);
+            currentConverterRecord = new RecordNode(converterName, "");
             converterRecords.Add(currentConverterRecord);
         }
 

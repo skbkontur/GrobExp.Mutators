@@ -5,17 +5,19 @@ namespace GrobExp.Mutators.AssignRecording
 {
     public class RecordNode
     {
-        public RecordNode(string name)
+        public RecordNode(string name, string parentFullName)
         {
             Name = name;
             Records = new List<RecordNode>();
             CompiledCount = 1;
+            FullName = parentFullName == "" ? name : parentFullName + "." + name;
         }
 
         public List<RecordNode> Records { get; private set; }
         public int CompiledCount { get; private set; }
         public int ExecutedCount { get; private set; }
         public string Name { get; private set; }
+        public string FullName { get; private set; }
 
         private bool ContainsRecord(string recordName)
         {
@@ -38,7 +40,7 @@ namespace GrobExp.Mutators.AssignRecording
                 node = GetRecordByName(recordName);
             else
             {
-                node = new RecordNode(recordName);
+                node = new RecordNode(recordName, FullName);
                 Records.Add(node);
             }
 
@@ -52,7 +54,7 @@ namespace GrobExp.Mutators.AssignRecording
         {
             CompiledCount++;
             if (!ContainsRecord(value))
-                Records.Add(new RecordNode(value));
+                Records.Add(new RecordNode(value, FullName));
         }
 
         private void RecordExecutingExpression(string value)

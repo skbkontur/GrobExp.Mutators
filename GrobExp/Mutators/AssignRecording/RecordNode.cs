@@ -10,7 +10,7 @@ namespace GrobExp.Mutators.AssignRecording
             Name = name;
             Records = new List<RecordNode>();
             CompiledCount = 1;
-            FullName = parentFullName == "" ? name : parentFullName + "." + name;
+            FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
         }
 
         public List<RecordNode> Records { get; private set; }

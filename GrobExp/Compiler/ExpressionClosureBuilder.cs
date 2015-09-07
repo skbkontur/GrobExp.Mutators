@@ -368,6 +368,7 @@ namespace GrobExp.Compiler
                 il.Ret();
             }
             var func = (Func<object[], object>)method.CreateDelegate(typeof(Func<object[], object>));
+            LambdaCompiler.DynamicMethodCleaner(method);
             return () => func(consts);
         }
 

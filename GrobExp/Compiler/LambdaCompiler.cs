@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -202,11 +203,54 @@ namespace GrobExp.Compiler
                     };
                 CompileInternal(lambda, context);
             }
+            var compiledMethod = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants);
+            var stopwatch = Stopwatch.StartNew();
+            DynamicMethodCleaner(method);
+            TotalJITCompilationTime += stopwatch.Elapsed.TotalSeconds;
             return new CompiledLambda
             {
-                Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                Delegate = compiledMethod,
                 Method = method
             };
+        }
+
+        public static readonly Action<DynamicMethod> DynamicMethodCleaner = BuildDynamicMethodCleaner();
+
+        private static Action<DynamicMethod> BuildDynamicMethodCleaner()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new[] {typeof(DynamicMethod)}, typeof(string), true);
+            var getMethodDescriptorMethod = typeof(DynamicMethod).GetMethod("GetMethodDescriptor", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (getMethodDescriptorMethod == null)
+                throw new MissingMethodException(typeof(DynamicMethod).Name, "GetMethodDescriptor");
+            var prepareMethodMethod = typeof(RuntimeHelpers).GetMethod("PrepareMethod", new[] { typeof(RuntimeMethodHandle) });
+            if (prepareMethodMethod == null)
+                throw new MissingMethodException(typeof(RuntimeHelpers).Name, "PrepareMethod");
+            var ilGeneratorField = typeof(DynamicMethod).GetField("m_ilGenerator", BindingFlags.Instance | BindingFlags.NonPublic);
+            if(ilGeneratorField == null)
+                throw new InvalidOperationException("The field 'DynamicMethod.m_ilGenerator' is not found");
+            var dynamicILInfoField = typeof(DynamicMethod).GetField("m_DynamicILInfo", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (dynamicILInfoField == null)
+                throw new InvalidOperationException("The field 'DynamicMethod.m_DynamicILInfo' is not found");
+            var resolverField = typeof(DynamicMethod).GetField("m_resolver", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (resolverField == null)
+                throw new InvalidOperationException("The field 'DynamicMethod.m_resolver' is not found");
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0);
+                il.Call(getMethodDescriptorMethod);
+                il.Call(prepareMethodMethod);
+                il.Ldarg(0);
+                il.Ldnull();
+                il.Stfld(ilGeneratorField);
+                il.Ldarg(0);
+                il.Ldnull();
+                il.Stfld(dynamicILInfoField);
+                il.Ldarg(0);
+                il.Ldnull();
+                il.Stfld(resolverField);
+                il.Ret();
+            }
+            return (Action<DynamicMethod>)method.CreateDelegate(typeof(Action<DynamicMethod>));
         }
 
         private static AssemblyBuilder CreateAssembly()

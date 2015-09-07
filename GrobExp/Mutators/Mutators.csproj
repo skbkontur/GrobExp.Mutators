@@ -55,8 +55,13 @@
     <Compile Include="AssignRecording\AssignRecordCollection.cs" />
     <Compile Include="AssignRecording\AssignRecorderInitializer.cs" />
     <Compile Include="AssignRecording\IMutatorsAssignRecorder.cs" />
+    <Compile Include="AssignRecording\IMutatorsValidationRecorder.cs" />
     <Compile Include="AssignRecording\MutatorsAssignRecorder.cs" />
     <Compile Include="AssignRecording\RecordNode.cs" />
+    <Compile Include="AssignRecording\MutatorsValidationRecorder.cs" />
+    <Compile Include="AssignRecording\ValidationLogInfo.cs" />
+    <Compile Include="AssignRecording\ValidationRecordCollection.cs" />
+    <Compile Include="AssignRecording\ValidationRecorderInitializer.cs" />
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />

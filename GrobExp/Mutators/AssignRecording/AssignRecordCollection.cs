@@ -26,13 +26,13 @@ namespace GrobExp.Mutators.AssignRecording
         public void RecordCompilingExpression(string path, string value)
         {
             if(currentConverterRecord != null)
-                currentConverterRecord.RecordCompilingExpression(path, value);
+                currentConverterRecord.RecordCompilingExpression(path.Split('.').ToList(), value);
         }
 
         public void RecordExecutingExpression(string path, string value)
         {
             if(currentConverterRecord != null)
-                currentConverterRecord.RecordExecutingExpression(path, value);
+                currentConverterRecord.RecordExecutingExpression(path.Split('.').ToList(), value);
         }
 
         public List<RecordNode> GetRecords()

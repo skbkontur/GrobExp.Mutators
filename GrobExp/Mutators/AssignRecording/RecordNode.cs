@@ -59,8 +59,9 @@ namespace GrobExp.Mutators.AssignRecording
         private void RecordExecutingExpression(string value)
         {
             ExecutedCount++;
-            if(ContainsRecord(value))
-                GetRecordByName(value).ExecutedCount++;
+            if(!ContainsRecord(value))
+                RecordCompilingExpression(value);
+            GetRecordByName(value).ExecutedCount++;
         }
 
         public void RecordExecutingExpression(List<string> pathComponents, string value)
@@ -69,7 +70,7 @@ namespace GrobExp.Mutators.AssignRecording
 
             var recordName = pathComponents[0];
             if(!ContainsRecord(recordName))
-                return;
+                RecordCompilingExpression(pathComponents, value);  
 
             var node = GetRecordByName(recordName);
             if (pathComponents.Count == 1)

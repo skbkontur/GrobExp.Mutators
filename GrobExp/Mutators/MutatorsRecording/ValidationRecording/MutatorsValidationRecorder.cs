@@ -25,16 +25,16 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             return instance ?? (instance = new MutatorsValidationRecorder());
         }
 
-        public static void RecordCompilingValidation(ValidationLogInfo toLog)
+        public static void RecordCompilingValidation(ValidationLogInfo validationInfo)
         {
-            instance.recordsCollection.RecordCompilingValidation(toLog);
+            instance.recordsCollection.RecordCompilingValidation(validationInfo);
         }
 
 
-        public static void RecordExecutingValidation(ValidationLogInfo toLog, string validationResult)
+        public static void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)
         {
             if(IsRecording())
-                instance.recordsCollection.RecordExecutingValidation(toLog, validationResult);
+                instance.recordsCollection.RecordExecutingValidation(validationInfo, validationResult);
         }
 
         public static void AddValidatorToRecord(string validatorName)

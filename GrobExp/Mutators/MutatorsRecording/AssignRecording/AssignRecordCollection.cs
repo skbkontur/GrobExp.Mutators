@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public class AssignRecordCollection
     {
         public AssignRecordCollection()
         {
             converterRecords = new List<RecordNode>();
-        }
+        }       
 
         public void AddConverterToRecord(string converterName)
         {

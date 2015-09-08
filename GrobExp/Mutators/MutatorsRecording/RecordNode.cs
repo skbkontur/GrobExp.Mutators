@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording
 {
     public class RecordNode
     {

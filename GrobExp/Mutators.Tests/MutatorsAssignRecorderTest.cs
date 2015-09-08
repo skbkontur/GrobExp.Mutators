@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 
 using GrobExp.Mutators;
-using GrobExp.Mutators.AssignRecording;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 
 using NUnit.Framework;
 

@@ -1,4 +1,4 @@
-﻿namespace GrobExp.Mutators.AssignRecording
+﻿namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
     public class ValidationRecorderInitializer
     {

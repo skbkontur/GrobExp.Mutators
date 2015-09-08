@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace GrobExp.Mutators.AssignRecording
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
+
+namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
     internal class MutatorsValidationRecorder : IMutatorsValidationRecorder
     {

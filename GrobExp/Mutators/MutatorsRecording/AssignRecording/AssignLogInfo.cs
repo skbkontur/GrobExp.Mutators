@@ -1,6 +1,6 @@
 ﻿using System.Linq.Expressions;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public class AssignLogInfo
     {

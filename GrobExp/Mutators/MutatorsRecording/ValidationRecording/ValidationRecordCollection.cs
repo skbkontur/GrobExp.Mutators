@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace GrobExp.Mutators.AssignRecording
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
+
+namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
     public class ValidationRecordCollection
     {

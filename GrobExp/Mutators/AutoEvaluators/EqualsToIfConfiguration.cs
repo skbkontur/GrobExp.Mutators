@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-using GrobExp.Mutators.AssignRecording;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 

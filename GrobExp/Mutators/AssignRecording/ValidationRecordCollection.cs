@@ -26,12 +26,13 @@ namespace GrobExp.Mutators.AssignRecording
 
         public void RecordCompilingValidation(ValidationLogInfo validation)
         {
-            currentValidator.RecordCompilingExpression(new List<string>{validation.Name, validation.Condition}, validation.Result);
+            currentValidator.RecordCompilingExpression(new List<string>{validation.Name, validation.Condition}, "Ok");
+            currentValidator.RecordCompilingExpression(new List<string>{validation.Name, validation.Condition}, "Error");
         }
 
-        public void RecordExecutingValidation(ValidationLogInfo validation)
+        public void RecordExecutingValidation(ValidationLogInfo validation, string validationResult)
         {
-            currentValidator.RecordExecutingExpression(new List<string>{validation.Name, validation.Condition}, validation.Result);
+            currentValidator.RecordExecutingExpression(new List<string>{validation.Name, validation.Condition}, validationResult);
         }
 
         public List<RecordNode> GetRecords()

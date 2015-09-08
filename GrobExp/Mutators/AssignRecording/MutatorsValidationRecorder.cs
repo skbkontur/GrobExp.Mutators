@@ -31,9 +31,10 @@ namespace GrobExp.Mutators.AssignRecording
         }
 
 
-        public static void RecordExecutingValidation(ValidationLogInfo toLog)
+        public static void RecordExecutingValidation(ValidationLogInfo toLog, string validationResult)
         {
-            instance.recordsCollection.RecordExecutingValidation(toLog);
+            if(IsRecording())
+                instance.recordsCollection.RecordExecutingValidation(toLog, validationResult);
         }
 
         public static void AddValidatorToRecord(string validatorName)

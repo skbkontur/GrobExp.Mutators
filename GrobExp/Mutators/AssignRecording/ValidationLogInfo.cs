@@ -4,13 +4,11 @@
     {
         public string Name { get; private set; }
         public string Condition { get; private set; }
-        public string Result { get; private set; }
 
-        public ValidationLogInfo(string name, string condition, string result)
+        public ValidationLogInfo(string name, string condition)
         {
             Name = name;
             Condition = condition;
-            Result = result;
         }
     }
 }

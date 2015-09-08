@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Visitors;
 
@@ -86,7 +87,11 @@ namespace GrobExp.Mutators.Validators
             var result = Expression.Variable(typeof(ValidationResult));
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
-            return Expression.Block(new[] {result}, assign, result);
+            var toLog = new ValidationLogInfo("Regex = " + regex, condition.ToString());
+             
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
+            return Expression.Block(new[] { result }, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
         }
 
         public LambdaExpression Path { get; private set; }

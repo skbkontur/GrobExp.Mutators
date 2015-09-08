@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Text;
 
 using GrobExp.Mutators.Aggregators;
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Visitors;
 
@@ -39,6 +40,8 @@ namespace GrobExp.Mutators
 
         public Func<TData, ValidationResultTreeNode> GetValidator()
         {
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.AddValidatorToRecord(GetType().ToString());
             return GetValidator(data => data);
         }
 

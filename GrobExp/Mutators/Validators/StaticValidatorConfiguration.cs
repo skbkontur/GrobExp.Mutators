@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Mutators.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.Validators
@@ -65,8 +66,14 @@ namespace GrobExp.Mutators.Validators
         {
             if(Condition == null)
                 return validatorFromRoot.Body.ResolveAliases(aliases);
-            var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
-            return Expression.Condition(condition, validatorFromRoot.Body.ResolveAliases(aliases), Expression.Constant(null, typeof(ValidationResult)));
+            Expression condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
+            var toLog = new ValidationLogInfo(Name, condition.ToString());
+            var result = Expression.Variable(typeof(ValidationResult));
+            condition = Expression.Condition(condition, validatorFromRoot.Body.ResolveAliases(aliases), Expression.Constant(ValidationResult.Ok));
+            var assign = Expression.Assign(result, condition);
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
+            return Expression.Block(new [] { result }, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public string Name { get; set; }

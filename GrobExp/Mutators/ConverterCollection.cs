@@ -168,7 +168,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static void FindCustomFields(Type type, Expression pathFromLocalRoot, Type titleType, string path, PropertyInfo rootProperty, Func<Expression, bool> checker, Expression pathFromRoot, List<CustomFieldInfo> result)
+        private static void FindCustomFields(bool root, Type type, Expression pathFromLocalRoot, Type titleType, PropertyInfo rootProperty, Func<Expression, bool> checker, Expression pathFromRoot, List<CustomFieldInfo> result)
         {
             if(type.IsArray)
             {
@@ -181,19 +181,18 @@ namespace GrobExp.Mutators
             {
                 var nextPathFromLocalRoot = Expression.Property(pathFromLocalRoot, property);
                 var nextPathFromRoot = Expression.Property(pathFromRoot, property);
-                var nextPath = string.IsNullOrEmpty(path) ? property.Name : path + "ё" + property.Name;
                 var customFieldAttribute = property.GetCustomAttributes(typeof(CustomFieldAttribute), false).SingleOrDefault() as CustomFieldAttribute;
                 var currentTitleType = titleType;
                 if(customFieldAttribute != null && customFieldAttribute.TitleType != null)
                     currentTitleType = customFieldAttribute.TitleType;
-                if(string.IsNullOrEmpty(path))
+                if(root)
                     rootProperty = property;
                 if(!IsALeaf(property.PropertyType))
-                    FindCustomFields(property.PropertyType, nextPathFromLocalRoot, currentTitleType, nextPath, rootProperty, checker, nextPathFromRoot, result);
+                    FindCustomFields(false, property.PropertyType, nextPathFromLocalRoot, currentTitleType, rootProperty, checker, nextPathFromRoot, result);
                 else
                 {
                     if(checker(nextPathFromRoot))
-                        result.Add(new CustomFieldInfo(nextPath, rootProperty, currentTitleType, nextPathFromLocalRoot));
+                        result.Add(new CustomFieldInfo(nextPathFromLocalRoot.CustomFieldName(), rootProperty, currentTitleType, nextPathFromLocalRoot));
                 }
             }
         }
@@ -202,7 +201,7 @@ namespace GrobExp.Mutators
         {
             var parameter = Expression.Parameter(type);
             var customFields = new List<CustomFieldInfo>();
-            FindCustomFields(type, parameter, null, "", null, checker, pathToNode.Body, customFields);
+            FindCustomFields(true, type, parameter, null, null, checker, pathToNode.Body, customFields);
             return customFields.Select(info => new CustomFieldInfoZ(info.Path, info.RootProperty, info.TitleType, Expression.Lambda(info.Value, parameter))).ToArray();
         }
 

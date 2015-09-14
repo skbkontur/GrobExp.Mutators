@@ -71,7 +71,10 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitBlock(BlockExpression node)
         {
-            throw new NotSupportedException();
+            return Expression.NewArrayInit(typeof(object),
+                (from exp in node.Expressions
+                from dependency in ((NewArrayExpression)Visit(exp)).Expressions
+                select dependency));
         }
 
         protected override Expression VisitConditional(ConditionalExpression node)

@@ -8,7 +8,7 @@ using System.Text;
 using GroBuf.Readers;
 
 using GrobExp.Compiler;
-using GrobExp.Mutators.AssignRecording;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators

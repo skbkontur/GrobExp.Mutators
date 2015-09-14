@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {

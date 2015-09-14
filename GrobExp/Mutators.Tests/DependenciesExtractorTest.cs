@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators;
+using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
 
@@ -16,6 +17,15 @@ namespace Mutators.Tests
         {
             Expression<Func<A, B, string>> expression = (a, b) => a.B.C[1].D.E[0].F + b.C[1].D.E[10].Z + a.B.C[1].D.E[0].F;
             DoTest(expression, (a, b) => a.B.C[1].D.E[0].F, (a, b) => b.C[1].D.E[10].Z);
+        }
+
+        [Test]
+        public void TestBlock()
+        {
+            Expression<Func<A, string>> expression1 = a => a.B.C[1].D.E[0].F;
+            Expression<Func<A, string>> expression2 = a => a.B.C[0].D.E[1].F;
+            Expression<Func<A, string>> expression = Expression.Lambda<Func<A, string>>(Expression.Block(expression1.Body, new ParameterReplacer(expression2.Parameters.Single(), expression1.Parameters.Single()).Visit(expression2.Body)), expression1.Parameters);
+            DoTest(expression, (a) => a.B.C[1].D.E[0].F, a => a.B.C[0].D.E[1].F);
         }
 
         [Test]

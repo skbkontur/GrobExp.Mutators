@@ -32,7 +32,8 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         public static void RecordExecutingExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            if(IsRecording())
+                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
         public static void RecordConverter(string converter)

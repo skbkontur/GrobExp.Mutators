@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {
@@ -32,7 +32,8 @@ namespace GrobExp.Mutators.AssignRecording
 
         public static void RecordExecutingExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            if(IsRecording())
+                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
         public static void RecordConverter(string converter)

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public interface IMutatorsAssignRecorder
     {

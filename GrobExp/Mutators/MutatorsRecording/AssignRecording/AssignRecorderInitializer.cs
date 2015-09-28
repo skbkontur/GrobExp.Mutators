@@ -1,4 +1,4 @@
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public class AssignRecorderInitializer
     {

@@ -8,7 +8,7 @@ using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
 using GrobExp.Compiler;
-using GrobExp.Mutators.AssignRecording;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 
 namespace GrobExp.Mutators.AutoEvaluators
 {

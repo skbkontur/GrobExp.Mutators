@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading;
 
 using GrobExp.Mutators;
-using GrobExp.Mutators.AssignRecording;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 
 using NUnit.Framework;
 
@@ -155,8 +155,8 @@ namespace Mutators.Tests
         [Description("Для каждого потока отдельный лог")]
         public void MultithreadingTest()
         {
-            var actualDataList = new List<TestDataDest>();
-            var threads = new List<Thread>();
+            var actualDataList = new ConcurrentBag<TestDataDest>();
+            var threads = new ConcurrentBag<Thread>();
             for(var i = 0; i < 10; i++)
             {
                 var thread = new Thread(() =>
@@ -185,10 +185,17 @@ namespace Mutators.Tests
             }
 
             start = true;
-            threads.ForEach(thread => thread.Join());
+
+            foreach(var thread in threads)
+            {
+                thread.Join();
+            }
 
             Assert.AreEqual(10, actualDataList.Count);
-            actualDataList.ForEach(data => Assert.AreEqual(12, data.C));
+            foreach(var data in actualDataList)
+            {
+                Assert.AreEqual(12, data.C);
+            }
 
             if(lastException != null)
                 throw lastException;

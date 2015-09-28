@@ -1423,7 +1423,10 @@ namespace GrobExp.Mutators
                 else
                 {
                     formattedChains = pathFormatter.GetFormattedPath(chains);
-                    formattedChains = formattedChains.ResolveAliases(aliasesInTermsOfFirst);
+                    if(formattedChains == null)
+                        formattedChains = Expression.Constant(null, typeof(MultiLanguagePathText));
+                    else
+                        formattedChains = formattedChains.ResolveAliases(aliasesInTermsOfFirst);
                 }
 
                 var localResults = new List<Expression>();

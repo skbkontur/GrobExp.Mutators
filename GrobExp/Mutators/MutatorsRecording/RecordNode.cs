@@ -1,21 +1,23 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace GrobExp.Mutators.AssignRecording
+namespace GrobExp.Mutators.MutatorsRecording
 {
     public class RecordNode
     {
-        public RecordNode(string name)
+        public RecordNode(string name, string parentFullName)
         {
             Name = name;
             Records = new List<RecordNode>();
             CompiledCount = 1;
+            FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
         }
 
         public List<RecordNode> Records { get; private set; }
         public int CompiledCount { get; private set; }
         public int ExecutedCount { get; private set; }
         public string Name { get; private set; }
+        public string FullName { get; private set; }
 
         private bool ContainsRecord(string recordName)
         {
@@ -27,54 +29,54 @@ namespace GrobExp.Mutators.AssignRecording
             return Records.FirstOrDefault(record => record.Name == recordName);
         }
 
-        public void RecordCompilingExpression(string path, string value)
+        public void RecordCompilingExpression(List<string> pathComponents, string value)
         {
             CompiledCount++;
-            var dividedPath = path.Split(new[] {'.'}, 2);
 
-            var recordName = dividedPath[0];
+            var recordName = pathComponents[0];
             RecordNode node;
             if(ContainsRecord(recordName))
                 node = GetRecordByName(recordName);
             else
             {
-                node = new RecordNode(recordName);
+                node = new RecordNode(recordName, FullName);
                 Records.Add(node);
             }
 
-            if(dividedPath.Count() == 1)
+            if(pathComponents.Count == 1)
                 node.RecordCompilingExpression(value);
             else
-                node.RecordCompilingExpression(dividedPath[1], value);
+                node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value);
         }
 
         private void RecordCompilingExpression(string value)
         {
             CompiledCount++;
             if (!ContainsRecord(value))
-                Records.Add(new RecordNode(value));
+                Records.Add(new RecordNode(value, FullName));
         }
 
         private void RecordExecutingExpression(string value)
         {
             ExecutedCount++;
-            if(ContainsRecord(value))
-                GetRecordByName(value).ExecutedCount++;
+            if(!ContainsRecord(value))
+                RecordCompilingExpression(value);
+            GetRecordByName(value).ExecutedCount++;
         }
 
-        public void RecordExecutingExpression(string path, string value)
+        public void RecordExecutingExpression(List<string> pathComponents, string value)
         {
             ExecutedCount++;
-            var dividedPath = path.Split(new[] {'.'}, 2);
-            var recordName = dividedPath[0];
+
+            var recordName = pathComponents[0];
             if(!ContainsRecord(recordName))
-                return;
+                RecordCompilingExpression(pathComponents, value);  
 
             var node = GetRecordByName(recordName);
-            if(dividedPath.Count() == 1)
+            if (pathComponents.Count == 1)
                 node.RecordExecutingExpression(value);
             else
-                node.RecordExecutingExpression(dividedPath[1], value);
+                node.RecordExecutingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value);
         }
     }
 }

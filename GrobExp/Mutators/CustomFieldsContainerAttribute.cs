@@ -6,4 +6,11 @@ namespace GrobExp.Mutators
     {
         
     }
+
+    public interface IStringConverter
+    {
+        bool CanConvert(Type type);
+        object Convert(string value, Type type);
+        string Convert(object value, Type type);
+    }
 }

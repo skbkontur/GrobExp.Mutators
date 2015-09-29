@@ -169,9 +169,10 @@ namespace GrobExp.Mutators
 
         public void AddMutatorSmart(LambdaExpression path, MutatorConfiguration mutator)
         {
+            path = (LambdaExpression)path.Simplify();
             LambdaExpression filter;
             var simplifiedPath = SimplifyPath(path, out filter);
-            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body.Simplify()));
+            mutator = mutator.ResolveAliases(CreateAliasesResolver(simplifiedPath.Body, path.Body));
             Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
         }
 

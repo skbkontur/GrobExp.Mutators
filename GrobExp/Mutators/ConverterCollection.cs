@@ -232,7 +232,7 @@ namespace GrobExp.Mutators
                     var value = customField.Value;
                     TypeCode typeCode;
                     LambdaExpression convertedValue;
-                    if(stringConverter.CanConvert(value.Body.Type))
+                    if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
                         convertedValue = Expression.Lambda(
@@ -345,21 +345,21 @@ namespace GrobExp.Mutators
 
         private Expression MakeConvert(Expression value, Type type)
         {
-            bool needCoalesce = true;
-            if(stringConverter.CanConvert(type))
+            var needCoalesce = true;
+            if(stringConverter != null && stringConverter.CanConvert(type))
             {
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                         HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert("", null)),
                                         Expression.Convert(value, typeof(string)), Expression.Constant(type, typeof(Type)));
             }
-            else if (IsPrimitive(type))
+            else if(IsPrimitive(type))
             {
                 if(type.IsValueType)
                     value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
                 needCoalesce = false;
                 value = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), type), value);
             }
-            if (type.IsValueType && needCoalesce)
+            if(type.IsValueType && needCoalesce)
                 value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
             return Expression.Convert(value, type);
         }

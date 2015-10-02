@@ -12,8 +12,8 @@ namespace GrobExp.Mutators.Validators
 {
     public class InvalidIfConfiguration : ValidatorConfiguration
     {
-        protected InvalidIfConfiguration(Type type, int priority, LambdaExpression condition, LambdaExpression message, ValidationResultType validationResultType)
-            : base(type, priority)
+        protected InvalidIfConfiguration(Type type, MutatorsCreator creator, int priority, LambdaExpression condition, LambdaExpression message, ValidationResultType validationResultType)
+            : base(type, creator, priority)
         {
             Condition = condition;
             Message = message;
@@ -25,31 +25,31 @@ namespace GrobExp.Mutators.Validators
             return "invalidIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public static InvalidIfConfiguration Create<TData>(int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
+        public static InvalidIfConfiguration Create<TData>(MutatorsCreator creator, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
         {
-            return new InvalidIfConfiguration(typeof(TData), priority, Prepare(condition), Prepare(message), validationResultType);
+            return new InvalidIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(message), validationResultType);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
-            return new InvalidIfConfiguration(path.Parameters.Single().Type, Priority, path.Merge(Condition), path.Merge(Message), validationResultType);
+            return new InvalidIfConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Condition), path.Merge(Message), validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new InvalidIfConfiguration(to, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Message), validationResultType);
+            return new InvalidIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Message), validationResultType);
         }
 
         public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
         {
-            return new InvalidIfConfiguration(Type, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), validationResultType);
+            return new InvalidIfConfiguration(Type, Creator, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), validationResultType);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new InvalidIfConfiguration(Type, Priority, Prepare(condition).AndAlso(Condition), Message, validationResultType);
+            return new InvalidIfConfiguration(Type, Creator, Priority, Prepare(condition).AndAlso(Condition), Message, validationResultType);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)

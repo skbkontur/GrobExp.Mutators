@@ -235,7 +235,7 @@ namespace GrobExp.Mutators
                     if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
-                        convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert<int>((object)null)).GetGenericMethodDefinition();
+                        convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>((object)null)).GetGenericMethodDefinition();
                         convertedValue = Expression.Lambda(
                             Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                             convertToStringMethod.MakeGenericMethod(value.Body.Type),
@@ -349,7 +349,7 @@ namespace GrobExp.Mutators
             var needCoalesce = true;
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
-                convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert<int>("")).GetGenericMethodDefinition();
+                convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                         convertFromStringMethod.MakeGenericMethod(type),
                                         Expression.Convert(value, typeof(string)));

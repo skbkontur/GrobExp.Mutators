@@ -7,7 +7,7 @@ using GrobExp.Mutators;
 
 namespace Mutators.Tests
 {
-    public class TestStringConverter : IStringConverter
+    public class TestStringConverter : StringConverterBase
     {
         private static readonly Dictionary<string, TestCustomFields.TestEnum> beautifulNameToEnum;
         private static readonly Dictionary<TestCustomFields.TestEnum, string> enumToBeautifulName;
@@ -26,30 +26,25 @@ namespace Mutators.Tests
             }
         }
 
-        public bool CanConvert(Type type)
+        public override bool CanConvert(Type type)
         {
             return type == typeof(TestCustomFields.TestEnum);
         }
 
-        public object Convert<T>(string value)
-        {
-            if(typeof(T) != typeof(TestCustomFields.TestEnum))
-                return null;
-            TestCustomFields.TestEnum result;
-            return value != null && beautifulNameToEnum.TryGetValue(value, out result) ? result : (object)null;
-        }
-
-        public string Convert<T>(object value)
-        {
-            return Convert(value, typeof(T));
-        }
-
-        public string Convert(object value, Type type)
+        public override string ConvertToString(object value, Type type)
         {
             if (type != typeof(TestCustomFields.TestEnum))
                 return null;
             string result;
             return enumToBeautifulName.TryGetValue((TestCustomFields.TestEnum)value, out result) ? result : null;
+        }
+
+        public override object ConvertFromString(string value, Type type)
+        {
+            if (type != typeof(TestCustomFields.TestEnum))
+                return null;
+            TestCustomFields.TestEnum result;
+            return value != null && beautifulNameToEnum.TryGetValue(value, out result) ? result : (object)null;
         }
     }
 

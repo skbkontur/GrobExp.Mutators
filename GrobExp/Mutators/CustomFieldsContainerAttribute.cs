@@ -10,7 +10,8 @@ namespace GrobExp.Mutators
     public interface IStringConverter
     {
         bool CanConvert(Type type);
-        object Convert(string value, Type type);
+        object Convert<T>(string value);
+        string Convert<T>(object value);
         string Convert(object value, Type type);
     }
 }

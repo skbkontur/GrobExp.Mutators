@@ -235,10 +235,11 @@ namespace GrobExp.Mutators
                     if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
+                        convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert<int>((object)null)).GetGenericMethodDefinition();
                         convertedValue = Expression.Lambda(
                             Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
-                                            HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert((object)null, null)),
-                                            Expression.Convert(value.Body, typeof(object)), Expression.Constant(value.Body.Type, typeof(Type))),
+                                            convertToStringMethod.MakeGenericMethod(value.Body.Type),
+                                            Expression.Convert(value.Body, typeof(object))),
                             value.Parameters);
                     }
                     else
@@ -348,9 +349,10 @@ namespace GrobExp.Mutators
             var needCoalesce = true;
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
+                convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert<int>("")).GetGenericMethodDefinition();
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
-                                        HackHelpers.GetMethodDefinition<IStringConverter>(x => x.Convert("", null)),
-                                        Expression.Convert(value, typeof(string)), Expression.Constant(type, typeof(Type)));
+                                        convertFromStringMethod.MakeGenericMethod(type),
+                                        Expression.Convert(value, typeof(string)));
             }
             else if(IsPrimitive(type))
             {
@@ -437,6 +439,8 @@ namespace GrobExp.Mutators
         private readonly object lockObject = new object();
 
         private readonly Hashtable hashtable = new Hashtable();
+        private MethodInfo convertToStringMethod;
+        private MethodInfo convertFromStringMethod;
 
         private class CustomFieldInfo
         {

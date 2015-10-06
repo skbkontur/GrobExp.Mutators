@@ -31,12 +31,17 @@ namespace Mutators.Tests
             return type == typeof(TestCustomFields.TestEnum);
         }
 
-        public object Convert(string value, Type type)
+        public object Convert<T>(string value)
         {
-            if(type != typeof(TestCustomFields.TestEnum))
+            if(typeof(T) != typeof(TestCustomFields.TestEnum))
                 return null;
             TestCustomFields.TestEnum result;
             return value != null && beautifulNameToEnum.TryGetValue(value, out result) ? result : (object)null;
+        }
+
+        public string Convert<T>(object value)
+        {
+            return Convert(value, typeof(T));
         }
 
         public string Convert(object value, Type type)

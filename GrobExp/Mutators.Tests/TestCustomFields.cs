@@ -77,11 +77,13 @@ namespace Mutators.Tests
                 {
                     configurator.Target(x => x.Items.Each().Id).Set(x => x.Items.Current().Id);
                     configurator.Target(x => x.F).Set(x => x.F);
+                    configurator.Target(x => x.ComplexField2).Set(x => x.ComplexField2);
                 });
             var converter = webDataToDataConverterCollection.GetConverter(MutatorsContext.Empty);
             var data = converter(new WebData
                 {
                     F = "qxx",
+                    ComplexField2 = new ComplexCustomField{X = 321, Z = new ComplexCustomFieldSubClass{S = "zzz"}},
                     CustomFields = new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
@@ -91,6 +93,8 @@ namespace Mutators.Tests
                             {"E", new CustomFieldValue{TypeCode = TypeCode.String, Value = "ZZZ"}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                             {"ComplexFieldёZёS", new CustomFieldValue {TypeCode = TypeCode.String, Value = "qzz"}},
+                            {"ComplexField2ёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
+                            {"ComplexField2ёZёS", new CustomFieldValue {TypeCode = TypeCode.String, Value = "qzz"}},
                             {"ComplexArr", new CustomFieldValue
                                 {
                                     TypeCode = TypeCode.Object,
@@ -109,6 +113,10 @@ namespace Mutators.Tests
             Assert.IsNotNull(data.ComplexField.Z);
             Assert.AreEqual("qzz", data.ComplexField.Z.S);
             Assert.AreEqual(TestEnum.Zzz, data.ComplexField.Z.E);
+            Assert.IsNotNull(data.ComplexField2);
+            Assert.AreEqual(321, data.ComplexField2.X);
+            Assert.IsNotNull(data.ComplexField2.Z);
+            Assert.AreEqual("zzz", data.ComplexField2.Z.S);
             Assert.IsNotNull(data.StrArr);
             Assert.AreEqual(2, data.StrArr.Length);
             Assert.AreEqual("zzz", data.StrArr[0]);
@@ -480,6 +488,9 @@ namespace Mutators.Tests
             [CustomField]
             public TestEnum E { get; set; }
 
+            [CustomField]
+            public ComplexCustomField ComplexField2 { get; set; }
+
             public DataItem[] Items { get; set; }
         }
 
@@ -499,6 +510,8 @@ namespace Mutators.Tests
             public WebDataItem[] Items { get; set; }
             public Dictionary<string, CustomFieldValue> CustomFieldsCopy { get; set; }
             public string F { get; set; }
+
+            public ComplexCustomField ComplexField2 { get; set; }
         }
 
         public class ModelDataItem

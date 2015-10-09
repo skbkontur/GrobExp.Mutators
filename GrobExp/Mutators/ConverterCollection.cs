@@ -389,10 +389,14 @@ namespace GrobExp.Mutators
             Func<Expression, bool> sourceCustomFieldFits = path => !hashset.Contains(new ExpressionWrapper(path, false));
             Func<Expression, bool> destCustomFieldFits = path =>
                 {
-                    var node = tree.Traverse(path, false);
-                    if(node == null)
-                        return true;
-                    return node.GetMutators().Length == 0;
+                    var smithereens = path.SmashToSmithereens();
+                    foreach(var shard in smithereens)
+                    {
+                        var node = tree.Traverse(shard, false);
+                        if(node != null && node.GetMutators().Length > 0)
+                            return false;
+                    }
+                    return true;
                 };
             ConfigureCustomFields(configurator, Expression.Lambda(sourceParameter, sourceParameter), Expression.Lambda(destParameter, destParameter), sourceCustomFieldFits, destCustomFieldFits);
             ConfigureCustomFieldsForArrays(configurator, typeof(TDest), Expression.Lambda(destParameter, destParameter), sourceCustomFieldFits, destCustomFieldFits);

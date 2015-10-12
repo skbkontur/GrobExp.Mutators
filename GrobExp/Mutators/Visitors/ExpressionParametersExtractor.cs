@@ -6,7 +6,7 @@ namespace GrobExp.Mutators.Visitors
 {
     public class ExpressionParametersExtractor : ExpressionVisitor
     {
-        public ExpressionParametersExtractor(Expression parametersAccessor, params string[] namesToExtract )
+        public ExpressionParametersExtractor(Expression parametersAccessor, params ParameterExpression[] namesToExtract )
         {
             this.parametersAccessor = parametersAccessor;
             this.namesToExtract = namesToExtract;
@@ -26,7 +26,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if (!node.IsLinkOfChain(true, true) || (namesToExtract.Length > 0 && !namesToExtract.Contains(((ParameterExpression)node.SmashToSmithereens()[0]).Name)))
+            if (!node.IsLinkOfChain(true, true) || (namesToExtract.Length > 0 && !namesToExtract.Contains((ParameterExpression)node.SmashToSmithereens()[0])))
             {
                 return base.Visit(node);
             }
@@ -42,6 +42,6 @@ namespace GrobExp.Mutators.Visitors
         private readonly Expression parametersAccessor;
         private int paramsIndex;
         private readonly Hashtable hashtable = new Hashtable();
-        private readonly string[] namesToExtract;
+        private readonly ParameterExpression[] namesToExtract;
     }
 }

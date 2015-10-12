@@ -15,10 +15,10 @@ namespace GrobExp.Mutators.Visitors
             paramsIndex = 0;
         }
 
-        public Expression ExtractParameters(Expression expression, out object[] parameters)
+        public Expression ExtractParameters(Expression expression, out Expression[] parameters)
         {
             var result = Visit(expression);
-            parameters = new object[hashtable.Count];
+            parameters = new Expression[hashtable.Count];
             foreach (DictionaryEntry entry in hashtable)
             {
                 parameters[(int)entry.Value] = ((ExpressionWrapper)entry.Key).Expression;

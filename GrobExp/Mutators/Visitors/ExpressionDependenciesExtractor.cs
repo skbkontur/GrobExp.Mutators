@@ -1,12 +1,14 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionParametersExtractor : ExpressionVisitor
+    public class ExpressionDependenciesExtractor : ExpressionVisitor
     {
-        public ExpressionParametersExtractor(Expression parametersAccessor, params ParameterExpression[] namesToExtract )
+        public ExpressionDependenciesExtractor(Expression parametersAccessor, params ParameterExpression[] namesToExtract )
         {
             this.parametersAccessor = parametersAccessor;
             this.namesToExtract = namesToExtract;
@@ -30,6 +32,17 @@ namespace GrobExp.Mutators.Visitors
             {
                 return base.Visit(node);
             }
+            var key = new ExpressionWrapper(node, false);
+            var index = hashtable[key];
+            if (index == null)
+            {
+                hashtable[key] = index = paramsIndex++;
+            }
+            return Expression.Convert(Expression.ArrayIndex(parametersAccessor, Expression.Constant(index, typeof(int))), node.Type);
+        }
+
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
             var key = new ExpressionWrapper(node, false);
             var index = hashtable[key];
             if (index == null)

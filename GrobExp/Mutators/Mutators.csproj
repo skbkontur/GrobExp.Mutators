@@ -67,6 +67,7 @@
     <Compile Include="CustomFields\CustomFieldValue.cs" />
     <Compile Include="DataConfiguratorCollectionHelper.cs" />
     <Compile Include="Exceptions\PriorityOutOfRangeException.cs" />
+    <Compile Include="ExpressionCanonicalForm.cs" />
     <Compile Include="ExpressionCompiler.cs" />
     <Compile Include="FormattedValidationResult.cs" />
     <Compile Include="FormattedValidationResultText.cs" />

@@ -87,5 +87,13 @@ namespace Mutators.Tests
             Assert.IsTrue(newLambda.Invoke(new object[]{2, 2, 0}, 1));
             Assert.IsFalse(newLambda.Invoke(new object[]{3, 1, 10}, 2));
         }
+
+        [Test]
+        public void Test()
+        {
+            var lambda = (Expression<Func<ValidatorsTest.TestData, bool>>)(z => z.A.S.Length > 0);
+            var canonicalForm = new ExpressionCanonicalForm(lambda.Body, lambda.Parameters[0]);
+            var expr = canonicalForm.ConstructInvokation();
+        }
     }
 }

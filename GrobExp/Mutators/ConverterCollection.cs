@@ -235,7 +235,7 @@ namespace GrobExp.Mutators
                     if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
-                        convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>((object)null)).GetGenericMethodDefinition();
+                        
                         convertedValue = Expression.Lambda(
                             Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                             convertToStringMethod.MakeGenericMethod(value.Body.Type),
@@ -349,7 +349,7 @@ namespace GrobExp.Mutators
             var needCoalesce = true;
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
-                convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
+                
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                         convertFromStringMethod.MakeGenericMethod(type),
                                         Expression.Convert(value, typeof(string)));
@@ -363,6 +363,14 @@ namespace GrobExp.Mutators
             }
             if(type.IsValueType && needCoalesce)
                 value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
+            if(type.IsArray)
+            {
+                var elementType = type.GetElementType();
+                if(elementType.IsValueType)
+                {
+                    value = Expression.Call(toArrayMethod.MakeGenericMethod(elementType), Expression.Call(castMethod.MakeGenericMethod(elementType), Expression.Convert(value, typeof(IEnumerable))));
+                }
+            }
             return Expression.Convert(value, type);
         }
 
@@ -439,8 +447,10 @@ namespace GrobExp.Mutators
         private readonly object lockObject = new object();
 
         private readonly Hashtable hashtable = new Hashtable();
-        private MethodInfo convertToStringMethod;
-        private MethodInfo convertFromStringMethod;
+        private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>((object)null)).GetGenericMethodDefinition();
+        private readonly MethodInfo convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
+        private readonly MethodInfo castMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.Cast<object>()).GetGenericMethodDefinition();
+        private readonly MethodInfo toArrayMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.ToArray()).GetGenericMethodDefinition();
 
         private class CustomFieldInfo
         {

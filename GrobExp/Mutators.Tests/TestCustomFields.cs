@@ -283,12 +283,15 @@ namespace Mutators.Tests
         [Test]
         public void TestWebDataMutator()
         {
+            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
                 configurator =>
                     {
                         configurator.Target(data => data.X).Set(data => data.Y + data.Z);
                         configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
+                        configurator.Target(data => data.Sum).Set(data => data.DecimalArr.Sum());
+                        configurator.Target(data => data.ComplexArrSum).Set(data => data.ComplexArr.Sum(x => x.Y));
                     }
             );
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
@@ -301,7 +304,17 @@ namespace Mutators.Tests
                         {
                             {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
                             {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
-                            {"Z", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 2}}
+                            {"Z", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 2}},
+                            {"Sum", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 0m}},
+                            {"ComplexArrSum", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 0m}},
+                            {"DecimalArr", new CustomFieldValue{TypeCode = TypeCode.Decimal, IsArray = true, Value = new object[] {1m, 2m, 3m}}},
+                            {"ComplexArr", new CustomFieldValue
+                                {
+                                    TypeCode = TypeCode.Object,
+                                    IsArray = true,
+                                    TypeCodes = new Dictionary<string, TypeCode>{{"Y", TypeCode.Decimal}},
+                                    Value = new[] {new Hashtable{{"Y", 1m}, }, new Hashtable{{"Y", 2m}}}
+                                }}
                         },
                     Items = new[]
                         {
@@ -319,6 +332,8 @@ namespace Mutators.Tests
             webMutator(webData);
             Assert.AreEqual(3, webData.CustomFields["X"].Value);
             Assert.AreEqual(3, webData.Items[0].CustomFields["X"].Value);
+            Assert.AreEqual(6m, webData.CustomFields["Sum"].Value);
+            Assert.AreEqual(3m, webData.CustomFields["ComplexArrSum"].Value);
         }
 
         [Test]
@@ -424,10 +439,13 @@ namespace Mutators.Tests
 
         public class ComplexCustomField
         {
-            [CustomField()]
+            [CustomField]
             public int X { get; set; }
 
-            [CustomField()]
+            [CustomField]
+            public decimal Y { get; set; }
+
+            [CustomField]
             public ComplexCustomFieldSubClass Z { get; set; }
         }
 
@@ -467,6 +485,15 @@ namespace Mutators.Tests
 
             [CustomField]
             public string[] StrArr { get; set; }
+
+            [CustomField]
+            public decimal[] DecimalArr { get; set; }
+
+            [CustomField]
+            public decimal Sum { get; set; }
+
+            [CustomField]
+            public decimal ComplexArrSum { get; set; }
 
             [CustomField]
             public decimal? Q { get; set; }

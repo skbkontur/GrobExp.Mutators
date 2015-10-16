@@ -28,7 +28,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if (!node.IsLinkOfChain(true, true) || (namesToExtract.Length > 0 && !namesToExtract.Contains((ParameterExpression)node.SmashToSmithereens()[0])))
+            if (!node.IsLinkOfChain(true, true) || !namesToExtract.Contains((ParameterExpression)node.SmashToSmithereens()[0]))
             {
                 return base.Visit(node);
             }

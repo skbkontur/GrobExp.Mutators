@@ -24,8 +24,17 @@ namespace GrobExp.Mutators
 
         public Expression ConstructInvokation()
         {
-            var lambda = Expression.Lambda<Func<object[], Expression>>(CanonicalForm, ParameterAccessor);
-            return Expression.Invoke(lambda, Expression.NewArrayInit(typeof(ParameterExpression), ExtractedExpressions));
+            var lambda = Expression.Lambda(CanonicalForm, ParameterAccessor);
+            var array = Expression.Parameter(typeof(object[]), "arrayOfObject");
+            var newArray = Expression.NewArrayBounds(typeof(object), Expression.Constant(ExtractedExpressions.Length, typeof(int)));
+            var arrayInit = ExtractedExpressions
+                .Select(exp => Expression.Convert(exp, typeof(object)))
+                .Select((exp, i) => Expression.Assign(Expression.ArrayAccess(array, Expression.Constant(i, typeof(int))), exp));
+            return Expression.Block(new []{ array }, 
+                Expression.Assign(array, newArray), 
+                Expression.Block(arrayInit), 
+                Expression.Invoke(lambda, array)
+            );
         }
     }
 }

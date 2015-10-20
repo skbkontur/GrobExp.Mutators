@@ -1502,7 +1502,21 @@ namespace GrobExp.Mutators
             {
                 if(value is int)
                     return (int)value;
-                return value.GetHashCode();
+                if(value is string)
+                    return value.GetHashCode();
+                var type = value as Type;
+                if(type != null)
+                {
+                    unchecked
+                    {
+                        return type.Module.MetadataToken * 397 + type.MetadataToken;
+                    }
+                }
+                var memberInfo = (MemberInfo)value;
+                unchecked
+                {
+                    return memberInfo.Module.MetadataToken * 397 + memberInfo.MetadataToken;
+                }
             }
             var result = 0;
             foreach(var item in arr)
@@ -1535,15 +1549,13 @@ namespace GrobExp.Mutators
             {
                 if(!(left is Type && right is Type))
                     return false;
-                return (Type)left == (Type)right;
-//                if(((Type)left).Module != ((Type)right).Module)
-//                    return false;
-//                return ((Type)left).MetadataToken == ((Type)right).MetadataToken;
+                if(((Type)left).Module != ((Type)right).Module)
+                    return false;
+                return ((Type)left).MetadataToken == ((Type)right).MetadataToken;
             }
-            return (MemberInfo)left == (MemberInfo)right;
-//            if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
-//                return false;
-//            return ((MemberInfo)left).MetadataToken == ((MemberInfo)right).MetadataToken;
+            if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
+                return false;
+            return ((MemberInfo)left).MetadataToken == ((MemberInfo)right).MetadataToken;
         }
     }
 }

@@ -1506,12 +1506,7 @@ namespace GrobExp.Mutators
                     return value.GetHashCode();
                 var type = value as Type;
                 if(type != null)
-                {
-                    unchecked
-                    {
-                        return type.Module.MetadataToken * 397 + type.MetadataToken;
-                    }
-                }
+                    return type.GetHashCode();
                 var memberInfo = (MemberInfo)value;
                 unchecked
                 {
@@ -1549,9 +1544,7 @@ namespace GrobExp.Mutators
             {
                 if(!(left is Type && right is Type))
                     return false;
-                if(((Type)left).Module != ((Type)right).Module)
-                    return false;
-                return ((Type)left).MetadataToken == ((Type)right).MetadataToken;
+                return (Type)left == (Type)right;
             }
             if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
                 return false;

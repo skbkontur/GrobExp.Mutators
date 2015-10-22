@@ -10,7 +10,7 @@ namespace GrobExp.Mutators
     {
         public Expression Source { get; private set; }
         public Expression CanonicalForm { get; private set; }
-        private ParameterExpression ParameterAccessor { get; set; }
+        public ParameterExpression ParameterAccessor { get; set; }
         private Expression[] ExtractedExpressions { get; set; }
 
         public ExpressionCanonicalForm(Expression source, params ParameterExpression[] parametersToExtract)
@@ -22,10 +22,9 @@ namespace GrobExp.Mutators
             ExtractedExpressions = parameters;
         }
 
-        public Expression ConstructInvokation()
+        public Expression ConstructInvokation(LambdaExpression lambda)
         {
-            var lambda = Expression.Lambda(CanonicalForm, ParameterAccessor);
-            var array = Expression.Parameter(typeof(object[]), "arrayOfObject");
+            var array = Expression.Parameter(typeof(object[]));
             var newArray = Expression.NewArrayBounds(typeof(object), Expression.Constant(ExtractedExpressions.Length, typeof(int)));
             var arrayInit = ExtractedExpressions
                 .Select(exp => Expression.Convert(exp, typeof(object)))

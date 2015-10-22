@@ -92,9 +92,8 @@ namespace Mutators.Tests
         public void TestConstructCanonicalFormInvokation()
         {
             var lambda = (Expression<Func<ValidatorsTest.TestData, bool>>)(z => z.A.S.Length > 2);
-
             var canonicalForm = new ExpressionCanonicalForm(lambda.Body, lambda.Parameters[0]);
-            var newLambda = Expression.Lambda<Func<ValidatorsTest.TestData, bool>>(canonicalForm.ConstructInvokation(), lambda.Parameters[0]).Compile();
+            var newLambda = Expression.Lambda<Func<ValidatorsTest.TestData, bool>>(canonicalForm.ConstructInvokation(Expression.Lambda(canonicalForm.CanonicalForm, canonicalForm.ParameterAccessor)), lambda.Parameters[0]).Compile();
 
             Assert.IsTrue(newLambda.Invoke(new ValidatorsTest.TestData{A = new ValidatorsTest.A {S = "zzz"}}));
             Assert.IsFalse(newLambda.Invoke(new ValidatorsTest.TestData { A = new ValidatorsTest.A { S = "zz" } }));
@@ -105,7 +104,7 @@ namespace Mutators.Tests
         {
             var lambda = (Expression<Func<ValidatorsTest.TestData, int, int, bool>>)((z, m, k) => z.A.S.Length - m > k);
             var canonicalForm = new ExpressionCanonicalForm(lambda.Body, lambda.Parameters[0], lambda.Parameters[2]);
-            var newLambdaBody = Expression.Lambda<Func<ValidatorsTest.TestData, int, int, bool>>(canonicalForm.ConstructInvokation(), lambda.Parameters);
+            var newLambdaBody = Expression.Lambda<Func<ValidatorsTest.TestData, int, int, bool>>(canonicalForm.ConstructInvokation(Expression.Lambda(canonicalForm.CanonicalForm, canonicalForm.ParameterAccessor)), lambda.Parameters);
             var newLambda = newLambdaBody.Compile();
 
             Assert.IsTrue(newLambda.Invoke(new ValidatorsTest.TestData { A = new ValidatorsTest.A { S = "zzzz" } }, 1, 2));

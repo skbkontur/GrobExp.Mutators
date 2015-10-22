@@ -76,7 +76,8 @@ namespace GrobExp.Mutators
             var validationResults = new List<Expression>();
             root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, result, priority, validationResults);
 
-            validationResults = validationResults.SplitToBatches(parameter, result, priority);
+            //validationResults = validationResults.SplitToBatches(parameter, result, priority);
+            validationResults = validationResults.GroupSimilar(parameter);
 
             Expression body;
             switch(validationResults.Count)
@@ -1365,9 +1366,10 @@ namespace GrobExp.Mutators
                     child.BuildValidator(pathFormatter, root, aliases, result, priority, childValidationResults);
                     aliases.RemoveAt(aliases.Count - 1);
                     aliases.RemoveAt(aliases.Count - 1);
+                    var parametersToExtract = aliases.Select(keyValuePair => keyValuePair.Key).Cast<ParameterExpression>().ToArray();
                     if(childValidationResults.Count > 0)
                     {
-                        Expression action = Expression.Block(childValidationResults.SplitToBatches()); //Expression.Block(new ParameterExpression[] {}, childValidationResults);
+                        Expression action = Expression.Block(childValidationResults.GroupSimilar(parametersToExtract));//.SplitToBatches());
                         if(predicate != null)
                         {
                             var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
@@ -1436,7 +1438,7 @@ namespace GrobExp.Mutators
                     CheckDependencies(root, validator);
                     var current = validator.Apply(aliases);
                     if(current == null) continue;
-                    var currentValidationResult = Expression.Variable(typeof(ValidationResult));
+                    var currentValidationResult = Expression.Variable(typeof(ValidationResult), "validationResult_" + Guid.NewGuid());
                     if(validator.Priority < 0)
                         throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
                     if(validator.Priority >= PriorityShift)

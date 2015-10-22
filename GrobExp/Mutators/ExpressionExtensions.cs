@@ -74,17 +74,24 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        public static List<Expression> GroupSimilar(this List<Expression> expressions, ParameterExpression parameter)
+        public static List<Expression> GroupSimilar(this IEnumerable<Expression> expressions, params ParameterExpression[] parametersToExtract)
         {
-            var canonicalForms = expressions.Select(exp => new ExpressionCanonicalForm(exp, parameter));
+            var canonicalForms = expressions.Select(exp => new ExpressionCanonicalForm(exp, parametersToExtract));
 
             var groupedBySimilarity = canonicalForms.GroupBy(form => new ExpressionWrapper(form.CanonicalForm, false), form => form).ToArray();
 
-            return groupedBySimilarity
-                .Select(group => (group.Count() == 1)
-                    ? group.First().Source
-                    : Expression.Block(group.Select(form => form.ConstructInvokation())))
-                .ToList();
+            var result = new List<Expression>();
+            foreach(var group in groupedBySimilarity)
+            {
+                if(group.Count() == 1)
+                {
+                    result.Add(group.First().Source);
+                    continue;
+                }
+                var lambda = Expression.Lambda(group.First().CanonicalForm, group.First().ParameterAccessor);
+                result.Add(Expression.Block(group.Select(form => form.ConstructInvokation(lambda))));
+            }
+            return result;
         }
 
         public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)

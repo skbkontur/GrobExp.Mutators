@@ -18,7 +18,7 @@ namespace GrobExp.Mutators
             Source = source;
             ParameterAccessor = Expression.Parameter(typeof(object[]));
             Expression[] parameters;
-            CanonicalForm = new ExpressionDependenciesExtractor(ParameterAccessor, parametersToExtract).ExtractParameters(Source, out parameters);
+            CanonicalForm = new ExpressionCanonizer(ParameterAccessor, parametersToExtract).Canonize(Source, out parameters);
             ExtractedExpressions = parameters;
         }
 

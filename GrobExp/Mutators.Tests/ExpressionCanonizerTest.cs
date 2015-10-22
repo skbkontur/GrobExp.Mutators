@@ -9,14 +9,14 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
-    class ExpressionDependenciesExtractorTest : TestBase
+    class ExpressionCanonizerTest : TestBase
     {
         private Expression<Func<object[], bool>> CompileLambda(LambdaExpression lambda, params ParameterExpression[] namesToExtract)
         {
             var expressionsParameter = Expression.Parameter(typeof(object[]), "exprs");
             Expression[] parameters;
             return Expression.Lambda<Func<object[], bool>>(
-                new ExpressionDependenciesExtractor(expressionsParameter, namesToExtract).ExtractParameters(lambda.Body, out parameters),
+                new ExpressionCanonizer(expressionsParameter, namesToExtract).Canonize(lambda.Body, out parameters),
                 expressionsParameter
                 );
         }
@@ -28,7 +28,7 @@ namespace Mutators.Tests
             Expression[] parameters;
             var lambdaToTest = (Expression<Func<ValidatorsTest.TestData, bool>>)(z => z.S.Length > 1);
             var compiledLambda = Expression.Lambda<Func<object[], bool>>(
-                new ExpressionDependenciesExtractor(expressionsParameter, lambdaToTest.Parameters[0]).ExtractParameters(lambdaToTest.Body, out parameters),
+                new ExpressionCanonizer(expressionsParameter, lambdaToTest.Parameters[0]).Canonize(lambdaToTest.Body, out parameters),
                 expressionsParameter
                 ).Compile();
             Assert.IsTrue(compiledLambda.Invoke(new object[] { 2, 1 }));
@@ -66,8 +66,8 @@ namespace Mutators.Tests
             var expressionsParameter = Expression.Parameter(typeof(object[]), "exprs");
             Expression[] parameters;
             var lambda = (Expression<Func<ValidatorsTest.TestData, int, bool>>)((z, k) => z.A.S.Length + k > 0);
-            var newLambda = Expression.Lambda<Func<object[], int, bool>>(new ExpressionDependenciesExtractor(expressionsParameter, lambda.Parameters[0])
-                .ExtractParameters(lambda.Body, out parameters),
+            var newLambda = Expression.Lambda<Func<object[], int, bool>>(new ExpressionCanonizer(expressionsParameter, lambda.Parameters[0])
+                .Canonize(lambda.Body, out parameters),
                 new []{expressionsParameter}.Concat(lambda.Body.ExtractParameters().Skip(1))
                 ).Compile();
             Assert.IsTrue(newLambda.Invoke(new object[]{2, 4}, 3));
@@ -81,8 +81,8 @@ namespace Mutators.Tests
             Expression[] parameters;
             var lambda = (Expression<Func<ValidatorsTest.TestData, int, int, bool>>)((z, k, p) => z.A.S.Length + k - p > 0);
             var parametersToExtract = new []{lambda.Parameters[0], lambda.Parameters[2]};
-            var newLambda = Expression.Lambda<Func<object[], int, bool>>(new ExpressionDependenciesExtractor(expressionsParameter, parametersToExtract)
-                                                                             .ExtractParameters(lambda.Body, out parameters),
+            var newLambda = Expression.Lambda<Func<object[], int, bool>>(new ExpressionCanonizer(expressionsParameter, parametersToExtract)
+                                                                             .Canonize(lambda.Body, out parameters),
                                                                          new[] {expressionsParameter}.Concat(lambda.Parameters.Where(p => !parametersToExtract.Contains(p)))).Compile();
             Assert.IsTrue(newLambda.Invoke(new object[]{2, 2, 0}, 1));
             Assert.IsFalse(newLambda.Invoke(new object[]{3, 1, 10}, 2));

@@ -6,16 +6,16 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionDependenciesExtractor : ExpressionVisitor
+    public class ExpressionCanonizer : ExpressionVisitor
     {
-        public ExpressionDependenciesExtractor(Expression parametersAccessor, params ParameterExpression[] namesToExtract )
+        public ExpressionCanonizer(Expression parametersAccessor, params ParameterExpression[] namesToExtract )
         {
             this.parametersAccessor = parametersAccessor;
             this.namesToExtract = namesToExtract;
             paramsIndex = 0;
         }
 
-        public Expression ExtractParameters(Expression expression, out Expression[] parameters)
+        public Expression Canonize(Expression expression, out Expression[] parameters)
         {
             var result = Visit(expression);
             parameters = new Expression[hashtable.Count];

@@ -140,7 +140,7 @@
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
-    <Compile Include="Visitors\ExpressionDependenciesExtractor.cs" />
+    <Compile Include="Visitors\ExpressionCanonizer.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
     <Compile Include="Visitors\ExpressionWrapper.cs" />

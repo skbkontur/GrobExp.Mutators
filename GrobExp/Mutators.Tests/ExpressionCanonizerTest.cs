@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -109,6 +110,16 @@ namespace Mutators.Tests
 
             Assert.IsTrue(newLambda.Invoke(new ValidatorsTest.TestData { A = new ValidatorsTest.A { S = "zzzz" } }, 1, 2));
             Assert.IsFalse(newLambda.Invoke(new ValidatorsTest.TestData { A = new ValidatorsTest.A { S = "zzzz" } }, 2, 2));
+        }
+
+        [Test]
+        public void TestGroupBy()
+        {
+            var lambda = (Expression<Func<ValidatorsTest.TestData, int, int, bool>>)((z, m, k) => z.A.S.Length - m > k);
+            var canonicalForm1 = new ExpressionCanonicalForm(lambda.Body, lambda.Parameters[0], lambda.Parameters[2]);
+            var canonicalForm2 = new ExpressionCanonicalForm(lambda.Body, lambda.Parameters[0], lambda.Parameters[2]);
+            var grouping = new[] {canonicalForm1, canonicalForm2}.GroupBy(form => form, form => form, new CanonicalFormEqualityComparer());
+            Assert.AreEqual(1, grouping.Count());
         }
     }
 }

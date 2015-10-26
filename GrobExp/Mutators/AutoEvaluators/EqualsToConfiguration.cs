@@ -8,6 +8,7 @@ using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 
 namespace GrobExp.Mutators.AutoEvaluators
 {
@@ -62,9 +63,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            var infoToLog = new AssignLogInfo(path, Value.Body);
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            return path.Assign(value);
+            return path.Assign(value, infoToLog);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -79,11 +81,6 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type));
-        }
-
-        protected override Expression GetLCP()
-        {
-            return Value == null ? null : Value.Body.CutToChains(false, false).FindLCP();
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();

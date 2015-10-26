@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using GroBuf.Readers;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -78,44 +80,30 @@ namespace GrobExp.Mutators
             return expression == null ? null : new LinqEliminator().Eliminate(expression);
         }
 
-        public static Expression Assign(this Expression path, Expression value)
+        public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)
         {
-            if(path.NodeType == ExpressionType.Convert)
-                path = ((UnaryExpression)path).Operand;
-            switch(path.NodeType)
-            {
-            case ExpressionType.ArrayIndex:
-                var binaryExpression = (BinaryExpression)path;
-                path = Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
-                break;
-            case ExpressionType.MemberAccess:
-                {
-                    var memberExpression = (MemberExpression)path;
-                    if(memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
-                    {
-                        var temp = Expression.Variable(memberExpression.Expression.Type);
-                        return Expression.Block(new[] {temp},
-                                                Expression.Assign(temp, memberExpression.Expression),
-                                                Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
-                                                Expression.Assign(memberExpression.Expression, temp));
-                    }
-                    if(memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
-                        return Expression.Call(listResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetItemType()), memberExpression.Expression, value);
-                }
-                break;
-            case ExpressionType.Call:
-                var methodCallExpression = (MethodCallExpression)path;
-                if(methodCallExpression.Method.IsIndexerGetter())
-                {
-                    var temp = Expression.Variable(methodCallExpression.Object.Type);
-                    return Expression.Block(new[] {temp},
-                                            Expression.Assign(temp, methodCallExpression.Object),
-                                            Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
-                                            Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
-                }
-                break;
-            }
-            return Expression.Assign(path, value);
+            if(!MutatorsAssignRecorder.IsRecording() || toLog == null)
+                return InternalAssign(path, value);
+
+            MutatorsAssignRecorder.RecordCompilingExpression(toLog);
+            var temp = Expression.Parameter(value.Type, "temp");
+            return Expression.Block(new[] {temp},
+                                    Expression.Assign(temp, value),
+                                    InternalAssign(path, temp),
+                                    Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog)),
+                                    temp);
+        }
+
+        public static string CustomFieldName(this LambdaExpression lambda)
+        {
+            return lambda.Body.CustomFieldName();
+        }
+
+        public static string CustomFieldName(this Expression node)
+        {
+            var result = new StringBuilder();
+            BuildCustomFieldName(node, result);
+            return result.ToString();
         }
 
         public static Expression ExtendSelectMany(this Expression expression)
@@ -391,6 +379,72 @@ namespace GrobExp.Mutators
             return i == 0 ? null : shards1[i - 1];
         }
 
+        private static void BuildCustomFieldName(Expression node, StringBuilder result)
+        {
+            switch(node.NodeType)
+            {
+            case ExpressionType.Parameter:
+                return;
+            case ExpressionType.MemberAccess:
+                var memberExpression = (MemberExpression)node;
+                BuildCustomFieldName(memberExpression.Expression, result);
+                if(result.Length > 0)
+                    result.Append("ё");
+                result.Append(memberExpression.Member.Name);
+                break;
+            case ExpressionType.Call:
+                var methodCallExpression = (MethodCallExpression)node;
+                if(methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod())
+                {
+                    BuildCustomFieldName(methodCallExpression.Arguments.Single(), result);
+                    break;
+                }
+                throw new InvalidOperationException(string.Format("The method '{0}' is not supported", methodCallExpression.Method));
+            default:
+                throw new InvalidOperationException(string.Format("Node type '{0}' is not supported", node.NodeType));
+            }
+        }
+
+        private static Expression InternalAssign(this Expression path, Expression value)
+        {
+            if(path.NodeType == ExpressionType.Convert)
+                path = ((UnaryExpression)path).Operand;
+            switch(path.NodeType)
+            {
+            case ExpressionType.ArrayIndex:
+                var binaryExpression = (BinaryExpression)path;
+                path = Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
+                break;
+            case ExpressionType.MemberAccess:
+                {
+                    var memberExpression = (MemberExpression)path;
+                    if(memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
+                    {
+                        var temp = Expression.Variable(memberExpression.Expression.Type);
+                        return Expression.Block(new[] {temp},
+                                                Expression.Assign(temp, memberExpression.Expression),
+                                                Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
+                                                Expression.Assign(memberExpression.Expression, temp));
+                    }
+                    if(memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
+                        return Expression.Call(listResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetItemType()), memberExpression.Expression, value);
+                }
+                break;
+            case ExpressionType.Call:
+                var methodCallExpression = (MethodCallExpression)path;
+                if(methodCallExpression.Method.IsIndexerGetter())
+                {
+                    var temp = Expression.Variable(methodCallExpression.Object.Type);
+                    return Expression.Block(new[] {temp},
+                                            Expression.Assign(temp, methodCallExpression.Object),
+                                            Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
+                                            Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
+                }
+                break;
+            }
+            return Expression.Assign(path, value);
+        }
+
         private static InvocationExpression MakeInvocation(List<Expression> currentBatch, params ParameterExpression[] parameters)
         {
             return Expression.Invoke(Expression.Lambda(Expression.Block(currentBatch), parameters), parameters.Cast<Expression>());
@@ -469,9 +523,16 @@ namespace GrobExp.Mutators
 
         private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)
         {
+            if(node == null || !IsAllowedMethod(node.Method))
+                return false;
             if(hard)
-                return node != null && ((node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (IsExtension(node.Method) && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true)));
-            return node != null && (node.Object != null || IsExtension(node.Method));
+                return (node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (IsExtension(node.Method) && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true));
+            return node.Object != null || IsExtension(node.Method);
+        }
+
+        private static bool IsAllowedMethod(MethodInfo method)
+        {
+            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
         }
 
         private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)

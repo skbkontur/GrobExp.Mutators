@@ -6,7 +6,6 @@ namespace GrobExp.Mutators.Validators.Texts
     public class LengthNotExactlyEqualsText : MultiLanguageTextBaseWithPath
     {
         public int? Exactly { get; set; }
-        public string Value { get; set; }
 
         public MultiLanguageTextBase Title { get; set; }
 

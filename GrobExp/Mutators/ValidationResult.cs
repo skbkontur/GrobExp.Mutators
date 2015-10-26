@@ -20,6 +20,11 @@ namespace GrobExp.Mutators
             return new ValidationResult(ValidationResultType.Error, message);
         }
 
+        public override string ToString()
+        {
+            return Type.ToString();
+        }
+
         public ValidationResultType Type { get; private set; }
         public MultiLanguageTextBase Message { get; private set; }
 

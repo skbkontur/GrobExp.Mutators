@@ -59,6 +59,7 @@
     <Compile Include="Aggregators\HideIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ComplexMutatorsTree.cs" />
+    <Compile Include="ConfiguratorHelper.cs" />
     <Compile Include="ConverterCollection.cs" />
     <Compile Include="CustomFields\CustomFieldAttribute.cs" />
     <Compile Include="CustomFieldsContainerAttribute.cs" />
@@ -82,6 +83,17 @@
     <Compile Include="MethodInfoExtensions.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextTypeAttribute.cs" />
     <Compile Include="MutatorsConfiguratorExtensions.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\AssignLogInfo.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\AssignRecordCollection.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\AssignRecorderInitializer.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\IMutatorsAssignRecorder.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\MutatorsAssignRecorder.cs" />
+    <Compile Include="MutatorsRecording\RecordNode.cs" />
+    <Compile Include="MutatorsRecording\ValidationRecording\IMutatorsValidationRecorder.cs" />
+    <Compile Include="MutatorsRecording\ValidationRecording\MutatorsValidationRecorder.cs" />
+    <Compile Include="MutatorsRecording\ValidationRecording\ValidationLogInfo.cs" />
+    <Compile Include="MutatorsRecording\ValidationRecording\ValidationRecordCollection.cs" />
+    <Compile Include="MutatorsRecording\ValidationRecording\ValidationRecorderInitializer.cs" />
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
     <Compile Include="PathFormatterWrapper.cs" />

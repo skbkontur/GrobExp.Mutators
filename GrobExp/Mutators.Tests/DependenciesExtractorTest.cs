@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators;
+using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
 
@@ -15,6 +17,15 @@ namespace Mutators.Tests
         {
             Expression<Func<A, B, string>> expression = (a, b) => a.B.C[1].D.E[0].F + b.C[1].D.E[10].Z + a.B.C[1].D.E[0].F;
             DoTest(expression, (a, b) => a.B.C[1].D.E[0].F, (a, b) => b.C[1].D.E[10].Z);
+        }
+
+        [Test]
+        public void TestBlock()
+        {
+            Expression<Func<A, string>> expression1 = a => a.B.C[1].D.E[0].F;
+            Expression<Func<A, string>> expression2 = a => a.B.C[0].D.E[1].F;
+            Expression<Func<A, string>> expression = Expression.Lambda<Func<A, string>>(Expression.Block(expression1.Body, new ParameterReplacer(expression2.Parameters.Single(), expression1.Parameters.Single()).Visit(expression2.Body)), expression1.Parameters);
+            DoTest(expression, (a) => a.B.C[1].D.E[0].F, a => a.B.C[0].D.E[1].F);
         }
 
         [Test]
@@ -32,17 +43,24 @@ namespace Mutators.Tests
         }
 
         [Test]
-        public void TestWhereNull()
-        {
-            Expression<Func<A, int?>> expression = a => a.B.C.Where(c => null == "zzz").Sum(c => c.D.E.Where(e => null == "qxx").Sum(e => e.X));
-            DoTest(expression, a => a.B.C.Each().D.E.Each().X);
-        }
-
-        [Test]
         public void TestWhere2()
         {
             Expression<Func<A, int?>> expression = a => a.B.C.Where(c => c.D.S == "zzz").Sum(c => c.D.E.Single(e => e.F == "qxx").X);
             DoTest(expression, a => a.B.C.Each().D.S, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().D.E.Each().X);
+        }
+
+        [Test]
+        public void TestWhere3()
+        {
+            Expression<Func<A, string>> expression = a => a.B.Cz.Where(r => r.S != null).Each().D.S;
+            DoTest(expression, a => a.B.Cz.Each().S, a => a.B.Cz.Each().D.S);
+        }
+
+        [Test]
+        public void TestWhereNull()
+        {
+            Expression<Func<A, int?>> expression = a => a.B.C.Where(c => null == "zzz").Sum(c => c.D.E.Where(e => null == "qxx").Sum(e => e.X));
+            DoTest(expression, a => a.B.C.Each().D.E.Each().X);
         }
 
         [Test]
@@ -57,6 +75,13 @@ namespace Mutators.Tests
         {
             Expression<Func<A, int?>> expression = a => a.B.C.Where(c => c.D.E.Any(e => e.F == "zzz")).Sum(c => c.X);
             DoTest(expression, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().X);
+        }
+
+        [Test]
+        public void TestAny3()
+        {
+            Expression<Func<A, bool>> expression = a => a.B.C.Any();
+            DoTest(expression, a => a.B.C.Each());
         }
 
         [Test]
@@ -234,6 +259,13 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestAggregate1()
+        {
+            Expression<Func<A, int?>> expression = a => a.B.C.Aggregate(a.X, (x, c) => x + c.X);
+            DoTest(expression, a => a.X, a => a.B.C.Each().X);
+        }
+
+        [Test]
         public void TestSelectManyWithTuple1()
         {
             Expression<Func<A, string>> expression = a => a.B.C.SelectMany(c => c.D.E, (c, e) => new Tuple<int?, string>(c.X, e.F)).FirstOrDefault(tuple => tuple.Item1 > 0).Item2;
@@ -320,6 +352,7 @@ namespace Mutators.Tests
         private class B
         {
             public C[] C { get; set; }
+            public IEnumerable<C> Cz { get; set; }
             public string S { get; set; }
             public int? X { get; set; }
         }

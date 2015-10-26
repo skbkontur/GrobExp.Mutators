@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
@@ -58,17 +58,13 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
 
-        protected override Expression GetLCP()
-        {
-             return (Condition == null ? new Expression[0] : Condition.Body.CutToChains(false, false)).Concat(Value == null ? new Expression[0] : Value.Body.CutToChains(false, false)).FindLCP();
-       }
-
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Value == null) return null;
+            var infoToLog = new AssignLogInfo(path, Value.Body);
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            var assignment = path.Assign(value);
+            var assignment = path.Assign(value, infoToLog);
             if(Condition == null)
                 return assignment;
             var condition = Condition.Body;

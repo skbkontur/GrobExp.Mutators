@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.Validators
 {
     public class StaticValidatorConfiguration : ValidatorConfiguration
     {
-        protected StaticValidatorConfiguration(Type type, string name, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
-            : base(type, priority)
+        protected StaticValidatorConfiguration(Type type, MutatorsCreator creator, string name, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
+            : base(type, creator, priority)
         {
             Name = name;
             Condition = condition;
@@ -25,34 +26,34 @@ namespace GrobExp.Mutators.Validators
             return Name;
         }
 
-        public static StaticValidatorConfiguration Create<TData, TValue>(string name, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TValue, ValidationResult>> validator)
+        public static StaticValidatorConfiguration Create<TData, TValue>(MutatorsCreator creator, string name, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TValue, ValidationResult>> validator)
         {
-            return new StaticValidatorConfiguration(typeof(TData), name, priority, Prepare(condition), Prepare(path), validator);
+            return new StaticValidatorConfiguration(typeof(TData), creator, name, priority, Prepare(condition), Prepare(path), validator);
         }
 
-        public static StaticValidatorConfiguration Create<TData>(string name, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
+        public static StaticValidatorConfiguration Create<TData>(MutatorsCreator creator, string name, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression validator)
         {
-            return new StaticValidatorConfiguration(typeof(TData), name, priority, Prepare(condition), Prepare(path), validator);
+            return new StaticValidatorConfiguration(typeof(TData), creator, name, priority, Prepare(condition), Prepare(path), validator);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
-            return new StaticValidatorConfiguration(path.Parameters.Single().Type, Name, Priority, path.Merge(Condition), path.Merge(Path), validator);
+            return new StaticValidatorConfiguration(path.Parameters.Single().Type, Creator, Name, Priority, path.Merge(Condition), path.Merge(Path), validator);
         }
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new StaticValidatorConfiguration(to, Name, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Path), validator);
+            return new StaticValidatorConfiguration(to, Creator, Name, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Path), validator);
         }
 
         public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
         {
-            return new StaticValidatorConfiguration(Type, Name, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Path), validator);
+            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Path), validator);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new StaticValidatorConfiguration(Type, Name, Priority, Prepare(condition).AndAlso(Condition), Path, validator);
+            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, Prepare(condition).AndAlso(Condition), Path, validator);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -65,8 +66,14 @@ namespace GrobExp.Mutators.Validators
         {
             if(Condition == null)
                 return validatorFromRoot.Body.ResolveAliases(aliases);
-            var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
-            return Expression.Condition(condition, validatorFromRoot.Body.ResolveAliases(aliases), Expression.Constant(null, typeof(ValidationResult)));
+            Expression condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
+            var toLog = new ValidationLogInfo(Name, condition.ToString());
+            var result = Expression.Variable(typeof(ValidationResult));
+            condition = Expression.Condition(condition, validatorFromRoot.Body.ResolveAliases(aliases), Expression.Constant(ValidationResult.Ok));
+            var assign = Expression.Assign(result, condition);
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
+            return Expression.Block(new [] { result }, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public string Name { get; set; }
@@ -80,11 +87,6 @@ namespace GrobExp.Mutators.Validators
                 .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
                 .Select(grouping => grouping.First())
                 .ToArray();
-        }
-
-        protected override Expression GetLCP()
-        {
-            return (Condition == null ? new LambdaExpression[0] : Condition.Body.CutToChains(false, false)).Concat(validatorFromRoot == null ? new Expression[0] : validatorFromRoot.Body.CutToChains(false, false)).FindLCP();
         }
 
         private readonly LambdaExpression validatorFromRoot;

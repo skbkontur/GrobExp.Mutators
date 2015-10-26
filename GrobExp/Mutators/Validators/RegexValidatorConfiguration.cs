@@ -6,14 +6,15 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.Validators
 {
     public class RegexValidatorConfiguration : ValidatorConfiguration
     {
-        protected RegexValidatorConfiguration(Type type, int priority, LambdaExpression path, LambdaExpression condition, LambdaExpression message, string pattern, Regex regex, ValidationResultType validationResultType)
-            : base(type, priority)
+        protected RegexValidatorConfiguration(Type type, MutatorsCreator creator, int priority, LambdaExpression path, LambdaExpression condition, LambdaExpression message, string pattern, Regex regex, ValidationResultType validationResultType)
+            : base(type, creator, priority)
         {
             this.regex = regex;
             this.validationResultType = validationResultType;
@@ -23,36 +24,36 @@ namespace GrobExp.Mutators.Validators
             Pattern = pattern;
         }
 
-        public static RegexValidatorConfiguration Create<TData>(int priority, Expression<Func<TData, string>> path, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, string pattern, ValidationResultType validationResultType)
+        public static RegexValidatorConfiguration Create<TData>(MutatorsCreator creator, int priority, Expression<Func<TData, string>> path, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, string pattern, ValidationResultType validationResultType)
         {
-            return new RegexValidatorConfiguration(typeof(TData), priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
+            return new RegexValidatorConfiguration(typeof(TData), creator, priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
         }
 
-        public static RegexValidatorConfiguration Create<TData>(int priority, LambdaExpression path, LambdaExpression condition, Expression<Func<TData, MultiLanguageTextBase>> message, string pattern, ValidationResultType validationResultType)
+        public static RegexValidatorConfiguration Create<TData>(MutatorsCreator creator, int priority, LambdaExpression path, LambdaExpression condition, Expression<Func<TData, MultiLanguageTextBase>> message, string pattern, ValidationResultType validationResultType)
         {
-            return new RegexValidatorConfiguration(typeof(TData), priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
+            return new RegexValidatorConfiguration(typeof(TData), creator, priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
-            return new RegexValidatorConfiguration(path.Parameters.Single().Type, Priority, path.Merge(Path), path.Merge(Condition), path.Merge(Message), Pattern, regex, validationResultType);
+            return new RegexValidatorConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Path), path.Merge(Condition), path.Merge(Message), Pattern, regex, validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new RegexValidatorConfiguration(to, Priority, Resolve(path, performer, Path), Resolve(path, performer, Condition), Resolve(path, performer, Message), Pattern, regex, validationResultType);
+            return new RegexValidatorConfiguration(to, Creator, Priority, Resolve(path, performer, Path), Resolve(path, performer, Condition), Resolve(path, performer, Message), Pattern, regex, validationResultType);
         }
 
         public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
         {
-            return new RegexValidatorConfiguration(Type, Priority, Path, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), Pattern, regex, validationResultType);
+            return new RegexValidatorConfiguration(Type, Creator, Priority, Path, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), Pattern, regex, validationResultType);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new RegexValidatorConfiguration(Type, Priority, Path, Prepare(condition).AndAlso(Condition), Message, Pattern, regex, validationResultType);
+            return new RegexValidatorConfiguration(Type, Creator, Priority, Path, Prepare(condition).AndAlso(Condition), Message, Pattern, regex, validationResultType);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -86,7 +87,11 @@ namespace GrobExp.Mutators.Validators
             var result = Expression.Variable(typeof(ValidationResult));
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
-            return Expression.Block(new[] {result}, assign, result);
+            var toLog = new ValidationLogInfo("Regex = " + regex, condition.ToString());
+             
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
+            return Expression.Block(new[] { result }, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
         }
 
         public LambdaExpression Path { get; private set; }
@@ -102,14 +107,6 @@ namespace GrobExp.Mutators.Validators
                 .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
                 .Select(grouping => grouping.First())
                 .ToArray();
-        }
-
-        protected override Expression GetLCP()
-        {
-            var condition = GetFullCondition();
-            return (condition.Body.CutToChains(false, false))
-                .Concat(Message == null ? new Expression[0] : Message.Body.CutToChains(false, false))
-                .FindLCP();
         }
 
         private static string PreparePattern(string pattern)

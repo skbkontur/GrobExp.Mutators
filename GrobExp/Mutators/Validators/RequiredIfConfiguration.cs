@@ -5,14 +5,15 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.Validators
 {
     public class RequiredIfConfiguration : ValidatorConfiguration
     {
-        protected RequiredIfConfiguration(Type type, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression message, ValidationResultType validationResultType)
-            : base(type, priority)
+        protected RequiredIfConfiguration(Type type, MutatorsCreator creator, int priority, LambdaExpression condition, LambdaExpression path, LambdaExpression message, ValidationResultType validationResultType)
+            : base(type, creator, priority)
         {
             Condition = condition;
             Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
@@ -27,20 +28,20 @@ namespace GrobExp.Mutators.Validators
             return "requiredIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public static RequiredIfConfiguration Create<TData, TValue>(int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
+        public static RequiredIfConfiguration Create<TData, TValue>(MutatorsCreator creator, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
         {
-            return new RequiredIfConfiguration(typeof(TData), priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);
+            return new RequiredIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);
         }
 
-        public static RequiredIfConfiguration Create<TData>(int priority, LambdaExpression condition, LambdaExpression path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
+        public static RequiredIfConfiguration Create<TData>(MutatorsCreator creator, int priority, LambdaExpression condition, LambdaExpression path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
         {
-            return new RequiredIfConfiguration(typeof(TData), priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);
+            return new RequiredIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
-            return new RequiredIfConfiguration(path.Parameters.Single().Type, Priority, path.Merge(Condition), path.Merge(Path), path.Merge(Message), validationResultType);
+            return new RequiredIfConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Condition), path.Merge(Path), path.Merge(Message), validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
@@ -49,17 +50,17 @@ namespace GrobExp.Mutators.Validators
             var resolvedPath = Resolve(path, performer, Path);
             if(resolvedPath.Body.NodeType == ExpressionType.Constant)
                 return null;
-            return new RequiredIfConfiguration(to, Priority, Resolve(path, performer, Condition), resolvedPath, Resolve(path, performer, Message), validationResultType);
+            return new RequiredIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), resolvedPath, Resolve(path, performer, Message), validationResultType);
         }
 
         public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
         {
-            return new RequiredIfConfiguration(Type, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Path), (LambdaExpression)resolver.Visit(Message), validationResultType);
+            return new RequiredIfConfiguration(Type, Creator, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Path), (LambdaExpression)resolver.Visit(Message), validationResultType);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new RequiredIfConfiguration(Type, Priority, Prepare(condition).AndAlso(Condition), Path, Message, validationResultType);
+            return new RequiredIfConfiguration(Type, Creator, Priority, Prepare(condition).AndAlso(Condition), Path, Message, validationResultType);
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -92,7 +93,10 @@ namespace GrobExp.Mutators.Validators
             var result = Expression.Variable(typeof(ValidationResult));
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
-            return Expression.Block(new[] {result}, assign, result);
+            var toLog = new ValidationLogInfo("required", condition.ToString());
+            if(MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
+            return Expression.Block(new[] { result }, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }
@@ -107,14 +111,6 @@ namespace GrobExp.Mutators.Validators
                 .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
                 .Select(grouping => grouping.First())
                 .ToArray();
-        }
-
-        protected override Expression GetLCP()
-        {
-            var condition = GetFullCondition();
-            return (condition.Body.CutToChains(false, false))
-                .Concat(Message == null ? new Expression[0] : Message.Body.CutToChains(false, false))
-                .FindLCP();
         }
 
         private LambdaExpression fullCondition;

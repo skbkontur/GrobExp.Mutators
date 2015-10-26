@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Linq.Expressions;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.MultiLanguages
@@ -59,7 +60,7 @@ namespace GrobExp.Mutators.MultiLanguages
             string key = GetKey(type, language, context);
             var exp = new TextGeneralizer(type).Generalize(textGetter);
             expressions.Add(key, exp);
-            functions.Add(key, /*ExpressionCompiler.Compile(textGetter)*/exp.Compile());
+            functions.Add(key, LambdaCompiler.Compile(exp, CompilerOptions.None));
         }
 
         protected void Register(string language, Expression<Func<string>> textGetter)

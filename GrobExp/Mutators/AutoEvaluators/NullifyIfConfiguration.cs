@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.AutoEvaluators
@@ -55,9 +56,15 @@ namespace GrobExp.Mutators.AutoEvaluators
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(Condition == null) return null;
+            var infoToLog = new AssignLogInfo(path, Expression.Constant(ToString(), typeof(string)));
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             path = PrepareForAssign(path);
-            return Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)));
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordCompilingExpression(infoToLog);
+            return Expression.Block(
+                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)),
+                Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)))
+            );
         }
 
         public LambdaExpression Condition { get; private set; }
@@ -65,11 +72,6 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
-        }
-
-        protected override Expression GetLCP()
-        {
-            return Condition == null ? null : Condition.Body.CutToChains(false, false).FindLCP();
         }
     }
 }

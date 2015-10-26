@@ -7,25 +7,28 @@ using System.Reflection;
 
 using GrEmit.Utils;
 
-using GroBuf;
-using GroBuf.DataMembersExtracters;
-
 using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
+using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
     {
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection)
+        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
         {
             this.pathFormatterCollection = pathFormatterCollection;
+            this.stringConverter = stringConverter;
         }
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
         {
-            return GetOrCreateHashtableSlot(context).Converter;
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
+            var converter = GetOrCreateHashtableSlot(context).Converter;
+            return converter;
         }
 
         public Action<TSource, TDest> GetMerger(MutatorsContext context)
@@ -48,26 +51,46 @@ namespace GrobExp.Mutators
             return mutatorsTree == null ? null : mutatorsTree.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
         }
 
+        public class CustomFieldInfoZ
+        {
+            public CustomFieldInfoZ(string path, PropertyInfo rootProperty, Type titleType, LambdaExpression value)
+            {
+                Path = path;
+                RootProperty = rootProperty;
+                TitleType = titleType;
+                Value = value;
+            }
+
+            public string Path { get; private set; }
+            public PropertyInfo RootProperty { get; private set; }
+            public Type TitleType { get; private set; }
+            public LambdaExpression Value { get; private set; }
+        }
+
         protected abstract void Configure(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator);
 
         protected virtual void BeforeConvert(TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.RecordConverter(GetType().Name);
         }
 
         protected virtual void AfterConvert(TDest dest, TSource source)
         {
+            if(MutatorsAssignRecorder.IsRecording())
+                MutatorsAssignRecorder.StopRecordingConverter();
         }
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if(slot == null)
+            if(slot == null || MutatorsAssignRecorder.IsRecording())
             {
                 lock(lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if(slot == null)
+                    if(slot == null || MutatorsAssignRecorder.IsRecording())
                     {
                         var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
@@ -75,7 +98,7 @@ namespace GrobExp.Mutators
                         tree.ExtractValidationsFromConverters(validationsTree);
                         var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
                         var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
-                        hashtable[key] = slot = new HashtableSlot
+                        slot = new HashtableSlot
                             {
                                 ConverterTree = tree,
                                 ValidationsTree = validationsTree,
@@ -94,6 +117,8 @@ namespace GrobExp.Mutators
                                         AfterConvert(dest, source);
                                     })
                             };
+                        if(!MutatorsAssignRecorder.IsRecording())
+                            hashtable[key] = slot;
                     }
                 }
             }
@@ -144,81 +169,53 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static void FindCustomFields(Type type, Expression current, Type titleType, string path, PropertyInfo rootProperty, List<CustomFieldInfo> result)
+        private static void FindCustomFields(bool root, Type type, Expression pathFromLocalRoot, Type titleType, PropertyInfo rootProperty, Func<Expression, bool> checker, Expression pathFromRoot, List<CustomFieldInfo> result)
         {
             if(type.IsArray)
             {
                 type = type.GetElementType();
-                current = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(type), current);
+                pathFromLocalRoot = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(type), pathFromLocalRoot);
+                pathFromRoot = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(type), pathFromRoot);
             }
             var properties = type.GetOrderedProperties().Where(prop => prop.GetCustomAttributes(typeof(CustomFieldAttribute), false).Any()).ToArray();
             foreach(var property in properties)
             {
-                var nextCurrent = Expression.Property(current, property);
-                var nextPath = string.IsNullOrEmpty(path) ? property.Name : path + "ё" + property.Name;
+                var nextPathFromLocalRoot = Expression.Property(pathFromLocalRoot, property);
+                var nextPathFromRoot = Expression.Property(pathFromRoot, property);
                 var customFieldAttribute = property.GetCustomAttributes(typeof(CustomFieldAttribute), false).SingleOrDefault() as CustomFieldAttribute;
                 var currentTitleType = titleType;
                 if(customFieldAttribute != null && customFieldAttribute.TitleType != null)
                     currentTitleType = customFieldAttribute.TitleType;
-                if(string.IsNullOrEmpty(path))
+                if(root)
                     rootProperty = property;
-                if(IsALeaf(property.PropertyType))
-                    result.Add(new CustomFieldInfo(nextPath, rootProperty, currentTitleType, nextCurrent));
+                if(!IsALeaf(property.PropertyType))
+                    FindCustomFields(false, property.PropertyType, nextPathFromLocalRoot, currentTitleType, rootProperty, checker, nextPathFromRoot, result);
                 else
-                    FindCustomFields(property.PropertyType, nextCurrent, currentTitleType, nextPath, rootProperty, result);
+                {
+                    if(checker(nextPathFromRoot))
+                        result.Add(new CustomFieldInfo(nextPathFromLocalRoot.CustomFieldName(), rootProperty, currentTitleType, nextPathFromLocalRoot));
+                }
             }
         }
 
-        private class CustomFieldInfo
-        {
-            public CustomFieldInfo(string path, PropertyInfo rootProperty, Type titleType, Expression value)
-            {
-                Path = path;
-                RootProperty = rootProperty;
-                TitleType = titleType;
-                Value = value;
-            }
-
-            public string Path { get; private set; }
-            public PropertyInfo RootProperty { get; private set; }
-            public Type TitleType { get; private set; }
-            public Expression Value { get; private set; }
-        }
-
-        private static CustomFieldInfoZ[] FindCustomFields(Type type)
+        private static CustomFieldInfoZ[] FindCustomFields(Type type, Func<Expression, bool> checker, LambdaExpression pathToNode)
         {
             var parameter = Expression.Parameter(type);
             var customFields = new List<CustomFieldInfo>();
-            FindCustomFields(type, parameter, null, "", null, customFields);
+            FindCustomFields(true, type, parameter, null, null, checker, pathToNode.Body, customFields);
             return customFields.Select(info => new CustomFieldInfoZ(info.Path, info.RootProperty, info.TitleType, Expression.Lambda(info.Value, parameter))).ToArray();
         }
 
-        public class CustomFieldInfoZ
-        {
-            public CustomFieldInfoZ(string path, PropertyInfo rootProperty, Type titleType, LambdaExpression value)
-            {
-                Path = path;
-                RootProperty = rootProperty;
-                TitleType = titleType;
-                Value = value;
-            }
-
-            public string Path { get; private set; }
-            public PropertyInfo RootProperty { get; private set; }
-            public Type TitleType { get; private set; }
-            public LambdaExpression Value { get; private set; }
-        }
-
-        private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild)
+        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
         {
             var sourceChildType = pathToSourceChild.Body.Type;
             var destChildType = pathToDestChild.Body.Type;
             LambdaExpression pathToSourceCustomFieldsContainer;
             var sourceCustomFieldsContainer = FindCustomFieldsContainer(sourceChildType, out pathToSourceCustomFieldsContainer);
-            var sourceCustomFields = FindCustomFields(sourceChildType);
+            var sourceCustomFields = FindCustomFields(sourceChildType, sourceCustomFieldFits, pathToSourceChild);
             LambdaExpression pathToDestCustomFieldsContainer;
             var destCustomFieldsContainer = FindCustomFieldsContainer(destChildType, out pathToDestCustomFieldsContainer);
-            var destCustomFields = FindCustomFields(destChildType);
+            var destCustomFields = FindCustomFields(destChildType, destCustomFieldFits, pathToDestChild);
             if(sourceCustomFields.Length > 0)
             {
                 if(destCustomFields.Length > 0 || sourceCustomFieldsContainer != null)
@@ -233,6 +230,23 @@ namespace GrobExp.Mutators
                     var rootProperty = customField.RootProperty;
                     var titleType = customField.TitleType;
                     var value = customField.Value;
+                    TypeCode typeCode;
+                    LambdaExpression convertedValue;
+                    if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
+                    {
+                        typeCode = TypeCode.String;
+                        
+                        convertedValue = Expression.Lambda(
+                            Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
+                                            convertToStringMethod.MakeGenericMethod(value.Body.Type),
+                                            Expression.Convert(value.Body, typeof(object))),
+                            value.Parameters);
+                    }
+                    else
+                    {
+                        typeCode = GetTypeCode(value.Body.Type);
+                        convertedValue = value;
+                    }
                     if(rootProperty.PropertyType.IsArray && !IsALeaf(rootProperty.PropertyType))
                     {
                         // An array of complex types
@@ -242,15 +256,16 @@ namespace GrobExp.Mutators
                         var pathToTarget = pathToDestChild.Merge(Expression.Lambda(Expression.Call(pathToDestCustomFieldsContainer.Body, indexerGetter, Expression.Constant(pathToArray)), destParameter)).Body;
                         configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(TypeCode.Object))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(true))));
-                        
+
                         var pathToDestArrayItem = Expression.Convert(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(typeof(object)), Expression.Convert(Expression.Property(pathToTarget, "Value"), typeof(object[]))), typeof(Hashtable));
                         var itemIndexerGetter = typeof(Hashtable).GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod();
                         var pathToDestArrayItemValue = Expression.Call(pathToDestArrayItem, itemIndexerGetter, Expression.Constant(pathToLeaf));
-                        configurator.SetMutator(pathToDestArrayItemValue, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(value)));
+
+                        configurator.SetMutator(pathToDestArrayItemValue, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(convertedValue)));
 
                         var pathToTypeCodes = Expression.Property(pathToTarget, "TypeCodes");
                         var pathToItemTypeCode = Expression.Call(pathToTypeCodes, pathToTypeCodes.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), Expression.Constant(pathToLeaf));
-                        configurator.SetMutator(pathToItemTypeCode, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(GetTypeCode(value.Body.Type)))));
+                        configurator.SetMutator(pathToItemTypeCode, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(typeCode))));
 
                         if(value.Body is MemberExpression)
                         {
@@ -267,9 +282,9 @@ namespace GrobExp.Mutators
                     else
                     {
                         var pathToTarget = pathToDestChild.Merge(Expression.Lambda(Expression.Call(pathToDestCustomFieldsContainer.Body, indexerGetter, Expression.Constant(path)), destParameter)).Body;
-                        configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(GetTypeCode(value.Body.Type)))));
-                        configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(value.Body.Type.IsArray))));
-                        configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(value)));
+                        configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(typeCode))));
+                        configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(convertedValue.Body.Type.IsArray))));
+                        configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(convertedValue)));
                         if(titleType != null)
                             configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(titleType))));
                     }
@@ -296,20 +311,13 @@ namespace GrobExp.Mutators
                         Expression value = Expression.Property(Expression.Call(pathToSourceCustomFieldsContainer.Body, indexerGetter, Expression.Constant(pathToArray)), "Value");
                         value = Expression.Convert(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(typeof(object)), Expression.Convert(value, typeof(object[]))), typeof(Hashtable));
                         value = Expression.Call(value, typeof(Hashtable).GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), Expression.Constant(pathToLeaf));
-                        if(pathToTarget.Type.IsValueType)
-                            value = Expression.Coalesce(value, Expression.Convert(Expression.Default(pathToTarget.Type), typeof(object)));
-                        var convertedValue = Expression.Convert(value, pathToTarget.Type);
+                        var convertedValue = MakeConvert(value, pathToTarget.Type);
                         configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(convertedValue, sourceParameter))));
                     }
                     else
                     {
                         Expression value = Expression.Property(Expression.Call(pathToSourceCustomFieldsContainer.Body, indexerGetter, Expression.Constant(path)), "Value");
-                        if(pathToTarget.Type.IsValueType)
-                            value = Expression.Coalesce(value, Expression.Convert(Expression.Default(pathToTarget.Type), typeof(object)));
-                        Expression convertedValue = value;
-                        if(IsPrimitive(pathToTarget.Type))
-                            convertedValue = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), pathToTarget.Type), value);
-                        convertedValue = Expression.Convert(convertedValue, pathToTarget.Type);
+                        var convertedValue = MakeConvert(value, pathToTarget.Type);
                         configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(convertedValue, sourceParameter))));
                     }
                 }
@@ -322,7 +330,7 @@ namespace GrobExp.Mutators
                 var sourceParameter = pathToSourceCustomFieldsContainer.Parameters.Single();
                 Expression pathToDestCustomContainer = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(destCustomFieldsContainer.PropertyType.GetItemType()), pathToDestCustomFieldsContainer.Body);
                 Expression pathToSourceCustomContainer = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(sourceCustomFieldsContainer.PropertyType.GetItemType()), pathToSourceCustomFieldsContainer.Body);
-                Expression pathToTarget = pathToDestChild.Merge(Expression.Lambda(Expression.Property(pathToDestCustomContainer, "Key"), destParameter)).Body;
+                var pathToTarget = pathToDestChild.Merge(Expression.Lambda(Expression.Property(pathToDestCustomContainer, "Key"), destParameter)).Body;
                 Expression value = Expression.Property(pathToSourceCustomContainer, "Key");
                 configurator.SetMutator(pathToTarget, EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(Expression.Lambda(value, sourceParameter))));
                 value = Expression.Property(pathToSourceCustomContainer, "Value");
@@ -336,6 +344,36 @@ namespace GrobExp.Mutators
             }
         }
 
+        private Expression MakeConvert(Expression value, Type type)
+        {
+            var needCoalesce = true;
+            if(stringConverter != null && stringConverter.CanConvert(type))
+            {
+                
+                value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
+                                        convertFromStringMethod.MakeGenericMethod(type),
+                                        Expression.Convert(value, typeof(string)));
+            }
+            else if(IsPrimitive(type))
+            {
+                if(type.IsValueType)
+                    value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
+                needCoalesce = false;
+                value = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), type), value);
+            }
+            if(type.IsValueType && needCoalesce)
+                value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
+            if(type.IsArray)
+            {
+                var elementType = type.GetElementType();
+                if(elementType.IsValueType)
+                {
+                    value = Expression.Call(toArrayMethod.MakeGenericMethod(elementType), Expression.Call(castMethod.MakeGenericMethod(elementType), Expression.Convert(value, typeof(IEnumerable))));
+                }
+            }
+            return Expression.Convert(value, type);
+        }
+
         private static bool IsPrimitive(Type type)
         {
             if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -343,15 +381,32 @@ namespace GrobExp.Mutators
             return type.IsPrimitive || type == typeof(decimal);
         }
 
-        private static void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
+        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {
             var sourceParameter = Expression.Parameter(typeof(TSource));
             var destParameter = Expression.Parameter(typeof(TDest));
-            ConfigureCustomFields(configurator, Expression.Lambda(sourceParameter, sourceParameter), Expression.Lambda(destParameter, destParameter));
-            ConfigureCustomFieldsForArrays(configurator, typeof(TDest), Expression.Lambda(destParameter, destParameter));
+            var tree = configurator.GetTree();
+            var subNodes = new List<ModelConfigurationNode>();
+            tree.FindSubNodes(subNodes);
+            var dependencies = from node in subNodes
+                               from mutator in node.GetMutators()
+                               where mutator is EqualsToConfiguration
+                               from dependency in ((EqualsToConfiguration)mutator).Value.ExtractPrimaryDependencies()
+                               select new ExpressionWrapper(dependency.Body, false);
+            var hashset = new HashSet<ExpressionWrapper>(dependencies);
+            Func<Expression, bool> sourceCustomFieldFits = path => !hashset.Contains(new ExpressionWrapper(path, false));
+            Func<Expression, bool> destCustomFieldFits = path =>
+                {
+                    var node = tree.Traverse(path, false);
+                    if(node == null)
+                        return true;
+                    return node.GetMutators().Length == 0;
+                };
+            ConfigureCustomFields(configurator, Expression.Lambda(sourceParameter, sourceParameter), Expression.Lambda(destParameter, destParameter), sourceCustomFieldFits, destCustomFieldFits);
+            ConfigureCustomFieldsForArrays(configurator, typeof(TDest), Expression.Lambda(destParameter, destParameter), sourceCustomFieldFits, destCustomFieldFits);
         }
 
-        private static void ConfigureCustomFieldsForArrays(ConverterConfigurator<TSource, TDest> configurator, Type type, LambdaExpression pathToDestChild)
+        private void ConfigureCustomFieldsForArrays(ConverterConfigurator<TSource, TDest> configurator, Type type, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
         {
             if(type == null || IsALeaf(type))
                 return;
@@ -362,7 +417,7 @@ namespace GrobExp.Mutators
             {
                 var pathToNextDestChild = pathToDestChild.Merge(Expression.Lambda(Expression.Property(parameter, property), parameter));
                 if(!property.PropertyType.IsArray)
-                    ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild);
+                    ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild, sourceCustomFieldFits, destCustomFieldFits);
                 else
                 {
                     var pathToDestArray = pathToNextDestChild.Body;
@@ -375,7 +430,7 @@ namespace GrobExp.Mutators
                         continue;
                     var pathToDestArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToDestArray.Type.GetItemType()), pathToDestArray);
                     var pathToSourceArrayItem = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(pathToSourceArray.Type.GetItemType()), pathToSourceArray);
-                    ConfigureCustomFields(configurator, Expression.Lambda(pathToSourceArrayItem, pathToSourceArray.ExtractParameters()), Expression.Lambda(pathToDestArrayItem, pathToDestArray.ExtractParameters()));
+                    ConfigureCustomFields(configurator, Expression.Lambda(pathToSourceArrayItem, pathToSourceArray.ExtractParameters()), Expression.Lambda(pathToDestArrayItem, pathToDestArray.ExtractParameters()), sourceCustomFieldFits, destCustomFieldFits);
                 }
             }
         }
@@ -387,10 +442,31 @@ namespace GrobExp.Mutators
         }
 
         private readonly IPathFormatterCollection pathFormatterCollection;
+        private readonly IStringConverter stringConverter;
 
         private readonly object lockObject = new object();
 
         private readonly Hashtable hashtable = new Hashtable();
+        private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>((object)null)).GetGenericMethodDefinition();
+        private readonly MethodInfo convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
+        private readonly MethodInfo castMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.Cast<object>()).GetGenericMethodDefinition();
+        private readonly MethodInfo toArrayMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.ToArray()).GetGenericMethodDefinition();
+
+        private class CustomFieldInfo
+        {
+            public CustomFieldInfo(string path, PropertyInfo rootProperty, Type titleType, Expression value)
+            {
+                Path = path;
+                RootProperty = rootProperty;
+                TitleType = titleType;
+                Value = value;
+            }
+
+            public string Path { get; private set; }
+            public PropertyInfo RootProperty { get; private set; }
+            public Type TitleType { get; private set; }
+            public Expression Value { get; private set; }
+        }
 
         private class HashtableSlot
         {

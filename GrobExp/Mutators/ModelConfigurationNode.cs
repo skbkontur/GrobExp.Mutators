@@ -1438,7 +1438,7 @@ namespace GrobExp.Mutators
                     CheckDependencies(root, validator);
                     var current = validator.Apply(aliases);
                     if(current == null) continue;
-                    var currentValidationResult = Expression.Variable(typeof(ValidationResult), "validationResult_" + Guid.NewGuid());
+                    var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if(validator.Priority < 0)
                         throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
                     if(validator.Priority >= PriorityShift)

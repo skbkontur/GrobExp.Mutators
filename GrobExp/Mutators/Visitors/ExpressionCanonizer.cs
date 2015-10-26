@@ -32,23 +32,22 @@ namespace GrobExp.Mutators.Visitors
             {
                 return base.Visit(node);
             }
-            var key = new ExpressionWrapper(node, false);
-            var index = hashtable[key];
-            if (index == null)
-            {
-                hashtable[key] = index = paramsIndex++;
-            }
-            return Expression.Convert(Expression.ArrayIndex(parametersAccessor, Expression.Constant(index, typeof(int))), node.Type);
+            return VisitChainOrConsant(node);
         }
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
+            return VisitChainOrConsant(node);
+        }
+
+        private Expression VisitChainOrConsant(Expression node)
+        {
             var key = new ExpressionWrapper(node, false);
-            var index = hashtable[key];
-            if (index == null)
+            if (!hashtable.ContainsKey(key))
             {
-                hashtable[key] = index = paramsIndex++;
+                hashtable[key] = paramsIndex++;
             }
+            var index = (int)hashtable[key];
             return Expression.Convert(Expression.ArrayIndex(parametersAccessor, Expression.Constant(index, typeof(int))), node.Type);
         }
 

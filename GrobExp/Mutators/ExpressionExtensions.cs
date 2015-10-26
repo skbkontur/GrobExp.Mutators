@@ -78,7 +78,7 @@ namespace GrobExp.Mutators
         {
             var canonicalForms = expressions.Select(exp => new ExpressionCanonicalForm(exp, parametersToExtract));
 
-            var groupedBySimilarity = canonicalForms.GroupBy(form => new ExpressionWrapper(form.CanonicalForm, false), form => form).ToArray();
+            var groupedBySimilarity = canonicalForms.GroupBy(form => form, form => form, new CanonicalFormEqualityComparer());
 
             var result = new List<Expression>();
             foreach(var group in groupedBySimilarity)

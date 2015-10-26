@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -25,15 +25,24 @@ namespace GrobExp.Mutators
         public Expression ConstructInvokation(LambdaExpression lambda)
         {
             var array = Expression.Parameter(typeof(object[]));
-            var newArray = Expression.NewArrayBounds(typeof(object), Expression.Constant(ExtractedExpressions.Length, typeof(int)));
-            var arrayInit = ExtractedExpressions
-                .Select(exp => Expression.Convert(exp, typeof(object)))
-                .Select((exp, i) => Expression.Assign(Expression.ArrayAccess(array, Expression.Constant(i, typeof(int))), exp));
-            return Expression.Block(new []{ array }, 
-                Expression.Assign(array, newArray), 
-                Expression.Block(arrayInit), 
+            var newArrayInit = Expression.NewArrayInit(typeof(object), ExtractedExpressions.Select(exp => Expression.Convert(exp, typeof(object))));
+            return Expression.Block(new []{ array },
+                Expression.Assign(array, newArrayInit), 
                 Expression.Invoke(lambda, array)
             );
+        }
+    }
+
+    public class CanonicalFormEqualityComparer : IEqualityComparer<ExpressionCanonicalForm>
+    {
+        public bool Equals(ExpressionCanonicalForm x, ExpressionCanonicalForm y)
+        {
+            return ExpressionEquivalenceChecker.Equivalent(x.CanonicalForm, y.CanonicalForm, false, true);
+        }
+
+        public int GetHashCode(ExpressionCanonicalForm obj)
+        {
+            return 0;
         }
     }
 }

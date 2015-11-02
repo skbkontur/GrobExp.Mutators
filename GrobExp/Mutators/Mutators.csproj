@@ -121,6 +121,7 @@
     <Compile Include="ValidationResult.cs" />
     <Compile Include="ValidationResultTreeNode.cs" />
     <Compile Include="ValidationResultType.cs" />
+    <Compile Include="CanonicalFormsCache.cs" />
     <Compile Include="Validators\InvalidIfConfiguration.cs" />
     <Compile Include="Validators\RegexValidatorConfiguration.cs" />
     <Compile Include="Validators\RequiredIfConfiguration.cs" />

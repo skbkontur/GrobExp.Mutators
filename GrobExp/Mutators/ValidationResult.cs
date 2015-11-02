@@ -22,7 +22,18 @@ namespace GrobExp.Mutators
 
         public override string ToString()
         {
-            return Type.ToString();
+            switch(Type)
+            {
+                // For performance issues
+            case ValidationResultType.Ok:
+                return "Ok";
+            case ValidationResultType.Error:
+                return "Error";
+            case ValidationResultType.Warning:
+                return "Warning";
+            default:
+                return "Unknown";
+            }
         }
 
         public ValidationResultType Type { get; private set; }

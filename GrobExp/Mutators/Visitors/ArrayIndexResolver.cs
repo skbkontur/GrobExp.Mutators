@@ -43,7 +43,7 @@ namespace GrobExp.Mutators.Visitors
                 case ExpressionType.ArrayIndex:
                     {
                         var binaryExpression = (BinaryExpression)shard;
-                        result.Add(Expression.Call(binaryExpression.Right, "ToString", Type.EmptyTypes));
+                        result.Add(Expression.Convert(binaryExpression.Right, typeof(object)));
                         break;
                     }
                 case ExpressionType.Call:
@@ -59,7 +59,7 @@ namespace GrobExp.Mutators.Visitors
                         else*/
                         if(methodCallExpression.Method.IsEachMethod())
                         {
-                            result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
+                            result.Add(Expression.Convert(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.ArrayIndex(indexes, Expression.Constant(k)), Expression.Constant(-1)), typeof(object)));
                             ++k;
                         }
                         else if(methodCallExpression.Method.IsIndexerGetter())
@@ -76,7 +76,7 @@ namespace GrobExp.Mutators.Visitors
 //            Expression writeExp = Expression.Call(consoleWriteLineMethod, new[] {Expression.Constant(exp.ToString())});
 //            Expression writeIndexes = Expression.Call(consoleWriteLineMethod, new[] {Expression.Call(stringJoinMethod, new Expression[] {Expression.Constant(", "), indexes})});
 
-            return Expression.Block(typeof(string[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(string), result));
+            return Expression.Block(typeof(object[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(object), result));
         }
 
         //private static readonly MethodInfo consoleWriteLineMethod = ((MethodCallExpression)((Expression<Action<string>>)(s => Console.WriteLine(s))).Body).Method;

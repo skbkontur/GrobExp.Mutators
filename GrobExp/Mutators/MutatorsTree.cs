@@ -50,7 +50,7 @@ namespace GrobExp.Mutators
             var validator = GetValidatorInternal(path);
             return child =>
                 {
-                    var tree = new ValidationResultTreeNode();
+                    var tree = ValidationResultTreeNodeFactory.Create(typeof(TChild));
                     validator(child, tree);
                     return tree;
                 };

@@ -1416,7 +1416,7 @@ namespace GrobExp.Mutators
                     indexes[i] = aliasesInTermsOfFirst[i * 2 + 1].Key;
                 var eachesResolver = new EachesResolver(indexes);
                 var chains = path.CutToChains(true, true).GroupBy(exp => new ExpressionWrapper(exp, false)).Select(grouping => grouping.Key.Expression.ResolveAliases(firstAlias)).ToArray();
-                Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
+                Expression cutChains = Expression.NewArrayInit(typeof(object[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
                 Expression formattedChains;
 
                 if(pathFormatter == null)

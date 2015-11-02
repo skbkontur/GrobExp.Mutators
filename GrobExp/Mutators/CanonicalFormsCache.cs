@@ -14,19 +14,19 @@ namespace GrobExp.Mutators
     {
         public static Expression GetCanonicalForm(Expression validator, params ParameterExpression[] parametersToExtract)
         {
-            if (Cache == null)
-                Cache = new Dictionary<ExpressionWrapper, LambdaExpression>();
+            if (cache == null)
+                cache = new Dictionary<ExpressionWrapper, LambdaExpression>();
             var form = new ExpressionCanonicalForm(validator, parametersToExtract);
-            var key = new ExpressionWrapper(form.CanonicalForm, false);
+            var key = new ExpressionWrapper(form.CanonicalForm, true);
             LambdaExpression lambda;
-            if (!Cache.TryGetValue(key, out lambda))
+            if (!cache.TryGetValue(key, out lambda))
             {
-                Cache[key] = lambda = Expression.Lambda(form.CanonicalForm, form.ParameterAccessor);
+                cache[key] = lambda = Expression.Lambda(form.CanonicalForm, form.ParameterAccessor);
             }
             return form.ConstructInvokation(lambda);
         }
 
         [ThreadStatic]
-        private static Dictionary<ExpressionWrapper, LambdaExpression> Cache;
+        private static Dictionary<ExpressionWrapper, LambdaExpression> cache;
     }
 }

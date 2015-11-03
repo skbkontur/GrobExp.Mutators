@@ -76,8 +76,7 @@ namespace GrobExp.Mutators
             var validationResults = new List<Expression>();
             root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, result, priority, validationResults);
 
-            //validationResults = validationResults.SplitToBatches(parameter, result, priority);
-            validationResults = validationResults.GroupSimilar(parameter);
+            validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
             Expression body;
             switch(validationResults.Count)
@@ -1369,7 +1368,7 @@ namespace GrobExp.Mutators
                     var parametersToExtract = aliases.Select(keyValuePair => keyValuePair.Key).Cast<ParameterExpression>().ToArray();
                     if(childValidationResults.Count > 0)
                     {
-                        Expression action = Expression.Block(childValidationResults.GroupSimilar(parametersToExtract));//.SplitToBatches());
+                        Expression action = Expression.Block(childValidationResults.SplitToBatches());
                         if(predicate != null)
                         {
                             var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
@@ -1450,7 +1449,7 @@ namespace GrobExp.Mutators
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
                     var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, current), condition));
-                    localResults.Add(localResult.ExtendSelectMany());
+                    localResults.Add(CanonicalFormsCache.GetCanonicalForm(localResult.ExtendSelectMany()));
                 }
                 if(isDisabled == null)
                     validationResults.AddRange(localResults);

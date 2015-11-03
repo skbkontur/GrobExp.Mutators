@@ -74,11 +74,6 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        public static List<Expression> GroupSimilar(this IEnumerable<Expression> expressions, params ParameterExpression[] parametersToExtract)
-        {
-            return expressions.Select(exp => CanonicalFormsCache.GetCanonicalForm(exp, parametersToExtract)).ToList();
-        }
-
         public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)
         {
             if(!MutatorsAssignRecorder.IsRecording() || toLog == null)

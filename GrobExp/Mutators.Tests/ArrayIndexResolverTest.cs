@@ -342,7 +342,7 @@ namespace Mutators.Tests
         {
             var resolved = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
             ParameterExpression[] parameters = resolved.ExtractParameters();
-            Expression<Func<T1, string[]>> lambda = Expression.Lambda<Func<T1, string[]>>(resolved, parameters);
+            Expression<Func<T1, object[]>> lambda = Expression.Lambda<Func<T1, object[]>>(resolved, parameters);
             Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)));
         }
 

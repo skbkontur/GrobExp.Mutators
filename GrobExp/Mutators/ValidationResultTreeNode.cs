@@ -11,6 +11,8 @@ using GrEmit;
 
 using GrobExp.Mutators.ReadonlyCollections;
 
+using GrobExp.Compiler;
+
 namespace GrobExp.Mutators
 {
     public static class ValidationResultTreeNodeFactory
@@ -24,6 +26,8 @@ namespace GrobExp.Mutators
         {
             if(type.IsArray)
                 return new ValidationResultTreeArrayNode(type.GetElementType());
+            if(type.IsDictionary() || type == typeof(Hashtable))
+                return new ValidationResultTreeUniversalNode();
             var properties = cache.GetOrAdd(type, GetPropertyNames);
             return new ValidationResultTreePropertyNode(type, properties.children.Clone(x => x), properties.types);
         }
@@ -128,6 +132,24 @@ namespace GrobExp.Mutators
         private readonly Type type;
         private readonly IReadonlyHashtable<ValidationResultTreeNode> children;
         private readonly IReadonlyHashtable<Type> propertyTypes;
+    }
+
+    public class ValidationResultTreeUniversalNode : ValidationResultTreeNode
+    {
+        protected override ValidationResultTreeNode GotoChild(object edge)
+        {
+            ValidationResultTreeNode child;
+            if(!children.TryGetValue(edge, out child))
+                children.Add(edge, child = new ValidationResultTreeUniversalNode());
+            return child;
+        }
+
+        protected override IEnumerable<KeyValuePair<object, ValidationResultTreeNode>> GetChildren()
+        {
+            return children;
+        }
+
+        private readonly Dictionary<object, ValidationResultTreeNode> children = new Dictionary<object, ValidationResultTreeNode>();
     }
 
     public class ValidationResultTreeArrayNode : ValidationResultTreeNode

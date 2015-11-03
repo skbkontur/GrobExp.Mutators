@@ -19,8 +19,79 @@ namespace GrobExp.Mutators.Visitors
             foreach(var pair in paths)
                 context.parameters.Add(pair.Key, pair.Value.Clone());
             var result = (SinglePaths)BuildPaths(node, context);
-            result.MergeWith(new SinglePaths{paths = context.paths});
+            result.MergeWith(new SinglePaths {paths = context.paths});
             return result;
+        }
+
+        public abstract class Paths
+        {
+            public abstract void Add(Expression piece);
+            public abstract void MergeWith(Paths other);
+            public abstract Paths Clone();
+        }
+
+        public class SinglePaths : Paths
+        {
+            public override void Add(Expression piece)
+            {
+                foreach(var path in paths)
+                    path.Add(piece);
+            }
+
+            public override void MergeWith(Paths other)
+            {
+                var singlePaths = other as SinglePaths;
+                if(singlePaths == null)
+                    throw new InvalidOperationException();
+                paths.AddRange(singlePaths.paths);
+            }
+
+            public override Paths Clone()
+            {
+                return new SinglePaths {paths = paths.Select(list => new List<Expression>(list)).ToList()};
+            }
+
+            public Expression ToExpression()
+            {
+                return Expression.NewArrayInit(typeof(string[]), from path in paths
+                                                                 select Expression.NewArrayInit(typeof(string),
+                                                                                                from piece in path
+                                                                                                select piece.Type == typeof(string)
+                                                                                                           ? piece
+                                                                                                           : Expression.Call(piece, "ToString", Type.EmptyTypes)));
+            }
+
+            public List<List<Expression>> paths;
+        }
+
+        public class MultiplePaths : Paths
+        {
+            public override void Add(Expression piece)
+            {
+                foreach(var path in paths.Values.SelectMany(path => path))
+                    path.Add(piece);
+            }
+
+            public override void MergeWith(Paths other)
+            {
+                var multiplePaths = other as MultiplePaths;
+                if(multiplePaths == null)
+                    throw new InvalidOperationException();
+                foreach(var pair in multiplePaths.paths)
+                {
+                    List<List<Expression>> list;
+                    if(!paths.TryGetValue(pair.Key, out list))
+                        paths.Add(pair.Key, list = new List<List<Expression>>());
+                    list.AddRange(pair.Value);
+                }
+            }
+
+            public override Paths Clone()
+            {
+                return new MultiplePaths {paths = paths.ToDictionary(pair => pair.Key, pair => pair.Value.Select(list => new List<Expression>(list)).ToList())};
+            }
+
+            public Dictionary<MemberInfo, List<List<Expression>>> paths;
         }
 
         private static Paths BuildPaths(IEnumerable<Expression> list, Context context)
@@ -166,8 +237,8 @@ namespace GrobExp.Mutators.Visitors
             var smithereens = node.SmashToSmithereens();
             Paths paths;
             paths = context.parameters.TryGetValue((ParameterExpression)smithereens[0], out paths)
-                ? paths.Clone()
-                : new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
+                        ? paths.Clone()
+                        : new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
             for(var i = 1; i < smithereens.Length; ++i)
             {
                 var shard = smithereens[i];
@@ -440,75 +511,6 @@ namespace GrobExp.Mutators.Visitors
         private static Paths BuildPathsTypeBinary(TypeBinaryExpression node, Context context)
         {
             throw new NotImplementedException();
-        }
-
-        public abstract class Paths
-        {
-            public abstract void Add(Expression piece);
-            public abstract void MergeWith(Paths other);
-            public abstract Paths Clone();
-        }
-
-        public class SinglePaths : Paths
-        {
-            public override void Add(Expression piece)
-            {
-                foreach(var path in paths)
-                    path.Add(piece);
-            }
-
-            public override void MergeWith(Paths other)
-            {
-                var singlePaths = other as SinglePaths;
-                if(singlePaths == null)
-                    throw new InvalidOperationException();
-                paths.AddRange(singlePaths.paths);
-            }
-
-            public override Paths Clone()
-            {
-                return new SinglePaths{paths = paths.Select(list => new List<Expression>(list)).ToList()};
-            }
-
-            public Expression ToExpression()
-            {
-            return Expression.NewArrayInit(typeof(object[]), from path in paths
-                                                             select Expression.NewArrayInit(typeof(object),
-                                                                                            from piece in path
-                                                                                            select Expression.Convert(piece, typeof(object))));
-            }
-
-            public List<List<Expression>> paths;
-        }
-
-        public class MultiplePaths : Paths
-        {
-            public override void Add(Expression piece)
-            {
-                foreach(var path in paths.Values.SelectMany(path => path))
-                    path.Add(piece);
-            }
-
-            public override void MergeWith(Paths other)
-            {
-                var multiplePaths = other as MultiplePaths;
-                if(multiplePaths == null)
-                    throw new InvalidOperationException();
-                foreach(var pair in multiplePaths.paths)
-                {
-                    List<List<Expression>> list;
-                    if(!paths.TryGetValue(pair.Key, out list))
-                        paths.Add(pair.Key, list = new List<List<Expression>>());
-                    list.AddRange(pair.Value);
-                }
-            }
-
-            public override Paths Clone()
-            {
-                return new MultiplePaths { paths = paths.ToDictionary(pair => pair.Key, pair => pair.Value.Select(list => new List<Expression>(list)).ToList()) };
-            }
-
-            public Dictionary<MemberInfo, List<List<Expression>>> paths;
         }
 
         private class Context

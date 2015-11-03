@@ -302,6 +302,18 @@ namespace GrobExp.Mutators
             return new ValidationResultTreeNodeEnumerator(this, returnFirst);
         }
 
+        private class ZzzComparer: IComparer<object>
+        {
+            public int Compare(object x, object y)
+            {
+                if (x is string && y is string)
+                    return string.Compare(((string)x), (string)y, StringComparison.Ordinal);
+                if(x is int && y is int)
+                    return ((int)x).CompareTo((int)y);
+                throw new InvalidOperationException("Incompatible types");
+            }
+        }
+
         private class ValidationResultTreeNodeEnumerator : IEnumerator<FormattedValidationResult>
         {
             public ValidationResultTreeNodeEnumerator(ValidationResultTreeNode node, bool returnAll)
@@ -312,7 +324,7 @@ namespace GrobExp.Mutators
                 validationResultsEnumerator = returnAll
                                                   ? orderedValidationResults.GetEnumerator()
                                                   : orderedValidationResults.Where(result => result.Priority == priority).ToList().GetEnumerator();
-                childrenEnumerator = node.GetChildren().OrderBy(pair => pair.Key).ToList().GetEnumerator();
+                childrenEnumerator = node.GetChildren().OrderBy(pair => pair.Key, new ZzzComparer()).ToList().GetEnumerator();
                 Reset();
             }
 
@@ -327,7 +339,7 @@ namespace GrobExp.Mutators
                 if(!childrenEnumerator.MoveNext())
                     return false;
                 var child = (KeyValuePair<object, ValidationResultTreeNode>)childrenEnumerator.Current;
-                currentEnumerator = child.Value.GetEnumerator(returnAll || child.Key == (object)(-1));
+                currentEnumerator = child.Value.GetEnumerator(returnAll || (child.Key is int && (int)child.Key == -1));
                 return MoveNext();
             }
 

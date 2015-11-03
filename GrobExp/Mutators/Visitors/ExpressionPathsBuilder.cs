@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.Visitors
         {
             var context = new Context(indexes);
             foreach(var pair in paths)
-                context.parameters.Add(pair.Key, pair.Value);
+                context.parameters.Add(pair.Key, pair.Value.Clone());
             var result = (SinglePaths)BuildPaths(node, context);
             result.MergeWith(new SinglePaths{paths = context.paths});
             return result;
@@ -165,8 +165,9 @@ namespace GrobExp.Mutators.Visitors
         {
             var smithereens = node.SmashToSmithereens();
             Paths paths;
-            if(!context.parameters.TryGetValue((ParameterExpression)smithereens[0], out paths))
-                paths = new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
+            paths = context.parameters.TryGetValue((ParameterExpression)smithereens[0], out paths)
+                ? paths.Clone()
+                : new SinglePaths {paths = new List<List<Expression>> {new List<Expression>()}};
             for(var i = 1; i < smithereens.Length; ++i)
             {
                 var shard = smithereens[i];
@@ -199,7 +200,7 @@ namespace GrobExp.Mutators.Visitors
                         {
                             var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                             var parameter = selector.Parameters.Single();
-                            context.parameters.Add(parameter, paths);
+                            context.parameters.Add(parameter, paths.Clone());
                             paths = BuildPaths(selector.Body, context);
                             context.parameters.Remove(parameter);
                         }
@@ -208,8 +209,8 @@ namespace GrobExp.Mutators.Visitors
                         {
                             var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
                             var parameter = collectionSelector.Parameters.Single();
-                            var startPaths = paths;
-                            context.parameters.Add(parameter, paths);
+                            var startPaths = paths.Clone();
+                            context.parameters.Add(parameter, paths.Clone());
                             paths = BuildPaths(collectionSelector.Body, context);
                             context.parameters.Remove(parameter);
                             if(!IsLinqCall(collectionSelector.Body))
@@ -221,7 +222,7 @@ namespace GrobExp.Mutators.Visitors
                             {
                                 var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
                                 context.parameters.Add(resultSelector.Parameters[0], startPaths);
-                                context.parameters.Add(resultSelector.Parameters[1], paths);
+                                context.parameters.Add(resultSelector.Parameters[1], paths.Clone());
                                 paths = BuildPaths(resultSelector.Body, context);
                                 context.parameters.Remove(resultSelector.Parameters[1]);
                                 context.parameters.Remove(resultSelector.Parameters[0]);
@@ -445,6 +446,7 @@ namespace GrobExp.Mutators.Visitors
         {
             public abstract void Add(Expression piece);
             public abstract void MergeWith(Paths other);
+            public abstract Paths Clone();
         }
 
         public class SinglePaths : Paths
@@ -463,14 +465,17 @@ namespace GrobExp.Mutators.Visitors
                 paths.AddRange(singlePaths.paths);
             }
 
+            public override Paths Clone()
+            {
+                return new SinglePaths{paths = paths.Select(list => new List<Expression>(list)).ToList()};
+            }
+
             public Expression ToExpression()
             {
-            return Expression.NewArrayInit(typeof(string[]), from path in paths
-                                                             select Expression.NewArrayInit(typeof(string),
+            return Expression.NewArrayInit(typeof(object[]), from path in paths
+                                                             select Expression.NewArrayInit(typeof(object),
                                                                                             from piece in path
-                                                                                            select piece.Type == typeof(string)
-                                                                                                       ? piece
-                                                                                                       : Expression.Call(piece, "ToString", Type.EmptyTypes)));
+                                                                                            select Expression.Convert(piece, typeof(object))));
             }
 
             public List<List<Expression>> paths;
@@ -496,6 +501,11 @@ namespace GrobExp.Mutators.Visitors
                         paths.Add(pair.Key, list = new List<List<Expression>>());
                     list.AddRange(pair.Value);
                 }
+            }
+
+            public override Paths Clone()
+            {
+                return new MultiplePaths { paths = paths.ToDictionary(pair => pair.Key, pair => pair.Value.Select(list => new List<Expression>(list)).ToList()) };
             }
 
             public Dictionary<MemberInfo, List<List<Expression>>> paths;

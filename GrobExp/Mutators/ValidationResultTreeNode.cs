@@ -266,6 +266,15 @@ namespace GrobExp.Mutators
                 }).ToArray()});
         }
 
+        private static bool Eq(object x, object y)
+        {
+            if(x is string && y is string)
+                return (string)x == (string)y;
+            if(x is int && y is int)
+                return (int)x == (int)y;
+            return false;
+        }
+
         public void AddValidationResult(FormattedValidationResult validationResult, object[][] paths)
         {
             var node = this;
@@ -274,7 +283,7 @@ namespace GrobExp.Mutators
             {
                 int lcp;
                 for(lcp = 0;; ++lcp)
-                    if(!paths.All(path => lcp < path.Length && path[lcp] == paths[0][lcp])) break;
+                    if(!paths.All(path => lcp < path.Length && Eq(path[lcp], paths[0][lcp]))) break;
                 if(!(lcp == 1 && ReferenceEquals(paths[0][0], "")))
                 {
                     foreach(var edge in paths[0].Take(lcp))

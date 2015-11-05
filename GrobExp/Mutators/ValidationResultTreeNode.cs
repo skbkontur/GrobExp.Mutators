@@ -239,7 +239,7 @@ namespace GrobExp.Mutators
 
         private void AppendLine(int margin, string value, StringBuilder result)
         {
-            for (int i = 0; i < margin; ++i)
+            for(int i = 0; i < margin; ++i)
                 result.Append(' ');
             result.AppendLine(value);
         }
@@ -248,9 +248,9 @@ namespace GrobExp.Mutators
         {
             AppendLine(margin, name, result);
             margin += 4;
-            foreach (var validationResult in ValidationResults)
+            foreach(var validationResult in ValidationResults)
                 AppendLine(margin, string.Format("Result: '{0}', Priority: '{1}', Text: '{2}'", validationResult.Type, validationResult.Priority, validationResult.Message.GetText("RU")), result);
-            foreach (var child in children)
+            foreach(var child in GetChildren())
             {
                 child.Value.Print("<" + child.Key + ">", margin, result);
             }

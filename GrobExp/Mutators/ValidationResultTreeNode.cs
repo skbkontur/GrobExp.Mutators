@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
 
 namespace GrobExp.Mutators
 {
@@ -21,6 +22,32 @@ namespace GrobExp.Mutators
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public string Print()
+        {
+            var result = new StringBuilder();
+            Print("ROOT", 0, result);
+            return result.ToString();
+        }
+
+        private void AppendLine(int margin, string value, StringBuilder result)
+        {
+            for (int i = 0; i < margin; ++i)
+                result.Append(' ');
+            result.AppendLine(value);
+        }
+
+        private void Print(string name, int margin, StringBuilder result)
+        {
+            AppendLine(margin, name, result);
+            margin += 4;
+            foreach (var validationResult in ValidationResults)
+                AppendLine(margin, string.Format("Result: '{0}', Priority: '{1}', Text: '{2}'", validationResult.Type, validationResult.Priority, validationResult.Message.GetText("RU")), result);
+            foreach (var child in children)
+            {
+                child.Value.Print("<" + child.Key + ">", margin, result);
+            }
         }
 
         public void Add(string path, FormattedValidationResult validationResult)

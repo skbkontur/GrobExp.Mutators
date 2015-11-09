@@ -159,7 +159,7 @@ namespace Mutators.Tests
         [Test]
         public void TestCanonicalFormsCache()
         {
-            LambdaCompiler.DebugOutputDirectory = "C:\\Temp2";
+            CanonicalFormsCache.Clear();
             TestArray();
             TestArray();
             TestArray();

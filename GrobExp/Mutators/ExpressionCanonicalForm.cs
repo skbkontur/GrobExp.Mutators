@@ -1,6 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -25,13 +27,13 @@ namespace GrobExp.Mutators
             Lambda = Expression.Lambda(CanonicalForm, ParameterAccessor);
         }
 
-        public Expression ConstructInvokation(LambdaExpression lambda)
+        public Expression ConstructInvokation(Action<object[]> lambda)
         {
             var array = Expression.Parameter(typeof(object[]));
             var newArrayInit = Expression.NewArrayInit(typeof(object), ExtractedExpressions.Select(exp => Expression.Convert(exp, typeof(object))));
             return Expression.Block(new []{ array },
                 Expression.Assign(array, newArrayInit), 
-                Expression.Invoke(lambda, array)
+                Expression.Invoke(Expression.Constant(lambda, typeof(Action<object[]>)), array)
             );
         }
     }

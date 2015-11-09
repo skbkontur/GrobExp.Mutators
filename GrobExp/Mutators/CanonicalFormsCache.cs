@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -11,15 +12,20 @@ namespace GrobExp.Mutators
     {
         public static Expression GetCanonicalForm(Expression validator)
         {
-            if (cache == null)
-                cache = new Hashtable();
             var form = new ExpressionCanonicalForm(validator);
             var key = new ExpressionWrapper(form.CanonicalForm, false);
-            if (!cache.ContainsKey(key))
+            var lambda = (Action<object[]>)cache[key];
+            if(lambda == null)
             {
-                cache[key] = form.Lambda;
+                lock(lockObject)
+                {
+                    lambda = (Action<object[]>)cache[key];
+                    if(lambda == null)
+                    {
+                        cache[key] = lambda = (Action<object[]>)LambdaCompiler.Compile(form.Lambda, CompilerOptions.All);
+                    }
+                }
             }
-            var lambda = (LambdaExpression)cache[key];
             return form.ConstructInvokation(lambda);
         }
 
@@ -28,7 +34,15 @@ namespace GrobExp.Mutators
             return cache == null ? 0 : cache.Count;
         }
 
-        [ThreadStatic]
-        private static Hashtable cache;
+        private static readonly Hashtable cache = new Hashtable();
+        private static readonly object lockObject = new object();
+
+        public static void Clear()
+        {
+            lock(lockObject)
+            {
+                cache.Clear();
+            }
+        }
     }
 }

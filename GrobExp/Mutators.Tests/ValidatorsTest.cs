@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.MultiLanguages;
@@ -153,6 +154,16 @@ namespace Mutators.Tests
             validator(new TestData {D = new D()}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
             validator(new TestData {D = new D {E = new E()}}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
             validator(new TestData {D = new D {E = new E {Empty = new Empty()}}}).AssertEquivalent(new ValidationResultTreeNode());
+        }
+
+        [Test]
+        public void TestCanonicalFormsCache()
+        {
+            CanonicalFormsCache.Clear();
+            TestArray();
+            TestArray();
+            TestArray();
+            Assert.AreEqual(1, CanonicalFormsCache.Count());
         }
 
         [Test, ExpectedException(typeof(FoundExternalDependencyException))]

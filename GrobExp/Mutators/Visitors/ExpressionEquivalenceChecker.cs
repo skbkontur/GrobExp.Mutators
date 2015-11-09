@@ -188,6 +188,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentLabel(LabelTarget first, LabelTarget second, Context context)
         {
+            if(first == null || second == null)
+                return first == null && second == null;
             LabelTarget firstMapsTo;
             LabelTarget secondMapsTo;
             if (!context.FirstLabels.TryGetValue(first, out firstMapsTo))
@@ -324,7 +326,9 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentLoop(LoopExpression first, LoopExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return EquivalentLabel(first.BreakLabel, second.BreakLabel, context) 
+                && EquivalentLabel(first.ContinueLabel, second.ContinueLabel, context) 
+                && Equivalent(first.Body, second.Body, context);
         }
 
         private static bool MembersEqual(MemberInfo first, MemberInfo second)

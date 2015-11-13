@@ -1477,9 +1477,9 @@ namespace GrobExp.Mutators
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);
                     var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, appliedValidator), condition));
-                    localResults.Add(CanonicalFormsCache.GetCanonicalForm(localResult));
+                    localResults.Add(CompiledExpressionsCache.GetCanonicalForm(localResult));
                 }
-                var appliedValidators = Expression.Block(new[] {value}.Concat(currentIndexes), localResults);
+                var appliedValidators = CompiledExpressionsCache.GetCachedExpression(Expression.Block(new[] {value}.Concat(currentIndexes), localResults));
                 if(isDisabled == null)
                     validationResults.Add(appliedValidators);
                 else

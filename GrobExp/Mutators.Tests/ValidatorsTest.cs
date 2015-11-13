@@ -159,11 +159,21 @@ namespace Mutators.Tests
         [Test]
         public void TestCanonicalFormsCache()
         {
-            CanonicalFormsCache.Clear();
+            CompiledExpressionsCache.Clear();
             TestArray();
             TestArray();
             TestArray();
-            Assert.AreEqual(1, CanonicalFormsCache.Count());
+            Assert.AreEqual(1, CompiledExpressionsCache.FormsCount());
+        }
+
+        [Test]
+        public void TestGlobalExpressionCache()
+        {
+            CompiledExpressionsCache.Clear();
+            TestArray();
+            TestArray();
+            TestArray();
+            Assert.AreEqual(1, CompiledExpressionsCache.Count());
         }
 
         [Test, ExpectedException(typeof(FoundExternalDependencyException))]

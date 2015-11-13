@@ -14,15 +14,15 @@ namespace GrobExp.Mutators
         {
             var form = new ExpressionCanonicalForm(expression);
             var key = new ExpressionWrapper(form.CanonicalForm, false);
-            var lambda = (Action<object[]>)cache[key];
+            var lambda = (Action<object[]>)canonicalFormsCache[key];
             if(lambda == null)
             {
                 lock(lockObject)
                 {
-                    lambda = (Action<object[]>)cache[key];
+                    lambda = (Action<object[]>)canonicalFormsCache[key];
                     if(lambda == null)
                     {
-                        cache[key] = lambda = (Action<object[]>)LambdaCompiler.Compile(form.Lambda, CompilerOptions.All);
+                        canonicalFormsCache[key] = lambda = (Action<object[]>)LambdaCompiler.Compile(form.Lambda, CompilerOptions.All);
                     }
                 }
             }
@@ -31,47 +31,51 @@ namespace GrobExp.Mutators
 
         public static Expression GetCachedExpression(Expression validator)
         {
-            var key = new ExpressionWrapper(validator, false);
-            var exp = (Action<object[]>)outerCache[key];
+            object[] consts;
+            var accessor = Expression.Parameter(typeof(object[]));
+            var parameters = validator.ExtractParameters();
+            var key = new ExpressionWrapper(new ExpressionConstantsExtractor(accessor).ExtractConstants(validator, out consts), false);
+            var exp = expressionsCache[key];
             if(exp == null)
             {
                 lock(lockObject2)
                 {
-                    exp = (Action<object[]>)outerCache[key];
+                    exp = expressionsCache[key];
                     if(exp == null)
                     {
-                        outerCache[key] = exp = new MethodExtractor(validator).Method;
+                        expressionsCache[key] = exp = LambdaCompiler.Compile(Expression.Lambda(key.Expression, parameters.Concat(new []{accessor})), CompilerOptions.All);
                     }
                 }
             }
-            var arguments = validator.ExtractParameters().Select(e => Expression.Convert(e, typeof(object)));
-            return Expression.Invoke(Expression.Constant(exp), 
-                Expression.NewArrayInit(typeof(object), arguments));
+            return Expression.Invoke(Expression.Constant(exp), parameters.Cast<Expression>().Concat(new []{
+                Expression.NewArrayInit(typeof(object), 
+                consts.Select(c => Expression.Convert(Expression.Constant(c), typeof(object)))
+                )}));
         }
 
         public static int FormsCount()
         {
-            return cache.Count;
+            return canonicalFormsCache.Count;
         }
 
         public static int Count()
         {
-            return outerCache.Count;
+            return expressionsCache.Count;
         }
 
-        private static readonly Hashtable cache = new Hashtable();
-        private static readonly Hashtable outerCache = new Hashtable();
+        private static readonly Hashtable canonicalFormsCache = new Hashtable();
+        private static readonly Hashtable expressionsCache = new Hashtable();
         private static readonly object lockObject = new object(), lockObject2 = new object();
 
         public static void Clear()
         {
             lock(lockObject)
             {
-                cache.Clear();
+                canonicalFormsCache.Clear();
             }
             lock(lockObject2)
             {
-                outerCache.Clear();
+                expressionsCache.Clear();
             }
         }
     }

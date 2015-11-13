@@ -6,6 +6,7 @@ namespace GrobExp.Mutators
     {
         MutatorsTree<TData> GetMutatorsTree(MutatorsContext context, int validationPriority = 0);
         MutatorsTree<TData> GetMutatorsTree(Type[] path, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts);
+        void Clear();
     }
 
     public static class DataConfiguratorCollectionExtensions

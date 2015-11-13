@@ -26,6 +26,8 @@ namespace GrobExp.Mutators
             return nodeInfo.RawMutators.Value;
         }
 
+        public abstract void Clear();
+
         public KeyValuePair<Expression, List<MutatorConfiguration>> GetMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);

@@ -24,6 +24,12 @@ namespace GrobExp.Mutators
             return new ComplexMutatorsTree<TData>(trees.Select(tree => tree.MigratePaths<T>(converterTree)).ToArray());
         }
 
+        public override void Clear()
+        {
+            foreach(var tree in trees)
+                tree.Clear();
+        }
+
         public override MutatorsTree<TData> Merge(MutatorsTree<TData> other)
         {
             return new ComplexMutatorsTree<TData>(new[] {this, other});

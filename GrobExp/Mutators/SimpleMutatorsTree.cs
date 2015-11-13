@@ -19,6 +19,11 @@ namespace GrobExp.Mutators
             this.priority = priority;
         }
 
+        public override void Clear()
+        {
+            tree = null;
+        }
+
         public override MutatorsTree<TData> Merge(MutatorsTree<TData> other)
         {
             return new ComplexMutatorsTree<TData>(new[] {this, other});
@@ -163,7 +168,7 @@ namespace GrobExp.Mutators
 
         private readonly IPathFormatter pathFormatter;
         private readonly int priority;
-        private readonly ModelConfigurationNode tree;
+        private ModelConfigurationNode tree;
         private readonly IPathFormatterCollection pathFormatterCollection;
     }
 }

@@ -12,8 +12,9 @@ namespace GrobExp.Mutators.Visitors
             this.constantsAccessor = constantsAccessor;
         }
 
-        public Expression ExtractConstants(Expression exp, out object[] constants)
+        public Expression ExtractConstants(Expression exp, out object[] constants, bool extractPrimitives = true)
         {
+            this.extractPrimitives = extractPrimitives;
             var result = Visit(exp);
             constants = new object[hashtable.Count];
             foreach(DictionaryEntry entry in hashtable)
@@ -23,6 +24,10 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
+            if(node.Type.IsPrimitive || node.Type == typeof(string))
+            {
+                return base.VisitConstant(node);
+            }
             var key = new KeyValuePair<Type, object>(node.Type, node.Value);
             var index = hashtable[key];
             if(index == null)
@@ -34,6 +39,7 @@ namespace GrobExp.Mutators.Visitors
         }
 
         private int constIndex;
+        private bool extractPrimitives;
         private readonly Expression constantsAccessor;
         private readonly Hashtable hashtable = new Hashtable();
     }

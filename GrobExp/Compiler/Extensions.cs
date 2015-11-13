@@ -68,6 +68,10 @@ namespace GrobExp.Compiler
                     return typeof(Action<,,,,>).MakeGenericType(parameterTypes);
                 case 6:
                     return typeof(Action<,,,,,>).MakeGenericType(parameterTypes);
+                case 7:
+                    return typeof(Action<,,,,,,>).MakeGenericType(parameterTypes);
+                case 8:
+                    return typeof(Action<,,,,,,,>).MakeGenericType(parameterTypes);
                 default:
                     throw new NotSupportedException("Too many parameters for Action: " + parameterTypes.Length);
                 }

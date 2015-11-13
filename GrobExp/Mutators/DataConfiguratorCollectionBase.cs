@@ -75,6 +75,26 @@ namespace GrobExp.Mutators
             return result;
         }
 
+        public void Clear()
+        {
+            foreach(object value in hashtable.Values)
+            {
+                var slot = value as HashtableSlot;
+                if(slot != null)
+                {
+                    foreach(MutatorsTree<TData> tree in slot.MutatorsTrees.Values)
+                        tree.Clear();
+                    slot.Tree = null;
+                }
+                var slot2 = value as HashtableSlot2;
+                if(slot2 != null)
+                {
+                    foreach (MutatorsTree<TData> tree in slot2.MutatorsTrees.Values)
+                        tree.Clear();
+                }
+            }
+        }
+
         protected abstract void Configure(MutatorsContext context, MutatorsConfigurator<TData> configurator);
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)

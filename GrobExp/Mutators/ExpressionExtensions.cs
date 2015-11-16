@@ -326,7 +326,10 @@ namespace GrobExp.Mutators
 
         public static Expression ResolveArrayIndexes(this Expression exp)
         {
-            return new ArrayIndexResolver().Resolve(exp);
+            ParameterExpression[] indexes;
+            var withoutLinq = new LinqEliminator().Eliminate(exp, out indexes);
+            var paths = ExpressionPathsBuilder.BuildPaths(exp, indexes);
+            return Expression.Block(indexes, withoutLinq, paths);
         }
 
         public static Expression[] SmashToSmithereens(this Expression exp)

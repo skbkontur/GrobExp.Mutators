@@ -133,7 +133,6 @@
     <Compile Include="Validators\ValidatorConfiguration.cs" />
     <Compile Include="Visitors\AbstractPathResolver.cs" />
     <Compile Include="Visitors\AliasesResolver.cs" />
-    <Compile Include="Visitors\ArrayIndexResolver.cs" />
     <Compile Include="Visitors\ExpressionPathsBuilder.cs" />
     <Compile Include="Visitors\DependenciesExtractor.cs" />
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />

@@ -32,6 +32,7 @@ namespace Mutators.Tests
         [Test]
         public void TestArray()
         {
+            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).InvalidIf(data => data.A.B.Each().S == data.A.S, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
             var o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "zzz", Z = 1}, new B {S = "qxx", Z = 2}, new B {S = "zzz", Z = 3}}}};

@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.Visitors
     public class ArrayIndexResolver
     {
         // todo ich: слишком медленный монстр, убить
-        public Expression Resolve(Expression exp)
+        public ResolvedArrayIndexes Resolve(Expression exp)
         {
             //return Expression.Constant(new[] {"root"}, typeof(string[]));
             var resolveInternal = ResolveInternal(exp, false);
@@ -75,8 +75,12 @@ namespace GrobExp.Mutators.Visitors
 
 //            Expression writeExp = Expression.Call(consoleWriteLineMethod, new[] {Expression.Constant(exp.ToString())});
 //            Expression writeIndexes = Expression.Call(consoleWriteLineMethod, new[] {Expression.Call(stringJoinMethod, new Expression[] {Expression.Constant(", "), indexes})});
-
-            return Expression.Block(typeof(object[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(object), result));
+            return new ResolvedArrayIndexes
+            {
+                indexes = indexes,
+                indexesInit = indexesInit,
+                path = result
+            };
         }
 
         //private static readonly MethodInfo consoleWriteLineMethod = ((MethodCallExpression)((Expression<Action<string>>)(s => Console.WriteLine(s))).Body).Method;

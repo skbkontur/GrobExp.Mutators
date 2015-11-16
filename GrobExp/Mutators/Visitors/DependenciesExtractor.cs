@@ -469,6 +469,7 @@ namespace GrobExp.Mutators.Visitors
                 case "Aggregate":
                     return ProcessLinqAggregate;
                 case "ToArray":
+                case "Cast":
                     return DefaultMethodProcessor;
                 default:
                     return null;

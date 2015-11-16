@@ -59,6 +59,7 @@
     <Compile Include="Aggregators\HideIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ComplexMutatorsTree.cs" />
+    <Compile Include="ConfiguratorHelper.cs" />
     <Compile Include="ConverterCollection.cs" />
     <Compile Include="CustomFields\CustomFieldAttribute.cs" />
     <Compile Include="CustomFieldsContainerAttribute.cs" />

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -96,12 +97,16 @@ namespace GrobExp.Compiler.ExpressionEmitters
         {
             if(type.IsInterface && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return type.GetGenericArguments()[0];
+            if(type == typeof(IEnumerable))
+                return typeof(object);
             var interfaces = type.GetInterfaces();
-            foreach(var @interface in interfaces)
+            foreach(var interfaCe in interfaces)
             {
-                if(@interface.IsGenericType && @interface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    return @interface.GetGenericArguments()[0];
+                if(interfaCe.IsGenericType && interfaCe.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    return interfaCe.GetGenericArguments()[0];
             }
+            if(interfaces.Any(interfaCe => interfaCe == typeof(IEnumerable)))
+                return typeof(object);
             throw new InvalidOperationException("Unable to extract element type from type '" + type + "'");
         }
     }

@@ -3,11 +3,40 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace GrobExp.Compiler
 {
     public static class ExpressionHashCalculator
     {
+        [StructLayout(LayoutKind.Explicit)]
+        private struct Zuid
+        {
+            [FieldOffset(0)]
+            public Guid guid;
+
+            [FieldOffset(0)]
+            public uint a;
+
+            [FieldOffset(4)]
+            public uint b;
+
+            [FieldOffset(8)]
+            public uint c;
+
+            [FieldOffset(12)]
+            public uint d;
+
+            [FieldOffset(0)]
+            public ulong lo;
+
+            [FieldOffset(4)]
+            public ulong b8;
+
+            [FieldOffset(8)]
+            public ulong hi;
+        }
+
         public static int CalcHashCode(Expression node, bool strictly)
         {
             var hashCodes = new List<int>();
@@ -16,7 +45,8 @@ namespace GrobExp.Compiler
                 Strictly = strictly,
                 Parameters = new Dictionary<Type, Dictionary<ParameterExpression, int>>(),
                 Labels = new Dictionary<LabelTarget, int>(),
-                HashCodes = hashCodes
+                HashCodes = hashCodes,
+                Hard =  false
             });
             const int x = 1084996987; //for sake of primality
             var result = 0;
@@ -28,6 +58,62 @@ namespace GrobExp.Compiler
                 }
             }
             return result;
+        }
+
+        public static Guid CalcGuid(Expression node)
+        {
+            var hashCodes = new List<int>();
+            CalcHashCode(node, new Context
+            {
+                Strictly = false,
+                Parameters = new Dictionary<Type, Dictionary<ParameterExpression, int>>(),
+                Labels = new Dictionary<LabelTarget, int>(),
+                HashCodes = hashCodes,
+                Hard = true
+            });
+            const uint x = 1084996987; //for sake of primality
+            return Horner(x, hashCodes.ToArray()).guid;
+        }
+
+        private static Zuid Horner(uint x, int[] coeffs)
+        {
+            var result = default(Zuid);
+            foreach (var hashCode in coeffs)
+            {
+                result = Add(Mul(result, x), ToZuid(hashCode));
+            }
+            return result;
+        }
+
+        private static Zuid ToZuid(int x)
+        {
+            var result = default(Zuid);
+            result.a = unchecked((uint)x);
+            return result;
+        }
+
+        private static Zuid Add(Zuid a, Zuid b)
+        {
+            Zuid result = default(Zuid);
+            var c = ulong.MaxValue - a.lo > b.lo ? 1UL : 0UL;
+            result.lo = unchecked (a.lo + b.lo);
+            result.hi = unchecked (a.hi + b.hi + c);
+            return result;
+        }
+
+        private static Zuid Mul(Zuid z, uint x)
+        {
+            var result = default(Zuid);
+            result.lo = (ulong)z.a * x;
+            var temp = default(Zuid);
+            temp.b8 = (ulong)z.b * x;
+            result = Add(result, temp);
+            temp = default(Zuid);
+            temp.hi = (ulong)z.c * x;
+            result = Add(result, temp);
+            temp = default(Zuid);
+            temp.c = z.c * x;
+            return Add(result, temp);
         }
 
         private static void CalcHashCode(IEnumerable<Expression> list, Context context)
@@ -43,8 +129,8 @@ namespace GrobExp.Compiler
                 context.HashCodes.Add(0);
                 return;
             }
-            context.HashCodes.Add(CalcHashCode(node.NodeType));
-            context.HashCodes.Add(CalcHashCode(node.Type));
+            CalcHashCode(node.NodeType, context);
+            CalcHashCode(node.Type, context);
             switch(node.NodeType)
             {
             case ExpressionType.Add:
@@ -189,44 +275,110 @@ namespace GrobExp.Compiler
             }
         }
 
-        private static int CalcHashCode(ExpressionType expressionType)
+        private static void CalcHashCode(ExpressionType expressionType, Context context)
         {
-            return (int)expressionType;
+            context.HashCodes.Add((int)expressionType);
         }
 
-        private static int CalcHashCode(MemberBindingType bindingType)
+        private static void CalcHashCode(MemberBindingType bindingType, Context context)
         {
-            return (int)bindingType;
+            context.HashCodes.Add((int)bindingType);
         }
 
-        private static int CalcHashCode(MemberInfo member)
+        private static void CalcHashCode(MemberInfo member, Context context)
         {
-            return member == null ? 0 : member.GetHashCode();
+            if(member == null)
+            {
+                context.HashCodes.Add(0);
+                return;
+            }
+            if(context.Hard)
+            {
+                context.HashCodes.Add(member.Module.MetadataToken);
+                context.HashCodes.Add(member.MetadataToken);
+            }
+            else
+                context.HashCodes.Add(member.GetHashCode());
         }
 
-        private static int CalcHashCode(string str)
+        private static void CalcHashCode(string str, Context context)
         {
-            return str == null ? 0 : str.GetHashCode();
+            if(str == null)
+            {
+                context.HashCodes.Add(0);
+                return;
+            }
+            if(context.Hard)
+            {
+                for(var i = 0; i < str.Length; i += 2)
+                {
+                    context.HashCodes.Add((str[i] << 16) + (i + 1 == str.Length ? 0 : str[i + 1]));
+                }
+            }
+            else
+                context.HashCodes.Add(str.GetHashCode());
         }
 
-        private static int CalcHashCode(int x)
+        private static void CalcHashCode(int x, Context context)
         {
-            return x;
+            context.HashCodes.Add(x);
         }
 
-        private static int CalcHashCode(Type type)
+        private static void CalcHashCode(Type type, Context context)
         {
-            return type.GetHashCode();
+            if(context.Hard)
+            {
+                context.HashCodes.Add(type.Module.MetadataToken);
+                context.HashCodes.Add(type.MetadataToken);
+            }
+            else
+                context.HashCodes.Add(type.GetHashCode());
         }
 
-        private static int CalcHashCode(GotoExpressionKind kind)
+        private static void CalcHashCode(GotoExpressionKind kind, Context context)
         {
-            return (int)kind;
+            if(context.Hard)
+                CalcHashCode((int)kind, context);
+            else
+                context.HashCodes.Add((int)kind);
         }
 
-        private static int CalcHashCodeObject(object obj)
+        private static void CalcHashCodeObject(object obj, Context context)
         {
-            return obj == null ? 0 : obj.GetHashCode();
+            if(obj == null)
+            {
+                context.HashCodes.Add(0);
+                return;
+            }
+            if(context.Hard)
+            {
+                var typecode = Type.GetTypeCode(obj.GetType());
+                switch (typecode)
+                {
+                    case TypeCode.Boolean:
+                        CalcHashCode((bool)obj ? 1 : 0, context);
+                        break;
+                    case TypeCode.Char:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                        CalcHashCode(unchecked((int)obj), context);
+                        break;
+                    case TypeCode.Int64:
+                    case TypeCode.UInt64:
+                        CalcHashCode((int)((ulong)obj >> 32), context);
+                        CalcHashCode((int)((ulong)obj % (1L << 32)), context);
+                        break;
+                    case TypeCode.String:
+                        CalcHashCode((string)obj, context);
+                        break;
+                    default:
+                        throw new NotSupportedException("Type is not supported by hard hashing");
+                }
+            }
+            else
+                context.HashCodes.Add(obj.GetHashCode());
         }
 
         private static void CalcHashCodeParameter(ParameterExpression node, Context context)
@@ -238,9 +390,9 @@ namespace GrobExp.Compiler
             }
 
             var parameterType = node.IsByRef ? node.Type.MakeByRefType() : node.Type;
-            context.HashCodes.Add(CalcHashCode(parameterType));
+            CalcHashCode(parameterType, context);
             if(context.Strictly)
-                context.HashCodes.Add(CalcHashCode(node.Name));
+                CalcHashCode(node.Name, context);
             else
             {
                 Dictionary<ParameterExpression, int> parameters;
@@ -249,19 +401,19 @@ namespace GrobExp.Compiler
                 int index;
                 if(!parameters.TryGetValue(node, out index))
                     parameters.Add(node, index = parameters.Count);
-                context.HashCodes.Add(CalcHashCode(index));
+                CalcHashCode(index, context);
             }
         }
 
         private static void CalcHashCodeUnary(UnaryExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Method));
+            CalcHashCode(node.Method, context);
             CalcHashCode(node.Operand, context);
         }
 
         private static void CalcHashCodeBinary(BinaryExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Method));
+            CalcHashCode(node.Method, context);
             CalcHashCode(node.Left, context);
             CalcHashCode(node.Right, context);
         }
@@ -294,7 +446,7 @@ namespace GrobExp.Compiler
 
         private static void CalcHashCodeCall(MethodCallExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Method));
+            CalcHashCode(node.Method, context);
             CalcHashCode(node.Object, context);
             CalcHashCode(node.Arguments, context);
         }
@@ -308,7 +460,7 @@ namespace GrobExp.Compiler
 
         private static void CalcHashCodeConstant(ConstantExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCodeObject(node.Value));
+            CalcHashCodeObject(node.Value, context);
         }
 
         private static void CalcHashCodeDebugInfo(DebugInfoExpression node, Context context)
@@ -342,12 +494,12 @@ namespace GrobExp.Compiler
             int labelId;
             if (!context.Labels.TryGetValue(target, out labelId))
                 context.Labels.Add(target, labelId = context.Labels.Count);
-            context.HashCodes.Add(CalcHashCode(labelId));
+            CalcHashCode(labelId, context);
         }
 
         private static void CalcHashCodeGoto(GotoExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Kind));
+            CalcHashCode(node.Kind, context);
             CalcHashCodeLabel(node.Target, context);
             CalcHashCode(node.Value, context);
         }
@@ -355,7 +507,7 @@ namespace GrobExp.Compiler
         private static void CalcHashCodeIndex(IndexExpression node, Context context)
         {
             CalcHashCode(node.Object, context);
-            context.HashCodes.Add(CalcHashCode(node.Indexer));
+            CalcHashCode(node.Indexer, context);
             CalcHashCode(node.Arguments, context);
         }
 
@@ -400,7 +552,7 @@ namespace GrobExp.Compiler
         {
             foreach(var init in inits)
             {
-                context.HashCodes.Add(CalcHashCode(init.AddMethod));
+                CalcHashCode(init.AddMethod, context);
                 CalcHashCode(init.Arguments, context);
             }
         }
@@ -420,7 +572,7 @@ namespace GrobExp.Compiler
 
         private static void CalcHashCodeMemberAccess(MemberExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Member));
+            CalcHashCode(node.Member, context);
             CalcHashCode(node.Expression, context);
         }
 
@@ -430,15 +582,15 @@ namespace GrobExp.Compiler
             foreach(var memberBinding in node.Bindings)
             {
                 var binding = (MemberAssignment)memberBinding;
-                context.HashCodes.Add(CalcHashCode(binding.BindingType));
-                context.HashCodes.Add(CalcHashCode(binding.Member));
+                CalcHashCode(binding.BindingType, context);
+                CalcHashCode(binding.Member, context);
                 CalcHashCode(binding.Expression, context);
             }
         }
 
         private static void CalcHashCodeNew(NewExpression node, Context context)
         {
-            context.HashCodes.Add(CalcHashCode(node.Constructor));
+            CalcHashCode(node.Constructor, context);
             CalcHashCode(node.Arguments, context);
 
             if(node.Members != null)
@@ -453,7 +605,8 @@ namespace GrobExp.Compiler
                         return first.MetadataToken - second.MetadataToken;
                     });
                 }
-                context.HashCodes.AddRange(node.Members.Select(CalcHashCode));
+                foreach (var member in node.Members)
+                    CalcHashCode(member, context);
             }
         }
 
@@ -479,7 +632,7 @@ namespace GrobExp.Compiler
         private static void CalcHashCodeSwitch(SwitchExpression node, Context context)
         {
             CalcHashCodeCases(node.Cases, context);
-            context.HashCodes.Add(CalcHashCode(node.Comparison));
+            CalcHashCode(node.Comparison, context);
             CalcHashCode(node.DefaultBody, context);
             CalcHashCode(node.SwitchValue, context);
         }
@@ -490,7 +643,7 @@ namespace GrobExp.Compiler
             {
                 CalcHashCode(handler.Body, context);
                 CalcHashCode(handler.Filter, context);
-                context.HashCodes.Add(CalcHashCode(handler.Test));
+                CalcHashCode(handler.Test, context);
                 CalcHashCodeParameter(handler.Variable, context);
             }
         }
@@ -506,7 +659,7 @@ namespace GrobExp.Compiler
         private static void CalcHashCodeTypeBinary(TypeBinaryExpression node, Context context)
         {
             CalcHashCode(node.Expression, context);
-            context.HashCodes.Add(CalcHashCode(node.TypeOperand));
+            CalcHashCode(node.TypeOperand, context);
         }
 
         private class Context
@@ -515,6 +668,7 @@ namespace GrobExp.Compiler
             public Dictionary<Type, Dictionary<ParameterExpression, int>> Parameters { get; set; }
             public Dictionary<LabelTarget, int> Labels { get; set; }
             public List<int> HashCodes { get; set; }
+            public bool Hard { get; set; }
         }
     }
 }

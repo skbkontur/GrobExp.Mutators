@@ -24,7 +24,7 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if(node.Type.IsPrimitive || node.Type == typeof(string))
+            if(!extractPrimitives && (node.Type.IsPrimitive || node.Type == typeof(string)))
             {
                 return base.VisitConstant(node);
             }

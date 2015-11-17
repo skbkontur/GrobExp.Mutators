@@ -13,7 +13,7 @@ namespace GrobExp.Mutators
         public static Expression GetCanonicalForm(Expression expression)
         {
             var form = new ExpressionCanonicalForm(expression);
-            var key = new ExpressionWrapper(form.CanonicalForm, false);
+            var key = ExpressionHashCalculator.CalcGuid(form.CanonicalForm);
             var lambda = (Action<object[]>)canonicalFormsCache[key];
             if(lambda == null)
             {
@@ -34,7 +34,8 @@ namespace GrobExp.Mutators
             object[] consts;
             var accessor = Expression.Parameter(typeof(object[]));
             var parameters = validator.ExtractParameters();
-            var key = new ExpressionWrapper(new ExpressionConstantsExtractor(accessor).ExtractConstants(validator, out consts), false);
+            var keyExpression = new ExpressionConstantsExtractor(accessor).ExtractConstants(validator, out consts, false);
+            var key = ExpressionHashCalculator.CalcGuid(keyExpression);
             var exp = expressionsCache[key];
             if(exp == null)
             {
@@ -43,7 +44,7 @@ namespace GrobExp.Mutators
                     exp = expressionsCache[key];
                     if(exp == null)
                     {
-                        expressionsCache[key] = exp = LambdaCompiler.Compile(Expression.Lambda(key.Expression, parameters.Concat(new []{accessor})), CompilerOptions.All);
+                        expressionsCache[key] = exp = LambdaCompiler.Compile(Expression.Lambda(keyExpression, parameters.Concat(new []{accessor})), CompilerOptions.All);
                     }
                 }
             }

@@ -14,22 +14,52 @@ namespace GrobExp.Mutators
 {
     public static class ValidationResultTreeNodeBuilder
     {
-        public static Type Build(Type type)
+        public static Func<ValidationResultTreeNode> BuildFactory(Type type, bool buildType)
         {
-            var result = (Type)cache[type];
+            type = buildType ? BuildType(type) : type;
+            var result = (Func<ValidationResultTreeNode>)factories[type];
             if(result == null)
             {
-                lock(lockObject)
+                lock(factoriesLock)
                 {
-                    result = (Type)cache[type];
+                    result = (Func<ValidationResultTreeNode>)factories[type];
                     if(result == null)
-                        cache[type] = result = BuildInternal(type);
+                        factories[type] = result = BuildFactoryInternal(type);
                 }
             }
             return result;
         }
 
-        private static Type BuildInternal(Type type)
+        public static Type BuildType(Type type)
+        {
+            var result = (Type)types[type];
+            if(result == null)
+            {
+                lock(typesLock)
+                {
+                    result = (Type)types[type];
+                    if(result == null)
+                        types[type] = result = BuildTypeInternal(type);
+                }
+            }
+            return result;
+        }
+
+        private static Func<ValidationResultTreeNode> BuildFactoryInternal(Type type)
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(ValidationResultTreeNode), Type.EmptyTypes, typeof(string), true);
+            using(var il = new GroboIL(method))
+            {
+                var constructor = type.GetConstructor(Type.EmptyTypes);
+                if(constructor == null)
+                    throw new InvalidOperationException(string.Format("The type '{0}' has no parameterless constructor", type));
+                il.Newobj(constructor);
+                il.Ret();
+            }
+            return (Func<ValidationResultTreeNode>)method.CreateDelegate(typeof(Func<ValidationResultTreeNode>));
+        }
+
+        private static Type BuildTypeInternal(Type type)
         {
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             var typeBuilder = module.DefineType(type.Name + "_" + id++, TypeAttributes.Class | TypeAttributes.Public, typeof(ValidationResultTreeNode));
@@ -39,11 +69,11 @@ namespace GrobExp.Mutators
                 var propertyType = property.PropertyType;
                 Type fieldType;
                 if(propertyType.IsArray)
-                    fieldType = typeof(ValidationResultTreeArrayNode<>).MakeGenericType(Build(propertyType.GetElementType()));
+                    fieldType = typeof(ValidationResultTreeArrayNode<>).MakeGenericType(BuildType(propertyType.GetElementType()));
                 else if(propertyType.IsDictionary() || propertyType == typeof(Hashtable))
                     fieldType = typeof(ValidationResultTreeUniversalNode);
                 else
-                    fieldType = Build(propertyType);
+                    fieldType = BuildType(propertyType);
                 var field = typeBuilder.DefineField(property.Name, fieldType, FieldAttributes.Public);
                 fields.Add(field);
             }
@@ -79,8 +109,10 @@ namespace GrobExp.Mutators
         }
 
         private static volatile int id;
-        private static readonly Hashtable cache = new Hashtable();
-        private static readonly object lockObject = new object();
+        private static readonly Hashtable types = new Hashtable();
+        private static readonly object typesLock = new object();
+        private static readonly Hashtable factories = new Hashtable();
+        private static readonly object factoriesLock = new object();
 
         private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.RunAndSave);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
@@ -90,7 +122,7 @@ namespace GrobExp.Mutators
     {
         public ValidationResultTreeNode()
         {
-            root = (ValidationResultTreeNode)Activator.CreateInstance(ValidationResultTreeNodeBuilder.Build(typeof(T)));
+            root = (ValidationResultTreeNode)Activator.CreateInstance(ValidationResultTreeNodeBuilder.BuildType(typeof(T)));
         }
 
         public IEnumerator<FormattedValidationResult> GetEnumerator()
@@ -105,7 +137,7 @@ namespace GrobExp.Mutators
 
         public void Add(string path, FormattedValidationResult validationResult)
         {
-            var pieces = path.Split(new [] {'.'}, StringSplitOptions.RemoveEmptyEntries);
+            var pieces = path.Split(new[] {'.'}, StringSplitOptions.RemoveEmptyEntries);
             var node = root;
             foreach(var edge in pieces)
             {
@@ -148,12 +180,14 @@ namespace GrobExp.Mutators
     }
 
     public class ValidationResultTreeArrayNode<TChild> : ValidationResultTreeArrayNode
-        where TChild : ValidationResultTreeNode, new()
+        where TChild : ValidationResultTreeNode
     {
         public ValidationResultTreeArrayNode()
-            : base(() => new TChild())
+            : base(childCreator)
         {
         }
+
+        private static readonly Func<ValidationResultTreeNode> childCreator = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), false);
     }
 
     public class ValidationResultTreeArrayNode : ValidationResultTreeNode

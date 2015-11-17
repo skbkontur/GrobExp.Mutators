@@ -69,7 +69,7 @@ namespace GrobExp.Mutators
             }
 
             var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name);
-            var treeRootType = ValidationResultTreeNodeBuilder.Build(parameter.Type);
+            var treeRootType = ValidationResultTreeNodeBuilder.BuildType(parameter.Type);
             var result = Expression.Parameter(typeof(ValidationResultTreeNode), "tree");
             var priority = Expression.Parameter(typeof(int), "priority");
             var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Path)};
@@ -1538,52 +1538,54 @@ namespace GrobExp.Mutators
                 for(int i = 0; i <= lcp; ++i)
                 {
                     var piece = ClearConverts(paths[0].path[i]);
-                    if(piece.Type == typeof(string))
+                    if (insideHashtable)
                     {
-                        if(insideHashtable)
-                        {
-                            var gotoChildMethod = HackHelpers.GetMethodDefinition<ValidationResultTreeUniversalNode>(x => x.GotoChild(null));
-                            if (gotoChildMethod == null)
-                                throw new InvalidOperationException("Method 'GotoChild' is not found");
-                            cur = Expression.Call(cur, gotoChildMethod, piece);
-                        }
-                        else
-                        {
-                            var fieldName = (string)((ConstantExpression)piece).Value;
-                            var field = curType.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
-                            if(field == null)
-                                throw new InvalidOperationException(string.Format("Type '{0}' has no field '{1}'", curType, fieldName));
-                            var next = Expression.Parameter(field.FieldType);
-                            temps.Add(next);
-                            expressions.Add(Expression.Assign(next, Expression.Field(cur, field)));
-                            expressions.Add(Expression.IfThen(Expression.Equal(next, Expression.Constant(null, typeof(ValidationResultTreeNode))),
-                                Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(field.FieldType)))));
-                            cur = next;
-                            curType = field.FieldType;
-                            if(curType == typeof(ValidationResultTreeUniversalNode))
-                            {
-                                insideHashtable = true;
-                            }
-                        }
+                        var gotoChildMethod = HackHelpers.GetMethodDefinition<ValidationResultTreeUniversalNode>(x => x.GotoChild(null));
+                        if (gotoChildMethod == null)
+                            throw new InvalidOperationException("Method 'GotoChild' is not found");
+                        cur = Expression.Call(Expression.Convert(cur, typeof(ValidationResultTreeUniversalNode)), gotoChildMethod, Expression.Call(piece, typeof(object).GetMethod("ToString", Type.EmptyTypes)));
                     }
                     else
                     {
-                        // index
-                        var curIndexes = new List<Expression>();
-                        for(int j = 0; j < paths.Length; ++j)
+                        if(piece.Type == typeof(string))
                         {
-                            curIndexes.Add(ClearConverts(paths[j].path[i]));
+                            {
+                                var fieldName = (string)((ConstantExpression)piece).Value;
+                                var field = curType.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
+                                if(field == null)
+                                    throw new InvalidOperationException(string.Format("Type '{0}' has no field '{1}'", curType, fieldName));
+                                var next = Expression.Parameter(field.FieldType);
+                                temps.Add(next);
+                                expressions.Add(Expression.Assign(next, Expression.Field(cur, field)));
+                                expressions.Add(Expression.IfThen(Expression.Equal(next, Expression.Constant(null, typeof(ValidationResultTreeNode))),
+                                    Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(field.FieldType)))));
+                                cur = next;
+                                curType = field.FieldType;
+                                if(curType == typeof(ValidationResultTreeUniversalNode))
+                                {
+                                    insideHashtable = true;
+                                }
+                            }
                         }
-                        var elementType = curType.GetGenericArguments()[0];
-                        var temp = Expression.Parameter(elementType);
-                        temps.Add(temp);
-                        var gotoChildMethod = curType.GetMethod("GotoChild", new [] {typeof(int[])});
-                        if(gotoChildMethod == null)
-                            throw new InvalidOperationException("Method 'GotoChild' is not found");
-                        expressions.Add(Expression.Assign(temp, Expression.Convert(Expression.Call(cur, gotoChildMethod, Expression.NewArrayInit(typeof(int), curIndexes)), elementType)));
-                        expressions.Add(Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, typeof(ValidationResultTreeNode))), Expression.Return(retLabel, cur)));
-                        cur = temp;
-                        curType = elementType;
+                        else
+                        {
+                            // index
+                            var curIndexes = new List<Expression>();
+                            for(int j = 0; j < paths.Length; ++j)
+                            {
+                                curIndexes.Add(ClearConverts(paths[j].path[i]));
+                            }
+                            var elementType = curType.GetGenericArguments()[0];
+                            var temp = Expression.Parameter(elementType);
+                            temps.Add(temp);
+                            var gotoChildMethod = curType.GetMethod("GotoChild", new[] {typeof(int[])});
+                            if(gotoChildMethod == null)
+                                throw new InvalidOperationException("Method 'GotoChild' is not found");
+                            expressions.Add(Expression.Assign(temp, Expression.Convert(Expression.Call(cur, gotoChildMethod, Expression.NewArrayInit(typeof(int), curIndexes)), elementType)));
+                            expressions.Add(Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, typeof(ValidationResultTreeNode))), Expression.Return(retLabel, cur)));
+                            cur = temp;
+                            curType = elementType;
+                        }
                     }
                 }
                 expressions.Add(Expression.Label(retLabel, cur));

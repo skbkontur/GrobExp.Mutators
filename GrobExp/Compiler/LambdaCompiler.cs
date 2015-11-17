@@ -122,6 +122,7 @@ namespace GrobExp.Compiler
 
         internal static readonly AssemblyBuilder Assembly = CreateAssembly();
         internal static readonly ModuleBuilder Module = Assembly.DefineDynamicModule(Guid.NewGuid().ToString(), true);
+        private static readonly Action<DynamicMethod, ILGenerator> ilGeneratorSetter = FieldsExtractor.GetSetter<DynamicMethod, ILGenerator>(typeof(DynamicMethod).GetField("m_ilGenerator", BindingFlags.Instance | BindingFlags.NonPublic));
 
         private static string GenerateFileName(Expression expression)
         {
@@ -202,11 +203,13 @@ namespace GrobExp.Compiler
                     };
                 CompileInternal(lambda, context);
             }
-            return new CompiledLambda
-            {
-                Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
-                Method = method
-            };
+            var result = new CompiledLambda
+                {
+                    Delegate = method.CreateDelegate(Extensions.GetDelegateType(constantsParameter == null ? parameterTypes : parameterTypes.Skip(1).ToArray(), returnType), constants),
+                    Method = method
+                };
+            ilGeneratorSetter(method, null);
+            return result;
         }
 
         private static AssemblyBuilder CreateAssembly()

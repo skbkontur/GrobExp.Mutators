@@ -1446,8 +1446,8 @@ namespace GrobExp.Mutators
                     Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
                     //Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains});
                     // todo вызывать один раз
-                    var targetValidationResults = Expression.Property(SelectTargetNode(result, treeRootType, resolvedArrayIndexes), HackHelpers.GetProp<ValidationResultTreeNode>(x => x.ValidationResults));
-                    var listAddMethod = HackHelpers.GetMethodDefinition<List<FormattedValidationResult>>(x => x.Add(null));
+                    var targetValidationResults = SelectTargetNode(result, treeRootType, resolvedArrayIndexes);
+                    var listAddMethod = HackHelpers.GetMethodDefinition<ValidationResultTreeNode>(x => x.AddValidationResult(null));
                     var currentFormattedValidationResult = Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority);
                     Expression addValidationResult = Expression.Call(targetValidationResults, listAddMethod, new[] { currentFormattedValidationResult });
                     Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
@@ -1556,9 +1556,12 @@ namespace GrobExp.Mutators
                                     throw new InvalidOperationException(string.Format("Type '{0}' has no field '{1}'", curType, fieldName));
                                 var next = Expression.Parameter(field.FieldType);
                                 temps.Add(next);
+                                var constructor = field.FieldType.GetConstructor(new[] {typeof(ValidationResultTreeNode)});
+                                if(constructor == null)
+                                    throw new InvalidOperationException(string.Format("The type '{0}' has no constructor accepting one parameter of type '{1}'", field.FieldType, typeof(ValidationResultTreeNode)));
                                 expressions.Add(Expression.Assign(next, Expression.Field(cur, field)));
                                 expressions.Add(Expression.IfThen(Expression.Equal(next, Expression.Constant(null, typeof(ValidationResultTreeNode))),
-                                    Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(field.FieldType)))));
+                                    Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(constructor, cur)))));
                                 cur = next;
                                 curType = field.FieldType;
                                 if(curType == typeof(ValidationResultTreeUniversalNode))

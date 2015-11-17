@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using GrEmit;
@@ -14,15 +15,15 @@ namespace GrobExp.Mutators
 {
     public static class ValidationResultTreeNodeBuilder
     {
-        public static Func<ValidationResultTreeNode> BuildFactory(Type type, bool buildType)
+        public static Func<ValidationResultTreeNode, ValidationResultTreeNode> BuildFactory(Type type, bool buildType)
         {
             type = buildType ? BuildType(type) : type;
-            var result = (Func<ValidationResultTreeNode>)factories[type];
+            var result = (Func<ValidationResultTreeNode, ValidationResultTreeNode>)factories[type];
             if(result == null)
             {
                 lock(factoriesLock)
                 {
-                    result = (Func<ValidationResultTreeNode>)factories[type];
+                    result = (Func<ValidationResultTreeNode, ValidationResultTreeNode>)factories[type];
                     if(result == null)
                         factories[type] = result = BuildFactoryInternal(type);
                 }
@@ -45,24 +46,36 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        private static Func<ValidationResultTreeNode> BuildFactoryInternal(Type type)
+        private static Func<ValidationResultTreeNode, ValidationResultTreeNode> BuildFactoryInternal(Type type)
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(ValidationResultTreeNode), Type.EmptyTypes, typeof(string), true);
+            var parameterTypes = new [] {typeof(ValidationResultTreeNode)};
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(ValidationResultTreeNode), parameterTypes, typeof(string), true);
             using(var il = new GroboIL(method))
             {
-                var constructor = type.GetConstructor(Type.EmptyTypes);
+                var constructor = type.GetConstructor(parameterTypes);
                 if(constructor == null)
-                    throw new InvalidOperationException(string.Format("The type '{0}' has no parameterless constructor", type));
+                    throw new InvalidOperationException(string.Format("The type '{0}' has no constructor accepting one parameter of type '{1}'", type, typeof(ValidationResultTreeNode)));
+                il.Ldarg(0);
                 il.Newobj(constructor);
                 il.Ret();
             }
-            return (Func<ValidationResultTreeNode>)method.CreateDelegate(typeof(Func<ValidationResultTreeNode>));
+            return (Func<ValidationResultTreeNode, ValidationResultTreeNode>)method.CreateDelegate(typeof(Func<ValidationResultTreeNode, ValidationResultTreeNode>));
         }
 
         private static Type BuildTypeInternal(Type type)
         {
+            var parentType = typeof(ValidationResultTreeNode);
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            var typeBuilder = module.DefineType(type.Name + "_" + id++, TypeAttributes.Class | TypeAttributes.Public, typeof(ValidationResultTreeNode));
+            var typeBuilder = module.DefineType(type.Name + "_" + id++, TypeAttributes.Class | TypeAttributes.Public, parentType);
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {parentType});
+            using(var il = new GroboIL(constructor))
+            {
+                il.Ldarg(0); // stack: [this]
+                il.Ldarg(1); // stack: [this, parent]
+                var baseConstructor = parentType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] {parentType}, null);
+                il.Call(baseConstructor); // base(parent); stack: []
+                il.Ret();
+            }
             var fields = new List<FieldBuilder>();
             foreach(var property in properties)
             {
@@ -77,13 +90,13 @@ namespace GrobExp.Mutators
                 var field = typeBuilder.DefineField(property.Name, fieldType, FieldAttributes.Public);
                 fields.Add(field);
             }
-            var getChildrenMethod = typeof(ValidationResultTreeNode).GetMethod("GetChildren", BindingFlags.Instance | BindingFlags.NonPublic);
+            var getChildrenMethod = parentType.GetMethod("GetChildren", BindingFlags.Instance | BindingFlags.NonPublic);
             var getChildrenMethodBuilder = typeBuilder.DefineMethod(getChildrenMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, typeof(IEnumerable<KeyValuePair<object, ValidationResultTreeNode>>), Type.EmptyTypes);
             using(var il = new GroboIL(getChildrenMethodBuilder))
             {
                 var listType = typeof(List<KeyValuePair<object, ValidationResultTreeNode>>);
                 var addMethod = listType.GetMethod("Add", new[] {typeof(KeyValuePair<object, ValidationResultTreeNode>)});
-                var itemConstructor = typeof(KeyValuePair<object, ValidationResultTreeNode>).GetConstructor(new[] {typeof(object), typeof(ValidationResultTreeNode)});
+                var itemConstructor = typeof(KeyValuePair<object, ValidationResultTreeNode>).GetConstructor(new[] {typeof(object), parentType});
                 var result = il.DeclareLocal(listType);
                 il.Newobj(listType.GetConstructor(Type.EmptyTypes)); // stack: [new List<>()]
                 il.Stloc(result); // result = new List<>(); stack: []
@@ -122,7 +135,7 @@ namespace GrobExp.Mutators
     {
         public ValidationResultTreeNode()
         {
-            root = (ValidationResultTreeNode)Activator.CreateInstance(ValidationResultTreeNodeBuilder.BuildType(typeof(T)));
+            root = ValidationResultTreeNodeBuilder.BuildFactory(typeof(T), true)(null);
         }
 
         public IEnumerator<FormattedValidationResult> GetEnumerator()
@@ -151,7 +164,7 @@ namespace GrobExp.Mutators
                     var field = nodeType.GetField(edge, BindingFlags.Instance | BindingFlags.Public);
                     var child = (ValidationResultTreeNode)field.GetValue(node);
                     if(child == null)
-                        field.SetValue(node, child = (ValidationResultTreeNode)Activator.CreateInstance(field.FieldType));
+                        field.SetValue(node, child = ValidationResultTreeNodeBuilder.BuildFactory(field.FieldType, false)(node));
                     node = child;
                 }
             }
@@ -163,11 +176,16 @@ namespace GrobExp.Mutators
 
     public class ValidationResultTreeUniversalNode : ValidationResultTreeNode
     {
+        public ValidationResultTreeUniversalNode(ValidationResultTreeNode parent)
+            : base(parent)
+        {
+        }
+
         public ValidationResultTreeNode GotoChild(object edge)
         {
             ValidationResultTreeNode child;
             if(!children.TryGetValue(edge, out child))
-                children.Add(edge, child = new ValidationResultTreeUniversalNode());
+                children.Add(edge, child = new ValidationResultTreeUniversalNode(this));
             return child;
         }
 
@@ -182,17 +200,18 @@ namespace GrobExp.Mutators
     public class ValidationResultTreeArrayNode<TChild> : ValidationResultTreeArrayNode
         where TChild : ValidationResultTreeNode
     {
-        public ValidationResultTreeArrayNode()
-            : base(childCreator)
+        public ValidationResultTreeArrayNode(ValidationResultTreeNode parent)
+            : base(parent, childCreator)
         {
         }
 
-        private static readonly Func<ValidationResultTreeNode> childCreator = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), false);
+        private static readonly Func<ValidationResultTreeNode, ValidationResultTreeNode> childCreator = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), false);
     }
 
     public class ValidationResultTreeArrayNode : ValidationResultTreeNode
     {
-        public ValidationResultTreeArrayNode(Func<ValidationResultTreeNode> childFactory)
+        public ValidationResultTreeArrayNode(ValidationResultTreeNode parent, Func<ValidationResultTreeNode, ValidationResultTreeNode> childFactory)
+            : base(parent)
         {
             this.childFactory = childFactory;
         }
@@ -213,10 +232,10 @@ namespace GrobExp.Mutators
         public ValidationResultTreeNode GotoChild(int index)
         {
             if(index == -1)
-                return negativeChild ?? (negativeChild = childFactory());
+                return negativeChild ?? (negativeChild = childFactory(this));
             if(index >= children.Count)
                 forceCount(children, index + 1);
-            return children[index] ?? (children[index] = childFactory());
+            return children[index] ?? (children[index] = childFactory(this));
         }
 
         protected override IEnumerable<KeyValuePair<object, ValidationResultTreeNode>> GetChildren()
@@ -254,7 +273,7 @@ namespace GrobExp.Mutators
             return (Action<List<ValidationResultTreeNode>, int>)method.CreateDelegate(typeof(Action<List<ValidationResultTreeNode>, int>));
         }
 
-        private readonly Func<ValidationResultTreeNode> childFactory;
+        private readonly Func<ValidationResultTreeNode, ValidationResultTreeNode> childFactory;
 
         private static readonly Action<List<ValidationResultTreeNode>, int> forceCount = EmitForceCount();
 
@@ -264,8 +283,11 @@ namespace GrobExp.Mutators
 
     public abstract class ValidationResultTreeNode : IEnumerable<FormattedValidationResult>
     {
-        protected ValidationResultTreeNode()
+        private readonly ValidationResultTreeNode parent;
+
+        protected ValidationResultTreeNode(ValidationResultTreeNode parent)
         {
+            this.parent = parent;
             ValidationResults = new List<FormattedValidationResult>();
         }
 
@@ -307,6 +329,17 @@ namespace GrobExp.Mutators
 //            node.ValidationResults.Add(validationResult);
 //            ++node.Count;
 //        }
+
+        public void AddValidationResult(FormattedValidationResult validationResult)
+        {
+            ValidationResults.Add(validationResult);
+            var node = this;
+            while(node != null)
+            {
+                ++node.Count;
+                node = node.parent;
+            }
+        }
 
         public bool Exhausted { get { return Count >= MaxValidationResults; } }
 

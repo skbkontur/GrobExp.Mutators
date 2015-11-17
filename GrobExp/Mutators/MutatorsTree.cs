@@ -51,7 +51,7 @@ namespace GrobExp.Mutators
             var factory = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), true);
             return child =>
                 {
-                    var tree = factory();
+                    var tree = factory(null);
                     validator(child, tree);
                     return tree;
                 };

@@ -33,14 +33,21 @@ namespace GrobExp.Mutators
 
         public static Type BuildType(Type type)
         {
+            return BuildType(type, false);
+        }
+
+        private static Type BuildType(Type type, bool returnBeingBuilt)
+        {
             var result = (Type)types[type];
             if(result == null)
             {
                 lock(typesLock)
                 {
                     result = (Type)types[type];
-                    if(result == null)
-                        types[type] = result = BuildTypeInternal(type);
+                    var typeBeingBuilt = (Type)typesBeingBuilt[type];
+                    if(result == null && returnBeingBuilt && typeBeingBuilt != null)
+                        return typeBeingBuilt;
+                    types[type] = result = BuildTypeInternal(type);
                 }
             }
             return result;
@@ -67,6 +74,9 @@ namespace GrobExp.Mutators
             var parentType = typeof(ValidationResultTreeNode);
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             var typeBuilder = module.DefineType(type.Name + "_" + id++, TypeAttributes.Class | TypeAttributes.Public, parentType);
+
+            typesBeingBuilt[type] = typeBuilder;
+
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {parentType});
             using(var il = new GroboIL(constructor))
             {
@@ -86,7 +96,7 @@ namespace GrobExp.Mutators
                 else if(propertyType.IsDictionary() || propertyType == typeof(Hashtable))
                     fieldType = typeof(ValidationResultTreeUniversalNode);
                 else
-                    fieldType = BuildType(propertyType);
+                    fieldType = BuildType(propertyType, true);
                 var field = typeBuilder.DefineField(property.Name, fieldType, FieldAttributes.Public);
                 fields.Add(field);
             }
@@ -97,32 +107,35 @@ namespace GrobExp.Mutators
                 var listType = typeof(List<KeyValuePair<object, ValidationResultTreeNode>>);
                 var addMethod = listType.GetMethod("Add", new[] {typeof(KeyValuePair<object, ValidationResultTreeNode>)});
                 var itemConstructor = typeof(KeyValuePair<object, ValidationResultTreeNode>).GetConstructor(new[] {typeof(object), parentType});
-                var result = il.DeclareLocal(listType);
+                var list = il.DeclareLocal(listType);
                 il.Newobj(listType.GetConstructor(Type.EmptyTypes)); // stack: [new List<>()]
-                il.Stloc(result); // result = new List<>(); stack: []
+                il.Stloc(list); // list = new List<>(); stack: []
                 foreach(var field in fields)
                 {
                     il.Ldarg(0); // stack: [this]
                     il.Ldfld(field); // stack: [this.field]
                     var nextLabel = il.DefineLabel("next");
                     il.Brfalse(nextLabel); // if(this.field == null) goto next; stack: []
-                    il.Ldloc(result); // stack: [result]
-                    il.Ldstr(field.Name); // stack: [result, field.Name]
-                    il.Ldarg(0); // stack: [result, field.Name, this]
-                    il.Ldfld(field); // stack: [result, field.Name, this.field]
-                    il.Newobj(itemConstructor); // stack: [result, new KeyValuePair<object, ValidationResultTreeNode>(field.Name, this.field)]
-                    il.Call(addMethod); // result.Add(new KeyValuePair<object, ValidationResultTreeNode>(field.Name, this.field)); stack: []
+                    il.Ldloc(list); // stack: [list]
+                    il.Ldstr(field.Name); // stack: [list, field.Name]
+                    il.Ldarg(0); // stack: [list, field.Name, this]
+                    il.Ldfld(field); // stack: [list, field.Name, this.field]
+                    il.Newobj(itemConstructor); // stack: [list, new KeyValuePair<object, ValidationResultTreeNode>(field.Name, this.field)]
+                    il.Call(addMethod); // list.Add(new KeyValuePair<object, ValidationResultTreeNode>(field.Name, this.field)); stack: []
                     il.MarkLabel(nextLabel);
                 }
-                il.Ldloc(result);
+                il.Ldloc(list);
                 il.Ret();
             }
             typeBuilder.DefineMethodOverride(getChildrenMethodBuilder, getChildrenMethod);
-            return typeBuilder.CreateType();
+            var result = typeBuilder.CreateType();
+            typesBeingBuilt[type] = null;
+            return result;
         }
 
         private static volatile int id;
         private static readonly Hashtable types = new Hashtable();
+        private static readonly Hashtable typesBeingBuilt = new Hashtable();
         private static readonly object typesLock = new object();
         private static readonly Hashtable factories = new Hashtable();
         private static readonly object factoriesLock = new object();

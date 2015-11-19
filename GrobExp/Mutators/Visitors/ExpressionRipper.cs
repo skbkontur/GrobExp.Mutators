@@ -33,6 +33,13 @@ namespace GrobExp.Mutators.Visitors
         }
 
         private readonly HashSet<ParameterExpression> localParameters = new HashSet<ParameterExpression>();
+        protected override Expression VisitConditional(ConditionalExpression node)
+        {
+            Visit(node.IfTrue);
+            Visit(node.IfFalse);
+            return node;
+        }
+
         private List<Expression> chains;
         private bool hard;
         private bool rootOnlyParameter;

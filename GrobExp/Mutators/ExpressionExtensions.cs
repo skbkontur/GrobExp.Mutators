@@ -324,11 +324,6 @@ namespace GrobExp.Mutators
             return new AliasesResolver(aliases, strictly).Visit(expression);
         }
 
-        public static Expression ResolveArrayIndexes(this Expression exp)
-        {
-            return new ArrayIndexResolver().Resolve(exp);
-        }
-
         public static Expression[] SmashToSmithereens(this Expression exp)
         {
             var result = new List<Expression>();

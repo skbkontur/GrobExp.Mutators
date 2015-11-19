@@ -50,9 +50,10 @@ namespace GrobExp.Mutators
         public Func<TChild, ValidationResultTreeNode> GetValidator<TChild>(Expression<Func<TData, TChild>> path)
         {
             var validator = GetValidatorInternal(path);
+            var factory = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), true);
             return child =>
                 {
-                    var tree = new ValidationResultTreeNode();
+                    var tree = factory(null);
                     validator(child, tree);
                     return tree;
                 };

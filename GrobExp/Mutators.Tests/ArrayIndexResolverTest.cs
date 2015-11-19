@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators;
+using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
 
@@ -340,7 +341,14 @@ namespace Mutators.Tests
 
         private void DoTest<T1, T2>(Expression<Func<T1, T2>> exp, T1 data, string expected)
         {
-            var resolved = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
+            ParameterExpression[] currentIndexes;
+            var body = new LinqEliminator().Eliminate(exp.Body, out currentIndexes);
+            var paths = ExpressionPathsBuilder.BuildPaths(exp.Body, currentIndexes);
+            var resolved = Expression.Block(currentIndexes, new[]
+            {
+                body,
+                paths
+            });
             ParameterExpression[] parameters = resolved.ExtractParameters();
             Expression<Func<T1, string[][]>> lambda = Expression.Lambda<Func<T1, string[][]>>(resolved, parameters);
             Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)[0]));

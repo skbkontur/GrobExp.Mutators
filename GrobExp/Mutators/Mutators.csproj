@@ -98,6 +98,11 @@
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
     <Compile Include="PathFormatterWrapper.cs" />
+    <Compile Include="ReadonlyCollections\IReadonlyHashtable.cs" />
+    <Compile Include="ReadonlyCollections\IReadonlySet.cs" />
+    <Compile Include="ReadonlyCollections\ReadonlyHashtable.cs" />
+    <Compile Include="ReadonlyCollections\ReadonlySet.cs" />
+    <Compile Include="ReadonlyCollections\TinyHashtable.cs" />
     <Compile Include="SimpleMutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
@@ -135,7 +140,6 @@
     <Compile Include="Validators\ValidatorConfiguration.cs" />
     <Compile Include="Visitors\AbstractPathResolver.cs" />
     <Compile Include="Visitors\AliasesResolver.cs" />
-    <Compile Include="Visitors\ArrayIndexResolver.cs" />
     <Compile Include="Visitors\ExpressionPathsBuilder.cs" />
     <Compile Include="Visitors\DependenciesExtractor.cs" />
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
@@ -158,6 +162,7 @@
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />
     <Compile Include="Visitors\ParametersExtractor.cs" />
+    <Compile Include="Visitors\ResolvedArrayIndexes.cs" />
     <Compile Include="Visitors\SelectManyCollectionSelectorExtender.cs" />
     <Compile Include="Visitors\TextGeneralizer.cs" />
     <Compile Include="Visitors\ArraysExtractor.cs" />

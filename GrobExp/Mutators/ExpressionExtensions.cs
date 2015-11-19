@@ -318,7 +318,7 @@ namespace GrobExp.Mutators
             return new AliasesResolver(aliases, strictly).Visit(expression);
         }
 
-        public static Expression ResolveArrayIndexes(this Expression exp)
+        public static ResolvedArrayIndexes ResolveArrayIndexes(this Expression exp)
         {
             return new ArrayIndexResolver().Resolve(exp);
         }

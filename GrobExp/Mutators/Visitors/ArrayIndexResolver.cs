@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.Visitors
     public class ArrayIndexResolver
     {
         // todo ich: слишком медленный монстр, убить
-        public Expression Resolve(Expression exp)
+        public ResolvedArrayIndexes Resolve(Expression exp)
         {
             //return Expression.Constant(new[] {"root"}, typeof(string[]));
             var resolveInternal = ResolveInternal(exp, false);
@@ -43,7 +43,7 @@ namespace GrobExp.Mutators.Visitors
                 case ExpressionType.ArrayIndex:
                     {
                         var binaryExpression = (BinaryExpression)shard;
-                        result.Add(Expression.Call(binaryExpression.Right, "ToString", Type.EmptyTypes));
+                        result.Add(Expression.Convert(binaryExpression.Right, typeof(object)));
                         break;
                     }
                 case ExpressionType.Call:
@@ -59,7 +59,7 @@ namespace GrobExp.Mutators.Visitors
                         else*/
                         if(methodCallExpression.Method.IsEachMethod())
                         {
-                            result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
+                            result.Add(Expression.Convert(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.ArrayIndex(indexes, Expression.Constant(k)), Expression.Constant(-1)), typeof(object)));
                             ++k;
                         }
                         else if(methodCallExpression.Method.IsIndexerGetter())
@@ -75,8 +75,12 @@ namespace GrobExp.Mutators.Visitors
 
 //            Expression writeExp = Expression.Call(consoleWriteLineMethod, new[] {Expression.Constant(exp.ToString())});
 //            Expression writeIndexes = Expression.Call(consoleWriteLineMethod, new[] {Expression.Call(stringJoinMethod, new Expression[] {Expression.Constant(", "), indexes})});
-
-            return Expression.Block(typeof(string[]), new[] {indexes}, indexesInit, /*writeExp, writeIndexes,*/ Expression.NewArrayInit(typeof(string), result));
+            return new ResolvedArrayIndexes
+            {
+                indexes = indexes,
+                indexesInit = indexesInit,
+                path = result
+            };
         }
 
         //private static readonly MethodInfo consoleWriteLineMethod = ((MethodCallExpression)((Expression<Action<string>>)(s => Console.WriteLine(s))).Body).Method;

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.MultiLanguages;
@@ -12,7 +13,7 @@ namespace Mutators.Tests
 {
     public static class ValidationResultTreeNodeExtensions
     {
-        public static void AssertEquivalent(this ValidationResultTreeNode tree, ValidationResultTreeNode other)
+        public static void AssertEquivalent<T>(this ValidationResultTreeNode tree, ValidationResultTreeNode<T> other)
         {
             tree.ToArray().AssertEqualsToUsingGrobuf(other.ToArray());
         }
@@ -25,23 +26,24 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.A.S != null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {A = new A {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}})}});
+            validator(new TestData {A = new A {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}})}});
         }
 
         [Test]
         public void TestArray()
         {
+            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).InvalidIf(data => data.A.B.Each().S == data.A.S, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
             var o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "zzz", Z = 1}, new B {S = "qxx", Z = 2}, new B {S = "zzz", Z = 3}}}};
             var validationResultTreeNode = validator(o);
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>
                 {
                     {"A.B.0.Z", FormattedValidationResult.Error(null, 1, new SimplePathFormatterText {Paths = new[] {"A.B[0].Z"}})},
                     {"A.B.2.Z", FormattedValidationResult.Error(null, 3, new SimplePathFormatterText {Paths = new[] {"A.B[2].Z"}})},
                 });
             o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "qzz", Z = 1}, new B {S = "qxx", Z = 2}, new B()}}};
-            validator(o).AssertEquivalent(new ValidationResultTreeNode());
+            validator(o).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
         [Test]
@@ -49,7 +51,7 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).InvalidIf(data => data.A.B.Each().S == "zzz", data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator(data => data.A.B.Each());
-            validator(new B {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new B {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData>
                 {
                     {"Z", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"Z"}})}
                 });
@@ -106,15 +108,15 @@ namespace Mutators.Tests
                         }
                 };
             var formattedValidationResults = validator(o.A);
-            formattedValidationResults.AssertEquivalent(new ValidationResultTreeNode
+            formattedValidationResults.AssertEquivalent(new ValidationResultTreeNode<A>
                 {
                     {"B.0.C.D.0.S", FormattedValidationResult.Error(null, "zzz00", new SimplePathFormatterText {Paths = new[] {"B[0].C.D[0].S"}})},
                     {"B.1.C.D.1.S", FormattedValidationResult.Error(null, "zzz11", new SimplePathFormatterText {Paths = new[] {"B[1].C.D[1].S"}})},
                 });
-            validator(null).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new A()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new A {B = new[] {new B()}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new A {B = new[] {new B {C = new C()}}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(null).AssertEquivalent(new ValidationResultTreeNode<A>());
+            validator(new A()).AssertEquivalent(new ValidationResultTreeNode<A>());
+            validator(new A { B = new[] { new B() } }).AssertEquivalent(new ValidationResultTreeNode<A>());
+            validator(new A { B = new[] { new B { C = new C() } } }).AssertEquivalent(new ValidationResultTreeNode<A>());
         }
 
         [Test]
@@ -126,10 +128,10 @@ namespace Mutators.Tests
                     configurator.Target(data => data.S).DisabledIf(data => data.A.S == null);
                 });
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {S = "qxx", A = new A {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {S = "qxx", A = new A {S = null}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {S = null, A = new A {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}})}});
-            validator(new TestData {S = null, A = new A {S = null}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData { S = "qxx", A = new A { S = "zzz" } }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData { S = "qxx", A = new A { S = null } }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData { S = null, A = new A { S = "zzz" } }).AssertEquivalent(new ValidationResultTreeNode<TestData> { { "S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "S" } }) } });
+            validator(new TestData { S = null, A = new A { S = null } }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
         [Test]
@@ -137,12 +139,12 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.D.S).InvalidIf(data => data.D != null && data.D.S == null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {D = new D()}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {D = new D {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {D = new D {S = "zzz", Z = 1}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {D = new D {Z = 1}}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
-            validator(new TestData {D = new D {E = new E {S = "zzz"}}}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
-            validator(new TestData {D = new D {E = new E {X = 10}}}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
+            validator(new TestData { D = new D() }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData { D = new D { S = "zzz" } }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData { D = new D { S = "zzz", Z = 1 } }).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData { D = new D { Z = 1 } }).AssertEquivalent(new ValidationResultTreeNode<TestData> { { "D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "D.S" } }) } });
+            validator(new TestData { D = new D { E = new E { S = "zzz" } } }).AssertEquivalent(new ValidationResultTreeNode<TestData> { { "D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "D.S" } }) } });
+            validator(new TestData { D = new D { E = new E { X = 10 } } }).AssertEquivalent(new ValidationResultTreeNode<TestData> { { "D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText { Paths = new[] { "D.S" } }) } });
         }
 
         [Test]
@@ -150,9 +152,9 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.D.S).InvalidIf(data => data.D.E.Empty == null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {D = new D()}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
-            validator(new TestData {D = new D {E = new E()}}).AssertEquivalent(new ValidationResultTreeNode {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
-            validator(new TestData {D = new D {E = new E {Empty = new Empty()}}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {D = new D()}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
+            validator(new TestData {D = new D {E = new E()}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"D.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"D.S"}})}});
+            validator(new TestData {D = new D {E = new E {Empty = new Empty()}}}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
         [Test, ExpectedException(typeof(FoundExternalDependencyException))]
@@ -202,10 +204,10 @@ namespace Mutators.Tests
                     configurator.Target(data => data.S).InvalidIf(data => data.S[1] != 'z', data => null, 1);
                 });
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {S = "1234"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "1234", new SimplePathFormatterText {Paths = new[] {"S"}}, 3)}});
-            validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "123", new SimplePathFormatterText {Paths = new[] {"S"}}, 2)}});
-            validator(new TestData {S = "z23"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "z23", new SimplePathFormatterText {Paths = new[] {"S"}}, 1)}});
-            validator(new TestData {S = "zz3"}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {S = "1234"}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(null, "1234", new SimplePathFormatterText {Paths = new[] {"S"}}, 3)}});
+            validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(null, "123", new SimplePathFormatterText {Paths = new[] {"S"}}, 2)}});
+            validator(new TestData {S = "z23"}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(null, "z23", new SimplePathFormatterText {Paths = new[] {"S"}}, 1)}});
+            validator(new TestData {S = "zz3"}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
         [Test]
@@ -213,12 +215,12 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).IsLike("\\d+"));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {S = ""}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData()).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData {S = ""}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            validator(new TestData {S = "123"}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
             ValidationResultTreeNode validationResultTreeNode = validator(new TestData {S = "z123"});
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, "z123", new SimplePathFormatterText {Paths = new[] {"S"}})}});
-            validator(new TestData {S = "123x"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "123x"}, "123x", new SimplePathFormatterText {Paths = new[] {"S"}})}});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "z123"}, "z123", new SimplePathFormatterText {Paths = new[] {"S"}})}});
+            validator(new TestData {S = "123x"}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(new ValueShouldMatchPatternText {Pattern = "\\d+", Path = new SimplePathFormatterText {Paths = new[] {"S"}}, Value = "123x"}, "123x", new SimplePathFormatterText {Paths = new[] {"S"}})}});
         }
 
         [Test]
@@ -226,8 +228,8 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.Dict["Zzz"]).Required());
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode {{"Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Dict[Zzz]"}})}});
-            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", "qxx"}}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Dict[Zzz]"}})}});
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", "qxx"}}}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
         [Test]
@@ -262,9 +264,9 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 0)}});
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 0)}});
         }
 
         [Test]
@@ -285,9 +287,9 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {Z = 1}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {Z = 10, T = new T {Z = 5}}).AssertEquivalent(new ValidationResultTreeNode {{"Z", FormattedValidationResult.Error(new ValueMustBeLessThanText {Threshold = 5}, 10, new SimplePathFormatterText {Paths = new[] {"Z"}}, 0)}});
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {Z = 1}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {Z = 10, T = new T {Z = 5}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"Z", FormattedValidationResult.Error(new ValueMustBeLessThanText {Threshold = 5}, 10, new SimplePathFormatterText {Paths = new[] {"Z"}}, 0)}});
         }
 
         [Test]
@@ -312,10 +314,10 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {Z = 1}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {Z = 1}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
             validator(new TestData2 {Z = 10, T = new T {Z = 5}}).AssertEquivalent(
-                new ValidationResultTreeNode
+                new ValidationResultTreeNode<TestData2>
                     {
                         {"T.Z", FormattedValidationResult.Error(new ValueMustBeGreaterThanText {Threshold = 10}, 5, new SimplePathFormatterText {Paths = new[] {"T.Z"}}, 0)},
                         {"Z", FormattedValidationResult.Error(new ValueMustBeLessThanText {Threshold = 5}, 10, new SimplePathFormatterText {Paths = new[] {"Z"}}, 0)},
@@ -336,9 +338,9 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
         }
 
         [Test]
@@ -355,10 +357,10 @@ namespace Mutators.Tests
             converterCollectionFactory.Register(converterCollection);
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
-            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
-            validator(new TestData2 {S = "123456789123456789"}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, "123456789123456789", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
-            validator(new TestData2 {S = "123456789"}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
+            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
+            validator(new TestData2 {S = "123456789123456789"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "123456789123456789", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
+            validator(new TestData2 {S = "123456789"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
         }
 
         [Test]
@@ -379,11 +381,11 @@ namespace Mutators.Tests
             converterCollectionFactory.Register(converterCollection);
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
-            validator(new TestData2 {X = 1}).AssertEquivalent(new ValidationResultTreeNode {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 0)}});
-            validator(new TestData2 {X = 1, S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {X = -1}).AssertEquivalent(new ValidationResultTreeNode {{"T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.S"}}, 0)}});
-            validator(new TestData2 {X = -1, T = new T()}).AssertEquivalent(new ValidationResultTreeNode {{"T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.S"}}, 0)}});
-            validator(new TestData2 {X = -1, T = new T {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2 {X = 1}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 0)}});
+            validator(new TestData2 {X = 1, S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {X = -1}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.S"}}, 0)}});
+            validator(new TestData2 {X = -1, T = new T()}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.S"}}, 0)}});
+            validator(new TestData2 {X = -1, T = new T {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
         }
 
         [Test]
@@ -408,9 +410,9 @@ namespace Mutators.Tests
             converterCollectionFactory.Register(converterCollectionFromTestData3ToTestData2);
 
             var validator = testData3ConfiguratorCollection.GetMutatorsTree(new[] {typeof(TestData), typeof(TestData2)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetValidator();
-            validator(new TestData3()).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData3()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
             var validationResultTreeNode = validator(new TestData3 {X = 50, Y = 60});
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"", FormattedValidationResult.Error(null, 110, new SimplePathFormatterText {Paths = new[] {"X", "Y"}}, 0)}});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"", FormattedValidationResult.Error(null, 110, new SimplePathFormatterText {Paths = new[] {"X", "Y"}}, 0)}});
         }
 
         [Test]
@@ -427,10 +429,10 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}, new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}, new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)},
                 });
@@ -450,13 +452,13 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"zzz"}}}}}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {""}}}}}}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"zzz"}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {""}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"T.R.0.U.Arr", FormattedValidationResult.Error(null, new[] {""}, new SimplePathFormatterText {Paths = new[] {"T.R[0].U.Arr"}}, 0)}
                 });
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = null}}, new R {U = new U {Arr = new[] {"", "qxx"}}}}}}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = null}}, new R {U = new U {Arr = new[] {"", "qxx"}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"T.R.0.U.Arr", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].U.Arr"}}, 0)},
                 });
@@ -481,11 +483,11 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
             var validationResultTreeNode = validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"zzz"}}}}}});
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"qxx"}}}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.U.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"", "qxx"}}}, new R {U = new U {Arr = new[] {""}}}}}}).AssertEquivalent(new ValidationResultTreeNode
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"qxx"}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.U.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {Arr = new[] {"", "qxx"}}}, new R {U = new U {Arr = new[] {""}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"T.R.0.U.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)},
                 });
@@ -505,11 +507,11 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {S = "qzz", U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {S = "qzz", U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {S = "qzz", U = new U {S = "qxx"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {S = "qzz", U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)}});
             validator(new TestData2
                 {
                     T = new T
@@ -522,7 +524,7 @@ namespace Mutators.Tests
                                     new R {U = new U {S = "qxx"}}
                                 }
                         }
-                }).AssertEquivalent(new ValidationResultTreeNode
+                }).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                     {
                         {"T.R.2.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[2].U.S"}}, 0)},
                     });
@@ -546,17 +548,17 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "qxx"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 0)},
                 });
-            validator(new TestData2 {S = "zzz", T = new T {S = "qxx"}}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2 {S = "zzz", T = new T {S = "qxx"}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 0)},
                 });
-            validator(new TestData2 {S = "zzz", T = new T {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode
+            validator(new TestData2 {S = "zzz", T = new T {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>
                 {
                     {"T.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.S"}}, 0)},
                     {"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 0)},
@@ -577,10 +579,10 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}, new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}, new R {U = new U {S = "zzz"}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
             validator(new TestData2 {T = new T {R = new[] {new R {U = new U {S = "qxx"}}, new R {U = new U {S = "qxx"}}}}}).AssertEquivalent(
-                new ValidationResultTreeNode
+                new ValidationResultTreeNode<TestData2>
                     {
                         {"T.R.0.U.S", FormattedValidationResult.Error(null, "qxx", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)},
                         {"T.R.1.U.S", FormattedValidationResult.Error(null, "qxx", new SimplePathFormatterText {Paths = new[] {"T.R[1].U.S"}}, 0)},
@@ -607,12 +609,12 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2 {W = new W()}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {W = new W {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {W = new W {S = "zzz", Z = 1}}).AssertEquivalent(new ValidationResultTreeNode());
-            validator(new TestData2 {W = new W {Z = 1}}).AssertEquivalent(new ValidationResultTreeNode {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
-            validator(new TestData2 {W = new W {Y = new Y {S = "zzz"}}}).AssertEquivalent(new ValidationResultTreeNode {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
-            validator(new TestData2 {W = new W {Y = new Y {X = 10}}}).AssertEquivalent(new ValidationResultTreeNode {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
+            validator(new TestData2 { W = new W() }).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {W = new W {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {W = new W {S = "zzz", Z = 1}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            validator(new TestData2 {W = new W {Z = 1}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
+            validator(new TestData2 {W = new W {Y = new Y {S = "zzz"}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
+            validator(new TestData2 {W = new W {Y = new Y {X = 10}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"W.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"W.S"}}, 0)}});
         }
 
         [Test]
@@ -629,11 +631,11 @@ namespace Mutators.Tests
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
 
-            validator(new TestData2 {T = new T {R = new[] {new R()}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA()}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB()}}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC()}}}}}}).AssertEquivalent(new ValidationResultTreeNode {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
-            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC {S = "zzz"}}}}}}}).AssertEquivalent(new ValidationResultTreeNode());
+            validator(new TestData2 {T = new T {R = new[] {new R()}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA()}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB()}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC()}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"T.R.0.A.B.C.S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"T.R[0].A.B.C.S"}}, 0)}});
+            validator(new TestData2 {T = new T {R = new[] {new R {A = new CommonClassA {B = new CommonClassB {C = new CommonClassC {S = "zzz"}}}}}}}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
         }
 
         [Test]
@@ -706,7 +708,7 @@ namespace Mutators.Tests
                                 },
                         }
                 });
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode {{"ModelItems.0.ModelItemz.1.ModelZ", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"ModelItems[0].ModelItemz[1].ModelZ"}})}});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<ModelData> { { "ModelItems.0.ModelItemz.1.ModelZ", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText { Paths = new[] { "ModelItems[0].ModelItemz[1].ModelZ" } }) } });
         }
 
         [MultiLanguageTextType("ValueMustBeLessThanText")]
@@ -916,7 +918,7 @@ namespace Mutators.Tests
         {
             public R[] R { get; set; }
             public int? Z { get; set; }
-            public string S;
+            public string S { get; set; }
         }
 
         public class R

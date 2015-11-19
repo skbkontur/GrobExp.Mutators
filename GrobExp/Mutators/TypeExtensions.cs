@@ -37,6 +37,10 @@ namespace GrobExp.Mutators
                 if(t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return t.GetGenericArguments().Single();
             }
+            if(type == typeof(IEnumerable))
+                return typeof(object);
+            if(type.GetInterfaces().Any(t => t == typeof(IEnumerable)))
+                return typeof(object);
             throw new ArgumentException("Unable to extract item type of '" + type + "'");
         }
 

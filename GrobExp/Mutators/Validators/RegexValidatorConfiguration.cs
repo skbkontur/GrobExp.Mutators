@@ -87,11 +87,14 @@ namespace GrobExp.Mutators.Validators
             var result = Expression.Variable(typeof(ValidationResult));
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
-            var toLog = new ValidationLogInfo("Regex = " + regex, condition.ToString());
-             
+
             if(MutatorsValidationRecorder.IsRecording())
+            {
+                var toLog = new ValidationLogInfo("Regex = " + regex, condition.ToString());
                 MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] { result }, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
+                return Expression.Block(new[] { result }, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
+            }
+            return Expression.Block(new[] { result }, assign, result);
         }
 
         public LambdaExpression Path { get; private set; }

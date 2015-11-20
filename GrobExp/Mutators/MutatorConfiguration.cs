@@ -57,8 +57,6 @@ namespace GrobExp.Mutators
             return body == null ? null : Expression.Lambda(body, body.ExtractParameters());
         }
 
-        private Expression lcp;
-
         private LambdaExpression[] dependencies;
     }
 }

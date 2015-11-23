@@ -69,6 +69,7 @@
     <Compile Include="Exceptions\PriorityOutOfRangeException.cs" />
     <Compile Include="ExpressionCanonicalForm.cs" />
     <Compile Include="ExpressionCompiler.cs" />
+    <Compile Include="ExpressionTypeBuilder.cs" />
     <Compile Include="FormattedValidationResult.cs" />
     <Compile Include="FormattedValidationResultText.cs" />
     <Compile Include="IConverterCollection.cs" />
@@ -146,6 +147,7 @@
     <Compile Include="Visitors\ExpressionEquivalenceChecker.cs" />
     <Compile Include="Visitors\ExpressionMerger.cs" />
     <Compile Include="Visitors\ExpressionCanonizer.cs" />
+    <Compile Include="Visitors\ExtractedExpressionsReplacer.cs" />
     <Compile Include="Visitors\ExpressionRipper.cs" />
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
     <Compile Include="Visitors\ExpressionWrapper.cs" />

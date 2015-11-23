@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
@@ -12,29 +14,41 @@ namespace GrobExp.Mutators
         public Expression Source { get; private set; }
         public Expression CanonicalForm { get; private set; }
         public ParameterExpression ParameterAccessor { get; set; }
-        private Expression[] ExtractedExpressions { get; set; }
-        public LambdaExpression Lambda { get; private set; }
+        public Expression[] ExtractedExpressions { get; set; }
 
         public ExpressionCanonicalForm(Expression source)
         {
             Source = source;
-            ParameterAccessor = Expression.Parameter(typeof(object[]));
-
-            Expression[] parameters;
-            CanonicalForm = new ExpressionCanonizer(ParameterAccessor).Canonize(Source, out parameters);
-            ExtractedExpressions = parameters;
-
-            Lambda = Expression.Lambda(CanonicalForm, ParameterAccessor);
+            ExtractedExpressions = new ChainsExtractor().Extract(Source)
+                .Concat(new ConstantsExtractor().Extract(Source, false))
+                .ToArray();
+            CanonicalForm = new ExpressionCanonizer().Canonize(Source, ExtractedExpressions);
         }
 
-        public Expression ConstructInvokation(Action<object[]> lambda)
+        public LambdaExpression GetLambda()
         {
-            var array = Expression.Parameter(typeof(object[]));
-            var newArrayInit = Expression.NewArrayInit(typeof(object), ExtractedExpressions.Select(exp => Expression.Convert(exp, typeof(object))));
-            return Expression.Block(new []{ array },
-                Expression.Assign(array, newArrayInit), 
-                Expression.Invoke(Expression.Constant(lambda, typeof(Action<object[]>)), array)
-            );
+            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(ExtractedExpressions);
+            var builtType = ExpressionTypeBuilder.BuildType(ExtractedExpressions, fieldNames);
+            var fieldInfos = ExpressionTypeBuilder.GetFieldInfos(builtType, fieldNames);
+            ParameterAccessor = Expression.Parameter(builtType);
+            var canonizedBody = new ExtractedExpressionsReplacer().Replace(Source, ExtractedExpressions, ParameterAccessor, fieldInfos);
+            return Expression.Lambda(canonizedBody, ParameterAccessor);
+        }
+
+        public Expression ConstructInvokation(Delegate lambda)
+        {
+            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(ExtractedExpressions);
+            var type = lambda.GetType().GetGenericArguments()[0];
+            var closure = Expression.Parameter(type);
+            var blockBody = new List<Expression>();
+            blockBody.Add(Expression.Assign(closure, Expression.New(type)));
+            for(var i = 0; i < ExtractedExpressions.Length; ++i)
+            {
+                var field = type.GetField(fieldNames[i]);
+                blockBody.Add(Expression.Assign(Expression.Field(closure, field), ExtractedExpressions[i]));
+            }
+            blockBody.Add(Expression.Invoke(Expression.Constant(lambda), closure));
+            return Expression.Block(new[] { closure }, blockBody);
         }
     }
 }

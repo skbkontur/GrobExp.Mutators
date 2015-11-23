@@ -14,15 +14,15 @@ namespace GrobExp.Mutators
         {
             var form = new ExpressionCanonicalForm(expression);
             var key = ExpressionHashCalculator.CalcGuid(form.CanonicalForm);
-            var lambda = (Action<object[]>)canonicalFormsCache[key];
+            var lambda = (Delegate)canonicalFormsCache[key];
             if(lambda == null)
             {
                 lock(lockObject)
                 {
-                    lambda = (Action<object[]>)canonicalFormsCache[key];
+                    lambda = (Delegate)canonicalFormsCache[key];
                     if(lambda == null)
                     {
-                        canonicalFormsCache[key] = lambda = (Action<object[]>)LambdaCompiler.Compile(form.Lambda, CompilerOptions.All);
+                        canonicalFormsCache[key] = lambda = LambdaCompiler.Compile(form.GetLambda(), CompilerOptions.All);
                     }
                 }
             }

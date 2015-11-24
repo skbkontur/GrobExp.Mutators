@@ -9,14 +9,16 @@ namespace GrobExp.Mutators
 {
     public static class ExpressionTypeBuilder
     {
-        public static Type BuildType(Expression[] expressionsToExtract, string[] fieldNames)
+        public static Type BuildType(Expression[] expressionsToExtract, string[] fieldNames, out FieldInfo[] fieldInfos)
         {
             typeBuilder = module.DefineType("Closure__" + id++, TypeAttributes.Class | TypeAttributes.Public);
             for (var i = 0; i < expressionsToExtract.Length; ++i)
             {
                 typeBuilder.DefineField(fieldNames[i], expressionsToExtract[i].Type, FieldAttributes.Public);
             }
-            return typeBuilder.CreateType();
+            var result =  typeBuilder.CreateType();
+            fieldInfos = fieldNames.Select(name => result.GetField(name)).ToArray();
+            return result;
         }
 
         public static string[] GenerateFieldNames(Expression[] extractedExpressions)
@@ -31,11 +33,6 @@ namespace GrobExp.Mutators
                 result[i] = Format(expressionType) + "_" + index;
             }
             return result;
-        }
-
-        public static FieldInfo[] GetFieldInfos(Type type, string[] fieldNames)
-        {
-            return fieldNames.Select(type.GetField).ToArray();
         }
 
         private static string Format(Type type)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Mutators.Visitors;
 
@@ -26,8 +27,8 @@ namespace GrobExp.Mutators
         public LambdaExpression GetLambda()
         {
             var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(ExtractedExpressions);
-            var builtType = ExpressionTypeBuilder.BuildType(ExtractedExpressions, fieldNames);
-            var fieldInfos = ExpressionTypeBuilder.GetFieldInfos(builtType, fieldNames);
+            FieldInfo[] fieldInfos;
+            var builtType = ExpressionTypeBuilder.BuildType(ExtractedExpressions, fieldNames, out fieldInfos);
             ParameterAccessor = Expression.Parameter(builtType);
             var canonizedBody = new ExtractedExpressionsReplacer().Replace(Source, ExtractedExpressions, ParameterAccessor, fieldInfos);
             return Expression.Lambda(canonizedBody, ParameterAccessor);

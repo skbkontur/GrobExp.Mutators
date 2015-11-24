@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Visitors;
@@ -65,9 +66,10 @@ namespace GrobExp.Mutators
         private static LambdaExpression BuildLambda(Expression validator, Expression[] consts)
         {
             var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(consts);
-            var type = ExpressionTypeBuilder.BuildType(consts, fieldNames);
+            FieldInfo[] fieldInfos;
+            var type = ExpressionTypeBuilder.BuildType(consts, fieldNames, out fieldInfos);
             var parameterAccessor = Expression.Parameter(type);
-            var body = new ExtractedExpressionsReplacer().Replace(validator, consts, parameterAccessor, ExpressionTypeBuilder.GetFieldInfos(type, fieldNames));
+            var body = new ExtractedExpressionsReplacer().Replace(validator, consts, parameterAccessor, fieldInfos);
             var otherParameters = validator.ExtractParameters();
             return Expression.Lambda(body, new []{parameterAccessor}.Concat(otherParameters));
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -31,27 +32,44 @@ namespace GrobExp.Mutators
 
         public static Expression GetCachedExpression(Expression validator)
         {
-            object[] consts;
-            var accessor = Expression.Parameter(typeof(object[]));
             var parameters = validator.ExtractParameters();
-            var keyExpression = new ExpressionConstantsExtractor(accessor).ExtractConstants(validator, out consts, false);
+            var consts = new ConstantsExtractor().Extract(validator, false).Cast<Expression>().ToArray();
+            var keyExpression = new ExpressionCanonizer().Canonize(validator, consts);
             var key = ExpressionHashCalculator.CalcGuid(keyExpression);
-            var exp = expressionsCache[key];
+            var exp = (Delegate)expressionsCache[key];
             if(exp == null)
             {
                 lock(lockObject2)
                 {
-                    exp = expressionsCache[key];
+                    exp = (Delegate)expressionsCache[key];
                     if(exp == null)
                     {
-                        expressionsCache[key] = exp = LambdaCompiler.Compile(Expression.Lambda(keyExpression, parameters.Concat(new []{accessor})), CompilerOptions.All);
+                        expressionsCache[key] = exp = LambdaCompiler.Compile(BuildLambda(validator, consts), CompilerOptions.All);
                     }
                 }
             }
-            return Expression.Invoke(Expression.Constant(exp), parameters.Cast<Expression>().Concat(new []{
-                Expression.NewArrayInit(typeof(object), 
-                consts.Select(c => Expression.Convert(Expression.Constant(c), typeof(object)))
-                )}));
+            return ConstructInvokation(exp, consts, parameters);
+        }
+
+        private static Expression ConstructInvokation(Delegate exp, Expression[] consts, ParameterExpression[] parameters)
+        {
+            var type = exp.GetType().GetGenericArguments()[0];
+            var parameter = Expression.Parameter(type);
+            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(consts);
+            var body = new List<Expression> {Expression.Assign(parameter, Expression.New(type))};
+            body.AddRange(fieldNames.Select(name => type.GetField(name)).Select((field, i) => Expression.Assign(Expression.Field(parameter, field), consts[i])));
+            body.Add(Expression.Invoke(Expression.Constant(exp), new[] {parameter}.Concat(parameters)));
+            return Expression.Block(new [] {parameter}, body);
+        }
+
+        private static LambdaExpression BuildLambda(Expression validator, Expression[] consts)
+        {
+            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(consts);
+            var type = ExpressionTypeBuilder.BuildType(consts, fieldNames);
+            var parameterAccessor = Expression.Parameter(type);
+            var body = new ExtractedExpressionsReplacer().Replace(validator, consts, parameterAccessor, ExpressionTypeBuilder.GetFieldInfos(type, fieldNames));
+            var otherParameters = validator.ExtractParameters();
+            return Expression.Lambda(body, new []{parameterAccessor}.Concat(otherParameters));
         }
 
         public static int FormsCount()

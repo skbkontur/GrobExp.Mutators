@@ -292,13 +292,8 @@ namespace GrobExp.Compiler
                 context.HashCodes.Add(0);
                 return;
             }
-            if(context.Hard)
-            {
-                context.HashCodes.Add(member.Module.MetadataToken);
-                context.HashCodes.Add(member.MetadataToken);
-            }
-            else
-                context.HashCodes.Add(member.GetHashCode());
+            context.HashCodes.Add(member.Module.MetadataToken);
+            context.HashCodes.Add(member.MetadataToken);
         }
 
         private static void CalcHashCode(string str, Context context)
@@ -308,15 +303,13 @@ namespace GrobExp.Compiler
                 context.HashCodes.Add(0);
                 return;
             }
-            if(context.Hard)
+            if(!context.Hard)
+                context.HashCodes.Add(str.GetHashCode());
+            else
             {
                 for(var i = 0; i < str.Length; i += 2)
-                {
                     context.HashCodes.Add((str[i] << 16) + (i + 1 == str.Length ? 0 : str[i + 1]));
-                }
             }
-            else
-                context.HashCodes.Add(str.GetHashCode());
         }
 
         private static void CalcHashCode(int x, Context context)
@@ -326,13 +319,8 @@ namespace GrobExp.Compiler
 
         private static void CalcHashCode(Type type, Context context)
         {
-            if(context.Hard)
-            {
-                context.HashCodes.Add(type.Module.MetadataToken);
-                context.HashCodes.Add(type.MetadataToken);
-            }
-            else
-                context.HashCodes.Add(type.GetHashCode());
+            context.HashCodes.Add(type.Module.MetadataToken);
+            context.HashCodes.Add(type.MetadataToken);
         }
 
         private static void CalcHashCode(GotoExpressionKind kind, Context context)
@@ -350,35 +338,35 @@ namespace GrobExp.Compiler
                 context.HashCodes.Add(0);
                 return;
             }
-            if(context.Hard)
+            if(!context.Hard)
+                context.HashCodes.Add(obj.GetHashCode());
+            else
             {
                 var typecode = Type.GetTypeCode(obj.GetType());
-                switch (typecode)
+                switch(typecode)
                 {
-                    case TypeCode.Boolean:
-                        CalcHashCode((bool)obj ? 1 : 0, context);
-                        break;
-                    case TypeCode.Char:
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                        CalcHashCode(unchecked((int)obj), context);
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        CalcHashCode((int)((ulong)obj >> 32), context);
-                        CalcHashCode((int)((ulong)obj % (1L << 32)), context);
-                        break;
-                    case TypeCode.String:
-                        CalcHashCode((string)obj, context);
-                        break;
-                    default:
-                        throw new NotSupportedException("Type is not supported by hard hashing");
+                case TypeCode.Boolean:
+                    CalcHashCode((bool)obj ? 1 : 0, context);
+                    break;
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                    CalcHashCode(unchecked((int)obj), context);
+                    break;
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    CalcHashCode((int)((ulong)obj >> 32), context);
+                    CalcHashCode((int)((ulong)obj % (1L << 32)), context);
+                    break;
+                case TypeCode.String:
+                    CalcHashCode((string)obj, context);
+                    break;
+                default:
+                    throw new NotSupportedException("Type is not supported by hard hashing");
                 }
             }
-            else
-                context.HashCodes.Add(obj.GetHashCode());
         }
 
         private static void CalcHashCodeParameter(ParameterExpression node, Context context)

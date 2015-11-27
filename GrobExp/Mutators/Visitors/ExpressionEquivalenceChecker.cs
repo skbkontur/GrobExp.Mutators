@@ -239,7 +239,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentMethods(MethodInfo first, MethodInfo second, Context context)
         {
-            if(first == second)
+            if(MembersEqual(first, second))
                 return true;
             return !context.DistinguishEachAndCurrent && IsEachOrCurrentMethod(first) && IsEachOrCurrentMethod(second) && first.GetGenericArguments()[0] == second.GetGenericArguments()[0];
         }

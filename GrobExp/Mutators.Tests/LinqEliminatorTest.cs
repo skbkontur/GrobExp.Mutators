@@ -31,6 +31,7 @@ namespace Mutators.Tests
             var func = EliminateLinq(exp);
             Assert.AreEqual("zzz", func(new TestData {A = new A[] {new A{S = "zzz"}, }}));
             Assert.Throws<InvalidOperationException>(() => func(new TestData {A = new A[0]}));
+            Assert.Throws<InvalidOperationException>(() => func(new TestData()));
         }
 
         [Test]
@@ -67,6 +68,16 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestContains1()
+        {
+            Expression<Func<TestData, bool>> exp = data => data.Strings.Contains("zzz");
+            var withoutLinq = EliminateLinq(exp);
+            Assert.IsFalse(withoutLinq(new TestData { }));
+            Assert.IsFalse(withoutLinq(new TestData {Strings = new [] {"qxx"}}));
+            Assert.IsTrue(withoutLinq(new TestData {Strings = new [] {"zzz"}}));
+        }
+
+        [Test]
         public void TestAll1()
         {
             Expression<Func<TestData, bool>> exp = data => data.A.All(a => a.X > 0);
@@ -94,6 +105,42 @@ namespace Mutators.Tests
             Assert.AreEqual(0, withoutLinq(new TestData()));
             Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
             Assert.AreEqual(3, withoutLinq(new TestData { A = new[] { new A { Y = 1 }, new A { Y = 2 }, new A() } }));
+        }
+
+        [Test]
+        public void TestAggregate1()
+        {
+            Expression<Func<TestData, string>> exp = data => data.Strings.Aggregate((s1, s2) => s1 + s2);
+            var withoutLinq = EliminateLinq(exp);
+
+            Assert.Throws<InvalidOperationException>(() => withoutLinq(new TestData()));
+            Assert.Throws<InvalidOperationException>(() => withoutLinq(new TestData{Strings = new string[0]}));
+            Assert.AreEqual("zzz", withoutLinq(new TestData{Strings = new[] {"zzz"}}));
+            Assert.AreEqual("zzzqxx", withoutLinq(new TestData{Strings = new[] {"zzz", "qxx"}}));
+        }
+
+        [Test]
+        public void TestAggregate2()
+        {
+            Expression<Func<TestData, decimal>> exp = data => data.A.Aggregate(0m, (x, a) => x + a.Z);
+            var withoutLinq = EliminateLinq(exp);
+
+            Assert.AreEqual(0m, withoutLinq(new TestData()));
+            Assert.AreEqual(0m, withoutLinq(new TestData{A = new A[0]}));
+            Assert.AreEqual(1m, withoutLinq(new TestData{A = new [] {new A{Z = 1m}}}));
+            Assert.AreEqual(3m, withoutLinq(new TestData { A = new[] { new A { Z = 1m }, new A { Z = 2m } } }));
+        }
+
+        [Test]
+        public void TestAggregate3()
+        {
+            Expression<Func<TestData, string>> exp = data => data.A.Aggregate(0m, (x, a) => x + a.Z, z => z.ToString());
+            var withoutLinq = EliminateLinq(exp);
+
+            Assert.AreEqual("0", withoutLinq(new TestData()));
+            Assert.AreEqual("0", withoutLinq(new TestData { A = new A[0] }));
+            Assert.AreEqual("1", withoutLinq(new TestData { A = new[] { new A { Z = 1m } } }));
+            Assert.AreEqual("3", withoutLinq(new TestData { A = new[] { new A { Z = 1m }, new A { Z = 2m } } }));
         }
 
         [Test]
@@ -148,6 +195,34 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => a.B, (a, b) => a.S + b.S).FirstOrDefault(s => s.Length > 3);
             var func = EliminateLinq(exp);
+        }
+
+        [Test]
+        public void TestSelectManyWithResultSelectorConcat()
+        {
+            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
+            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => a.B.Concat(a.B), (a, b) => a.S + b.S).FirstOrDefault(s => s.Length > 3);
+            var func = EliminateLinq(exp);
+        }
+
+        [Test]
+        public void TestSelectManyCollectionSelectorNotChain1()
+        {
+            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => new[] {a.B1, a.B2}).FirstOrDefault(b => b.S == "zzz").S;
+            var func = EliminateLinq(exp);
+        }
+
+        [Test]
+        public void TestSelectManyCollectionSelectorNotChain2()
+        {
+            Expression<Func<TestData, List<int>>> exp = data => data.A.SelectMany(a => Zzz(a)).ToList();
+            var func = EliminateLinq(exp);
+            func(new TestData());
+        }
+
+        private static int[] Zzz(A a)
+        {
+            return new[] {a.Y ?? 0, a.X};
         }
 
         [Test]
@@ -437,31 +512,37 @@ namespace Mutators.Tests
             public int[] Indexes { get; set; }
         }
 
-        private class TestData
+        public class TestData
         {
             public A[] A { get; set; }
+            public string[] Strings { get; set; }
         }
 
-        private class A
+        public class A
         {
             public string S { get; set; }
             public int X { get; set; }
             public int? Y { get; set; }
+            public decimal Z { get; set; }
             public B[] B { get; set; }
+            public B B1 { get; set; }
+            public B B2 { get; set; }
         }
 
-        private class B
+        public class B
         {
             public string S { get; set; }
             public int X { get; set; }
+            public decimal Z { get; set; }
             public C[] C { get; set; }
         }
 
-        private class C
+        public class C
         {
             public string S { get; set; }
             public int X { get; set; }
             public int Y { get; set; }
+            public decimal Z { get; set; }
         }
     }
 }

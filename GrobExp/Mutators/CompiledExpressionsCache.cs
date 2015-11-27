@@ -76,12 +76,18 @@ namespace GrobExp.Mutators
 
         public static int FormsCount()
         {
-            return canonicalFormsCache.Count;
+            lock(lockObject)
+            {
+                return canonicalFormsCache.Count;
+            }
         }
 
         public static int Count()
         {
-            return expressionsCache.Count;
+            lock(lockObject2)
+            {
+                return expressionsCache.Count;
+            }
         }
 
         private static readonly Hashtable canonicalFormsCache = new Hashtable();

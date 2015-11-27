@@ -16,11 +16,12 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if(node != null && replacements.ContainsKey(node))
+            FieldInfo replacement;
+            if(node != null && replacements.TryGetValue(node, out replacement))
             {
-                if(replacements[node].FieldType == node.Type)
-                    return Expression.Field(parameterAccessor, replacements[node]);
-                return Expression.Convert(Expression.Field(parameterAccessor, replacements[node]), node.Type);
+                if(replacement.FieldType == node.Type)
+                    return Expression.Field(parameterAccessor, replacement);
+                return Expression.Convert(Expression.Field(parameterAccessor, replacement), node.Type);
             }
             return base.Visit(node);
         }

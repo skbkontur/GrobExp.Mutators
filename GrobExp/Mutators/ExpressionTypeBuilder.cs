@@ -19,13 +19,20 @@ namespace GrobExp.Mutators
         {
             var key = new TypeWrapper(expressionsToExtract.Select(exp => exp.Type));
 
-            if(TypeCache.ContainsKey(key))
+            var type = (Type)TypeCache[key];
+            if(type == null)
             {
-                var fromCache = (Type)TypeCache[key];
-                fieldInfos = fieldNames.Select(fromCache.GetField).ToArray();
-                return fromCache;
+                lock(lockObject)
+                {
+                    type = (Type)TypeCache[key];
+                    if(type == null)
+                    {
+                        return (Type)(TypeCache[key] = BuildType(expressionsToExtract, fieldNames, out fieldInfos));
+                    }
+                }
             }
-            return (Type)(TypeCache[key] = BuildType(expressionsToExtract, fieldNames, out fieldInfos));
+            fieldInfos = fieldNames.Select(type.GetField).ToArray();
+            return type;
         }
 
         private static Type BuildType(Expression[] expressionsToExtract, string[] fieldNames, out FieldInfo[] fieldInfos)
@@ -90,8 +97,10 @@ namespace GrobExp.Mutators
             for (var i = 0; i < extractedExpressions.Length; ++i)
             {
                 var expressionType = extractedExpressions[i].Type;
-                var index = indexes.ContainsKey(expressionType) ? indexes[expressionType] + 1 : 0;
-                indexes[expressionType] = index;
+                int index;
+                if(!indexes.TryGetValue(expressionType, out index))
+                    index = 0;
+                indexes[expressionType] = index + 1;
                 result[i] = Formatter.Format(expressionType) + "_" + index;
             }
             return result;
@@ -125,6 +134,7 @@ namespace GrobExp.Mutators
         }
 
         public static readonly Hashtable TypeCache = new Hashtable();
+        private static readonly object lockObject = new object();
 
         private static int id = 0;
 

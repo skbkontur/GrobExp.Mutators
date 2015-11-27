@@ -28,19 +28,23 @@ namespace Mutators.Tests
         [Test, Timeout(20000)]
         public void TestCompilePerformance()
         {
+            ExpressionTypeBuilder.TypeCache.Clear();
             for(int i = 0; i < 100000; i++)
                 ExpressionCompiler.Compile<Z, string>(z => z.Q[22].Qzz);
+            Assert.AreEqual(1, ExpressionTypeBuilder.TypeCache.Count);
         }
 
         [Test/*, Timeout(20000)*/]
         public void TestCompilePerformance2()
         {
+            ExpressionTypeBuilder.TypeCache.Clear();
             Func<string, Expression<Func<Z, bool>>> f = qzz => z => z.Q[0].Qzz == qzz;
             for(int i = 0; i < 100000; i++)
             {
                 var g = ExpressionCompiler.Compile(f(i.ToString()));
                 Assert.That(g(new Z {Q = new[] {new Q {Qzz = i.ToString()}}}));
             }
+            Assert.AreEqual(1, ExpressionTypeBuilder.TypeCache.Count);
         }
 
         public class Z

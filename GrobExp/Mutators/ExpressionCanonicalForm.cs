@@ -28,7 +28,7 @@ namespace GrobExp.Mutators
         {
             var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(ExtractedExpressions);
             FieldInfo[] fieldInfos;
-            var builtType = ExpressionTypeBuilder.BuildType(ExtractedExpressions, fieldNames, out fieldInfos);
+            var builtType = ExpressionTypeBuilder.GetType(ExtractedExpressions, fieldNames, out fieldInfos);
             ParameterAccessor = Expression.Parameter(builtType);
             var canonizedBody = new ExtractedExpressionsReplacer().Replace(Source, ExtractedExpressions, ParameterAccessor, fieldInfos);
             return Expression.Lambda(canonizedBody, ParameterAccessor);

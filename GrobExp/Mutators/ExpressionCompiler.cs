@@ -14,32 +14,40 @@ namespace GrobExp.Mutators
     {
         public static Func<TResult> Compile<TResult>(Expression<Func<TResult>> exp)
         {
-            object[] constants;
-            var func = (Func<object[], TResult>)Compile(KillConstants(exp, out constants));
+            object constants;
+            var func = (Func<object, TResult>)Compile(KillConstants(exp, out constants));
             return () => func(constants);
         }
 
         public static Func<T, TResult> Compile<T, TResult>(Expression<Func<T, TResult>> exp)
         {
-            object[] constants;
-            var func = (Func<T, object[], TResult>)Compile(KillConstants(exp, out constants));
+            object constants;
+            var func = (Func<T, object, TResult>)Compile(KillConstants(exp, out constants));
             return arg => func(arg, constants);
         }
 
         public static Func<T1, T2, TResult> Compile<T1, T2, TResult>(Expression<Func<T1, T2, TResult>> exp)
         {
-            object[] constants;
-            var func = (Func<T1, T2, object[], TResult>)Compile(KillConstants(exp, out constants));
+            object constants;
+            var func = (Func<T1, T2, object, TResult>)Compile(KillConstants(exp, out constants));
             return (arg1, arg2) => func(arg1, arg2, constants);
         }
 
         public static readonly Func<Expression, string> DebugViewGetter = BuildDebugViewGetter();
 
-        private static LambdaExpression KillConstants(LambdaExpression lambda, out object[] constants)
+        private static LambdaExpression KillConstants(LambdaExpression lambda, out object closure)
         {
-            var constantsParameter = Expression.Parameter(typeof(object[]), "C0NSTS");
-            var bodyWithoutConstants = new ExpressionConstantsExtractor(constantsParameter).ExtractConstants(lambda.Body, out constants);
-            return Expression.Lambda(bodyWithoutConstants, lambda.Parameters.Concat(new[] {constantsParameter}));
+            var constants = new ConstantsExtractor().Extract(lambda.Body).Cast<Expression>().ToArray();
+            var constantsValues = constants.Select(exp => ((ConstantExpression)exp).Value).ToArray();
+            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(constants);
+            FieldInfo[] fieldInfos;
+            var closureType = ExpressionTypeBuilder.GetType(constants, fieldNames, out fieldInfos);
+            closure = Activator.CreateInstance(closureType, new[] { constantsValues });
+            var parameterAccessor = Expression.Parameter(closureType);
+            var objectParameter = Expression.Parameter(typeof(object));
+            var bodyWithoutConstants = new ExtractedExpressionsReplacer().Replace(lambda.Body, constants, parameterAccessor, fieldInfos);
+            var lambdaBody = new[] {Expression.Assign(parameterAccessor, Expression.Convert(objectParameter, closureType)), bodyWithoutConstants};
+            return Expression.Lambda(Expression.Block(bodyWithoutConstants.Type, new []{parameterAccessor}, lambdaBody), lambda.Parameters.Concat(new[] { objectParameter }));
         }
 
         private static Delegate Compile(LambdaExpression lambda)

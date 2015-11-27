@@ -60,7 +60,7 @@ namespace GrobExp.Compiler
             return result;
         }
 
-        public static Guid CalcGuid(Expression node)
+        public static Guid CalcStrongHashCode(Expression node)
         {
             var hashCodes = new List<int>();
             CalcHashCode(node, new Context

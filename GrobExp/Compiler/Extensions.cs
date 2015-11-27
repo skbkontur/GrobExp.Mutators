@@ -48,6 +48,41 @@ namespace GrobExp.Compiler
             }
         }
 
+        public static bool IsStronglyPublic(this Type type)
+        {
+            if (type == null || type.IsGenericParameter) return true;
+
+            if (type.IsArray)
+            {
+                if (!type.IsNested)
+                {
+                    if (!type.IsPublic)
+                        return false;
+                }
+                else if (!type.IsNestedPublic || !IsStronglyPublic(type.DeclaringType))
+                    return false;
+                var elem = type.GetElementType();
+                return IsStronglyPublic(elem);
+            }
+
+            if (type.IsGenericType)
+            {
+                if (!type.IsNested)
+                {
+                    if (!type.IsPublic)
+                        return false;
+                }
+                else if (!type.IsNestedPublic || !IsStronglyPublic(type.DeclaringType))
+                    return false;
+                var parameters = type.GetGenericArguments();
+                return parameters.All(IsStronglyPublic);
+            }
+
+            if (!type.IsNested)
+                return type.IsPublic;
+            return type.IsNestedPublic && IsStronglyPublic(type.DeclaringType);
+        }
+
         public static Type GetDelegateType(Type[] parameterTypes, Type returnType)
         {
             if(returnType == typeof(void))

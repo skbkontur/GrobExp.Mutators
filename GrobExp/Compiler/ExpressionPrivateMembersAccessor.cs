@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net.NetworkInformation;
 using System.Reflection;
 
 using GrEmit;
@@ -12,41 +11,6 @@ namespace GrobExp.Compiler
 {
     internal class ExpressionPrivateMembersAccessor : ExpressionVisitor
     {
-        private static bool IsNestedlyPublic(Type type)
-        {
-            if (type == null || type.IsGenericParameter) return true;
-
-            if(type.IsArray)
-            {
-                if (!type.IsNested)
-                {
-                    if (!type.IsPublic)
-                        return false;
-                }
-                else if (!type.IsNestedPublic || !IsNestedlyPublic(type.DeclaringType))
-                    return false;
-                var elem = type.GetElementType();
-                return IsNestedlyPublic(elem);
-            }
-
-            if(type.IsGenericType)
-            {
-                if(!type.IsNested)
-                {
-                    if(!type.IsPublic)
-                        return false;
-                }
-                else if(!type.IsNestedPublic || !IsNestedlyPublic(type.DeclaringType))
-                    return false;
-                var parameters = type.GetGenericArguments();
-                return parameters.All(IsNestedlyPublic);
-            }
-
-            if (!type.IsNested)
-                return type.IsPublic;
-            return type.IsNestedPublic && IsNestedlyPublic(type.DeclaringType);
-        }
-
         private static Expression GetGetter(FieldInfo field, Expression obj, Type type)
         {
             var extractor = FieldsExtractor.GetExtractor(field);
@@ -72,7 +36,7 @@ namespace GrobExp.Compiler
             var member = node.Member;
             var expression = node.Expression;
 
-            return (expression != null && !IsNestedlyPublic(expression.Type)) ||
+            return (expression != null && !expression.Type.IsStronglyPublic()) ||
                    (member is FieldInfo && !((FieldInfo)member).IsPublic) ||
                    (member is PropertyInfo && !((PropertyInfo)member).GetGetMethod(true).IsPublic);
         }
@@ -94,7 +58,7 @@ namespace GrobExp.Compiler
                 arguments = new[] {obj}.Concat(arguments).ToArray();
 
             foreach(var arg in arguments)
-                if(!IsNestedlyPublic(arg.Type))
+                if(!arg.Type.IsStronglyPublic())
                 {
                     throw new InvalidOperationException(string.Format(
                         "Non-public method '{0}' with argument or return value of non-public type '{1}' is not allowed!",
@@ -109,7 +73,7 @@ namespace GrobExp.Compiler
 
         private void CheckTypePublicity(Type type)
         {
-            if(!IsNestedlyPublic(type))
+            if(!type.IsStronglyPublic())
                 throw new InvalidOperationException(string.Format("Non-public type '{0}' is not allowed!", Formatter.Format(type)));
         }
 
@@ -181,7 +145,7 @@ namespace GrobExp.Compiler
             }
 
             Expression newInvocation;
-            if(node.Method.IsPublic && IsNestedlyPublic(node.Method.DeclaringType))
+            if(node.Method.IsPublic && node.Method.DeclaringType.IsStronglyPublic())
                 newInvocation = node.Update(newObject, newArguments);
             else
                 newInvocation = GetInvocation(node.Method, newObject, newArguments);

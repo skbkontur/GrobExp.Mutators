@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 
 using GrEmit;
+using GrEmit.Utils;
 
 namespace GrobExp.Compiler
 {
@@ -359,7 +360,7 @@ namespace GrobExp.Compiler
                         {
                             var constructor = field.FieldType.GetConstructor(new[] {constType});
                             if(constructor == null)
-                                throw new InvalidOperationException("Missing constructor of type '" + Format(field.FieldType) + "' with parameter of type '" + Format(constType) + "'");
+                                throw new InvalidOperationException("Missing constructor of type '" + Formatter.Format(field.FieldType) + "' with parameter of type '" + Formatter.Format(constType) + "'");
                             il.Newobj(constructor);
                         }
                     }
@@ -371,30 +372,16 @@ namespace GrobExp.Compiler
             return () => func(consts);
         }
 
-        private static bool IsPrivate(Type type)
-        {
-            if(type.IsNestedPrivate || type.IsNotPublic)
-                return true;
-            return type.IsGenericType && type.GetGenericArguments().Any(IsPrivate);
-        }
-
         private static Type GetFieldType(Type type)
         {
-            return IsPrivate(type) && type.IsValueType
+            return !type.IsStronglyPublic() && type.IsValueType
                        ? typeof(StrongBox<>).MakeGenericType(new[] {type})
                        : type;
         }
 
-        private static string Format(Type type)
-        {
-            if(!type.IsGenericType)
-                return type.Name;
-            return type.Name + "<" + string.Join(", ", type.GetGenericArguments().Select(Format)) + ">";
-        }
-
         private string GetFieldName(Type type)
         {
-            return Format(type) + "_" + fieldId++;
+            return Formatter.Format(type) + "_" + fieldId++;
         }
 
         private static readonly MethodInfo convertMethod = ((MethodCallExpression)((Expression<Func<object[], int[]>>)(arr => Convert<int>(arr))).Body).Method.GetGenericMethodDefinition();

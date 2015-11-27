@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 using GrEmit;
+using GrEmit.Utils;
+
+using GrobExp.Compiler;
 
 namespace GrobExp.Mutators
 {
@@ -19,7 +22,7 @@ namespace GrobExp.Mutators
             if(TypeCache.ContainsKey(key))
             {
                 var fromCache = (Type)TypeCache[key];
-                fieldInfos = fieldNames.Select(name => fromCache.GetField(name)).ToArray();
+                fieldInfos = fieldNames.Select(fromCache.GetField).ToArray();
                 return fromCache;
             }
             return (Type)(TypeCache[key] = BuildType(expressionsToExtract, fieldNames, out fieldInfos));
@@ -32,10 +35,10 @@ namespace GrobExp.Mutators
             for (var i = 0; i < fieldNames.Length; ++i)
             {
                 var type = expressionsToExtract[i].Type;
-                if (IsPrivate(type))
+                if (!type.IsStronglyPublic())
                 {
                     if (type.IsValueType)
-                        throw new NotSupportedException();
+                        throw new NotSupportedException("Non-public value types are not supported");
                     type = typeof(object);
                 }
                 fieldBuilders.Add(typeBuilder.DefineField(fieldNames[i], type, FieldAttributes.Public));
@@ -45,13 +48,13 @@ namespace GrobExp.Mutators
             BuildConstructorByFields(typeBuilder, fieldBuilders);
 
             var result = typeBuilder.CreateType();
-            fieldInfos = fieldNames.Select(name => result.GetField(name)).ToArray();
+            fieldInfos = fieldNames.Select(result.GetField).ToArray();
             return result;
         }
 
         private static void BuildDefaultConstructor(TypeBuilder typeBuilder)
         {
-            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new Type[]{});
+            var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, Type.EmptyTypes);
             using(var il = new GroboIL(constructor))
             {
                 il.Ret();
@@ -89,23 +92,9 @@ namespace GrobExp.Mutators
                 var expressionType = extractedExpressions[i].Type;
                 var index = indexes.ContainsKey(expressionType) ? indexes[expressionType] + 1 : 0;
                 indexes[expressionType] = index;
-                result[i] = Format(expressionType) + "_" + index;
+                result[i] = Formatter.Format(expressionType) + "_" + index;
             }
             return result;
-        }
-
-        private static bool IsPrivate(Type type)
-        {
-            if (type.IsNestedPrivate || type.IsNotPublic)
-                return true;
-            return type.IsGenericType && type.GetGenericArguments().Any(IsPrivate);
-        }
-
-        private static string Format(Type type)
-        {
-            if (!type.IsGenericType)
-                return type.Name;
-            return type.Name + "<" + string.Join(", ", type.GetGenericArguments().Select(Format)) + ">";
         }
 
         private class TypeWrapper

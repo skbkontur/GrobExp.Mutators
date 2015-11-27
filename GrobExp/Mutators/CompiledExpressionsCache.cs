@@ -15,7 +15,7 @@ namespace GrobExp.Mutators
         public static Expression GetCanonicalForm(Expression expression)
         {
             var form = new ExpressionCanonicalForm(expression);
-            var key = ExpressionHashCalculator.CalcGuid(form.CanonicalForm);
+            var key = ExpressionHashCalculator.CalcStrongHashCode(form.CanonicalForm);
             var lambda = (Delegate)canonicalFormsCache[key];
             if(lambda == null)
             {
@@ -36,7 +36,7 @@ namespace GrobExp.Mutators
             var parameters = validator.ExtractParameters();
             var consts = new ConstantsExtractor().Extract(validator, false).Cast<Expression>().ToArray();
             var keyExpression = new ExpressionCanonizer().Canonize(validator, consts);
-            var key = ExpressionHashCalculator.CalcGuid(keyExpression);
+            var key = ExpressionHashCalculator.CalcStrongHashCode(keyExpression);
             var exp = (Delegate)expressionsCache[key];
             if(exp == null)
             {
@@ -58,7 +58,7 @@ namespace GrobExp.Mutators
             var parameter = Expression.Parameter(type);
             var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(consts);
             var body = new List<Expression> {Expression.Assign(parameter, Expression.New(type))};
-            body.AddRange(fieldNames.Select(name => type.GetField(name)).Select((field, i) => Expression.Assign(Expression.Field(parameter, field), consts[i])));
+            body.AddRange(fieldNames.Select(type.GetField).Select((field, i) => Expression.Assign(Expression.Field(parameter, field), consts[i])));
             body.Add(Expression.Invoke(Expression.Constant(exp), new[] {parameter}.Concat(parameters)));
             return Expression.Block(new [] {parameter}, body);
         }

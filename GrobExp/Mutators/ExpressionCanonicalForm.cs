@@ -42,7 +42,7 @@ namespace GrobExp.Mutators
 
             var blockBody = new List<Expression> {Expression.Assign(closure, Expression.New(type))};
             blockBody.AddRange(fieldNames
-                .Select(t => type.GetField(t))
+                .Select(type.GetField)
                 .Select((field, i) => Expression.Assign(Expression.Field(closure, field), ExtractedExpressions[i])));
             blockBody.Add(Expression.Invoke(Expression.Constant(lambda), closure));
 

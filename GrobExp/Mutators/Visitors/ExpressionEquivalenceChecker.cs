@@ -254,9 +254,30 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentConstant(ConstantExpression first, ConstantExpression second, Context context)
         {
-            if(ReferenceEquals(first.Value, null))
-                return ReferenceEquals(second.Value, null);
-            return !ReferenceEquals(second.Value, null) && (ReferenceEquals(first.Value, second.Value) || first.Value == second.Value || first.Value.Equals(second.Value));
+            return EquivalentObjects(first.Value, second.Value);
+        }
+
+        private static bool EquivalentObjects(object first, object second)
+        {
+            if (ReferenceEquals(first, null))
+                return ReferenceEquals(second, null);
+            return !ReferenceEquals(second, null) && (ReferenceEquals(first, second) || first == second || first.Equals(second) || EqualsArrays(first, second));
+        }
+
+        private static bool EqualsArrays(object first, object second)
+        {
+            var firstArr = first as Array;
+            var secondArr = second as Array;
+            if(firstArr != null && secondArr != null)
+            {
+                if(firstArr.Length != secondArr.Length)
+                    return false;
+                for(int i = 0; i < firstArr.Length; ++i)
+                    if(!EquivalentObjects(firstArr.GetValue(i), secondArr.GetValue(i)))
+                        return false;
+                return true;
+            }
+            return false;
         }
 
         private static bool EquivalentDebugInfo(DebugInfoExpression first, DebugInfoExpression second, Context context)

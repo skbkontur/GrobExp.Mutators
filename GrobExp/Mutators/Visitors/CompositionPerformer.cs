@@ -5,8 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-using GrEmit.Utils;
-
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Validators;
 
@@ -454,26 +452,17 @@ namespace GrobExp.Mutators.Visitors
             return expression;
         }
 
-        private Expression EnsureArray(Expression exp)
-        {
-            if(exp == null)
-                return null;
-            if(exp.Type.IsGenericType && exp.Type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                return Expression.Call(toArrayMethod.MakeGenericMethod(exp.Type.GetItemType()), exp);
-            return exp;
-        }
-
         private Expression ResolveChain(Expression node)
         {
             var conditionalSetters = GetConditionalSetters(node);
             if(conditionalSetters == null)
                 return Expression.Constant(node.Type.GetDefaultValue(), node.Type);
             var unconditionalSetter = conditionalSetters.SingleOrDefault(pair => pair.Value == null);
-            Expression result = ConvertToNullable(EnsureArray(unconditionalSetter.Key) ?? Expression.Constant(node.Type.GetDefaultValue(), node.Type), node.Type);
+            Expression result = ConvertToNullable(unconditionalSetter.Key ?? Expression.Constant(node.Type.GetDefaultValue(), node.Type), node.Type);
             foreach(var item in conditionalSetters)
             {
                 var condition = item.Value;
-                var value = ConvertToNullable(EnsureArray(item.Key), node.Type);
+                var value = ConvertToNullable(item.Key, node.Type);
                 if(condition == null)
                     continue;
                 var test = Convert(condition, typeof(bool));

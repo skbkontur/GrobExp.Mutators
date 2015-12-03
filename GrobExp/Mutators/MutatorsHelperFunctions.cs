@@ -107,14 +107,17 @@ namespace GrobExp.Mutators
             return string.Join(separator, strings.Where(s => !string.IsNullOrEmpty(s)));
         }
 
-        public static bool IsNullOrEmpty(Array array)
+        public static bool IsNullOrEmpty(IEnumerable enumerable)
         {
-            return array == null || array.Length == 0;
+            if(enumerable == null)
+                return true;
+            var enumerator = enumerable.GetEnumerator();
+            return !enumerator.MoveNext();
         }
 
-        public static bool IsNullOrEmpty(string[] strings)
+        public static bool IsNullOrEmpty(IEnumerable<string> strings)
         {
-            return strings == null || strings.Length == 0 || strings.All(string.IsNullOrEmpty);
+            return strings == null || strings.All(string.IsNullOrEmpty);
         }
 
         public static TTo ChangeType<TFrom, TTo>(TFrom value)

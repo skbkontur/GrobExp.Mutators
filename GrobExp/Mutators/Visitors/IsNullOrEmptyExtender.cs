@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -76,7 +77,12 @@ namespace GrobExp.Mutators.Visitors
         {
             if(isNullOrEmptyMethods.TryGetValue(type, out method))
                 return true;
-            if(type.IsArray)
+            if(type == typeof(IEnumerable<string>) || type.GetInterfaces().Any(interfaCe => interfaCe == typeof(IEnumerable<string>)))
+            {
+                method = MutatorsHelperFunctions.StringArrayIsNullOrEmptyMethod;
+                return true;
+            }
+            if (type.IsArray || type == typeof(IEnumerable) || type.GetInterfaces().Any(interfaCe => interfaCe == typeof(IEnumerable)))
             {
                 method = MutatorsHelperFunctions.ArrayIsNullOrEmptyMethod;
                 return true;

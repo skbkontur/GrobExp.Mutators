@@ -11,7 +11,7 @@ namespace GrobExp.Mutators
     {
         public static object GetDefaultValue(this Type type)
         {
-            object result = defaultValues[type];
+            var result = defaultValues[type];
             if(result == null)
             {
                 lock(defaultValuesLock)
@@ -27,7 +27,7 @@ namespace GrobExp.Mutators
             return result == nullDefault ? null : result;
         }
 
-        public static Type GetItemType(this Type type)
+        public static Type TryGetItemType(this Type type)
         {
             if(type.IsArray) return type.GetElementType();
             if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
@@ -37,12 +37,20 @@ namespace GrobExp.Mutators
                 if(t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return t.GetGenericArguments().Single();
             }
-            throw new ArgumentException("Unable to extract item type of '" + type + "'");
+            return null;
+        }
+
+        public static Type GetItemType(this Type type)
+        {
+            var result = type.TryGetItemType();
+            if(result == null)
+                throw new ArgumentException("Unable to extract item type of '" + type + "'");
+            return result;
         }
 
         public static bool IsEnumerable(this Type type)
         {
-            if (type.IsArray) return true;
+            if(type.IsArray) return true;
             if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return true;
             return type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
@@ -79,7 +87,7 @@ namespace GrobExp.Mutators
             var unique = new List<PropertyInfo>();
             if(result.Count > 0)
                 unique.Add(result[0]);
-            for(int i = 1; i < result.Count; ++i)
+            for(var i = 1; i < result.Count; ++i)
             {
                 if(result[i - 1].Module.MetadataToken != result[i].Module.MetadataToken || result[i - 1].MetadataToken != result[i].MetadataToken)
                     unique.Add(result[i]);

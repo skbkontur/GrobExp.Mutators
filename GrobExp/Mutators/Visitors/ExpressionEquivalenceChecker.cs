@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -188,6 +189,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentLabel(LabelTarget first, LabelTarget second, Context context)
         {
+            if(first == null || second == null)
+                return first == null && second == null;
             LabelTarget firstMapsTo;
             LabelTarget secondMapsTo;
             if (!context.FirstLabels.TryGetValue(first, out firstMapsTo))
@@ -340,12 +343,25 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentListInit(ListInitExpression first, ListInitExpression second, Context context)
         {
-            throw new NotImplementedException();
+            if(!Equivalent(first.NewExpression, second.NewExpression, context))
+                return false;
+            if(first.Initializers.Count != second.Initializers.Count)
+                return false;
+            for(int i = 0; i < first.Initializers.Count; ++i)
+            {
+                if(!EquivalentMethods(first.Initializers[i].AddMethod, second.Initializers[i].AddMethod, context))
+                    return false;
+                if(!Equivalent(first.Initializers[i].Arguments, second.Initializers[i].Arguments, context))
+                    return false;
+            }
+            return true;
         }
 
         private static bool EquivalentLoop(LoopExpression first, LoopExpression second, Context context)
         {
-            throw new NotImplementedException();
+            return EquivalentLabel(first.BreakLabel, second.BreakLabel, context) 
+                && EquivalentLabel(first.ContinueLabel, second.ContinueLabel, context) 
+                && Equivalent(first.Body, second.Body, context);
         }
 
         private static bool MembersEqual(MemberInfo first, MemberInfo second)

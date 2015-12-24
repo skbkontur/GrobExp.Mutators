@@ -35,6 +35,13 @@ namespace GrobExp.Mutators.Visitors
             return maxLevel;
         }
 
+        protected override Expression VisitInvocation(InvocationExpression node)
+        {
+            foreach(var arg in node.Arguments)
+                Visit(arg);
+            return node;
+        }
+
         protected override Expression VisitParameter(ParameterExpression node)
         {
             if(unique && type != null && type != node.Type)
@@ -50,9 +57,9 @@ namespace GrobExp.Mutators.Visitors
                 var chain = node;
                 var chainShards = chain.SmashToSmithereens();
                 int i, l;
-                if(chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Constant)
+                if (chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke || chainShards[0].NodeType == ExpressionType.Constant)
                 {
-                    i = chainShards[0].NodeType == ExpressionType.Call ? 0 : 1;
+                    i = chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke ? 0 : 1;
                     Type subType;
                     var subMaxLevel = new ArraysExtractorVisitor(list, true).GetArrays(chainShards[i], out subType);
                     if(unique && type != null && type != subType)

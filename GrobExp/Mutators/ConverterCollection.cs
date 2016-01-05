@@ -13,6 +13,8 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
+using GroBuf;
+
 namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
@@ -136,6 +138,11 @@ namespace GrobExp.Mutators
             return type.IsArray && IsALeaf(type.GetElementType()) || type.IsPrimitive || type == typeof(string) || type.IsValueType;
         }
 
+        private static bool IsLazy(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(GroBufLazy<>);
+        }
+
         private static void FindCustomFieldsContainer(Type type, Expression current, List<KeyValuePair<PropertyInfo, Expression>> result)
         {
             if(type == null || IsALeaf(type))
@@ -145,7 +152,15 @@ namespace GrobExp.Mutators
             {
                 var next = Expression.Property(current, property);
                 if(property.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any())
-                    result.Add(new KeyValuePair<PropertyInfo, Expression>(property, next));
+                {
+                    if (!IsLazy(property.PropertyType))
+                        result.Add(new KeyValuePair<PropertyInfo, Expression>(property, next));
+                    else
+                    {
+                        var valueProperty = property.PropertyType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public);
+                        result.Add(new KeyValuePair<PropertyInfo, Expression>(valueProperty, Expression.Property(next, valueProperty)));
+                    }
+                }
                 else
                     FindCustomFieldsContainer(property.PropertyType, next, result);
             }

@@ -153,7 +153,7 @@ namespace GrobExp.Mutators
                 var next = Expression.Property(current, property);
                 if(property.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any())
                 {
-                    if (!IsLazy(property.PropertyType))
+                    if(!IsLazy(property.PropertyType))
                         result.Add(new KeyValuePair<PropertyInfo, Expression>(property, next));
                     else
                     {
@@ -250,7 +250,7 @@ namespace GrobExp.Mutators
                     if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
-                        
+
                         convertedValue = Expression.Lambda(
                             Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                             convertToStringMethod.MakeGenericMethod(value.Body.Type),
@@ -290,7 +290,7 @@ namespace GrobExp.Mutators
                             {
                                 var pathToTitles = Expression.Property(pathToTarget, "Titles");
                                 var pathToItemTitle = Expression.Call(pathToTitles, pathToTitles.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), Expression.Constant(pathToLeaf));
-                                configurator.SetMutator(pathToItemTitle, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(customFieldAttribute.TitleType))));
+                                configurator.SetMutator(pathToItemTitle, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(StaticMultiLanguageTextCache.Get(customFieldAttribute.TitleType)))));
                             }
                         }
                     }
@@ -301,7 +301,7 @@ namespace GrobExp.Mutators
                         configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(convertedValue.Body.Type.IsArray))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(convertedValue)));
                         if(titleType != null)
-                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(titleType))));
+                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(StaticMultiLanguageTextCache.Get(titleType)))));
                     }
                 }
             }
@@ -364,7 +364,6 @@ namespace GrobExp.Mutators
             var needCoalesce = true;
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
-                
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                         convertFromStringMethod.MakeGenericMethod(type),
                                         Expression.Convert(value, typeof(string)));
@@ -382,9 +381,7 @@ namespace GrobExp.Mutators
             {
                 var elementType = type.GetElementType();
                 if(elementType.IsValueType)
-                {
                     value = Expression.Call(toArrayMethod.MakeGenericMethod(elementType), Expression.Call(castMethod.MakeGenericMethod(elementType), Expression.Convert(value, typeof(IEnumerable))));
-                }
             }
             return Expression.Convert(value, type);
         }

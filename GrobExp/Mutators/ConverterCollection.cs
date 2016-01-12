@@ -140,7 +140,7 @@ namespace GrobExp.Mutators
 
         private static bool IsLazy(Type type)
         {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(GroBufLazy<>);
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Lazy<>);
         }
 
         private static void FindCustomFieldsContainer(Type type, Expression current, List<KeyValuePair<PropertyInfo, Expression>> result)

@@ -84,7 +84,7 @@ namespace Mutators.Tests
             var data = converter(new WebData
                 {
                     F = "qxx",
-                    CustomFields = new GroBufLazy<Dictionary<string, CustomFieldValue>>(new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"F", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
@@ -218,7 +218,7 @@ namespace Mutators.Tests
             var webValidator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
             webValidator(new WebData
                 {
-                    CustomFields = new GroBufLazy<Dictionary<string, CustomFieldValue>>(new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String}},
                             {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
@@ -302,7 +302,7 @@ namespace Mutators.Tests
             var webMutator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetTreeMutator();
             var webData = new WebData
                 {
-                    CustomFields = new GroBufLazy<Dictionary<string, CustomFieldValue>>(new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
                             {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
@@ -395,7 +395,7 @@ namespace Mutators.Tests
             var mutator = dataConfiguratorCollection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var data = new WebData
             {
-                CustomFields = new GroBufLazy<Dictionary<string, CustomFieldValue>>(new Dictionary<string, CustomFieldValue>
+                CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                 {
                     {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
                     {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
@@ -523,10 +523,10 @@ namespace Mutators.Tests
         public class WebData
         {
             [CustomFieldsContainer]
-            public GroBufLazy<Dictionary<string, CustomFieldValue>> CustomFields { get; set; }
+            public Lazy<Dictionary<string, CustomFieldValue>> CustomFields { get; set; }
 
             public WebDataItem[] Items { get; set; }
-            public GroBufLazy<Dictionary<string, CustomFieldValue>> CustomFieldsCopy { get; set; }
+            public Lazy<Dictionary<string, CustomFieldValue>> CustomFieldsCopy { get; set; }
             public string F { get; set; }
         }
 

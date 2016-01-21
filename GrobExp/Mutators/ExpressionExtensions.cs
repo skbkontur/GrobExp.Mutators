@@ -97,7 +97,7 @@ namespace GrobExp.Mutators
         {
             var result = new StringBuilder();
             BuildCustomFieldName(node, result);
-            return result.ToString();
+            return string.Intern(result.ToString());
         }
 
         public static Expression ExtendSelectMany(this Expression expression)
@@ -384,7 +384,7 @@ namespace GrobExp.Mutators
                 BuildCustomFieldName(memberExpression.Expression, result);
                 if(result.Length > 0)
                     result.Append("ё");
-                result.Append(memberExpression.Member.Name);
+                result.Append(string.Intern(memberExpression.Member.Name));
                 break;
             case ExpressionType.Call:
                 var methodCallExpression = (MethodCallExpression)node;

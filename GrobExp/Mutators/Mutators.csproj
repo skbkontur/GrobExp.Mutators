@@ -116,6 +116,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimplePathFormatter.cs" />
     <Compile Include="SimplePathFormatterText.cs" />
+    <Compile Include="StaticMultiLanguageTextCache.cs" />
     <Compile Include="TypeExtensions.cs" />
     <Compile Include="ValidationResult.cs" />
     <Compile Include="ValidationResultTreeNode.cs" />

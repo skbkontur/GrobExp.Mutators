@@ -53,7 +53,14 @@ namespace Mutators.Tests
         public void TestWhere3()
         {
             Expression<Func<A, string>> expression = a => a.B.Cz.Where(r => r.S != null).Each().D.S;
-            DoTest(expression, a => a.B.Cz.Each().S, a => a.B.Cz.Each().D.S);
+            DoTest(expression, a => a.B.Cz.Current().S, a => a.B.Cz.Current().D.S);
+        }
+
+        [Test]
+        public void TestWhere4()
+        {
+            Expression<Func<A, string>> expression = a => a.B.Cz.Where(r => r.S != null).Current().D.S;
+            DoTest(expression, a => a.B.Cz.Current().S, a => a.B.Cz.Current().D.S);
         }
 
         [Test]
@@ -144,7 +151,7 @@ namespace Mutators.Tests
         public void TestSelect1()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Select(c => c.X);
-            DoTest(expression, a => a.B.C.Each().X);
+            DoTest(expression, a => a.B.C.Current().X);
         }
 
         [Test]
@@ -158,21 +165,21 @@ namespace Mutators.Tests
         public void TestSelect2()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Select(c => c.D.E.First(e => e.F == "zzz").X);
-            DoTest(expression, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().D.E.Each().X);
+            DoTest(expression, a => a.B.C.Current().D.E.Each().F, a => a.B.C.Current().D.E.Each().X);
         }
 
         [Test]
         public void TestSelect3()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Select(c => c.D.E.FirstOrDefault(e => e.F == "zzz")).Select(e => e.X);
-            DoTest(expression, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().D.E.Each().X);
+            DoTest(expression, a => a.B.C.Current().D.E.Each().F, a => a.B.C.Current().D.E.Each().X);
         }
 
         [Test]
         public void TestSelect4()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Select(c => c.D).Select(d => d.X);
-            DoTest(expression, a => a.B.C.Each().D.X);
+            DoTest(expression, a => a.B.C.Current().D.X);
         }
 
         [Test]
@@ -248,7 +255,7 @@ namespace Mutators.Tests
         public void TestSelectWithTuple1()
         {
             Expression<Func<A, string>> expression = a => a.B.C.Select(c => new Tuple<D, int?>(c.D, c.X)).FirstOrDefault(tuple => tuple.Item2 > 0).Item1.S;
-            DoTest(expression, a => a.B.C.Each().D.S);
+            DoTest(expression, a => a.B.C.Each().D.S, a => a.B.C.Each().D.X);
         }
 
         [Test]
@@ -256,6 +263,13 @@ namespace Mutators.Tests
         {
             Expression<Func<A, Tuple<D, int?>>> expression = a => a.B.C.Select(c => new Tuple<D, int?>(c.D, c.X)).FirstOrDefault(tuple => tuple.Item2 > 0);
             DoTest(expression, a => a.B.C.Each().D, a => a.B.C.Each().X);
+        }
+
+        [Test]
+        public void TestSelectWithTuple2x()
+        {
+            Expression<Func<A, object>> expression = a => a.B.C.Select(c => new Tuple<D, int?>(c.D, c.X));
+            DoTest(expression, a => a.B.C.Current().D, a => a.B.C.Current().X);
         }
 
         [Test]
@@ -269,7 +283,14 @@ namespace Mutators.Tests
         public void TestSelectManyWithTuple1()
         {
             Expression<Func<A, string>> expression = a => a.B.C.SelectMany(c => c.D.E, (c, e) => new Tuple<int?, string>(c.X, e.F)).FirstOrDefault(tuple => tuple.Item1 > 0).Item2;
-            DoTest(expression, a => a.B.C.Each().D.E.Each().F);
+            DoTest(expression, a => a.B.C.Each().X, a => a.B.C.Each().D.E.Each().F);
+        }
+
+        [Test]
+        public void TestSelectManyWithTuple1x()
+        {
+            Expression<Func<A, object>> expression = a => a.B.C.SelectMany(c => c.D.E, (c, e) => new Tuple<int?, string>(c.X, e.F));
+            DoTest(expression, a => a.B.C.Current().X, a => a.B.C.Current().D.E.Current().F);
         }
 
         [Test]
@@ -287,6 +308,13 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSelectManyWithTuple3x()
+        {
+            Expression<Func<A, object>> expression = a => a.B.C.SelectMany(c => c.D.E, (c, e) => new Tuple<int?, string>(c.S == "zzz" ? c.X : null, e.F));
+            DoTest(expression, a => a.B.C.Current().S, a => a.B.C.Current().X, a => a.B.C.Current().D.E.Current().F);
+        }
+
+        [Test]
         public void TestSelectMany1()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E).Where(e => e.F == "qxx").Sum(e => e.X);
@@ -294,10 +322,24 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSelectMany1x()
+        {
+            Expression<Func<A, object>> expression = a => a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E).Where(e => e.F == "qxx");
+            DoTest(expression, a => a.B.C.Current().D.S, a => a.B.C.Current().D.E.Current().F, a => a.B.C.Current().D.E.Current().X);
+        }
+
+        [Test]
         public void TestSelectMany2()
         {
             Expression<Func<A, object>> expression = a => (a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E, (c, e) => new {c, e}).Where(@t => @t.e.F == "qxx").Select(@t => @t.e.X)).Sum();
             DoTest(expression, a => a.B.C.Each().D.S, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().D.E.Each().X);
+        }
+
+        [Test]
+        public void TestSelectMany2x()
+        {
+            Expression<Func<A, object>> expression = a => (a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E, (c, e) => new {c, e}).Where(@t => @t.e.F == "qxx").Select(@t => @t.e.X));
+            DoTest(expression, a => a.B.C.Current().D.S, a => a.B.C.Current().D.E.Current().F, a => a.B.C.Current().D.E.Current().X);
         }
 
         [Test]
@@ -309,6 +351,17 @@ namespace Mutators.Tests
                                                            where e.F == "qxx"
                                                            select e.X).Sum();
             DoTest(expression, a => a.B.C.Each().D.S, a => a.B.C.Each().D.E.Each().F, a => a.B.C.Each().D.E.Each().X);
+        }
+
+        [Test]
+        public void TestSelectMany3x()
+        {
+            Expression<Func<A, object>> expression = a => (from c in a.B.C
+                                                           where c.D.S == "zzz"
+                                                           from e in c.D.E
+                                                           where e.F == "qxx"
+                                                           select e.X);
+            DoTest(expression, a => a.B.C.Current().D.S, a => a.B.C.Current().D.E.Current().F, a => a.B.C.Current().D.E.Current().X);
         }
 
         [Test]

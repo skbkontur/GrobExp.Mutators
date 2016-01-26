@@ -66,7 +66,7 @@ namespace Mutators.Tests
                 });
             var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, configurator =>
                 {
-                    configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id);
+                    configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Where(item => item.IsRemoved == false).Current().Id);
                 });
             converterCollectionFactory.Register(webDataToDataConverterCollection);
             converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
@@ -408,6 +408,24 @@ namespace Mutators.Tests
             Assert.AreEqual(2, data.CustomFieldsCopy.Value["Z"].Value);
         }
 
+        [Test]
+        public void Test()
+        {
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(data => data.Items.Each().S).RequiredIf(x => true);
+                }
+            );
+            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
+            dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
+            var modelValidator = modelDataConfiguratorCollection.GetMutatorsTree(new[] { typeof(Data), typeof(WebData) }, new[] { MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty, }, new[] { MutatorsContext.Empty, MutatorsContext.Empty, }).GetValidator();
+            modelValidator(new ModelData());
+        }
+
         private TestConverterCollectionFactory converterCollectionFactory;
         private PathFormatterCollection pathFormatterCollection;
 
@@ -533,6 +551,7 @@ namespace Mutators.Tests
         public class ModelDataItem
         {
             public string Id { get; set; }
+            public bool IsRemoved { get; set; }
 
             [CustomFieldsContainer]
             public Dictionary<string, CustomFieldValue> CustomFields { get; set; }

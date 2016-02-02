@@ -153,7 +153,6 @@
     <Compile Include="Visitors\ParameterCanonizer.cs" />
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />
-    <Compile Include="Visitors\ParametersExtractor.cs" />
     <Compile Include="Visitors\SelectManyCollectionSelectorExtender.cs" />
     <Compile Include="Visitors\TextGeneralizer.cs" />
     <Compile Include="Visitors\ArraysExtractor.cs" />

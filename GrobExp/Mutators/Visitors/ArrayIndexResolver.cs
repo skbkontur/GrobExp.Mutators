@@ -57,7 +57,7 @@ namespace GrobExp.Mutators.Visitors
                             result.Add(Expression.Call(globalIndexes[l++], "ToString", Type.EmptyTypes));
                         }
                         else*/
-                        if(methodCallExpression.Method.IsEachMethod())
+                        if(IsEachOrCurrentCall(shard))
                         {
                             result.Add(Expression.Condition(Expression.LessThan(Expression.Constant(k), Expression.ArrayLength(indexes)), Expression.Call(Expression.ArrayIndex(indexes, Expression.Constant(k)), "ToString", Type.EmptyTypes), Expression.Constant("-1")));
                             ++k;
@@ -82,9 +82,17 @@ namespace GrobExp.Mutators.Visitors
         //private static readonly MethodInfo consoleWriteLineMethod = ((MethodCallExpression)((Expression<Action<string>>)(s => Console.WriteLine(s))).Body).Method;
         //private static readonly MethodInfo stringJoinMethod = ((MethodCallExpression)((Expression<Func<int[], string>>)(ints => string.Join(".", ints))).Body).Method;
 
+        private static bool IsEachOrCurrentCall(Expression exp)
+        {
+            if(exp.NodeType != ExpressionType.Call)
+                return false;
+            var methodCallExpression = (MethodCallExpression)exp;
+            return methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod();
+        }
+
         private static bool IsArrayIndexing(Expression exp)
         {
-            return exp.NodeType == ExpressionType.ArrayIndex || (exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsEachMethod());
+            return exp.NodeType == ExpressionType.ArrayIndex || IsEachOrCurrentCall(exp);
         }
 
         private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);

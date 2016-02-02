@@ -24,7 +24,7 @@ namespace GrobExp.Mutators.Visitors
             this.parameters = new HashSet<ParameterExpression>(parameters);
             methodProcessors = new Dictionary<MethodInfo, MethodProcessor>
             {
-                {DependenciesExtractorHelper.ExternalCurrentMethod, ProcessCurrent},
+                {DependenciesExtractorHelper.ExternalCurrentMethod, ProcessExternalCurrent},
                 {MutatorsHelperFunctions.CurrentIndexMethod, ProcessCurrentIndex},
             };
         }
@@ -659,12 +659,14 @@ namespace GrobExp.Mutators.Visitors
             }
         }
 
-        private void ProcessCurrent(MethodInfo method, CurrentDependencies current, Expression[] arguments)
+        private void ProcessExternalCurrent(MethodInfo method, CurrentDependencies current, Expression[] arguments)
         {
             Expression prefix = current.Prefix;
             if(prefix.IsAnonymousTypeCreation() || prefix.IsTupleCreation() || IsExternalCurrentCall(prefix))
                 return;
-            current.Prefix = Expression.Call(method, prefix);
+            if(IsEachOrCurrentCall(prefix))
+                prefix = ((MethodCallExpression)prefix).Arguments[0];
+            current.Prefix = Expression.Call(DependenciesExtractorHelper.ExternalCurrentMethod.MakeGenericMethod(prefix.Type.GetItemType()), prefix);
         }
 
         private static bool IsExternalCurrentCall(Expression node)
@@ -673,6 +675,14 @@ namespace GrobExp.Mutators.Visitors
             if(methodCallExpression == null)
                 return false;
             return methodCallExpression.Method.IsGenericMethod && methodCallExpression.Method.GetGenericMethodDefinition() == DependenciesExtractorHelper.ExternalCurrentMethod;
+        }
+
+        private static bool IsEachOrCurrentCall(Expression node)
+        {
+            var methodCallExpression = node as MethodCallExpression;
+            if(methodCallExpression == null)
+                return false;
+            return methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod();
         }
 
         private void ProcessCurrentIndex(MethodInfo method, CurrentDependencies current, Expression[] arguments)

@@ -44,6 +44,8 @@ namespace Mutators.Tests
                 });
             o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "qzz", Z = 1}, new B {S = "qxx", Z = 2}, new B()}}};
             validator(o).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+            var node = validationResultTreeNode.Traverse<TestData, int?>(x => x.A.B[0].Z);
+            Assert.IsNotNull(node);
         }
 
         [Test]

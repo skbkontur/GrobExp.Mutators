@@ -1163,14 +1163,34 @@ namespace GrobExp.Mutators
                         var forEach = CacheExternalExpressions(action,
                                                                exp => Expression.Call(null, forEachOverDictionaryMethod.MakeGenericMethod(sourceKeyType, destKeyType, sourceValueType, destValueType), new[] {array, path, keySelector, Expression.Lambda(exp, new[] {sourceValueParameter, destValueParameter})}),
                                                                sourceValueParameter, destValueParameter);
-                        Expression destArrayIsNull = Expression.ReferenceEqual(path, Expression.Constant(null, path.Type));
-                        Expression resizeIfNeeded = Expression.IfThen(destArrayIsNull, Expression.Assign(path, Expression.New(path.Type)));
-                        localResult.Add(Expression.Block(new[] {resizeIfNeeded, forEach}));
+
+                        var extendedDict = CreateDictIfNull(path);
+                        localResult.Add(Expression.Block(new[] { extendedDict, forEach }));
                     }
                 }
             }
             else
                 throw new InvalidOperationException();
+        }
+
+        private static Expression CreateDictIfNull(Expression path)
+        {
+            if(path.NodeType == ExpressionType.MemberAccess)
+            {
+                var memberExpression = (MemberExpression)path;
+                var lazyType = typeof(Lazy<>).MakeGenericType(path.Type);
+                if(memberExpression.Member == lazyType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public))
+                {
+                    var lazyConstructor = lazyType.GetConstructor(new [] {typeof(Func<>).MakeGenericType(path.Type)});
+                    return Expression.IfThen(
+                        Expression.ReferenceEqual(memberExpression.Expression, Expression.Constant(null, lazyType)),
+                        Expression.Assign(memberExpression.Expression,
+                                          Expression.New(lazyConstructor, Expression.Lambda(Expression.New(path.Type)))));
+                }
+            }
+            return Expression.IfThen(
+                Expression.ReferenceEqual(path, Expression.Constant(null, path.Type)),
+                Expression.Assign(path, Expression.New(path.Type)));
         }
 
         private static bool CanWrite(MemberInfo member)

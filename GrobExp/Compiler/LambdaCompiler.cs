@@ -15,6 +15,7 @@ namespace GrobExp.Compiler
     {
         public static Delegate Compile(LambdaExpression lambda, CompilerOptions options)
         {
+            CheckLambdaParameters(lambda);
             CompiledLambda[] subLambdas;
             var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
             return CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
@@ -22,6 +23,7 @@ namespace GrobExp.Compiler
 
         public static TDelegate Compile<TDelegate>(Expression<TDelegate> lambda, CompilerOptions options) where TDelegate : class
         {
+            CheckLambdaParameters(lambda);
             CompiledLambda[] subLambdas;
             var debugInfoGenerator = string.IsNullOrEmpty(DebugOutputDirectory) ? null : DebugInfoGenerator.CreatePdbGenerator();
             return (TDelegate)(object)CompileInternal(lambda, debugInfoGenerator, out subLambdas, options).Delegate;
@@ -29,12 +31,23 @@ namespace GrobExp.Compiler
 
         public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, CompilerOptions options)
         {
+            CheckLambdaParameters(lambda);
             CompileToMethodInternal(lambda, method, null, options);
         }
 
         public static void CompileToMethod(LambdaExpression lambda, MethodBuilder method, DebugInfoGenerator debugInfoGenerator, CompilerOptions options)
         {
+            CheckLambdaParameters(lambda);
             CompileToMethodInternal(lambda, method, debugInfoGenerator, options);
+        }
+
+        private static void CheckLambdaParameters(LambdaExpression lambda)
+        {
+            var parameters = new ParametersExtractor().Extract(lambda.Body);
+            var hashset = new HashSet<ParameterExpression>(lambda.Parameters);
+            foreach(var parameter in parameters)
+                if(!hashset.Contains(parameter))
+                    throw new InvalidOperationException("Lambda contains parameter not presented in Lambda.Parameters");
         }
 
         public static bool AnalyzeILStack = true;

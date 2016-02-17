@@ -23,10 +23,10 @@ namespace GrobExp.Mutators.Visitors
             this.lambda = lambda;
             this.parameters = new HashSet<ParameterExpression>(parameters);
             methodProcessors = new Dictionary<MethodInfo, MethodProcessor>
-            {
-                {DependenciesExtractorHelper.ExternalCurrentMethod, ProcessExternalCurrent},
-                {MutatorsHelperFunctions.CurrentIndexMethod, ProcessCurrentIndex},
-            };
+                {
+                    {DependenciesExtractorHelper.ExternalCurrentMethod, ProcessExternalCurrent},
+                    {MutatorsHelperFunctions.CurrentIndexMethod, ProcessCurrentIndex}
+                };
         }
 
         public override Expression Visit(Expression node)
@@ -38,42 +38,42 @@ namespace GrobExp.Mutators.Visitors
         {
             var bodyWithoutCurrent = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, DependenciesExtractorHelper.ExternalCurrentMethod).Visit(lambda.Body);
             var bodyWithoutEach = new MethodReplacer(MutatorsHelperFunctions.EachMethod, DependenciesExtractorHelper.ExternalCurrentMethod).Visit(bodyWithoutCurrent);
-            Expression body = Visit(bodyWithoutEach);
+            var body = Visit(bodyWithoutEach);
             var replacer = new MethodReplacer(DependenciesExtractorHelper.ExternalCurrentMethod, MutatorsHelperFunctions.CurrentMethod);
             if(body == null)
                 primaryDependencies = new LambdaExpression[0];
             else
             {
                 var primaryDependenciez = new List<LambdaExpression>();
-                foreach(Expression dependency in ((NewArrayExpression)body).Expressions.Select(ClearConverts))
+                foreach(var dependency in ((NewArrayExpression)body).Expressions.Select(ClearConverts))
                 {
                     if((dependency is NewExpression))
                         primaryDependenciez.Add(MakeLambda(dependency));
                     else
                     {
-                        Expression root = dependency.SmashToSmithereens()[0];
+                        var root = dependency.SmashToSmithereens()[0];
                         if(root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root))
                             primaryDependenciez.Add(MakeLambda(dependency));
                     }
                 }
                 primaryDependencies = primaryDependenciez.Select(replacer.Visit).Cast<LambdaExpression>()
-                    .GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+                                                         .GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             }
             additionalDependencies = dependencies.Select(dependency => Expression.Lambda(ClearConverts(dependency.Body), dependency.Parameters)).Where(dependency =>
-            {
-                Expression root = dependency.Body.SmashToSmithereens()[0];
-                return root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root);
-            }).Select(replacer.Visit).Cast<LambdaExpression>().GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+                {
+                    var root = dependency.Body.SmashToSmithereens()[0];
+                    return root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root);
+                }).Select(replacer.Visit).Cast<LambdaExpression>().GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             var result = new List<LambdaExpression>(additionalDependencies);
-            foreach(LambdaExpression primaryDependency in primaryDependencies)
+            foreach(var primaryDependency in primaryDependencies)
                 Extract(primaryDependency.Body, result);
             return result.GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
         }
 
         protected override Expression VisitBinary(BinaryExpression node)
         {
-            Expression left = Visit(node.Left);
-            Expression right = Visit(node.Right);
+            var left = Visit(node.Left);
+            var right = Visit(node.Right);
             IEnumerable<Expression> expressions = new Expression[0];
             if(left != null)
                 expressions = expressions.Concat(((NewArrayExpression)left).Expressions);
@@ -85,19 +85,19 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitBlock(BlockExpression node)
         {
             return Expression.NewArrayInit(typeof(object),
-                (from exp in node.Expressions
-                    from dependency in ((NewArrayExpression)Visit(exp)).Expressions
-                    select dependency));
+                                           (from exp in node.Expressions
+                                            from dependency in ((NewArrayExpression)Visit(exp)).Expressions
+                                            select dependency));
         }
 
         protected override Expression VisitConditional(ConditionalExpression node)
         {
-            Expression test = Visit(node.Test);
-            Expression ifTrue = Visit(node.IfTrue);
-            Expression ifFalse = Visit(node.IfFalse);
+            var test = Visit(node.Test);
+            var ifTrue = Visit(node.IfTrue);
+            var ifFalse = Visit(node.IfFalse);
             if(test != null)
             {
-                foreach(Expression dependency in ((NewArrayExpression)test).Expressions)
+                foreach(var dependency in ((NewArrayExpression)test).Expressions)
                     dependencies.Add(MakeLambda(dependency));
             }
             IEnumerable<Expression> expressions = new Expression[0];
@@ -141,9 +141,9 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitInvocation(InvocationExpression node)
         {
             var primaryDependencies = new List<Expression>();
-            foreach(Expression argument in node.Arguments)
+            foreach(var argument in node.Arguments)
             {
-                Expression arg = Visit(argument);
+                var arg = Visit(argument);
                 if(arg != null)
                     primaryDependencies.AddRange(((NewArrayExpression)arg).Expressions);
             }
@@ -183,12 +183,12 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var primaryDependencies = new List<Expression>();
-            Expression o = Visit(node.Object);
+            var o = Visit(node.Object);
             if(o != null)
                 primaryDependencies.AddRange(((NewArrayExpression)o).Expressions);
-            foreach(Expression argument in node.Arguments)
+            foreach(var argument in node.Arguments)
             {
-                Expression arg = Visit(argument);
+                var arg = Visit(argument);
                 if(arg != null)
                     primaryDependencies.AddRange(((NewArrayExpression)arg).Expressions);
             }
@@ -198,9 +198,9 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitNewArray(NewArrayExpression node)
         {
             var primaryDependencies = new List<Expression>();
-            foreach(Expression expression in node.Expressions)
+            foreach(var expression in node.Expressions)
             {
-                Expression exp = Visit(expression);
+                var exp = Visit(expression);
                 if(exp != null)
                     primaryDependencies.AddRange(((NewArrayExpression)exp).Expressions);
             }
@@ -209,9 +209,9 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitNew(NewExpression node)
         {
-            IEnumerable<UnaryExpression> arguments = (from argument in node.Arguments
-                let arg = Visit(argument)
-                select arg == null ? null : Expression.Convert(Expression.Convert(arg, typeof(object)), argument.Type));
+            var arguments = (from argument in node.Arguments
+                             let arg = Visit(argument)
+                             select arg == null ? null : Expression.Convert(Expression.Convert(arg, typeof(object)), argument.Type));
             return Expression.NewArrayInit(typeof(object), Expression.Convert(Expression.New(node.Constructor, arguments), typeof(object)));
         }
 
@@ -260,7 +260,7 @@ namespace GrobExp.Mutators.Visitors
             var primaryDependencies = new List<Expression>();
             foreach(MemberAssignment assignment in node.Bindings)
             {
-                Expression arg = Visit(assignment.Expression);
+                var arg = Visit(assignment.Expression);
                 if(arg != null)
                     primaryDependencies.AddRange(((NewArrayExpression)arg).Expressions);
             }
@@ -336,12 +336,12 @@ namespace GrobExp.Mutators.Visitors
         {
             if(dependency.NodeType == ExpressionType.New)
             {
-                foreach(Expression argument in ((NewExpression)dependency).Arguments)
+                foreach(var argument in ((NewExpression)dependency).Arguments)
                     Extract(ClearConverts(argument), result);
             }
             else if(dependency.NodeType == ExpressionType.NewArrayInit)
             {
-                foreach(Expression expression in ((NewArrayExpression)dependency).Expressions)
+                foreach(var expression in ((NewArrayExpression)dependency).Expressions)
                     Extract(ClearConverts(expression), result);
             }
             else result.Add(MakeLambda(dependency));
@@ -356,61 +356,61 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression VisitChain(Expression node)
         {
-            Expression[] smithereens = node.SmashToSmithereens();
+            var smithereens = node.SmashToSmithereens();
             if(smithereens.Last().IsStringLengthPropertyAccess())
                 smithereens = smithereens.Take(smithereens.Length - 1).ToArray();
             if(smithereens[0].NodeType == ExpressionType.Constant)
                 return Expression.NewArrayInit(typeof(object));
             if(smithereens[0].NodeType != ExpressionType.Parameter)
                 return base.Visit(node);
-            int index = 0;
+            var index = 0;
             while(index < smithereens.Length && smithereens[index].NodeType != ExpressionType.Call)
                 ++index;
             var current = new CurrentDependencies
-            {
-                Prefix = smithereens[index - 1],
-                AdditionalDependencies = new List<LambdaExpression>()
-            };
+                {
+                    Prefix = smithereens[index - 1],
+                    AdditionalDependencies = new List<LambdaExpression>()
+                };
             while(index < smithereens.Length && current.Prefix != null)
             {
-                Expression shard = smithereens[index];
+                var shard = smithereens[index];
                 switch(shard.NodeType)
                 {
                 case ExpressionType.Call:
-                {
-                    var methodCallExpression = (MethodCallExpression)shard;
-                    MethodInfo method = methodCallExpression.Method;
-                    Expression[] arguments = (method.IsExtension() ? methodCallExpression.Arguments.Skip(1) : methodCallExpression.Arguments).ToArray();
-                    if(method.IsGenericMethod)
-                        method = method.GetGenericMethodDefinition();
-                    MethodProcessor methodProcessor = GetMethodProcessor(method);
-                    if(methodProcessor == null)
-                        throw new NotSupportedException("Method '" + method + "' is not supported");
-                    methodProcessor(methodCallExpression.Method, current, arguments);
-                    break;
-                }
-                case ExpressionType.MemberAccess:
-                {
-                    MemberInfo member = ((MemberExpression)shard).Member;
-                    if(!(current.Prefix is NewExpression))
-                        current.Prefix = Expression.MakeMemberAccess(current.Prefix, member);
-                    else
                     {
-                        if(!current.Prefix.IsAnonymousTypeCreation() && !current.Prefix.IsTupleCreation())
-                            throw new NotSupportedException("An anonymous type or a tuple creation expected but was " + ExpressionCompiler.DebugViewGetter(current.Prefix));
-                        var newExpression = (NewExpression)current.Prefix;
-                        Type type = newExpression.Type;
-                        MemberInfo[] members;
-                        if(member is PropertyInfo)
-                            members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-                        else
-                            throw new NotSupportedException();
-                        int i = Array.IndexOf(members, member);
-                        if(i < 0 || i >= newExpression.Arguments.Count) throw new InvalidOperationException();
-                        var newArrayExpression = (NewArrayExpression)ClearConverts(newExpression.Arguments[i]);
-                        current.Prefix = newArrayExpression.Expressions.Count == 1 ? ClearConverts(newArrayExpression.Expressions[0]) : newArrayExpression;
+                        var methodCallExpression = (MethodCallExpression)shard;
+                        var method = methodCallExpression.Method;
+                        var arguments = (method.IsExtension() ? methodCallExpression.Arguments.Skip(1) : methodCallExpression.Arguments).ToArray();
+                        if(method.IsGenericMethod)
+                            method = method.GetGenericMethodDefinition();
+                        var methodProcessor = GetMethodProcessor(method);
+                        if(methodProcessor == null)
+                            throw new NotSupportedException("Method '" + method + "' is not supported");
+                        methodProcessor(methodCallExpression.Method, current, arguments);
+                        break;
                     }
-                }
+                case ExpressionType.MemberAccess:
+                    {
+                        var member = ((MemberExpression)shard).Member;
+                        if(!(current.Prefix is NewExpression))
+                            current.Prefix = Expression.MakeMemberAccess(current.Prefix, member);
+                        else
+                        {
+                            if(!current.Prefix.IsAnonymousTypeCreation() && !current.Prefix.IsTupleCreation())
+                                throw new NotSupportedException("An anonymous type or a tuple creation expected but was " + ExpressionCompiler.DebugViewGetter(current.Prefix));
+                            var newExpression = (NewExpression)current.Prefix;
+                            var type = newExpression.Type;
+                            MemberInfo[] members;
+                            if(member is PropertyInfo)
+                                members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                            else
+                                throw new NotSupportedException();
+                            var i = Array.IndexOf(members, member);
+                            if(i < 0 || i >= newExpression.Arguments.Count) throw new InvalidOperationException();
+                            var newArrayExpression = (NewArrayExpression)ClearConverts(newExpression.Arguments[i]);
+                            current.Prefix = newArrayExpression.Expressions.Count == 1 ? ClearConverts(newArrayExpression.Expressions[0]) : newArrayExpression;
+                        }
+                    }
                     break;
                 case ExpressionType.ArrayIndex:
                     current.Prefix = Expression.MakeBinary(ExpressionType.ArrayIndex, current.Prefix, ((BinaryExpression)shard).Right);
@@ -434,7 +434,7 @@ namespace GrobExp.Mutators.Visitors
                         primaryDependencies.AddRange(((NewExpression)current.Prefix).Arguments);
                     else
                     {
-                        foreach(Expression expression in ((NewExpression)current.Prefix).Arguments.Select(ClearConverts))
+                        foreach(var expression in ((NewExpression)current.Prefix).Arguments.Select(ClearConverts))
                             primaryDependencies.AddRange(((NewArrayExpression)expression).Expressions.Select(ClearConverts));
                     }
                 }
@@ -453,7 +453,7 @@ namespace GrobExp.Mutators.Visitors
         {
             if(node.NodeType != ExpressionType.Call)
                 return true;
-            MethodInfo method = ((MethodCallExpression)node).Method;
+            var method = ((MethodCallExpression)node).Method;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType != typeof(Enumerable) || (method.Name != "Any" && method.Name != "All");
@@ -507,7 +507,7 @@ namespace GrobExp.Mutators.Visitors
 
         private void DefaultMethodProcessor(MethodInfo method, CurrentDependencies current, Expression[] arguments)
         {
-            foreach(Expression argument in arguments)
+            foreach(var argument in arguments)
                 Visit(argument);
         }
 
@@ -528,14 +528,14 @@ namespace GrobExp.Mutators.Visitors
             LambdaExpression[] primarySubDependencies;
             LambdaExpression[] additionalSubDependencies;
             subExtractor.Extract(out primarySubDependencies, out additionalSubDependencies);
-            LambdaExpression prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
+            var prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
 
             current.AddSubDependencies(prefixCurrent, additionalSubDependencies);
 
             if(primarySubDependencies.Length > 1)
                 return Expression.NewArrayInit(typeof(object), primarySubDependencies.Select(exp => Expression.Convert(prefixCurrent.Merge(exp).Body, typeof(object))));
 
-            LambdaExpression primarySubDependency = primarySubDependencies.SingleOrDefault();
+            var primarySubDependency = primarySubDependencies.SingleOrDefault();
             if(primarySubDependency == null)
                 return null;
 
@@ -563,14 +563,14 @@ namespace GrobExp.Mutators.Visitors
             switch(arguments.Length)
             {
             case 2:
-            {
-                Expression seed = arguments[0];
-                var selector = (LambdaExpression)arguments[1];
-                current.AddDependency(MakeLambda(seed));
-                current.Prefix = MakeSelect(current, Expression.Lambda(selector.Body, selector.Parameters[1]));
-                current.ReplaceCurrentWithEach();
-                break;
-            }
+                {
+                    var seed = arguments[0];
+                    var selector = (LambdaExpression)arguments[1];
+                    current.AddDependency(MakeLambda(seed));
+                    current.Prefix = MakeSelect(current, Expression.Lambda(selector.Body, selector.Parameters[1]));
+                    current.ReplaceCurrentWithEach();
+                    break;
+                }
             default:
                 throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
             }
@@ -595,13 +595,13 @@ namespace GrobExp.Mutators.Visitors
         {
             if(current.Prefix.Type == typeof(string))
                 return;
-            LambdaExpression prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
+            var prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
             var predicate = (LambdaExpression)arguments.SingleOrDefault();
             if(predicate == null)
                 current.AddDependency(prefixCurrent);
             else
             {
-                LambdaExpression[] subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
+                var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
                 current.AddSubDependencies(prefixCurrent, subDependencies);
             }
         }
@@ -610,13 +610,13 @@ namespace GrobExp.Mutators.Visitors
         {
             if(current.Prefix.Type == typeof(string))
                 return;
-            LambdaExpression prefixEach = MakeLambda(GotoEach(current.Prefix));
+            var prefixEach = MakeLambda(GotoEach(current.Prefix));
             var predicate = (LambdaExpression)arguments.SingleOrDefault();
             if(predicate == null)
                 current.AddDependency(prefixEach);
             else
             {
-                LambdaExpression[] subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
+                var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
                 current.AddSubDependencies(prefixEach, subDependencies);
             }
             current.ReplaceCurrentWithEach();
@@ -630,7 +630,7 @@ namespace GrobExp.Mutators.Visitors
         private void ProcessLinqSelectMany(MethodInfo method, CurrentDependencies current, Expression[] arguments)
         {
             var collectionSelector = (LambdaExpression)arguments[0];
-            Expression collection = MakeSelect(current, collectionSelector);
+            var collection = MakeSelect(current, collectionSelector);
             if(collection == null)
             {
                 current.Prefix = null;
@@ -646,10 +646,10 @@ namespace GrobExp.Mutators.Visitors
             LambdaExpression[] primarySubDependencies;
             LambdaExpression[] additionalSubDependencies;
             subExtractor.Extract(out primarySubDependencies, out additionalSubDependencies);
-            LambdaExpression prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
-            LambdaExpression collectionCurrent = MakeLambda(GotoCurrent(collection));
+            var prefixCurrent = MakeLambda(GotoCurrent(current.Prefix));
+            var collectionCurrent = MakeLambda(GotoCurrent(collection));
             current.AddSubDependencies(prefixCurrent, collectionCurrent, additionalSubDependencies);
-            LambdaExpression primarySubDependency = primarySubDependencies.Single();
+            var primarySubDependency = primarySubDependencies.Single();
             if(!(primarySubDependency.Body is NewExpression))
                 current.Prefix = new AnonymousTypeEliminator().Eliminate(new ExpressionMerger(prefixCurrent, collectionCurrent).Merge(primarySubDependency)).Body;
             else
@@ -661,7 +661,7 @@ namespace GrobExp.Mutators.Visitors
 
         private void ProcessExternalCurrent(MethodInfo method, CurrentDependencies current, Expression[] arguments)
         {
-            Expression prefix = current.Prefix;
+            var prefix = current.Prefix;
             if(prefix.IsAnonymousTypeCreation() || prefix.IsTupleCreation() || IsExternalCurrentCall(prefix))
                 return;
             if(IsEachOrCurrentCall(prefix))
@@ -702,25 +702,25 @@ namespace GrobExp.Mutators.Visitors
             public void ReplaceCurrentWithEach()
             {
                 var replacer = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod);
-                for(int i = 0; i < AdditionalDependencies.Count; ++i)
+                for(var i = 0; i < AdditionalDependencies.Count; ++i)
                     AdditionalDependencies[i] = (LambdaExpression)replacer.Visit(AdditionalDependencies[i]);
                 Prefix = replacer.Visit(Prefix);
             }
 
             public void AddSubDependencies(LambdaExpression prefix, LambdaExpression[] subDependencies)
             {
-                foreach(LambdaExpression subDependency in subDependencies)
+                foreach(var subDependency in subDependencies)
                 {
-                    LambdaExpression refinedSubDependency = new AnonymousTypeEliminator().Eliminate(prefix.Merge(subDependency));
+                    var refinedSubDependency = new AnonymousTypeEliminator().Eliminate(prefix.Merge(subDependency));
                     AddDependency(refinedSubDependency);
                 }
             }
 
             public void AddSubDependencies(LambdaExpression prefix1, LambdaExpression prefix2, LambdaExpression[] subDependencies)
             {
-                foreach(LambdaExpression subDependency in subDependencies)
+                foreach(var subDependency in subDependencies)
                 {
-                    LambdaExpression refinedSubDependency = new AnonymousTypeEliminator().Eliminate(new ExpressionMerger(prefix1, prefix2).Merge(subDependency));
+                    var refinedSubDependency = new AnonymousTypeEliminator().Eliminate(new ExpressionMerger(prefix1, prefix2).Merge(subDependency));
                     AddDependency(refinedSubDependency);
                 }
             }
@@ -741,7 +741,7 @@ namespace GrobExp.Mutators.Visitors
         {
             public LambdaExpression Eliminate(LambdaExpression lambda)
             {
-                Expression body = Visit(lambda.Body);
+                var body = Visit(lambda.Body);
                 return Expression.Lambda(body, lambda.Parameters);
             }
 
@@ -750,15 +750,15 @@ namespace GrobExp.Mutators.Visitors
                 if(!node.Expression.IsAnonymousTypeCreation() && !node.Expression.IsTupleCreation())
                     return base.VisitMember(node);
                 var newExpression = (NewExpression)Visit(node.Expression);
-                MemberInfo member = node.Member;
-                Type type = newExpression.Type;
+                var member = node.Member;
+                var type = newExpression.Type;
                 MemberInfo[] members;
                 if(member is FieldInfo)
                     members = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
                 else if(member is PropertyInfo)
                     members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
                 else throw new NotSupportedException();
-                int i = Array.IndexOf(members, member);
+                var i = Array.IndexOf(members, member);
                 if(i < 0 || i >= newExpression.Arguments.Count) throw new InvalidOperationException();
                 var newArrayExpression = (NewArrayExpression)ClearConverts(newExpression.Arguments[i]);
                 return newArrayExpression.Expressions.Count == 1 ? ClearConverts(newArrayExpression.Expressions[0]) : newArrayExpression;

@@ -340,9 +340,10 @@ namespace Mutators.Tests
 
         private void DoTest<T1, T2>(Expression<Func<T1, T2>> exp, T1 data, string expected)
         {
-            var resolved = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
+            var resolvedArrayIndexes = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
+            var resolved = Expression.Block(typeof(object[]), new[] {resolvedArrayIndexes.indexes}, resolvedArrayIndexes.indexesInit, Expression.NewArrayInit(typeof(object), resolvedArrayIndexes.path));
             ParameterExpression[] parameters = resolved.ExtractParameters();
-            Expression<Func<T1, string[]>> lambda = Expression.Lambda<Func<T1, string[]>>(resolved, parameters);
+            Expression<Func<T1, object[]>> lambda = Expression.Lambda<Func<T1, object[]>>(resolved, parameters);
             Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)));
         }
 

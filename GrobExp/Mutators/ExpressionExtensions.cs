@@ -528,7 +528,7 @@ namespace GrobExp.Mutators
 
         private static bool IsAllowedMethod(MethodInfo method)
         {
-            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
+            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(DependenciesExtractorHelper) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();

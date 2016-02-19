@@ -18,6 +18,13 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
+    public class MutatorWithPath
+    {
+        public Expression PathToNode { get; set; }
+        public Expression PathToMutator { get; set; }
+        public MutatorConfiguration Mutator { get; set; }
+    }
+
     public class ModelConfigurationNode
     {
         private ModelConfigurationNode(Type rootType, Type nodeType, ModelConfigurationNode root, ModelConfigurationNode parent, ModelConfigurationEdge edge, Expression path)
@@ -213,21 +220,24 @@ namespace GrobExp.Mutators
 
         public override string ToString()
         {
-            var allMutators = new List<KeyValuePair<Expression, MutatorConfiguration>>();
+            var allMutators = new List<MutatorWithPath>();
             GetMutatorsWithPath(allMutators);
             return PrintAllMutators(allMutators);
         }
 
-        public static string PrintAllMutators(IEnumerable<KeyValuePair<Expression, MutatorConfiguration>> mutators)
+        public static string PrintAllMutators(IEnumerable<MutatorWithPath> mutators)
         {
             var result = new StringBuilder();
-            foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.Key, false)))
+            foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.PathToNode, false)))
             {
                 result.AppendLine(group.Key.Expression.ToString());
                 foreach (var pair in group)
                 {
-                    result.Append("    ");
-                    result.AppendLine(pair.Value.ToString());
+                    result.Append("    PATH: ");
+                    result.AppendLine(pair.PathToMutator.ToString());
+                    result.Append("    MUTATOR: ");
+                    result.AppendLine(pair.Mutator.ToString());
+                    result.AppendLine();
                 }
             }
             return result.ToString();
@@ -238,14 +248,19 @@ namespace GrobExp.Mutators
             return mutators.Select(pair => pair.Value).ToArray();
         }
 
-        public KeyValuePair<Expression, MutatorConfiguration>[] GetMutatorsWithPath()
+        public MutatorWithPath[] GetMutatorsWithPath()
         {
-            return mutators.ToArray();
+            return mutators.Select(mutator => new MutatorWithPath
+            {
+                PathToNode = Path,
+                PathToMutator = mutator.Key,
+                Mutator = mutator.Value
+            }).ToArray();
         }
 
-        private void GetMutatorsWithPath(List<KeyValuePair<Expression, MutatorConfiguration>> result)
+        private void GetMutatorsWithPath(List<MutatorWithPath> result)
         {
-            result.AddRange(mutators);
+            result.AddRange(GetMutatorsWithPath());
             foreach(var child in Children)
                 child.GetMutatorsWithPath(result);
         }

@@ -81,7 +81,7 @@ namespace GrobExp.Mutators
                 };
         }
 
-        protected override void GetAllMutators(List<KeyValuePair<Expression, MutatorConfiguration>> mutators)
+        protected override void GetAllMutators(List<MutatorWithPath> mutators)
         {
             foreach(var tree in trees)
                 mutators.AddRange(tree.GetAllMutatorsWithPaths());

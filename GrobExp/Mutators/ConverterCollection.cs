@@ -361,7 +361,7 @@ namespace GrobExp.Mutators
 
         private Expression MakeConvert(Expression value, Type type)
         {
-            var needCoalesce = true;
+            var needCoalesce = type.IsValueType && !type.IsNullable();
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
@@ -370,12 +370,12 @@ namespace GrobExp.Mutators
             }
             else if(IsPrimitive(type))
             {
-                if(type.IsValueType)
+                if(needCoalesce)
                     value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
                 needCoalesce = false;
                 value = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), type), value);
             }
-            if(type.IsValueType && needCoalesce)
+            if(needCoalesce)
                 value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
             if(type.IsArray)
             {
@@ -388,7 +388,7 @@ namespace GrobExp.Mutators
 
         private static bool IsPrimitive(Type type)
         {
-            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if(type.IsNullable())
                 return IsPrimitive(type.GetGenericArguments()[0]);
             return type.IsPrimitive || type == typeof(decimal);
         }

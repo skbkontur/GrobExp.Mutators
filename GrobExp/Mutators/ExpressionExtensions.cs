@@ -527,7 +527,7 @@ namespace GrobExp.Mutators
 
         private static bool IsAllowedMethod(MethodInfo method)
         {
-            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
+            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(DependenciesExtractorHelper) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
         }
 
         private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)

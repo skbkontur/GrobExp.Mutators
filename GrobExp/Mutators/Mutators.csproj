@@ -97,6 +97,11 @@
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
     <Compile Include="PathFormatterWrapper.cs" />
+    <Compile Include="ReadonlyCollections\IReadonlyHashtable.cs" />
+    <Compile Include="ReadonlyCollections\IReadonlySet.cs" />
+    <Compile Include="ReadonlyCollections\ReadonlyHashtable.cs" />
+    <Compile Include="ReadonlyCollections\ReadonlySet.cs" />
+    <Compile Include="ReadonlyCollections\TinyHashtable.cs" />
     <Compile Include="SimpleMutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
@@ -153,6 +158,7 @@
     <Compile Include="Visitors\ParameterCanonizer.cs" />
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />
+    <Compile Include="Visitors\ResolvedArrayIndexes.cs" />
     <Compile Include="Visitors\SelectManyCollectionSelectorExtender.cs" />
     <Compile Include="Visitors\TextGeneralizer.cs" />
     <Compile Include="Visitors\ArraysExtractor.cs" />

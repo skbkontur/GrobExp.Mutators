@@ -231,7 +231,7 @@ namespace Mutators.Tests
                                 },
                         }
                 }).AssertEquivalent(
-                new ValidationResultTreeNode
+                new ValidationResultTreeNode<WebData>
                     {
                         {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value[S].Value"}}, 0)},
                         {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value[StrArr].Value[1]"}}, 0)},
@@ -273,7 +273,7 @@ namespace Mutators.Tests
                         }
                 });
             validationResultTreeNode.AssertEquivalent(
-                new ValidationResultTreeNode
+                new ValidationResultTreeNode<ModelData>
                     {
                         {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)},
                         {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields[StrArr].Value[1]"}}, 0)},

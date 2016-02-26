@@ -481,6 +481,7 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqWhere;
                 case "Any":
                 case "All":
+                case "ToArray":
                     return ProcessLinqAny;
                 case "Select":
                     return ProcessLinqSelect;
@@ -488,7 +489,6 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqSelectMany;
                 case "Aggregate":
                     return ProcessLinqAggregate;
-                case "ToArray":
                 case "Cast":
                     return DefaultMethodProcessor;
                 default:
@@ -511,15 +511,23 @@ namespace GrobExp.Mutators.Visitors
                 Visit(argument);
         }
 
+        private static bool IsEnumerable(Type type)
+        {
+            if (type.IsArray) return true;
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return true;
+            return type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        }
+
         private static Expression GotoEach(Expression node)
         {
-            node = node.Type.IsEnumerable() && node.NodeType != ExpressionType.NewArrayInit ? Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node) : node;
+            node = IsEnumerable(node.Type) && node.NodeType != ExpressionType.NewArrayInit ? Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node) : node;
             return new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod).Visit(node);
         }
 
         private static Expression GotoCurrent(Expression node)
         {
-            return node.Type.IsEnumerable() && node.NodeType != ExpressionType.NewArrayInit ? Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(node.Type.GetItemType()), node) : node;
+            return IsEnumerable(node.Type) && node.NodeType != ExpressionType.NewArrayInit ? Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(node.Type.GetItemType()), node) : node;
         }
 
         private Expression MakeSelect(CurrentDependencies current, LambdaExpression selector)
@@ -612,13 +620,14 @@ namespace GrobExp.Mutators.Visitors
                 return;
             var prefixEach = MakeLambda(GotoEach(current.Prefix));
             var predicate = (LambdaExpression)arguments.SingleOrDefault();
-            if(predicate == null)
-                current.AddDependency(prefixEach);
-            else
+            if(predicate != null)
             {
                 var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
                 current.AddSubDependencies(prefixEach, subDependencies);
             }
+            else
+                current.AddDependency(prefixEach);
+            current.Prefix = prefixEach.Body;
             current.ReplaceCurrentWithEach();
         }
 

@@ -413,7 +413,8 @@ namespace GrobExp.Mutators.Visitors
                     }
                     break;
                 case ExpressionType.ArrayIndex:
-                    current.Prefix = Expression.MakeBinary(ExpressionType.ArrayIndex, current.Prefix, ((BinaryExpression)shard).Right);
+                    if(current.Prefix.Type.IsArray)
+                        current.Prefix = Expression.MakeBinary(ExpressionType.ArrayIndex, current.Prefix, ((BinaryExpression)shard).Right);
                     break;
                 case ExpressionType.Convert:
                     if(current.Prefix.Type == typeof(object))
@@ -481,8 +482,9 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqWhere;
                 case "Any":
                 case "All":
-                case "ToArray":
                     return ProcessLinqAny;
+                case "ToArray":
+                    return ProcessLinqToArray;
                 case "Select":
                     return ProcessLinqSelect;
                 case "SelectMany":
@@ -616,6 +618,16 @@ namespace GrobExp.Mutators.Visitors
 
         private void ProcessLinqAny(MethodInfo method, CurrentDependencies current, Expression[] arguments)
         {
+            ProcessLinqAny(current, arguments, true);
+        }
+
+        private void ProcessLinqToArray(MethodInfo method, CurrentDependencies current, Expression[] arguments)
+        {
+            ProcessLinqAny(current, arguments, false);
+        }
+
+        private void ProcessLinqAny(CurrentDependencies current, Expression[] arguments, bool emptyPredicateIsDependency)
+        {
             if(current.Prefix.Type == typeof(string))
                 return;
             var prefixEach = MakeLambda(GotoEach(current.Prefix));
@@ -625,7 +637,7 @@ namespace GrobExp.Mutators.Visitors
                 var subDependencies = predicate.ExtractDependencies(parameters.Concat(predicate.Parameters));
                 current.AddSubDependencies(prefixEach, subDependencies);
             }
-            else
+            else if(emptyPredicateIsDependency)
                 current.AddDependency(prefixEach);
             current.Prefix = prefixEach.Body;
             current.ReplaceCurrentWithEach();

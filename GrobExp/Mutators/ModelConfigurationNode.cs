@@ -1435,7 +1435,10 @@ namespace GrobExp.Mutators
                     if(current != null)
                         isDisabled = isDisabled == null ? current : Expression.OrElse(current, isDisabled);
                 }
-                Expression value = Expression.Convert(path.ResolveAliases(aliases), typeof(object));
+                var value = path.ResolveAliases(aliases);
+                if (value.Type.IsGenericType && value.Type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    value = Expression.Call(toArrayMethod.MakeGenericMethod(value.Type.GetItemType()), value);
+                value = Expression.Convert(value, typeof(object));
 
                 var firstAlias = new List<KeyValuePair<Expression, Expression>> {aliases.First()};
                 var aliasesInTermsOfFirst = aliases.Count > 1 ? aliases.Skip(1).ToList() : new List<KeyValuePair<Expression, Expression>>();

@@ -17,11 +17,21 @@ namespace Mutators.Tests
 {
     public static class ObjectComparer
     {
-        public static void AssertEqualsToUsingGrobuf<T>(this T actual, T expected, string message = "", params object[] args)
+        public static void AssertEqualsToUsingGrobuf<T>(this T actual, T expected)
         {
             var expectedBytes = serializer.Serialize(expected);
             var actualBytes = serializer.Serialize(actual);
-            Assert.AreEqual(DebugViewBuilder.DebugView(expectedBytes), DebugViewBuilder.DebugView(actualBytes), message, args);
+            bool ok = true;
+            if(expectedBytes.Length != actualBytes.Length)
+                ok = false;
+            else
+            {
+                for(int i = 0; i < actualBytes.Length; ++i)
+                    if(actualBytes[i] != expectedBytes[i])
+                        ok = false;
+            }
+            if(!ok)
+                Assert.Fail("Expected:\r\n{0}\r\n\r\nActual:\r\n{1}", DebugViewBuilder.DebugView(expectedBytes), DebugViewBuilder.DebugView(actualBytes));
         }
 
         public static void AssertEqualsExpression(this Expression actual, Expression expected)

@@ -64,6 +64,20 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestToArray1()
+        {
+            Expression<Func<A, object>> expression = a => a.B.Cz.Where(r => r.S != null).ToArray();
+            DoTest(expression, a => a.B.Cz.Each().S, a => a.B.Cz.Each());
+        }
+
+        [Test]
+        public void TestToArray2()
+        {
+            Expression<Func<A, object>> expression = a => a.B.Cz.Where(r => r.S != null).ToArray()[0].D.S;
+            DoTest(expression, a => a.B.Cz.Each().S, a => a.B.Cz.Each().D.S);
+        }
+
+        [Test]
         public void TestWhere4()
         {
             Expression<Func<A, string>> expression = a => a.B.Cz.Where(r => r.S != null).Current().D.S;

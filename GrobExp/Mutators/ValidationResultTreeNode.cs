@@ -46,9 +46,12 @@ namespace GrobExp.Mutators
                 {
                     result = (Type)types[type];
                     var typeBeingBuilt = (Type)typesBeingBuilt[type];
-                    if(result == null && returnBeingBuilt && typeBeingBuilt != null)
-                        return typeBeingBuilt;
-                    types[type] = result = BuildTypeInternal(type);
+                    if(result == null)
+                    {
+                        if(returnBeingBuilt && typeBeingBuilt != null)
+                            return typeBeingBuilt;
+                        types[type] = result = BuildTypeInternal(type);
+                    }
                 }
             }
             return result;

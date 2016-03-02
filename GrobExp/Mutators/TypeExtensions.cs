@@ -52,14 +52,6 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        public static bool IsEnumerable(this Type type)
-        {
-            if(type.IsArray) return true;
-            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                return true;
-            return type.GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-        }
-
         public static bool IsAnonymousType(this Type type)
         {
             return type.Name.StartsWith("<>f__AnonymousType");

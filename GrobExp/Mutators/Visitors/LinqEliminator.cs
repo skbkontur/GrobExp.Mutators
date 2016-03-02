@@ -27,6 +27,16 @@ namespace GrobExp.Mutators.Visitors
             return result;
         }
 
+        public Expression EliminateQzz(Expression node, Func<ParameterExpression, ParameterExpression, ParameterExpression[], Expression> action)
+        {
+            needGlobalIndexes = true;
+            indexes = new List<ParameterExpression>();
+            return VisitChain((context, current, index, expressions, variables) =>
+                {
+                    expressions.Add(action(current, index, indexes.ToArray()));
+                }, null, node);
+        }
+
         public override Expression Visit(Expression node)
         {
             return node.IsLinkOfChain(false, false) ? VisitChain(DefaultFinishAction, null, node) : base.Visit(node);
@@ -54,7 +64,7 @@ namespace GrobExp.Mutators.Visitors
             return base.VisitMethodCall(node);
         }
 
-        private Expression VisitChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, Expression node)
+        private Expression VisitChain(Action<Context, ParameterExpression, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction, Context parentContext, Expression node)
         {
             var smithereens = node.SmashToSmithereens();
             int i;
@@ -130,14 +140,14 @@ namespace GrobExp.Mutators.Visitors
             return methodCallExpression.Method.IsExtension() ? methodCallExpression.Arguments.Skip(1) : methodCallExpression.Arguments;
         }
 
-        private static void DefaultFinishAction(Context context, ParameterExpression current, List<Expression> expressions, List<ParameterExpression> variables)
+        private static void DefaultFinishAction(Context context, ParameterExpression current, ParameterExpression index, List<Expression> expressions, List<ParameterExpression> variables)
         {
             var result = context.result;
-            if(result.Type.IsGenericType && result.Type.GetGenericTypeDefinition() == typeof(List<>))
+            if(result != null && result.Type.IsGenericType && result.Type.GetGenericTypeDefinition() == typeof(List<>))
                 expressions.Add(Expression.Call(result, "Add", Type.EmptyTypes, current));
         }
 
-        private Expression ProcessMethodsChain(Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction,
+        private Expression ProcessMethodsChain(Action<Context, ParameterExpression, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction,
                                                Context parentContext,
                                                Expression collection,
                                                Expression[] smithereens,
@@ -154,6 +164,8 @@ namespace GrobExp.Mutators.Visitors
                     // Aggregate with resultSelector
                     resultType = lastMethod.GetGenericArguments()[1]; // TAccumulate
                 }
+                else if(lastMethod.IsEachMethod())
+                    resultType = typeof(void);
                 else
                     resultType = lastType;
                 resultIsCollection = false;
@@ -163,7 +175,7 @@ namespace GrobExp.Mutators.Visitors
                 resultType = typeof(List<>).MakeGenericType(lastType.GetGenericArguments());
                 resultIsCollection = true;
             }
-            var result = CreateParameter(resultType, "result");
+            var result = resultType == typeof(void) ? null : CreateParameter(resultType, "result");
             var found = lastMethod.Name == "First" || lastMethod.Name == "FirstOrDefault"
                         || lastMethod.Name == "Single" || lastMethod.Name == "SingleOrDefault"
                         || lastMethod.Name == "Aggregate" // Aggregate(func) throws InvalidOperationException if the collection is empty
@@ -175,26 +187,31 @@ namespace GrobExp.Mutators.Visitors
             var expressions = new List<Expression>();
             if(found != null)
                 expressions.Add(Expression.Assign(found, Expression.Constant(false)));
-            Expression defaultValue;
-            if(resultIsCollection)
-                defaultValue = Expression.New(resultType);
-            else
+            if(result != null)
             {
-                switch(lastMethod.Name)
+                Expression defaultValue;
+                if(resultIsCollection)
+                    defaultValue = Expression.New(resultType);
+                else
                 {
-                case "All":
-                    defaultValue = Expression.Constant(true);
-                    break;
-                case "Sum":
-                    defaultValue = Expression.Convert(Expression.Default(result.Type.IsNullable() ? result.Type.GetGenericArguments()[0] : result.Type), result.Type);
-                    break;
-                default:
-                    defaultValue = Expression.Default(result.Type);
-                    break;
+                    switch(lastMethod.Name)
+                    {
+                    case "All":
+                        defaultValue = Expression.Constant(true);
+                        break;
+                    case "Sum":
+                        defaultValue = Expression.Convert(Expression.Default(result.Type.IsNullable() ? result.Type.GetGenericArguments()[0] : result.Type), result.Type);
+                        break;
+                    default:
+                        defaultValue = Expression.Default(result.Type);
+                        break;
+                    }
                 }
+                expressions.Add(Expression.Assign(result, defaultValue));
             }
-            expressions.Add(Expression.Assign(result, defaultValue));
-            var variables = new List<ParameterExpression> {result};
+            var variables = new List<ParameterExpression>();
+            if(result != null)
+                variables.Add(result);
             if(found != null)
                 variables.Add(found);
             if(indexesCopy != null)
@@ -258,7 +275,7 @@ namespace GrobExp.Mutators.Visitors
                 throw new InvalidOperationException();
             }
             var cycleVariables = new List<ParameterExpression> {item};
-            var breakLabel = Expression.Label(result.Type);
+            var breakLabel = Expression.Label(result == null ? typeof(void) : result.Type);
             var cycleBody = new List<Expression>
                 {
                     Expression.PreIncrementAssign(index),
@@ -285,14 +302,17 @@ namespace GrobExp.Mutators.Visitors
                 expressions.Add(Expression.IfThen(Expression.Not(found), Expression.Throw(Expression.New(invalidOperationExceptionConstructor, Expression.Constant("Sequence contains no elements")))));
             if(indexesCopy != null)
                 expressions.Add(Expression.IfThen(found, Expression.Block(cycleIndexes.Select((indeX, i) => Expression.Assign(indeX, Expression.ArrayIndex(indexesCopy, Expression.Constant(i)))))));
-            if(lastMethod.Name == "Aggregate" && lastMethod.GetParameters().Length == 4)
+            if(result != null)
             {
-                // Aggregate with resultSelector
-                var resultSelector = (LambdaExpression)((MethodCallExpression)smithereens[finish - 1]).Arguments[3];
-                expressions.Add(Visit(new ParameterReplacer(resultSelector.Parameters[0], result).Visit(resultSelector.Body)));
+                if(lastMethod.Name == "Aggregate" && lastMethod.GetParameters().Length == 4)
+                {
+                    // The 'Aggregate' method with resultSelector
+                    var resultSelector = (LambdaExpression)((MethodCallExpression)smithereens[finish - 1]).Arguments[3];
+                    expressions.Add(Visit(new ParameterReplacer(resultSelector.Parameters[0], result).Visit(resultSelector.Body)));
+                }
+                else
+                    expressions.Add(result);
             }
-            else
-                expressions.Add(result);
             return Expression.Block(variables, expressions);
         }
 
@@ -304,7 +324,7 @@ namespace GrobExp.Mutators.Visitors
         private void ProcessMethodsChain(Context context,
                                          Expression[] smithereens,
                                          int from, int to,
-                                         Action<Context, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction,
+                                         Action<Context, ParameterExpression, ParameterExpression, List<Expression>, List<ParameterExpression>> finishAction,
                                          ParameterExpression current,
                                          ParameterExpression index,
                                          List<Expression> expressions,
@@ -312,12 +332,15 @@ namespace GrobExp.Mutators.Visitors
         {
             if(from == to)
             {
-                finishAction(context, current, expressions, variables);
+                finishAction(context, current, index, expressions, variables);
                 return;
             }
             var methodCallExpression = (MethodCallExpression)smithereens[from];
             switch(methodCallExpression.Method.Name)
             {
+            case "Each":
+                ProcessMethodsChain(context, smithereens, from + 1, to, finishAction, current, index, expressions, variables);
+                break;
             case "Select":
                 {
                     // todo selector with index
@@ -349,7 +372,7 @@ namespace GrobExp.Mutators.Visitors
                         var itemType = collectionSelector.Body.Type.GetItemType();
                         var parameter = Expression.Parameter(itemType);
                         var selector = Expression.Lambda(parameter, parameter);
-                        expressions.Add(VisitChain((conteXt, curreNt, eXpressions, variablEs) =>
+                        expressions.Add(VisitChain((conteXt, curreNt, indeX, eXpressions, variablEs) =>
                             {
                                 eXpressions.Add(Expression.PreIncrementAssign(newIndex));
 
@@ -363,7 +386,7 @@ namespace GrobExp.Mutators.Visitors
                                     variablEs.Add(curreNt);
                                     eXpressions.Add(Expression.Assign(curreNt, Visit(resultSelector.Body)));
                                 }
-                                ProcessMethodsChain(conteXt.parentContext, smithereens, from + 1, to, DefaultFinishAction, curreNt, newIndex, eXpressions, variablEs);
+                                ProcessMethodsChain(conteXt.parentContext, smithereens, from + 1, to, finishAction, curreNt, newIndex, eXpressions, variablEs);
                             }, context, Expression.Call(selectMethod.MakeGenericMethod(itemType, itemType), collectionSelector.Body, selector)));
                     }
                     else
@@ -630,6 +653,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool IsEndOfMethodsChain(MethodCallExpression node)
         {
+            if(node.Method.IsEachMethod())
+                return true;
             var name = node.Method.Name;
             return name == "First" || name == "FirstOrDefault" || name == "Single" || name == "SingleOrDefault"
                    || name == "Sum" || name == "Max" || name == "Min" || name == "Average"
@@ -643,6 +668,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool IsLinqMethod(MethodInfo method)
         {
+            if(method.IsEachMethod())
+                return true;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType == typeof(Enumerable) && method.Name != "ToArray" && method.Name != "ToList" && method.Name != "ToDictionary";

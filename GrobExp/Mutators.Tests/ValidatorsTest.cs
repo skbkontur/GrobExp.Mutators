@@ -230,7 +230,7 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.Dict["Zzz"]).Required());
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
-            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Dict[Zzz]"}})}});
+            validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", null}}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"Dict.Zzz", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Dict.Zzz"}})}});
             validator(new TestData {Dict = new Dictionary<string, string> {{"Zzz", "qxx"}}}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
@@ -438,6 +438,60 @@ namespace Mutators.Tests
                 {
                     {"T.R.0.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[0].U.S"}}, 0)},
                 });
+        }
+
+        [Test]
+        public void TestConvertedValidatorsArray_SelectMany()
+        {
+            var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
+            var converterCollectionFactory = new TestConverterCollectionFactory();
+            var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
+                configurator => configurator.Target(data => data.A.B.Each().S)
+                    .Set(data2 => data2.T.R.SelectMany(r => r.U.ArrayV).Each().S));
+            var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
+                configurator => configurator.Target(data => data.A.B.Each().S)
+                    .InvalidIf(data => data.A.B.Each().S == "zzz",
+                    data => new LengthNotExactlyEqualsText{ Exactly = data.A.B.Current().CurrentIndex()}));
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
+                configurator => { });
+            dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
+            dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
+            converterCollectionFactory.Register(converterCollection);
+
+            var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
+
+//            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+//            validator(new TestData2 {T = new T {R = new[] {new R {U = new U ()}}}})
+//                .AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+//            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {ArrayV = new[] {new V(), }}}}}})
+//                .AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+//            validator(new TestData2 {T = new T {R = new[] {new R {U = new U {ArrayV = new[] {new V{S = "qxx"}, }}}}}})
+//                .AssertEquivalent(new ValidationResultTreeNode<TestData2>());
+            var path = new SimplePathFormatterText {Paths = new[] {"T.R[0].U.ArrayV[0].S"}};
+            validator(new TestData2 { T = new T { R = new[] { new R { U = new U { ArrayV = new[] { new V { S = "zzz" }, } } } } } })
+                .AssertEquivalent(new ValidationResultTreeNode<TestData2>
+                    {
+                        {"T.R.0.U.ArrayV.0.S", FormattedValidationResult.Error(
+                            new LengthNotExactlyEqualsText{Exactly = 0, Path = path, Value = "zzz"}, "zzz", path, 0)}
+                    });
+            path = new SimplePathFormatterText { Paths = new[] { "T.R[0].U.ArrayV[1].S" } };
+            validator(new TestData2 { T = new T { R = new[] { new R { U = new U { ArrayV = new[] { new V { S = "qxx" }, new V { S = "zzz" }, } } } } } })
+                .AssertEquivalent(new ValidationResultTreeNode<TestData2>
+                    {
+                        {"T.R.0.U.ArrayV.1.S", FormattedValidationResult.Error(
+                            new LengthNotExactlyEqualsText{Exactly = 1, Path = path, Value = "zzz"}, "zzz", path, 0)}
+                    });
+            path = new SimplePathFormatterText { Paths = new[] { "T.R[1].U.ArrayV[0].S" } };
+            validator(new TestData2 { T = new T { R = new[]
+                {
+                    new R { U = new U { ArrayV = new[] { new V { S = "qxx" }, new V { S = "qzz" }, } } },
+                    new R { U = new U { ArrayV = new[] { new V { S = "zzz" }, } } }
+                } } })
+                .AssertEquivalent(new ValidationResultTreeNode<TestData2>
+                    {
+                        {"T.R.1.U.ArrayV.0.S", FormattedValidationResult.Error(
+                            new LengthNotExactlyEqualsText{Exactly = 2, Path = path, Value = "zzz"}, "zzz", path, 0)}
+                    });
         }
 
         [Test]
@@ -936,6 +990,7 @@ namespace Mutators.Tests
             public int? Z { get; set; }
             public string[] Arr { get; set; }
             public V V { get; set; }
+            public V[] ArrayV { get; set; }
         }
 
         public class V

@@ -252,56 +252,62 @@ namespace GrobExp.Mutators.Visitors
                         paths.Add(context.indexes[context.index]);
                         context.index++;
                     }
-                    switch(method.Name)
+                    if(method.IsEachMethod())
                     {
-                    case "First":
-                    case "FirstOrDefault":
-                    case "Single":
-                    case "SingleOrDefault":
-                        break;
-                    case "Where":
+                    }
+                    else
+                    {
+                        switch(method.Name)
                         {
-                            var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var subContext = new Context(context.indexes) {index = context.index};
-                            BuildPaths(predicate.Body, subContext);
-                            context.index = subContext.index;
-                        }
-                        break;
-                    case "Select":
-                        {
-                            var selector = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var parameter = selector.Parameters.Single();
-                            context.parameters.Add(parameter, paths.Clone());
-                            paths = BuildPaths(selector.Body, context);
-                            context.parameters.Remove(parameter);
-                        }
-                        break;
-                    case "SelectMany":
-                        {
-                            var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var parameter = collectionSelector.Parameters.Single();
-                            var startPaths = paths.Clone();
-                            context.parameters.Add(parameter, paths.Clone());
-                            paths = BuildPaths(collectionSelector.Body, context);
-                            context.parameters.Remove(parameter);
-                            if(!IsLinqCall(collectionSelector.Body))
+                        case "First":
+                        case "FirstOrDefault":
+                        case "Single":
+                        case "SingleOrDefault":
+                            break;
+                        case "Where":
                             {
-                                paths.Add(context.indexes[context.index]);
-                                context.index++;
+                                var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var subContext = new Context(context.indexes) {index = context.index};
+                                BuildPaths(predicate.Body, subContext);
+                                context.index = subContext.index;
                             }
-                            if(methodCallExpression.Arguments.Count > 2)
+                            break;
+                        case "Select":
                             {
-                                var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
-                                context.parameters.Add(resultSelector.Parameters[0], startPaths);
-                                context.parameters.Add(resultSelector.Parameters[1], paths.Clone());
-                                paths = BuildPaths(resultSelector.Body, context);
-                                context.parameters.Remove(resultSelector.Parameters[1]);
-                                context.parameters.Remove(resultSelector.Parameters[0]);
+                                var selector = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var parameter = selector.Parameters.Single();
+                                context.parameters.Add(parameter, paths.Clone());
+                                paths = BuildPaths(selector.Body, context);
+                                context.parameters.Remove(parameter);
                             }
+                            break;
+                        case "SelectMany":
+                            {
+                                var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var parameter = collectionSelector.Parameters.Single();
+                                var startPaths = paths.Clone();
+                                context.parameters.Add(parameter, paths.Clone());
+                                paths = BuildPaths(collectionSelector.Body, context);
+                                context.parameters.Remove(parameter);
+                                if(!IsLinqCall(collectionSelector.Body))
+                                {
+                                    paths.Add(context.indexes[context.index]);
+                                    context.index++;
+                                }
+                                if(methodCallExpression.Arguments.Count > 2)
+                                {
+                                    var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
+                                    context.parameters.Add(resultSelector.Parameters[0], startPaths);
+                                    context.parameters.Add(resultSelector.Parameters[1], paths.Clone());
+                                    paths = BuildPaths(resultSelector.Body, context);
+                                    context.parameters.Remove(resultSelector.Parameters[1]);
+                                    context.parameters.Remove(resultSelector.Parameters[0]);
+                                }
+                            }
+                            break;
+                        default:
+                            throw new NotSupportedException("Method '" + method + "' is not supported");
                         }
-                        break;
-                    default:
-                        throw new NotSupportedException("Method '" + method + "' is not supported");
                     }
                 }
                 else
@@ -338,6 +344,8 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool IsLinqMethod(MethodInfo method)
         {
+            if(method.IsEachMethod())
+                return true;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType == typeof(Enumerable);

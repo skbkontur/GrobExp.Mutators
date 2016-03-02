@@ -1380,12 +1380,8 @@ namespace GrobExp.Mutators
                     LambdaExpression predicate = null;
                     var resolvedArray = array.ResolveAliases(aliases);
                     var itemType = resolvedArray.Type.GetItemType();
-                    var childParameter = Expression.Parameter(itemType, itemType.Name);
-                    var indexParameter = Expression.Parameter(typeof(int));
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), new[] {array});
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(itemType), new Expression[] {item});
-                    aliases.Add(new KeyValuePair<Expression, Expression>(childParameter, item));
-                    aliases.Add(new KeyValuePair<Expression, Expression>(indexParameter, index));
                     if(!resolvedArray.Type.IsArray)
                     {
                         // Filtered array
@@ -1399,42 +1395,59 @@ namespace GrobExp.Mutators
                             }
                         }
                     }
-                    ParameterExpression[] currentIndexes;
-                    var resolvedArrayWithLinqEliminated = new LinqEliminator().Eliminate(resolvedArray, out currentIndexes);
-                    var currentPaths = ExpressionPathsBuilder.BuildPaths(resolvedArray, currentIndexes, paths);
-                    currentPaths.Add(indexParameter);
-                    paths.Add(childParameter, currentPaths);
-                    resolvedArray = resolvedArrayWithLinqEliminated;
 
-                    var childValidationResults = new List<Expression>();
-                    child.BuildValidator(pathFormatter, root, aliases, paths, result, treeRootType, priority, childValidationResults);
-                    aliases.RemoveAt(aliases.Count - 1);
-                    aliases.RemoveAt(aliases.Count - 1);
-                    paths.Remove(childParameter);
-                    if(childValidationResults.Count == 0)
-                        continue;
+                    ParameterExpression[] indexes = null;
+                    var parameter = Expression.Parameter(itemType);
+                    var adjustedResolvedArray = Expression.Call(selectMethod.MakeGenericMethod(itemType, itemType), resolvedArray, Expression.Lambda(parameter, parameter));
+                    adjustedResolvedArray = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), adjustedResolvedArray);
 
-                    Expression action = Expression.Block(childValidationResults.SplitToBatches());
-                    if(predicate != null)
-                    {
-                        var condition = Expression.Lambda(childParameter, childParameter).Merge(predicate).Body;
-                        action = Expression.IfThen(Expression.Equal(Expression.Convert(condition, typeof(bool?)), Expression.Constant(true, typeof(bool?))), action);
-                    }
-                    var forEach = CacheExternalExpressions(action,
-                                                           exp =>
-                                                               {
-                                                                   Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] {resolvedArray, Expression.Lambda(exp, new[] {childParameter, indexParameter})});
-                                                                   if(currentIndexes.Length > 0)
-                                                                       res = Expression.Block(currentIndexes, res);
-                                                                   return res;
-                                                               },
-                                                           new[] {childParameter, indexParameter}.Concat(currentIndexes));
-                    validationResults.Add(forEach);
+                    var monster = new LinqEliminator().EliminateQzz(adjustedResolvedArray, (current, currentIndex, currentIndexes) =>
+                        {
+                            indexes = currentIndexes;
+                            aliases.Add(new KeyValuePair<Expression, Expression>(current, item));
+                            aliases.Add(new KeyValuePair<Expression, Expression>(currentIndex, index));
+                            var currentPaths = ExpressionPathsBuilder.BuildPaths(adjustedResolvedArray, currentIndexes, paths);
+                            //currentPaths.Add(currentIndex);
+                            paths.Add(current, currentPaths);
+
+                            var childValidationResults = new List<Expression>();
+                            child.BuildValidator(pathFormatter, root, aliases, paths, result, treeRootType, priority, childValidationResults);
+                            aliases.RemoveAt(aliases.Count - 1);
+                            aliases.RemoveAt(aliases.Count - 1);
+
+                            paths.Remove(current);
+
+
+                            Expression action = Expression.Block(childValidationResults.SplitToBatches());
+                            if (predicate != null)
+                            {
+                                var condition = Expression.Lambda(current, current).Merge(predicate).Body;
+                                action = Expression.IfThen(Expression.Equal(Expression.Convert(condition, typeof(bool?)), Expression.Constant(true, typeof(bool?))), action);
+                            }
+
+                            return CacheExternalExpressions(action,
+                                                                   exp =>
+                                                                       {
+                                                                           return exp;
+                                                                       //Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] { resolvedArray, Expression.Lambda(exp, new[] { childParameter, indexParameter }) });
+                                                                       Expression res = exp;
+                                                                       if (currentIndexes.Length > 0)
+                                                                           res = Expression.Block(currentIndexes, res);
+                                                                       return res;
+                                                                   },
+                                                                   new[] { current, currentIndex }.Concat(currentIndexes));
+
+                        });
+
+                    if(indexes != null && indexes.Length > 0)
+                        monster = Expression.Block(indexes, monster);
+                    validationResults.Add(monster);
                 }
             }
 
             public readonly List<KeyValuePair<Expression, List<MutatorConfiguration>>> mutators = new List<KeyValuePair<Expression, List<MutatorConfiguration>>>();
             public readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
+            private static readonly MethodInfo selectMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>>>)(enumerable => enumerable.Select(x => x))).Body).Method.GetGenericMethodDefinition();
 
             private static void BuildNodeValidator(IPathFormatter pathFormatter, Expression path, List<MutatorConfiguration> mutators, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths> paths, ParameterExpression result, Type treeRootType, ParameterExpression priority, List<Expression> validationResults)
             {
@@ -1464,23 +1477,24 @@ namespace GrobExp.Mutators
                 var currentPath = path.ResolveAliases(aliases);
                 var value = Expression.Parameter(typeof(object));
                 Expression valueAssignment = Expression.Assign(value, Expression.Convert(new LinqEliminator().Eliminate(currentPath, out currentIndexes), typeof(object)));
-                var resolvedArrayIndexes = ExpressionPathsBuilder.BuildPaths(currentPath, currentIndexes, paths).paths
-                    .Select(p => new ResolvedArrayIndexes{path = p}).ToArray();
+                var currentPaths = ExpressionPathsBuilder.BuildPaths(currentPath, currentIndexes, paths);
+                var resolvedArrayIndexes = currentPaths.paths.Select(p => new ResolvedArrayIndexes { path = p }).ToArray();
 
                 var chains = path.CutToChains(true, true).GroupBy(exp => new ExpressionWrapper(exp, false)).Select(grouping => grouping.Key.Expression.ResolveAliases(firstAlias)).ToArray();
                 //Expression cutChains = Expression.NewArrayInit(typeof(string[]), chains.Select(expression => eachesResolver.Visit(expression).ResolveArrayIndexes()));
 
-                Expression formattedChains;
+                Expression formattedChains = null;
 
-                if(pathFormatter == null)
-                    formattedChains = Expression.Constant(null, typeof(MultiLanguageTextBase));
-                else
+                if(pathFormatter != null)
                 {
                     formattedChains = pathFormatter.GetFormattedPath(chains);
-                    if(formattedChains == null)
-                        formattedChains = Expression.Constant(null, typeof(MultiLanguagePathText));
-                    else
+                    if(formattedChains != null)
                         formattedChains = formattedChains.ResolveAliases(aliasesInTermsOfFirst);
+                }
+                if(formattedChains == null)
+                {
+                    // Default path formatting - simply list all the paths along the object tree
+                    formattedChains = FormatPaths(currentPaths);
                 }
 
                 var localResults = new List<Expression>{valueAssignment};
@@ -1518,11 +1532,54 @@ namespace GrobExp.Mutators
                 }
             }
 
+            private static readonly MemberInfo pathsProperty = HackHelpers.GetProp<SimplePathFormatterText>(text => text.Paths);
+            private static readonly MethodInfo stringFormatMethod = HackHelpers.GetMethodDefinition<object[]>(z => string.Format("zzz", z));
+
             private static Expression ClearConverts(Expression exp)
             {
-                while(exp.NodeType == ExpressionType.Convert)
+                while (exp.NodeType == ExpressionType.Convert)
                     exp = ((UnaryExpression)exp).Operand;
                 return exp;
+            }
+
+            private static Expression FormatPaths(ExpressionPathsBuilder.SinglePaths paths)
+            {
+                var stringBuilder = new StringBuilder();
+                var formattedPaths = new List<Expression>();
+                foreach(var path in paths.paths)
+                {
+                    var arguments = new List<Expression>();
+                    stringBuilder.Clear();
+                    bool first = true;
+                    for(int i = 0; i < path.Count; i++)
+                    {
+                        var piece = ClearConverts(path[i]);
+                        if(piece.Type == typeof(string))
+                        {
+                            // property or hashtable key
+                            if (piece.NodeType != ExpressionType.Constant)
+                                throw new InvalidOperationException("Expected constant");
+                            if(!first)
+                                stringBuilder.Append('.');
+                            first = false;
+                            stringBuilder.Append((string)((ConstantExpression)piece).Value);
+                        }
+                        else if(piece.Type == typeof(int))
+                        {
+                            // index
+                            stringBuilder.Append("[{");
+                            stringBuilder.Append(arguments.Count.ToString());
+                            stringBuilder.Append("}]");
+                            arguments.Add(Expression.Convert(piece, typeof(object)));
+                        }
+                    }
+                    formattedPaths.Add(Expression.Call(stringFormatMethod,
+                        Expression.Constant(stringBuilder.ToString()),
+                        Expression.NewArrayInit(typeof(object), arguments)));
+                }
+                return Expression.MemberInit(
+                        Expression.New(typeof(SimplePathFormatterText)),
+                        Expression.Bind(pathsProperty, Expression.NewArrayInit(typeof(string), formattedPaths)));
             }
 
             private static Expression SelectTargetNode(ParameterExpression root, Type treeRootType, ResolvedArrayIndexes[] paths)

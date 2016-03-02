@@ -10,6 +10,7 @@ namespace GrobExp.Mutators
     {
         public Expression GetFormattedPath(Expression[] paths)
         {
+            return null;
             return Expression.MemberInit(Expression.New(typeof(SimplePathFormatterText)), Expression.Bind(pathsProperty, Expression.NewArrayInit(typeof(string), paths.Select(GetText))));
         }
 

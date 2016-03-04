@@ -9,6 +9,8 @@ using GrobExp.Mutators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Validators.Texts;
 
+using GroBuf;
+
 using NUnit.Framework;
 
 using System.Linq;
@@ -82,7 +84,7 @@ namespace Mutators.Tests
             var data = converter(new WebData
                 {
                     F = "qxx",
-                    CustomFields = new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"F", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
@@ -98,7 +100,7 @@ namespace Mutators.Tests
                                     TypeCodes = new Dictionary<string, TypeCode>{{"X", TypeCode.Int32}, {"ZёS", TypeCode.String}, {"ZёE", TypeCode.String}},
                                     Value = new[] {new Hashtable{{"X", 314}, {"ZёS", "qzz"}}, new Hashtable{{"X", 271}, {"ZёS", "xxx"}, {"ZёE", "QXX"}}}
                                 }}
-                        }
+                        })
                 });
             Assert.AreEqual("zzz", data.S);
             Assert.AreEqual("qxx", data.F);
@@ -146,36 +148,36 @@ namespace Mutators.Tests
                     ComplexArr = new[] {new ComplexCustomField{X = 314, Z = new ComplexCustomFieldSubClass{S = "qzz", E = TestEnum.Qxx}}, new ComplexCustomField{X = 271, Z = new ComplexCustomFieldSubClass{S = "xxx"}}}
                 });
             Assert.IsNotNull(data.CustomFields);
-            Assert.IsFalse(data.CustomFields.ContainsKey("F"));
+            Assert.IsFalse(data.CustomFields.Value.ContainsKey("F"));
             Assert.AreEqual("qxx", data.F);
-            Assert.That(data.CustomFields.ContainsKey("S"));
-            Assert.IsNotNull(data.CustomFields["S"]);
-            Assert.AreEqual("zzz", data.CustomFields["S"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields["S"].TypeCode);
-            Assert.That(data.CustomFields.ContainsKey("E"));
-            Assert.IsNotNull(data.CustomFields["E"]);
-            Assert.AreEqual("QXX", data.CustomFields["E"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields["E"].TypeCode);
-            Assert.That(data.CustomFields.ContainsKey("ComplexFieldёX"));
-            Assert.IsNotNull(data.CustomFields["ComplexFieldёX"]);
-            Assert.AreEqual(123, data.CustomFields["ComplexFieldёX"].Value);
-            Assert.AreEqual(TypeCode.Int32, data.CustomFields["ComplexFieldёX"].TypeCode);
-            Assert.That(data.CustomFields.ContainsKey("ComplexFieldёZёE"));
-            Assert.IsNotNull(data.CustomFields["ComplexFieldёZёE"]);
-            Assert.AreEqual("ZZZ", data.CustomFields["ComplexFieldёZёE"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields["ComplexFieldёZёE"].TypeCode);
-            Assert.That(data.CustomFields.ContainsKey("StrArr"));
-            Assert.AreEqual(TypeCode.String, data.CustomFields["StrArr"].TypeCode);
-            Assert.IsTrue(data.CustomFields["StrArr"].IsArray);
-            var strArr = data.CustomFields["StrArr"].Value as string[];
+            Assert.That(data.CustomFields.Value.ContainsKey("S"));
+            Assert.IsNotNull(data.CustomFields.Value["S"]);
+            Assert.AreEqual("zzz", data.CustomFields.Value["S"].Value);
+            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["S"].TypeCode);
+            Assert.That(data.CustomFields.Value.ContainsKey("E"));
+            Assert.IsNotNull(data.CustomFields.Value["E"]);
+            Assert.AreEqual("QXX", data.CustomFields.Value["E"].Value);
+            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["E"].TypeCode);
+            Assert.That(data.CustomFields.Value.ContainsKey("ComplexFieldёX"));
+            Assert.IsNotNull(data.CustomFields.Value["ComplexFieldёX"]);
+            Assert.AreEqual(123, data.CustomFields.Value["ComplexFieldёX"].Value);
+            Assert.AreEqual(TypeCode.Int32, data.CustomFields.Value["ComplexFieldёX"].TypeCode);
+            Assert.That(data.CustomFields.Value.ContainsKey("ComplexFieldёZёE"));
+            Assert.IsNotNull(data.CustomFields.Value["ComplexFieldёZёE"]);
+            Assert.AreEqual("ZZZ", data.CustomFields.Value["ComplexFieldёZёE"].Value);
+            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["ComplexFieldёZёE"].TypeCode);
+            Assert.That(data.CustomFields.Value.ContainsKey("StrArr"));
+            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["StrArr"].TypeCode);
+            Assert.IsTrue(data.CustomFields.Value["StrArr"].IsArray);
+            var strArr = data.CustomFields.Value["StrArr"].Value as string[];
             Assert.IsNotNull(strArr);
             Assert.AreEqual(2, strArr.Length);
             Assert.AreEqual("zzz", strArr[0]);
             Assert.AreEqual("qxx", strArr[1]);
-            Assert.That(data.CustomFields.ContainsKey("ComplexArr"));
-            Assert.AreEqual(TypeCode.Object, data.CustomFields["ComplexArr"].TypeCode);
-            Assert.IsTrue(data.CustomFields["ComplexArr"].IsArray);
-            var typeCodes = data.CustomFields["ComplexArr"].TypeCodes;
+            Assert.That(data.CustomFields.Value.ContainsKey("ComplexArr"));
+            Assert.AreEqual(TypeCode.Object, data.CustomFields.Value["ComplexArr"].TypeCode);
+            Assert.IsTrue(data.CustomFields.Value["ComplexArr"].IsArray);
+            var typeCodes = data.CustomFields.Value["ComplexArr"].TypeCodes;
             Assert.IsNotNull(typeCodes);
             Assert.That(typeCodes.ContainsKey("X"));
             Assert.AreEqual(TypeCode.Int32, typeCodes["X"]);
@@ -183,7 +185,7 @@ namespace Mutators.Tests
             Assert.AreEqual(TypeCode.String, typeCodes["ZёS"]);
             Assert.That(typeCodes.ContainsKey("ZёE"));
             Assert.AreEqual(TypeCode.String, typeCodes["ZёE"]);
-            var complexArr = data.CustomFields["ComplexArr"].Value as object[];
+            var complexArr = data.CustomFields.Value["ComplexArr"].Value as object[];
             Assert.IsNotNull(complexArr);
             Assert.AreEqual(2, complexArr.Length);
             var hashtable = complexArr[0] as Hashtable;
@@ -216,11 +218,11 @@ namespace Mutators.Tests
             var webValidator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
             webValidator(new WebData
                 {
-                    CustomFields = new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String}},
                             {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, IsArray = true, Value = new[] {"qxx", "zzz"}}}
-                        },
+                        }),
                     Items = new[]
                         {
                             new WebDataItem
@@ -231,9 +233,9 @@ namespace Mutators.Tests
                 }).AssertEquivalent(
                 new ValidationResultTreeNode<WebData>
                     {
-                        {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)},
-                        {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields[StrArr].Value[1]"}}, 0)},
-                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields[S].Value"}}, 0)},
+                        {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.S.Value"}}, 0)},
+                        {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.StrArr.Value[1]"}}, 0)},
+                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
                     }
             );
         }
@@ -273,9 +275,9 @@ namespace Mutators.Tests
             validationResultTreeNode.AssertEquivalent(
                 new ValidationResultTreeNode<ModelData>
                     {
-                        {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields[S].Value"}}, 0)},
-                        {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields[StrArr].Value[1]"}}, 0)},
-                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields[S].Value"}}, 0)},
+                        {"CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.S.Value"}}, 0)},
+                        {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.StrArr.Value[1]"}}, 0)},
+                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
                     }
             );
         }
@@ -300,7 +302,7 @@ namespace Mutators.Tests
             var webMutator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetTreeMutator();
             var webData = new WebData
                 {
-                    CustomFields = new Dictionary<string, CustomFieldValue>
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
                             {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
                             {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
@@ -315,7 +317,7 @@ namespace Mutators.Tests
                                     TypeCodes = new Dictionary<string, TypeCode>{{"Y", TypeCode.Decimal}},
                                     Value = new[] {new Hashtable{{"Y", 1m}, }, new Hashtable{{"Y", 2m}}}
                                 }}
-                        },
+                        }),
                     Items = new[]
                         {
                             new WebDataItem
@@ -330,10 +332,10 @@ namespace Mutators.Tests
                         }
                 };
             webMutator(webData);
-            Assert.AreEqual(3, webData.CustomFields["X"].Value);
+            Assert.AreEqual(3, webData.CustomFields.Value["X"].Value);
             Assert.AreEqual(3, webData.Items[0].CustomFields["X"].Value);
-            Assert.AreEqual(6m, webData.CustomFields["Sum"].Value);
-            Assert.AreEqual(3m, webData.CustomFields["ComplexArrSum"].Value);
+            Assert.AreEqual(6m, webData.CustomFields.Value["Sum"].Value);
+            Assert.AreEqual(3m, webData.CustomFields.Value["ComplexArrSum"].Value);
         }
 
         [Test]
@@ -384,26 +386,26 @@ namespace Mutators.Tests
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
             {
-                configurator.Target(x => x.CustomFieldsCopy.Each().Key).Set(x => x.CustomFields.Current().Key);
-                configurator.Target(x => x.CustomFieldsCopy.Each().Value.Value).Set(x => x.CustomFields.Current().Value.Value);
-                configurator.Target(x => x.CustomFieldsCopy.Each().Value.TypeCode).Set(x => x.CustomFields.Current().Value.TypeCode);
-                configurator.Target(x => x.CustomFieldsCopy.Each().Value.Title).Set(x => x.CustomFields.Current().Value.Title);
+                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Key).Set(x => x.CustomFields.Value.Current().Key);
+                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Value).Set(x => x.CustomFields.Value.Current().Value.Value);
+                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.TypeCode).Set(x => x.CustomFields.Value.Current().Value.TypeCode);
+                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Title).Set(x => x.CustomFields.Value.Current().Value.Title);
             });
 
             var mutator = dataConfiguratorCollection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var data = new WebData
             {
-                CustomFields = new Dictionary<string, CustomFieldValue>
+                CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                 {
                     {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
                     {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
                     {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
-                },
+                }),
             };
             mutator(data);
-            Assert.AreEqual(0, data.CustomFieldsCopy["X"].Value);
-            Assert.AreEqual(1, data.CustomFieldsCopy["Y"].Value);
-            Assert.AreEqual(2, data.CustomFieldsCopy["Z"].Value);
+            Assert.AreEqual(0, data.CustomFieldsCopy.Value["X"].Value);
+            Assert.AreEqual(1, data.CustomFieldsCopy.Value["Y"].Value);
+            Assert.AreEqual(2, data.CustomFieldsCopy.Value["Z"].Value);
         }
 
         private TestConverterCollectionFactory converterCollectionFactory;
@@ -521,10 +523,10 @@ namespace Mutators.Tests
         public class WebData
         {
             [CustomFieldsContainer]
-            public Dictionary<string, CustomFieldValue> CustomFields { get; set; }
+            public Lazy<Dictionary<string, CustomFieldValue>> CustomFields { get; set; }
 
             public WebDataItem[] Items { get; set; }
-            public Dictionary<string, CustomFieldValue> CustomFieldsCopy { get; set; }
+            public Lazy<Dictionary<string, CustomFieldValue>> CustomFieldsCopy { get; set; }
             public string F { get; set; }
         }
 

@@ -101,7 +101,7 @@ namespace GrobExp.Mutators
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
         }
 
-        protected override void GetAllMutators(List<KeyValuePair<Expression, MutatorConfiguration>> mutators)
+        protected override void GetAllMutators(List<MutatorWithPath> mutators)
         {
             var subNodes = new List<ModelConfigurationNode>();
             tree.FindSubNodes(subNodes);

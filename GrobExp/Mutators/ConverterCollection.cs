@@ -13,6 +13,8 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
+using GroBuf;
+
 namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
@@ -136,6 +138,11 @@ namespace GrobExp.Mutators
             return type.IsArray && IsALeaf(type.GetElementType()) || type.IsPrimitive || type == typeof(string) || type.IsValueType;
         }
 
+        private static bool IsLazy(Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Lazy<>);
+        }
+
         private static void FindCustomFieldsContainer(Type type, Expression current, List<KeyValuePair<PropertyInfo, Expression>> result)
         {
             if(type == null || IsALeaf(type))
@@ -145,7 +152,15 @@ namespace GrobExp.Mutators
             {
                 var next = Expression.Property(current, property);
                 if(property.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any())
-                    result.Add(new KeyValuePair<PropertyInfo, Expression>(property, next));
+                {
+                    if(!IsLazy(property.PropertyType))
+                        result.Add(new KeyValuePair<PropertyInfo, Expression>(property, next));
+                    else
+                    {
+                        var valueProperty = property.PropertyType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public);
+                        result.Add(new KeyValuePair<PropertyInfo, Expression>(valueProperty, Expression.Property(next, valueProperty)));
+                    }
+                }
                 else
                     FindCustomFieldsContainer(property.PropertyType, next, result);
             }
@@ -235,7 +250,7 @@ namespace GrobExp.Mutators
                     if(stringConverter != null && stringConverter.CanConvert(value.Body.Type))
                     {
                         typeCode = TypeCode.String;
-                        
+
                         convertedValue = Expression.Lambda(
                             Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                             convertToStringMethod.MakeGenericMethod(value.Body.Type),
@@ -275,7 +290,7 @@ namespace GrobExp.Mutators
                             {
                                 var pathToTitles = Expression.Property(pathToTarget, "Titles");
                                 var pathToItemTitle = Expression.Call(pathToTitles, pathToTitles.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), Expression.Constant(pathToLeaf));
-                                configurator.SetMutator(pathToItemTitle, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(customFieldAttribute.TitleType))));
+                                configurator.SetMutator(pathToItemTitle, EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(StaticMultiLanguageTextCache.Get(customFieldAttribute.TitleType)))));
                             }
                         }
                     }
@@ -286,7 +301,7 @@ namespace GrobExp.Mutators
                         configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(convertedValue.Body.Type.IsArray))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "Value"), EqualsToConfiguration.Create<TDest>(pathToSourceChild.Merge(convertedValue)));
                         if(titleType != null)
-                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.New(titleType))));
+                            configurator.SetMutator(Expression.Property(pathToTarget, "Title"), EqualsToConfiguration.Create<TDest>(Expression.Lambda(Expression.Constant(StaticMultiLanguageTextCache.Get(titleType)))));
                     }
                 }
             }
@@ -346,37 +361,34 @@ namespace GrobExp.Mutators
 
         private Expression MakeConvert(Expression value, Type type)
         {
-            var needCoalesce = true;
+            var needCoalesce = type.IsValueType && !type.IsNullable();
             if(stringConverter != null && stringConverter.CanConvert(type))
             {
-                
                 value = Expression.Call(Expression.Constant(stringConverter, typeof(IStringConverter)),
                                         convertFromStringMethod.MakeGenericMethod(type),
                                         Expression.Convert(value, typeof(string)));
             }
             else if(IsPrimitive(type))
             {
-                if(type.IsValueType)
+                if(needCoalesce)
                     value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
                 needCoalesce = false;
                 value = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), type), value);
             }
-            if(type.IsValueType && needCoalesce)
+            if(needCoalesce)
                 value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
             if(type.IsArray)
             {
                 var elementType = type.GetElementType();
                 if(elementType.IsValueType)
-                {
                     value = Expression.Call(toArrayMethod.MakeGenericMethod(elementType), Expression.Call(castMethod.MakeGenericMethod(elementType), Expression.Convert(value, typeof(IEnumerable))));
-                }
             }
             return Expression.Convert(value, type);
         }
 
         private static bool IsPrimitive(Type type)
         {
-            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if(type.IsNullable())
                 return IsPrimitive(type.GetGenericArguments()[0]);
             return type.IsPrimitive || type == typeof(decimal);
         }

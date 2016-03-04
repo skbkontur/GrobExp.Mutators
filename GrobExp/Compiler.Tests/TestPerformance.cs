@@ -78,11 +78,17 @@ namespace Compiler.Tests
             method.CreateDelegate(typeof(Func<object, object>));
             var pointer = dynamicMethodPointerExtractor(method);
             var b = (byte*)pointer;
-            for(int i = 0; i < 20; ++i)
+            //var zzz = Convert.FromBase64String(@"VldVU0FSTInOSItsJFhIi3wkYEGJyonRRInDRInQVQ8oBg8oZhAPKMgPKOwPKNAPKPQPKNgPKPwPWUUAD1llEA9ZTTAPWW1AD1lVYA9ZdXAPWZ2QAAAAD1m9oAAAAPIPfMHyD3zl8g980/IPfPfyD3zC8g985g9Y4A8oRiAPKMgPKNAPKNgPWUUgD1lNUA9ZlYAAAAAPWZ2wAAAA8g98wfIPfNPyD3zCD1jgD1ilwAAAAA8rJ0iBxdAAAABIg8cQ/8gPhVf///9Ig8YwXf/LD4VG////Z0ONBFJnQY0EgsHgBEiYSAHF/8kPhSn///9BWltdX17D");
+            var zzz = Convert.FromBase64String(@"VldVU0FSTInOSItsJFBIi3wkWEGJyonRRInDRInQVQ8oBg8oZhAPKMgPKOwPKNAPKPQPKNgPKPwPWUUAD1llEA9ZTTAPWW1AD1lVYA9ZdXAPWZ2QAAAAD1m9oAAAAPIPfMHyD3zl8g980/IPfPfyD3zC8g985g9Y4A8oRiAPKMgPKNAPKNgPWUUgD1lNUA9ZlYAAAAAPWZ2wAAAA8g98wfIPfNPyD3zCD1jgD1ilwAAAAA8rJ0iBxdAAAABIg8cQ/8gPhVf///9Ig8YwXf/LD4VG////Z0ONBFJnQY0EgsHgBEiYSAHF/8kPhSn///9BWltdX17D");
+            fixed(byte* z = &zzz[0])
             {
-                for(int j = 0; j < 10; ++j)
-                    Console.Write(string.Format("{0:X2} ", *b++));
-                Console.WriteLine();
+                b = z;
+                for(int i = 0; i < 20; ++i)
+                {
+                    for(int j = 0; j < 10; ++j)
+                        Console.Write(string.Format("{0:X2} ", *b++));
+                    Console.WriteLine();
+                }
             }
         }
 

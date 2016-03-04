@@ -2,12 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 using System.Text;
 
 using GrEmit;
+using GrEmit.Utils;
 
 using GrobExp.Compiler;
 
@@ -45,9 +46,12 @@ namespace GrobExp.Mutators
                 {
                     result = (Type)types[type];
                     var typeBeingBuilt = (Type)typesBeingBuilt[type];
-                    if(result == null && returnBeingBuilt && typeBeingBuilt != null)
-                        return typeBeingBuilt;
-                    types[type] = result = BuildTypeInternal(type);
+                    if(result == null)
+                    {
+                        if(returnBeingBuilt && typeBeingBuilt != null)
+                            return typeBeingBuilt;
+                        types[type] = result = BuildTypeInternal(type);
+                    }
                 }
             }
             return result;
@@ -86,7 +90,7 @@ namespace GrobExp.Mutators
                 il.Call(baseConstructor); // base(parent); stack: []
                 il.Ret();
             }
-            var fields = new List<FieldBuilder>();
+            var fields = new Dictionary<string, FieldBuilder>();
             foreach(var property in properties)
             {
                 var propertyType = property.PropertyType;
@@ -98,7 +102,7 @@ namespace GrobExp.Mutators
                 else
                     fieldType = BuildType(propertyType, true);
                 var field = typeBuilder.DefineField(property.Name, fieldType, FieldAttributes.Public);
-                fields.Add(field);
+                fields.Add(property.Name, field);
             }
             var getChildrenMethod = parentType.GetMethod("GetChildren", BindingFlags.Instance | BindingFlags.NonPublic);
             var getChildrenMethodBuilder = typeBuilder.DefineMethod(getChildrenMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, typeof(IEnumerable<KeyValuePair<object, ValidationResultTreeNode>>), Type.EmptyTypes);
@@ -110,7 +114,7 @@ namespace GrobExp.Mutators
                 var list = il.DeclareLocal(listType);
                 il.Newobj(listType.GetConstructor(Type.EmptyTypes)); // stack: [new List<>()]
                 il.Stloc(list); // list = new List<>(); stack: []
-                foreach(var field in fields)
+                foreach(var field in fields.Values)
                 {
                     il.Ldarg(0); // stack: [this]
                     il.Ldfld(field); // stack: [this.field]
@@ -128,6 +132,34 @@ namespace GrobExp.Mutators
                 il.Ret();
             }
             typeBuilder.DefineMethodOverride(getChildrenMethodBuilder, getChildrenMethod);
+
+            var traverseEdgeMethod = parentType.GetMethod("TraverseEdge", BindingFlags.Instance | BindingFlags.NonPublic);
+            var traverseEdgeMethodBuilder = typeBuilder.DefineMethod(traverseEdgeMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, parentType, new[] { typeof(Expression) });
+            using(var il = new GroboIL(traverseEdgeMethodBuilder))
+            {
+                il.Ldarg(1); // stack: [edge]
+                il.Castclass(typeof(MemberExpression)); // stack: [(MemberExpression)edge]
+                il.Call(HackHelpers.GetProp<MemberExpression>(x => x.Member).GetGetMethod()); // stack: [((MemberExpresion)edge).Member]
+                il.Call(HackHelpers.GetProp<MemberInfo>(x => x.Name).GetGetMethod()); // stack: [((MemberExpresion)edge).Member.Name]
+                var member = il.DeclareLocal(typeof(string));
+                il.Stloc(member);
+                foreach(var property in properties)
+                {
+                    il.Ldstr(property.Name); // stack: [property.Name]
+                    il.Ldloc(member); // stack: [property.Name, member]
+                    il.Call(typeof(string).GetMethod("op_Equality", BindingFlags.Static | BindingFlags.Public));
+                    var nextLabel = il.DefineLabel("next");
+                    il.Brfalse(nextLabel); // if(property.Name != member) goto next; stack: []
+                    il.Ldarg(0); // stack: [this]
+                    il.Ldfld(fields[property.Name]); // stack: [this.field]
+                    il.Ret(); // return this.field;
+                    il.MarkLabel(nextLabel);
+                }
+                il.Ldnull();
+                il.Ret();
+            }
+            typeBuilder.DefineMethodOverride(traverseEdgeMethodBuilder, traverseEdgeMethod);
+
             var result = typeBuilder.CreateType();
             typesBeingBuilt[type] = null;
             return result;
@@ -202,6 +234,11 @@ namespace GrobExp.Mutators
             return child;
         }
 
+        protected override ValidationResultTreeNode TraverseEdge(Expression edge)
+        {
+            throw new NotImplementedException("");
+        }
+
         protected override IEnumerable<KeyValuePair<object, ValidationResultTreeNode>> GetChildren()
         {
             return children;
@@ -249,6 +286,25 @@ namespace GrobExp.Mutators
             if(index >= children.Count)
                 forceCount(children, index + 1);
             return children[index] ?? (children[index] = childFactory(this));
+        }
+
+        protected override ValidationResultTreeNode TraverseEdge(Expression edge)
+        {
+            if(edge.NodeType != ExpressionType.ArrayIndex)
+                throw new InvalidOperationException("Expected array indexing but was '" + edge.NodeType + "'");
+            int index = GetIndex(((BinaryExpression)edge).Right);
+            if(index == -1)
+                return negativeChild;
+            if(index < 0 || index>= children.Count)
+                return null;
+            return children[index];
+        }
+
+        private static int GetIndex(Expression node)
+        {
+            if(node.NodeType == ExpressionType.Constant)
+                return (int)((ConstantExpression)node).Value;
+            return ExpressionCompiler.Compile(Expression.Lambda<Func<int>>(node))();
         }
 
         protected override IEnumerable<KeyValuePair<object, ValidationResultTreeNode>> GetChildren()
@@ -303,6 +359,19 @@ namespace GrobExp.Mutators
             this.parent = parent;
             ValidationResults = new List<FormattedValidationResult>();
         }
+
+        public ValidationResultTreeNode Traverse<T, TV>(Expression<Func<T, TV>> path)
+        {
+            var shards = path.Body.SmashToSmithereens();
+            if(shards[0].NodeType != ExpressionType.Parameter)
+                throw new InvalidOperationException("Expected parameter but was '" + shards[0].NodeType + "'");
+            var node = this;
+            for(int i = 1; i < shards.Length && node != null; ++i)
+                node = node.TraverseEdge(shards[i]);
+            return node;
+        }
+
+        protected abstract ValidationResultTreeNode TraverseEdge(Expression edge);
 
         public IEnumerator<FormattedValidationResult> GetEnumerator()
         {

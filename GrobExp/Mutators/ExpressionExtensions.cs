@@ -103,7 +103,7 @@ namespace GrobExp.Mutators
         {
             var result = new StringBuilder();
             BuildCustomFieldName(node, result);
-            return result.ToString();
+            return string.Intern(result.ToString());
         }
 
         public static Expression ExtendSelectMany(this Expression expression)
@@ -385,7 +385,7 @@ namespace GrobExp.Mutators
                 BuildCustomFieldName(memberExpression.Expression, result);
                 if(result.Length > 0)
                     result.Append("ё");
-                result.Append(memberExpression.Member.Name);
+                result.Append(string.Intern(memberExpression.Member.Name));
                 break;
             case ExpressionType.Call:
                 var methodCallExpression = (MethodCallExpression)node;
@@ -513,7 +513,7 @@ namespace GrobExp.Mutators
 
         private static bool IsExtension(MethodInfo method)
         {
-            return method.IsExtension() && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
+            return method.IsExtension(); // && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
         }
 
         private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)
@@ -527,7 +527,7 @@ namespace GrobExp.Mutators
 
         private static bool IsAllowedMethod(MethodInfo method)
         {
-            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
+            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(DependenciesExtractorHelper) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
         }
 
         private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)

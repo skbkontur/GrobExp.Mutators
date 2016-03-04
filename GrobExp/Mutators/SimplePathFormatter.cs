@@ -10,14 +10,20 @@ namespace GrobExp.Mutators
     {
         public Expression GetFormattedPath(Expression[] paths)
         {
-            return Expression.MemberInit(Expression.New(typeof(SimplePathFormatterText)), Expression.Bind(pathsProperty, Expression.NewArrayInit(typeof(string), paths.Select(GetText))));
+            var formattedPaths = paths.Select(GetText).ToArray();
+            if(formattedPaths.Any(path => path == null))
+                return null;
+            return Expression.MemberInit(
+                Expression.New(typeof(SimplePathFormatterText)),
+                Expression.Bind(pathsProperty, Expression.NewArrayInit(typeof(string), formattedPaths)));
         }
 
         private Expression GetText(Expression path)
         {
             var current = new StringBuilder();
             Expression result = null;
-            GetText(path, current, ref result);
+            if(!GetText(path, current, ref result))
+                return null;
             if(current.Length > 0)
             {
                 Expression cur = Expression.Constant(current.ToString());
@@ -26,7 +32,7 @@ namespace GrobExp.Mutators
             return result ?? Expression.Constant(null, typeof(string));
         }
 
-        private void GetText(Expression path, StringBuilder current, ref Expression result)
+        private bool GetText(Expression path, StringBuilder current, ref Expression result)
         {
             switch(path.NodeType)
             {
@@ -35,7 +41,8 @@ namespace GrobExp.Mutators
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)path;
-                    GetText(memberExpression.Expression, current, ref result);
+                    if(!GetText(memberExpression.Expression, current, ref result))
+                        return false;
                     if(result != null || current.Length > 0)
                         current.Append(".");
                     current.Append(memberExpression.Member.Name);
@@ -44,7 +51,8 @@ namespace GrobExp.Mutators
             case ExpressionType.ArrayIndex:
                 {
                     var binaryExpression = (BinaryExpression)path;
-                    GetText(binaryExpression.Left, current, ref result);
+                    if(!GetText(binaryExpression.Left, current, ref result))
+                        return false;
                     var index = binaryExpression.Right;
                     if(index.NodeType == ExpressionType.Constant)
                     {
@@ -69,7 +77,8 @@ namespace GrobExp.Mutators
                     if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
                     {
                         Expression array = methodCallExpression.Arguments.Single();
-                        GetText(array, current, ref result);
+                        if(!GetText(array, current, ref result))
+                            return false;
                         current.Append("[");
                         Expression cur = Expression.Constant(current.ToString());
                         result = result == null ? cur : Expression.Add(result, cur, stringConcatMethod);
@@ -82,33 +91,33 @@ namespace GrobExp.Mutators
                     }
                     if(methodCallExpression.Method.IsWhereMethod() || methodCallExpression.Method.IsToArrayMethod() || methodCallExpression.Method.IsSelectMethod())
                     {
-                        GetText(methodCallExpression.Arguments[0], current, ref result);
+                        if(!GetText(methodCallExpression.Arguments[0], current, ref result))
+                            return false;
                         break;
                     }
                     if(methodCallExpression.Method.IsIndexerGetter())
                     {
-                        GetText(methodCallExpression.Object, current, ref result);
-                        current.Append("[");
-                        for (int i = 0; i < methodCallExpression.Arguments.Count; ++i)
-                        {
-                            if(i > 0)
-                                current.Append(", ");
-                            current.Append(((ConstantExpression)methodCallExpression.Arguments[i]).Value);
-                        }
-                        current.Append("]");
+                        if(!GetText(methodCallExpression.Object, current, ref result))
+                            return false;
+                        if(methodCallExpression.Arguments.Count != 1)
+                            throw new NotSupportedException();
+                        current.Append(".");
+                        current.Append(((ConstantExpression)methodCallExpression.Arguments[0]).Value);
                         Expression cur = Expression.Constant(current.ToString());
                         result = result == null ? cur : Expression.Add(result, cur, stringConcatMethod);
                         current.Clear();
                         break;
                     }
-                    throw new NotSupportedException("Method " + methodCallExpression.Method + " is not supported");
+                    return false;
                 }
             case ExpressionType.Convert:
-                GetText(((UnaryExpression)path).Operand, current, ref result);
+                if(!GetText(((UnaryExpression)path).Operand, current, ref result))
+                    return false;
                 break;
             default:
-                throw new NotSupportedException("Node type '" + path.NodeType + "' is not supported");
+                return false;
             }
+            return true;
         }
 
         private readonly MethodInfo stringConcatMethod = ((BinaryExpression)((Expression<Func<string, string, string>>)((s1, s2) => s1 + s2)).Body).Method;

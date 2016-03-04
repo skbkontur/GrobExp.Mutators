@@ -4,6 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit.Utils;
+
+using GrobExp.Compiler;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
@@ -70,11 +73,27 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(Message);
         }
 
+        private static Expression CheckIfEmpty(Expression exp)
+        {
+            if(exp.Type == typeof(string))
+                return Expression.Call(stringIsNullOrEmptyMethod, exp);
+            var itemType = exp.Type.TryGetItemType();
+            if(itemType != null)
+            {
+                if(itemType == typeof(string))
+                    return Expression.Call(MutatorsHelperFunctions.StringArrayIsNullOrEmptyMethod, exp);
+                return Expression.Not(Expression.Call(anyMethod.MakeGenericMethod(itemType), exp));
+            }
+            if(exp.Type.IsValueType && !exp.Type.IsNullable())
+                return Expression.Constant(false);
+            return Expression.Equal(exp, Expression.Constant(null, exp.Type));
+        }
+
         public LambdaExpression GetFullCondition()
         {
             if(fullCondition != null)
                 return fullCondition;
-            Expression condition = Prepare(Expression.Lambda(Expression.Convert(Expression.Equal(Path.Body, Expression.Constant(null, Path.Body.Type)), typeof(bool?)), Path.Parameters)).Body;
+            Expression condition = Prepare(Expression.Lambda(Expression.Convert(CheckIfEmpty(Path.Body), typeof(bool?)), Path.Parameters)).Body;
             if(Condition != null)
             {
                 var parameterFromPath = Path.Parameters.Single();
@@ -122,5 +141,7 @@ namespace GrobExp.Mutators.Validators
         private readonly ValidationResultType validationResultType;
 
         private static readonly ConstructorInfo validationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult>>)(() => new ValidationResult(ValidationResultType.Ok, null))).Body).Constructor;
+        private static readonly MethodInfo anyMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.Any()).GetGenericMethodDefinition();
+        private static readonly MethodInfo stringIsNullOrEmptyMethod = HackHelpers.GetMethodDefinition<string>(s => string.IsNullOrEmpty(s));
     }
 }

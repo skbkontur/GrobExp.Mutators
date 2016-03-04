@@ -112,7 +112,7 @@ namespace GrobExp.Mutators.Visitors
         {
             if(node == null)
                 return new SinglePaths {paths = new List<List<Expression>>()};
-            if(node.IsLinkOfChain(true, true))
+            if(node.IsLinkOfChain(true, true) && !BadNode(node))
                 return BuildPathsForChain(node, context);
             switch(node.NodeType)
             {
@@ -247,61 +247,67 @@ namespace GrobExp.Mutators.Visitors
                     var methodCallExpression = (MethodCallExpression)shard;
                     var method = methodCallExpression.Method;
 
-                    if(!IsLinqCall(smithereens[i - 1]))
+                    if(!IsLinqCall(smithereens[i - 1]) || IsEndOfLinqChain(smithereens[i - 1]))
                     {
                         paths.Add(context.indexes[context.index]);
                         context.index++;
                     }
-                    switch(method.Name)
+                    if(method.IsEachMethod())
                     {
-                    case "First":
-                    case "FirstOrDefault":
-                    case "Single":
-                    case "SingleOrDefault":
-                        break;
-                    case "Where":
+                    }
+                    else
+                    {
+                        switch(method.Name)
                         {
-                            var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var subContext = new Context(context.indexes) {index = context.index};
-                            BuildPaths(predicate.Body, subContext);
-                            context.index = subContext.index;
-                        }
-                        break;
-                    case "Select":
-                        {
-                            var selector = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var parameter = selector.Parameters.Single();
-                            context.parameters.Add(parameter, paths.Clone());
-                            paths = BuildPaths(selector.Body, context);
-                            context.parameters.Remove(parameter);
-                        }
-                        break;
-                    case "SelectMany":
-                        {
-                            var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
-                            var parameter = collectionSelector.Parameters.Single();
-                            var startPaths = paths.Clone();
-                            context.parameters.Add(parameter, paths.Clone());
-                            paths = BuildPaths(collectionSelector.Body, context);
-                            context.parameters.Remove(parameter);
-                            if(!IsLinqCall(collectionSelector.Body))
+                        case "First":
+                        case "FirstOrDefault":
+                        case "Single":
+                        case "SingleOrDefault":
+                            break;
+                        case "Where":
                             {
-                                paths.Add(context.indexes[context.index]);
-                                context.index++;
+                                var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var subContext = new Context(context.indexes) {index = context.index};
+                                BuildPaths(predicate.Body, subContext);
+                                context.index = subContext.index;
                             }
-                            if(methodCallExpression.Arguments.Count > 2)
+                            break;
+                        case "Select":
                             {
-                                var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
-                                context.parameters.Add(resultSelector.Parameters[0], startPaths);
-                                context.parameters.Add(resultSelector.Parameters[1], paths.Clone());
-                                paths = BuildPaths(resultSelector.Body, context);
-                                context.parameters.Remove(resultSelector.Parameters[1]);
-                                context.parameters.Remove(resultSelector.Parameters[0]);
+                                var selector = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var parameter = selector.Parameters.Single();
+                                context.parameters.Add(parameter, paths.Clone());
+                                paths = BuildPaths(selector.Body, context);
+                                context.parameters.Remove(parameter);
                             }
+                            break;
+                        case "SelectMany":
+                            {
+                                var collectionSelector = (LambdaExpression)methodCallExpression.Arguments[1];
+                                var parameter = collectionSelector.Parameters.Single();
+                                var startPaths = paths.Clone();
+                                context.parameters.Add(parameter, paths.Clone());
+                                paths = BuildPaths(collectionSelector.Body, context);
+                                context.parameters.Remove(parameter);
+                                if(!IsLinqCall(collectionSelector.Body))
+                                {
+                                    paths.Add(context.indexes[context.index]);
+                                    context.index++;
+                                }
+                                if(methodCallExpression.Arguments.Count > 2)
+                                {
+                                    var resultSelector = (LambdaExpression)methodCallExpression.Arguments[2];
+                                    context.parameters.Add(resultSelector.Parameters[0], startPaths);
+                                    context.parameters.Add(resultSelector.Parameters[1], paths.Clone());
+                                    paths = BuildPaths(resultSelector.Body, context);
+                                    context.parameters.Remove(resultSelector.Parameters[1]);
+                                    context.parameters.Remove(resultSelector.Parameters[0]);
+                                }
+                            }
+                            break;
+                        default:
+                            throw new NotSupportedException("Method '" + method + "' is not supported");
                         }
-                        break;
-                    default:
-                        throw new NotSupportedException("Method '" + method + "' is not supported");
                     }
                 }
                 else
@@ -336,11 +342,40 @@ namespace GrobExp.Mutators.Visitors
             return node.NodeType == ExpressionType.Call && IsLinqMethod(((MethodCallExpression)node).Method);
         }
 
+        private static bool IsEndOfLinqChain(Expression node)
+        {
+            return node.NodeType == ExpressionType.Call && IsEndOfLinqChain(((MethodCallExpression)node).Method);
+        }
+
         private static bool IsLinqMethod(MethodInfo method)
         {
+            if(method.IsEachMethod())
+                return true;
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType == typeof(Enumerable);
+        }
+
+        private static bool IsEndOfLinqChain(MethodInfo method)
+        {
+            if(method.IsEachMethod())
+                return true;
+            if(method.IsGenericMethod)
+                method = method.GetGenericMethodDefinition();
+            return method.DeclaringType == typeof(Enumerable)
+                   && (method.Name == "First" || method.Name == "FirstOrDefault"
+                       || method.Name == "Single" || method.Name == "SingleOrDefault"
+                       || method.Name == "Aggregate");
+        }
+
+        private static bool BadNode(Expression node)
+        {
+            if(node.NodeType != ExpressionType.Call)
+                return false;
+            var method = ((MethodCallExpression)node).Method;
+            if(!IsLinqMethod(method))
+                return false;
+            return method.Name == "ToArray" || method.Name == "ToList" || method.Name == "ToDictionary";
         }
 
         private static Paths BuildPathsUnary(UnaryExpression node, Context context)

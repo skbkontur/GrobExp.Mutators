@@ -465,7 +465,7 @@ namespace GrobExp.Mutators.Visitors
                             cycleBody.Add(Expression.Assign(current, Visit(resultSelector.Body)));
                         }
 
-                        ProcessMethodsChain(context, smithereens, from + 1, to, DefaultFinishAction, current, newIndex, cycleBody, cycleVariables);
+                        ProcessMethodsChain(context, smithereens, from + 1, to, finishAction, current, newIndex, cycleBody, cycleVariables);
 
                         expressions.Add(Expression.Loop(Expression.Block(cycleVariables, cycleBody), localBreakLabel));
                     }
@@ -545,8 +545,6 @@ namespace GrobExp.Mutators.Visitors
                     var value = methodCallExpression.Arguments[1];
                     expressions.Add(
                         Expression.IfThen(
-                            
-                            //Expression.Equal(current, Visit(value)),
                             Expression.Call(equalMethod.MakeGenericMethod(value.Type), current, value),
                             Expression.Block(new List<Expression>
                                 {

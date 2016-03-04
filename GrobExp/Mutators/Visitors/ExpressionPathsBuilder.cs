@@ -112,7 +112,7 @@ namespace GrobExp.Mutators.Visitors
         {
             if(node == null)
                 return new SinglePaths {paths = new List<List<Expression>>()};
-            if(node.IsLinkOfChain(true, true))
+            if(node.IsLinkOfChain(true, true) && !BadNode(node))
                 return BuildPathsForChain(node, context);
             switch(node.NodeType)
             {
@@ -247,7 +247,7 @@ namespace GrobExp.Mutators.Visitors
                     var methodCallExpression = (MethodCallExpression)shard;
                     var method = methodCallExpression.Method;
 
-                    if(!IsLinqCall(smithereens[i - 1]))
+                    if(!IsLinqCall(smithereens[i - 1]) || IsEndOfLinqChain(smithereens[i - 1]))
                     {
                         paths.Add(context.indexes[context.index]);
                         context.index++;
@@ -342,6 +342,11 @@ namespace GrobExp.Mutators.Visitors
             return node.NodeType == ExpressionType.Call && IsLinqMethod(((MethodCallExpression)node).Method);
         }
 
+        private static bool IsEndOfLinqChain(Expression node)
+        {
+            return node.NodeType == ExpressionType.Call && IsEndOfLinqChain(((MethodCallExpression)node).Method);
+        }
+
         private static bool IsLinqMethod(MethodInfo method)
         {
             if(method.IsEachMethod())
@@ -349,6 +354,28 @@ namespace GrobExp.Mutators.Visitors
             if(method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType == typeof(Enumerable);
+        }
+
+        private static bool IsEndOfLinqChain(MethodInfo method)
+        {
+            if(method.IsEachMethod())
+                return true;
+            if(method.IsGenericMethod)
+                method = method.GetGenericMethodDefinition();
+            return method.DeclaringType == typeof(Enumerable)
+                   && (method.Name == "First" || method.Name == "FirstOrDefault"
+                       || method.Name == "Single" || method.Name == "SingleOrDefault"
+                       || method.Name == "Aggregate");
+        }
+
+        private static bool BadNode(Expression node)
+        {
+            if(node.NodeType != ExpressionType.Call)
+                return false;
+            var method = ((MethodCallExpression)node).Method;
+            if(!IsLinqMethod(method))
+                return false;
+            return method.Name == "ToArray" || method.Name == "ToList" || method.Name == "ToDictionary";
         }
 
         private static Paths BuildPathsUnary(UnaryExpression node, Context context)

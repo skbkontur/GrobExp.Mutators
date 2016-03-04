@@ -23,7 +23,15 @@ namespace GrobExp.Mutators
             var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
             Expression<Func<TSourceRoot, TSourceValue>> valueFromRoot = pathToSourceChild.Merge(value);
             LambdaExpression convertedValue = converter == null ? (LambdaExpression)valueFromRoot : valueFromRoot.Merge(converter);
-            StaticValidatorConfiguration validatorConfiguration = validator == null ? null : StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority, null, valueFromRoot, validator);
+            StaticValidatorConfiguration validatorConfiguration;
+            if(validator == null) validatorConfiguration = null;
+            else
+            {
+                if(converter == null)
+                    validatorConfiguration = StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority, null, valueFromRoot, valueFromRoot, validator);
+                else
+                    validatorConfiguration = StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority, null, valueFromRoot, (Expression<Func<TSourceRoot, TDestValue>>)convertedValue, validator);
+            }
             configurator.SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), convertedValue, validatorConfiguration));
             return configurator;
         }

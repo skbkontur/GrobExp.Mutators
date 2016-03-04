@@ -108,6 +108,27 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestCount1()
+        {
+            Expression<Func<TestData, int>> exp = data => data.A.Select(a => a).Count();
+            var withoutLinq = EliminateLinq(exp);
+            Assert.AreEqual(0, withoutLinq(new TestData()));
+            Assert.AreEqual(1, withoutLinq(new TestData{A = new[] {new A(), }}));
+            Assert.AreEqual(2, withoutLinq(new TestData{A = new[] {new A(), new A{X = -1}, }}));
+        }
+
+        [Test]
+        public void TestCount2()
+        {
+            Expression<Func<TestData, int>> exp = data => data.A.Count(a => a.X > 0);
+            var withoutLinq = EliminateLinq(exp);
+            Assert.AreEqual(0, withoutLinq(new TestData()));
+            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
+            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), new A{X = -1}, }}));
+            Assert.AreEqual(2, withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = -2 } , new A { X = 2 } } }));
+        }
+
+        [Test]
         public void TestAggregate1()
         {
             Expression<Func<TestData, string>> exp = data => data.Strings.Aggregate((s1, s2) => s1 + s2);

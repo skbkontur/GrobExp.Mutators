@@ -5,6 +5,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrEmit.Utils;
+
 using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
@@ -27,7 +29,7 @@ namespace GrobExp.Mutators.Visitors
             return result;
         }
 
-        public Expression EliminateQzz(Expression node, Func<ParameterExpression, ParameterExpression, ParameterExpression[], Expression> action)
+        public Expression EliminateAndEnumerate(Expression node, Func<ParameterExpression, ParameterExpression, ParameterExpression[], Expression> action)
         {
             needGlobalIndexes = true;
             indexes = new List<ParameterExpression>();
@@ -543,7 +545,9 @@ namespace GrobExp.Mutators.Visitors
                     var value = methodCallExpression.Arguments[1];
                     expressions.Add(
                         Expression.IfThen(
-                            Expression.Equal(current, Visit(value)),
+                            
+                            //Expression.Equal(current, Visit(value)),
+                            Expression.Call(equalMethod.MakeGenericMethod(value.Type), current, value),
                             Expression.Block(new List<Expression>
                                 {
                                     Expression.Assign(context.result, Expression.Constant(true)),
@@ -574,6 +578,18 @@ namespace GrobExp.Mutators.Visitors
                         var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                         selector = Expression.Lambda(new ParameterReplacer(selector.Parameters.Single(), current).Visit(selector.Body), current);
                         expressions.Add(Expression.AddAssign(context.result, Coalesce(Visit(selector.Body))));
+                    }
+                }
+                break;
+            case "Count":
+                {
+                    if(methodCallExpression.Arguments.Count == 1)
+                        expressions.Add(Expression.PreIncrementAssign(context.result));
+                    else
+                    {
+                        var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
+                        predicate = Expression.Lambda(new ParameterReplacer(predicate.Parameters.Single(), current).Visit(predicate.Body), current);
+                        expressions.Add(Expression.IfThen( Visit(predicate.Body), Expression.PreIncrementAssign(context.result)));
                     }
                 }
                 break;
@@ -644,6 +660,15 @@ namespace GrobExp.Mutators.Visitors
             }
         }
 
+        private static readonly MethodInfo equalMethod = HackHelpers.GetMethodDefinition<int>(x => Equal(x, x)).GetGenericMethodDefinition();
+
+        public static bool Equal<T>(T a, T b)
+        {
+            if(a == null || b == null)
+                return a == null && b == null;
+            return EqualityComparer<T>.Default.Equals(a, b);
+        }
+
         private static Expression Coalesce(Expression exp)
         {
             return !exp.Type.IsNullable()
@@ -657,7 +682,7 @@ namespace GrobExp.Mutators.Visitors
                 return true;
             var name = node.Method.Name;
             return name == "First" || name == "FirstOrDefault" || name == "Single" || name == "SingleOrDefault"
-                   || name == "Sum" || name == "Max" || name == "Min" || name == "Average"
+                   || name == "Sum" || name == "Count" || name == "Max" || name == "Min" || name == "Average"
                    || name == "Aggregate" || name == "All" || name == "Any" || name == "Contains";
         }
 

@@ -669,13 +669,13 @@ namespace GrobExp.Mutators
                 var equalsToConfiguration = mutator.Value as EqualsToConfiguration;
                 if(equalsToConfiguration != null && equalsToConfiguration.Validator != null)
                 {
-                    var path = equalsToConfiguration.Validator.Path;
+                    var path = equalsToConfiguration.Validator.PathToNode;
                     var primaryDependencies = path.ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                     var commonPath = primaryDependencies.FindLCP();
                     var node = commonPath == null ? validationsTree : validationsTree.Traverse(commonPath, true);
                     var mutatedValidator = equalsToConfiguration.Validator.Mutate(RootType, commonPath, performer);
                     if(mutatedValidator != null)
-                        node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(path.Body, mutatedValidator));
+                        node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(equalsToConfiguration.Validator.PathToValue.Body, mutatedValidator));
                 }
             }
             foreach(var child in Children)
@@ -1401,7 +1401,7 @@ namespace GrobExp.Mutators
                     var adjustedResolvedArray = Expression.Call(selectMethod.MakeGenericMethod(itemType, itemType), resolvedArray, Expression.Lambda(parameter, parameter));
                     adjustedResolvedArray = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), adjustedResolvedArray);
 
-                    var monster = new LinqEliminator().EliminateQzz(adjustedResolvedArray, (current, currentIndex, currentIndexes) =>
+                    var monster = new LinqEliminator().EliminateAndEnumerate(adjustedResolvedArray, (current, currentIndex, currentIndexes) =>
                         {
                             indexes = currentIndexes;
                             aliases.Add(new KeyValuePair<Expression, Expression>(current, item));
@@ -1494,7 +1494,10 @@ namespace GrobExp.Mutators
                 if(formattedChains == null)
                 {
                     // Default path formatting - simply list all the paths along the object tree
-                    formattedChains = FormatPaths(currentPaths);
+                    if(!(pathFormatter is PathFormatterWrapper))
+                        formattedChains = FormatPaths(currentPaths);
+                    else
+                        formattedChains = Expression.Constant(null, typeof(MultiLanguagePathText));
                 }
 
                 var localResults = new List<Expression>{valueAssignment};
@@ -1510,12 +1513,11 @@ namespace GrobExp.Mutators
                         throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
                     var validatorPriority = Expression.Constant(validator.Priority);
                     Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
-                    //Expression addValidationResult = Expression.Call(result, treeAddValidationResultMethod, new[] {Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority), cutChains});
                     // todo вызывать один раз
                     var targetValidationResults = SelectTargetNode(result, treeRootType, resolvedArrayIndexes);
                     var listAddMethod = HackHelpers.GetMethodDefinition<ValidationResultTreeNode>(x => x.AddValidationResult(null));
                     var currentFormattedValidationResult = Expression.New(formattedValidationResultConstructor, currentValidationResult, value, formattedChains, currentPriority);
-                    Expression addValidationResult = Expression.Call(targetValidationResults, listAddMethod, new[] { currentFormattedValidationResult });
+                    Expression addValidationResult = Expression.Call(targetValidationResults, listAddMethod, currentFormattedValidationResult);
                     Expression validationResultIsNotNull = Expression.NotEqual(currentValidationResult, Expression.Constant(null, typeof(ValidationResult)));
                     Expression validationResultIsNotOk = Expression.NotEqual(Expression.Property(currentValidationResult, typeof(ValidationResult).GetProperty("Type", BindingFlags.Instance | BindingFlags.Public)), Expression.Constant(ValidationResultType.Ok));
                     Expression condition = Expression.IfThen(Expression.AndAlso(validationResultIsNotNull, validationResultIsNotOk), addValidationResult);

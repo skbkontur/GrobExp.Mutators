@@ -513,7 +513,7 @@ namespace GrobExp.Mutators
 
         private static bool IsExtension(MethodInfo method)
         {
-            return method.IsExtension() && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
+            return method.IsExtension(); // && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
         }
 
         private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)

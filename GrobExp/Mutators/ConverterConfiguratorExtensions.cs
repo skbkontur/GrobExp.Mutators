@@ -12,6 +12,27 @@ namespace GrobExp.Mutators
 {
     public static class ConverterConfiguratorExtensions
     {
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> Set<TSourceRoot, TSourceChild, TSourceNode, TSourceValue, TDestRoot, TDestChild, TDestValue>(
+            this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> configurator,
+            Expression<Func<TSourceChild, TSourceNode>> node,
+            Expression<Func<TSourceNode, TSourceValue>> value,
+            Expression<Func<TSourceValue, TDestValue>> converter,
+            Expression<Func<TSourceNode, ValidationResult>> validator,
+            int priority = 0)
+        {
+            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
+            var nodeFromRoot = pathToSourceChild.Merge(node);
+            var valueFromRoot = nodeFromRoot.Merge(value);
+            var convertedValue = converter == null ? (LambdaExpression)valueFromRoot : valueFromRoot.Merge(converter);
+            var validatorConfiguration = validator == null
+                                             ? null
+                                             : StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority,
+                                                                                   null, nodeFromRoot, valueFromRoot, validator);
+            configurator.SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), convertedValue, validatorConfiguration));
+            return configurator;
+        }
+
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> Set<TSourceRoot, TSourceChild, TSourceValue, TDestRoot, TDestChild, TDestValue>(
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> configurator,
             Expression<Func<TSourceChild, TSourceValue>> value,
@@ -19,21 +40,7 @@ namespace GrobExp.Mutators
             Expression<Func<TSourceValue, ValidationResult>> validator,
             int priority = 0)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
-            Expression<Func<TSourceRoot, TSourceValue>> valueFromRoot = pathToSourceChild.Merge(value);
-            LambdaExpression convertedValue = converter == null ? (LambdaExpression)valueFromRoot : valueFromRoot.Merge(converter);
-            StaticValidatorConfiguration validatorConfiguration;
-            if(validator == null) validatorConfiguration = null;
-            else
-            {
-                if(converter == null)
-                    validatorConfiguration = StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority, null, valueFromRoot, valueFromRoot, validator);
-                else
-                    validatorConfiguration = StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority, null, valueFromRoot, (Expression<Func<TSourceRoot, TDestValue>>)convertedValue, validator);
-            }
-            configurator.SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), convertedValue, validatorConfiguration));
-            return configurator;
+            return configurator.Set(value, x => x, converter, validator, priority);
         }
 
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> Set<TSourceRoot, TSourceChild, TSourceValue, TDestRoot, TDestChild, TDestValue>(

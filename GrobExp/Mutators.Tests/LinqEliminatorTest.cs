@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -501,6 +502,28 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData, int>> exp = data => data.A.Where(a => a.S == "zzz").FirstOrDefault().B.Where(b => b.S == "qxx").Select(b => b.C.FirstOrDefault(c => c.S == "qzz").X + b.C.FirstOrDefault(c => c.S == "xxx").Y).FirstOrDefault();
             var withoutLinq = EliminateLinq(exp);
+        }
+
+        [Test, Ignore]
+        public void TestPerformance()
+        {
+            var list = new List<int>();
+            for (int i = 0; i < 1000000; ++i)
+                list.Add(i);
+            Func<List<int>, int> func1 = x => x.Count(z => z > 10000);
+            Expression<Func<List<int>, int>> exp = x => x.Count(z => z > 10000);
+            var func2 = LambdaCompiler.Compile(exp.EliminateLinq(), CompilerOptions.None);
+            Console.WriteLine(func1(list));
+            Console.WriteLine(func2(list));
+            var stopwatch = Stopwatch.StartNew();
+            for (int i = 0; i < 100; ++i)
+                func2(list);
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds);
+            stopwatch.Reset();
+            stopwatch.Start();
+            for (int i = 0; i < 100; ++i)
+                func1(list);
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds);
         }
 
         // ReSharper restore PossibleNullReferenceException

@@ -108,6 +108,20 @@ namespace GrobExp.Compiler
                     return typeof(Action<,,,,,,>).MakeGenericType(parameterTypes);
                 case 8:
                     return typeof(Action<,,,,,,,>).MakeGenericType(parameterTypes);
+                case 9:
+                    return typeof(Action<,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 10:
+                    return typeof(Action<,,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 11:
+                    return typeof(Action<,,,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 12:
+                    return typeof(Action<,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 13:
+                    return typeof(Action<,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 14:
+                    return typeof(Action<,,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+                case 15:
+                    return typeof(Action<,,,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
                 default:
                     throw new NotSupportedException("Too many parameters for Action: " + parameterTypes.Length);
                 }
@@ -127,6 +141,24 @@ namespace GrobExp.Compiler
                 return typeof(Func<,,,,>).MakeGenericType(parameterTypes);
             case 6:
                 return typeof(Func<,,,,,>).MakeGenericType(parameterTypes);
+            case 7:
+                return typeof(Func<,,,,,,>).MakeGenericType(parameterTypes);
+            case 8:
+                return typeof(Func<,,,,,,,>).MakeGenericType(parameterTypes);
+            case 9:
+                return typeof(Func<,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 10:
+                return typeof(Func<,,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 11:
+                return typeof(Func<,,,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 12:
+                return typeof(Func<,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 13:
+                return typeof(Func<,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 14:
+                return typeof(Func<,,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
+            case 15:
+                return typeof(Func<,,,,,,,,,,,,,,>).MakeGenericType(parameterTypes);
             default:
                 throw new NotSupportedException("Too many parameters for Func: " + parameterTypes.Length);
             }

@@ -75,6 +75,11 @@ namespace GrobExp.Mutators
             return result;
         }
 
+        public static Expression<TDelegate> EliminateLinq<TDelegate>(this Expression<TDelegate> expression)
+        {
+            return Expression.Lambda<TDelegate>(expression.Body.EliminateLinq(), expression.Parameters);
+        }
+
         public static Expression EliminateLinq(this Expression expression)
         {
             return expression == null ? null : new LinqEliminator().Eliminate(expression);

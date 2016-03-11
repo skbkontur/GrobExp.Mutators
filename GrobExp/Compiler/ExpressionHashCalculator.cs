@@ -448,8 +448,8 @@ namespace GrobExp.Compiler
                 {
                     normalizedMembers.Sort((first, second) =>
                     {
-                        if(first.Module.MetadataToken != second.Module.MetadataToken)
-                            return first.Module.MetadataToken - second.Module.MetadataToken;
+                        if(first.Module != second.Module)
+                            return string.Compare(first.Module.FullyQualifiedName, second.Module.FullyQualifiedName, StringComparison.InvariantCulture);
                         return first.MetadataToken - second.MetadataToken;
                     });
                 }

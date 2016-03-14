@@ -26,9 +26,8 @@ namespace GrobExp.Mutators
 
         public LambdaExpression GetLambda()
         {
-            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(ExtractedExpressions);
             FieldInfo[] fieldInfos;
-            var builtType = ExpressionTypeBuilder.GetType(ExtractedExpressions, fieldNames, out fieldInfos);
+            var builtType = ExpressionTypeBuilder.GetType(ExtractedExpressions, out fieldInfos);
             ParameterAccessor = Expression.Parameter(builtType);
             var canonizedBody = new ExtractedExpressionsReplacer().Replace(Source, ExtractedExpressions, ParameterAccessor, fieldInfos);
             return Expression.Lambda(canonizedBody, ParameterAccessor);

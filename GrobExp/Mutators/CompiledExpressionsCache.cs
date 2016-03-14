@@ -65,9 +65,8 @@ namespace GrobExp.Mutators
 
         private static LambdaExpression BuildLambda(Expression validator, Expression[] consts)
         {
-            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(consts);
             FieldInfo[] fieldInfos;
-            var type = ExpressionTypeBuilder.GetType(consts, fieldNames, out fieldInfos);
+            var type = ExpressionTypeBuilder.GetType(consts, out fieldInfos);
             var parameterAccessor = Expression.Parameter(type);
             var body = new ExtractedExpressionsReplacer().Replace(validator, consts, parameterAccessor, fieldInfos);
             var otherParameters = validator.ExtractParameters();

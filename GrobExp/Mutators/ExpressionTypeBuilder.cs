@@ -15,8 +15,9 @@ namespace GrobExp.Mutators
 {
     public static class ExpressionTypeBuilder
     {
-        public static Type GetType(Expression[] expressionsToExtract, string[] fieldNames, out FieldInfo[] fieldInfos)
+        public static Type GetType(Expression[] expressionsToExtract, out FieldInfo[] fieldInfos)
         {
+            var fieldNames = GenerateFieldNames(expressionsToExtract);
             var key = new TypeWrapper(expressionsToExtract.Select(exp => exp.Type));
 
             var type = (Type)TypeCache[key];
@@ -108,7 +109,7 @@ namespace GrobExp.Mutators
 
         private class TypeWrapper
         {
-            public Type[] FieldTypes { get; private set; }
+            private Type[] FieldTypes { get; set; }
 
             public TypeWrapper(IEnumerable<Type> fieldTypes)
             {

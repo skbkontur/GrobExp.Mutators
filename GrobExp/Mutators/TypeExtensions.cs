@@ -76,8 +76,8 @@ namespace GrobExp.Mutators
             GetProperties(type, flags, result);
             result.Sort((first, second) =>
                 {
-                    if(first.Module.MetadataToken != second.Module.MetadataToken)
-                        return first.Module.MetadataToken - second.Module.MetadataToken;
+                    if(first.Module != second.Module)
+                        return string.Compare(first.Module.FullyQualifiedName, second.Module.FullyQualifiedName, StringComparison.InvariantCulture);
                     return first.MetadataToken - second.MetadataToken;
                 });
             var unique = new List<PropertyInfo>();
@@ -85,7 +85,7 @@ namespace GrobExp.Mutators
                 unique.Add(result[0]);
             for(var i = 1; i < result.Count; ++i)
             {
-                if(result[i - 1].Module.MetadataToken != result[i].Module.MetadataToken || result[i - 1].MetadataToken != result[i].MetadataToken)
+                if(result[i - 1].Module != result[i].Module || result[i - 1].MetadataToken != result[i].MetadataToken)
                     unique.Add(result[i]);
             }
             return unique.ToArray();
@@ -95,7 +95,7 @@ namespace GrobExp.Mutators
         {
             if(type == null || type == typeof(object))
                 return;
-            list.AddRange(type.GetProperties(flags));
+            list.AddRange(type.GetProperties(flags | BindingFlags.DeclaredOnly));
             GetProperties(type.BaseType, flags, list);
         }
 

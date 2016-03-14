@@ -37,12 +37,13 @@ namespace GrobExp.Mutators
 
         private static LambdaExpression KillConstants(LambdaExpression lambda, out object closure)
         {
-            var constants = new ConstantsExtractor().Extract(lambda.Body).Cast<Expression>().ToArray();
-            var constantsValues = constants.Select(exp => ((ConstantExpression)exp).Value).ToArray();
-            var fieldNames = ExpressionTypeBuilder.GenerateFieldNames(constants);
+            var constants = new ConstantsExtractor().Extract(lambda.Body)
+                .OrderBy(expression => expression.Type.Name)
+                .Cast<Expression>().ToArray();
             FieldInfo[] fieldInfos;
-            var closureType = ExpressionTypeBuilder.GetType(constants, fieldNames, out fieldInfos);
-            closure = Activator.CreateInstance(closureType, new[] { constantsValues });
+            var constantValues = constants.Select(expression => ((ConstantExpression)expression).Value).ToArray();
+            var closureType = ExpressionTypeBuilder.GetType(constants, out fieldInfos);
+            closure = Activator.CreateInstance(closureType, new[] { constantValues });
             var parameterAccessor = Expression.Parameter(closureType);
             var objectParameter = Expression.Parameter(typeof(object));
             var bodyWithoutConstants = new ExtractedExpressionsReplacer().Replace(lambda.Body, constants, parameterAccessor, fieldInfos);

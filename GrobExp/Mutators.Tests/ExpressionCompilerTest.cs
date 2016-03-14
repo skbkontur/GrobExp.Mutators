@@ -25,6 +25,17 @@ namespace Mutators.Tests
                 }));
         }
 
+        [Test]
+        public void TestCompilerCreatesSingleConstantsClosure()
+        {
+            ExpressionTypeBuilder.TypeCache.Clear();
+            var f1 = ExpressionCompiler.Compile<string, int>(s => (s + "abc").Length + 2);
+            Assert.That(f1("abc"), Is.EqualTo(8));
+            var f2 = ExpressionCompiler.Compile<string, int>(s => 3 + (s + "de").Length);
+            Assert.That(f2("d"), Is.EqualTo(6));
+            Assert.That(ExpressionTypeBuilder.TypeCache.Count, Is.EqualTo(1));
+        }
+
         [Test, Timeout(20000)]
         public void TestCompilePerformance()
         {

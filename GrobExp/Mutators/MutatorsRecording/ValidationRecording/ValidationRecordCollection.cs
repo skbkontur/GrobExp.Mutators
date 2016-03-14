@@ -34,12 +34,14 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 
         public void RecordCompilingValidation(ValidationLogInfo validationInfo)
         {
-            if(currentValidator == null) return;
-            currentValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Ok");
-            currentValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
+            if(currentValidator != null)
+            {
+                currentValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Ok");
+                currentValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
+            }
 
-            if(currentErrorValidator == null) return;
-            currentErrorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
+            if(currentErrorValidator != null)
+                currentErrorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
         }
 
         public void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)

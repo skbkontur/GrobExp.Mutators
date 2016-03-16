@@ -15,7 +15,7 @@ namespace GrobExp.Mutators
         public static Expression GetCanonicalForm(Expression expression)
         {
             var form = new ExpressionCanonicalForm(expression);
-            var key = ExpressionHashCalculator.CalcStrongHashCode(form.CanonicalForm);
+            var key = ExpressionHashCalculator.CalcStrongHashCode(form.CanonicalForm);// new ExpressionWrapper(form.CanonicalForm, false);//ExpressionHashCalculator.CalcStrongHashCode(form.CanonicalForm);
             var lambda = (Delegate)canonicalFormsCache[key];
             if(lambda == null)
             {
@@ -24,7 +24,8 @@ namespace GrobExp.Mutators
                     lambda = (Delegate)canonicalFormsCache[key];
                     if(lambda == null)
                     {
-                        canonicalFormsCache[key] = lambda = LambdaCompiler.Compile(form.GetLambda(), CompilerOptions.All);
+                        var lambdaExpression = form.GetLambda();
+                        canonicalFormsCache[key] = lambda = LambdaCompiler.Compile(lambdaExpression, CompilerOptions.All);
                     }
                 }
             }
@@ -36,7 +37,7 @@ namespace GrobExp.Mutators
             var parameters = validator.ExtractParameters();
             var consts = new ConstantsExtractor().Extract(validator, false).Cast<Expression>().ToArray();
             var keyExpression = new ExpressionCanonizer().Canonize(validator, consts);
-            var key = ExpressionHashCalculator.CalcStrongHashCode(keyExpression);
+            var key = ExpressionHashCalculator.CalcStrongHashCode(keyExpression);// new ExpressionWrapper(keyExpression, false);//ExpressionHashCalculator.CalcStrongHashCode(keyExpression);
             var exp = (Delegate)expressionsCache[key];
             if(exp == null)
             {

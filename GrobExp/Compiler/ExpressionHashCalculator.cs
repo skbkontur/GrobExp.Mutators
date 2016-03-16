@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+using GrEmit.Utils;
+
 namespace GrobExp.Compiler
 {
     public static class ExpressionHashCalculator
@@ -292,7 +294,7 @@ namespace GrobExp.Compiler
                 context.HashCodes.Add(0);
                 return;
             }
-            context.HashCodes.Add(member.Module.MetadataToken);
+            CalcHashCode(member.Module.FullyQualifiedName, context);
             context.HashCodes.Add(member.MetadataToken);
         }
 
@@ -319,8 +321,10 @@ namespace GrobExp.Compiler
 
         private static void CalcHashCode(Type type, Context context)
         {
-            context.HashCodes.Add(type.Module.MetadataToken);
+            CalcHashCode(type.Module.FullyQualifiedName, context);
             context.HashCodes.Add(type.MetadataToken);
+            // todo calc hash code of type
+            CalcHashCode(Formatter.Format(type), context);
         }
 
         private static void CalcHashCode(GotoExpressionKind kind, Context context)

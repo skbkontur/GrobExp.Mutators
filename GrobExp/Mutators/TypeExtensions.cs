@@ -76,8 +76,10 @@ namespace GrobExp.Mutators
             GetProperties(type, flags, result);
             result.Sort((first, second) =>
                 {
-                    if(first.Module != second.Module)
-                        return string.Compare(first.Module.FullyQualifiedName, second.Module.FullyQualifiedName, StringComparison.InvariantCulture);
+                    if(first.Module.Assembly != second.Module.Assembly)
+                        return string.Compare(first.Module.Assembly.FullName, second.Module.Assembly.FullName, StringComparison.InvariantCulture);
+                    if(first.Module.MetadataToken != second.Module.MetadataToken)
+                        return first.Module.MetadataToken - second.Module.MetadataToken;
                     return first.MetadataToken - second.MetadataToken;
                 });
             var unique = new List<PropertyInfo>();

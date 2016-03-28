@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 using GrEmit;
@@ -365,6 +366,179 @@ namespace Compiler.Tests
                 *(int*)(a + 7) = x;
             }
             return arr;
+        }
+
+        public class Node
+        {
+            public readonly Dictionary<char, Node> jumps = new Dictionary<char, Node>();
+            public bool accepted;
+        }
+
+        public bool Match(Node start, string str)
+        {
+            var node = start;
+            for(int i = 0; i < str.Length; ++i)
+            {
+                Node jump;
+                if(!node.jumps.TryGetValue(str[i], out jump))
+                    return false;
+                node = jump;
+            }
+            return node.accepted;
+        }
+
+        public abstract class Node2
+        {
+            public abstract Node2 Jump(char c);
+            public bool accepted;
+        }
+
+        public class Node2_09 : Node2
+        {
+            public Node2 child;
+
+            public override Node2 Jump(char c)
+            {
+                if(c >= '0' && c <= '9') return child;
+                return null;
+            }
+        }
+
+        public class Node2_pm09 : Node2
+        {
+            public Node2 child_pm;
+            public Node2 child_09;
+
+            public override Node2 Jump(char c)
+            {
+                if(c == '+' || c == '-')
+                    return child_pm;
+                if(c >= '0' && c <= '9')
+                    return child_09;
+                return null;
+            }
+        }
+
+        public class Node2_dot09 : Node2
+        {
+            public Node2 child_dot;
+            public Node2 child_09;
+
+            public override Node2 Jump(char c)
+            {
+                if(c == '.')
+                    return child_dot;
+                if(c >= '0' && c <= '9')
+                    return child_09;
+                return null;
+            }
+        }
+
+        public bool Match3(Node2 start, string str)
+        {
+            var node = start;
+            for (int i = 0; i < str.Length; ++i)
+            {
+                node = node.Jump(str[i]);
+                if(node == null)
+                    return false;
+            }
+            return node.accepted;
+        }
+
+        public bool Match2(string str)
+        {
+            int idx = 0;
+            int len = str.Length;
+            char c;
+
+        _1: if (idx >= len) return false;
+            c = str[idx++];
+            if (c == '+' || c == '-') goto _2;
+            if (c >= '0' && c <= '9') goto _3;
+            return false;
+
+        _2: if (idx >= len) return false;
+            c = str[idx++];
+            if (c >= '0' && c <= '9') goto _3;
+            return false;
+
+        _3: if (idx >= len) return true;
+            c = str[idx++];
+            if (c >= '0' && c <= '9') goto _3;
+            if (c == '.') goto _4;
+            return false;
+
+        _4: if (idx >= len) return true;
+            c = str[idx++];
+            if (c >= '0' && c <= '9') goto _4;
+            return false;
+        }
+
+        public static void Main(string[] args)
+        {
+            var test = new TestPerformance();
+            test.TestAutomaton();
+        }
+
+        [Test, Ignore]
+        public void TestAutomaton()
+        {
+            var s1 = new Node();
+            var s2 = new Node();
+            var s3 = new Node();
+            var s4 = new Node();
+            s1.jumps.Add('+', s2);
+            s1.jumps.Add('-', s2);
+            for(char c = '0'; c <= '9'; ++c)
+                s1.jumps.Add(c, s3);
+            for(char c = '0'; c <= '9'; ++c)
+                s2.jumps.Add(c, s3);
+            s3.jumps.Add('.', s4);
+            for(char c = '0'; c <= '9'; ++c)
+                s3.jumps.Add(c, s3);
+            for(char c = '0'; c <= '9'; ++c)
+                s4.jumps.Add(c, s4);
+            s3.accepted = true;
+            s4.accepted = true;
+
+            var t1 = new Node2_pm09();
+            var t2 = new Node2_09();
+            var t3 = new Node2_dot09();
+            var t4 = new Node2_09();
+            t1.child_pm = t2;
+            t1.child_09 = t3;
+            t2.child = t3;
+            t3.child_dot = t4;
+            t3.child_09 = t3;
+            t4.child = t4;
+            t3.accepted = true;
+            t4.accepted = true;
+
+            Func<string, bool> func = s => Match(s1, s);
+            Func<string, bool> func2 = Match2;
+            Func<string, bool> func3 = s => Match3(t1, s);
+
+            var regex = new Regex(@"^[\-+]?[0-9]+(\.[0-9]*)?$");
+            Func<string, bool> func4 = regex.IsMatch;
+            var regex2 = new Regex(@"^[\-+]?[0-9]+(\.[0-9]*)?$", RegexOptions.Compiled);
+            Func<string, bool> func5 = regex2.IsMatch;
+
+            Console.WriteLine(func("123456789.12345678.9"));
+            Console.WriteLine(func2("123456789.12345678.9"));
+            Console.WriteLine(func3("123456789.12345678.9"));
+            Console.WriteLine(func4("123456789.12345678.9"));
+            Console.WriteLine(func5("123456789.12345678.9"));
+            Console.WriteLine("Compiled automaton");
+            var ethalon = MeasureSpeed(func2, "123456789.123456789", 10000001, null);
+            Console.WriteLine("Automaton");
+            MeasureSpeed(func, "123456789.123456789", 10000001, ethalon);
+            Console.WriteLine("Optimized automaton");
+            MeasureSpeed(func3, "123456789.123456789", 10000001, ethalon);
+            Console.WriteLine("regex");
+            MeasureSpeed(func4, "123456789.123456789", 10000001, ethalon);
+            Console.WriteLine("regex compiled");
+            MeasureSpeed(func5, "123456789.123456789", 10000001, ethalon);
         }
 
         [Test, Ignore]

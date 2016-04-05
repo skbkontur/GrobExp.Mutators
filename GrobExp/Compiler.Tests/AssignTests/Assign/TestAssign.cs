@@ -236,6 +236,19 @@ namespace Compiler.Tests.AssignTests.Assign
 
         }
 
+        [Test]
+        public void TestAssignToList()
+        {
+            var parameter = Expression.Parameter(typeof(TestClassA));
+            var exp = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(Expression.MakeIndex(Expression.Property(parameter, "List"), typeof(List<string>).GetProperty("Item"), new[] { Expression.Constant(1) }), Expression.Constant("zzz")), parameter);
+            var f = LambdaCompiler.Compile(exp, CompilerOptions.All);
+            var o = new TestClassA();
+            Assert.AreEqual("zzz", f(o));
+            Assert.IsNotNull(o.List);
+            Assert.AreEqual(2, o.List.Count);
+            Assert.AreEqual("zzz", o.List[1]);
+        }
+
         public static string S { get; set; }
 
         public static int x;
@@ -249,6 +262,7 @@ namespace Compiler.Tests.AssignTests.Assign
             }
 
             public Dictionary<string, TestClassB> Dict { get; set; }
+            public List<string> List { get; set; }
 
             public string S { get; set; }
             public TestClassA A { get; set; }

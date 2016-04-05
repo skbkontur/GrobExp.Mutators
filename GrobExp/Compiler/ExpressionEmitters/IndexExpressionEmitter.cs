@@ -11,10 +11,12 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         protected override bool EmitInternal(IndexExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            if(node.Object != null && node.Object.Type.IsArray && node.Object.Type.GetArrayRank() == 1)
-                return ExpressionEmittersCollection.Emit(Expression.ArrayIndex(node.Object, node.Arguments.Single()), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
-            if(node.Object == null)
+            if (node.Object == null)
                 throw new InvalidOperationException("Indexing of null object is invalid");
+            if (node.Object.Type.IsArray && node.Object.Type.GetArrayRank() == 1)
+                return ExpressionEmittersCollection.Emit(Expression.ArrayIndex(node.Object, node.Arguments.Single()), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
+            if(node.Object.Type.IsList())
+                return ArrayIndexExpressionEmitter.Emit(node.Object, node.Arguments.Single(), context, returnDefaultValueLabel, whatReturn, extend, out resultType);
             Type objectType;
             bool result = ExpressionEmittersCollection.Emit(node.Object, context, returnDefaultValueLabel, ResultType.ByRefValueTypesOnly, extend, out objectType);
             if(objectType.IsValueType)
@@ -37,7 +39,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 if(node.Object.Type.IsDictionary())
                 {
                     var valueType = node.Object.Type.GetGenericArguments()[1];
-                    ConstructorInfo constructor = valueType.GetConstructor(Type.EmptyTypes);
+                    var constructor = valueType.GetConstructor(Type.EmptyTypes);
                     extend &= (valueType.IsClass && constructor != null) || valueType.IsArray || valueType.IsValueType || valueType == typeof(string);
                     doneLabel = context.Il.DefineLabel("done");
                     using(var dict = context.DeclareLocal(node.Object.Type))

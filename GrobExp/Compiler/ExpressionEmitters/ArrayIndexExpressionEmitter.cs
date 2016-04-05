@@ -10,31 +10,41 @@ namespace GrobExp.Compiler.ExpressionEmitters
     {
         protected override bool EmitInternal(BinaryExpression node, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
         {
-            var arrayType = node.Left.Type;
-            if(!arrayType.IsArray)
+            return Emit(node.Left, node.Right, context, returnDefaultValueLabel, whatReturn, extend, out resultType);
+        }
+
+        public static bool Emit(Expression zarr, Expression zindex, EmittingContext context, GroboIL.Label returnDefaultValueLabel, ResultType whatReturn, bool extend, out Type resultType)
+        {
+            var arrayType = zarr.Type;
+            var isArray = arrayType.IsArray;
+            if(!isArray && !arrayType.IsList())
                 throw new InvalidOperationException("Unable to perform array index operator to type '" + arrayType + "'");
+            var itemType = isArray ? arrayType.GetElementType() : arrayType.GetGenericArguments()[0];
             GroboIL il = context.Il;
             EmittingContext.LocalHolder arrayIndex = null;
-            bool extendArray = extend && CanAssign(node.Left);
-            bool extendArrayElement = extend && arrayType.GetElementType().IsClass;
+            bool extendArray = extend && CanAssign(zarr);
+            bool extendArrayElement = extend && itemType.IsClass;
             var result = false;
             if(!extendArray)
             {
-                result |= ExpressionEmittersCollection.Emit(node.Left, context, returnDefaultValueLabel, ResultType.Value, extend, out arrayType); // stack: [array]
+                result |= ExpressionEmittersCollection.Emit(zarr, context, returnDefaultValueLabel, ResultType.Value, extend, out arrayType); // stack: [array]
                 if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
                 {
                     result = true;
                     il.Dup(); // stack: [array, array]
                     il.Brfalse(returnDefaultValueLabel); // if(array == null) goto returnDefaultValue; stack: [array]
                 }
-                EmitLoadIndex(node.Right, context, arrayType); // stack: [array, arrayIndex]
+                EmitLoadIndex(zindex, context, arrayType); // stack: [array, arrayIndex]
                 if(context.Options.HasFlag(CompilerOptions.CheckArrayIndexes))
                 {
                     result = true;
                     arrayIndex = context.DeclareLocal(typeof(int));
                     il.Stloc(arrayIndex); // arrayIndex = index; stack: [array]
                     il.Dup(); // stack: [array, array]
-                    il.Ldlen(); // stack: [array, array.Length]
+                    if(isArray)
+                        il.Ldlen(); // stack: [array, array.Length]
+                    else
+                        il.Ldfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
                     il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                     il.Ble(returnDefaultValueLabel, false); // if(array.Length <= arrayIndex) goto returnDefaultValue; stack: [array]
                     il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
@@ -50,32 +60,32 @@ namespace GrobExp.Compiler.ExpressionEmitters
             else
             {
                 EmittingContext.LocalHolder arrayOwner = null;
-                switch(node.Left.NodeType)
+                switch(zarr.NodeType)
                 {
                 case ExpressionType.Parameter:
                 case ExpressionType.ArrayIndex:
                 case ExpressionType.Index:
                     Type type;
-                    ExpressionEmittersCollection.Emit(node.Left, context, returnDefaultValueLabel, ResultType.ByRefAll, true, out type); // stack: [ref array]
+                    ExpressionEmittersCollection.Emit(zarr, context, returnDefaultValueLabel, ResultType.ByRefAll, true, out type); // stack: [ref array]
                     arrayOwner = context.DeclareLocal(type);
                     il.Dup(); // stack: [ref array, ref array]
                     il.Stloc(arrayOwner); // arrayOwner = ref array; stack: [ref array]
-                    il.Ldind(node.Left.Type); // stack: [array]
+                    il.Ldind(zarr.Type); // stack: [array]
                     break;
                 case ExpressionType.MemberAccess:
-                    var memberExpression = (MemberExpression)node.Left;
+                    var memberExpression = (MemberExpression)zarr;
                     Type memberType;
                     context.EmitMemberAccess(memberExpression, returnDefaultValueLabel, context.Options.HasFlag(CompilerOptions.CheckNullReferences), true, ResultType.ByRefValueTypesOnly, out memberType, out arrayOwner); // stack: [array]
                     break;
                 default:
-                    throw new InvalidOperationException("Cannot extend array for expression with node type '" + node.Left.NodeType + "'");
+                    throw new InvalidOperationException("Cannot extend array for expression with node type '" + zarr.NodeType + "'");
                 }
                 if(context.Options.HasFlag(CompilerOptions.CheckNullReferences))
                 {
                     il.Dup(); // stack: [array, array]
                     il.Brfalse(returnDefaultValueLabel); // if(array == null) goto returnDefaultValue; stack: [array]
                 }
-                EmitLoadIndex(node.Right, context, arrayType);
+                EmitLoadIndex(zindex, context, arrayType);
                 result = true;
                 arrayIndex = context.DeclareLocal(typeof(int));
                 il.Stloc(arrayIndex); // arrayIndex = index; stack: [array]
@@ -83,19 +93,38 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 il.Ldc_I4(0); // stack: [array, arrayIndex, 0]
                 il.Blt(returnDefaultValueLabel, false); // if(arrayIndex < 0) goto returnDefaultValue; stack: [array]
                 il.Dup(); // stack: [array, array]
-                il.Ldlen(); // stack: [array, array.Length]
+                if(isArray)
+                    il.Ldlen(); // stack: [array, array.Length]
+                else
+                    il.Ldfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
                 il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                 var bigEnoughLabel = il.DefineLabel("bigEnough");
                 il.Bgt(bigEnoughLabel, false); // if(array.Length > arrayIndex) goto bigEnough; stack: [array]
                 using(var array = context.DeclareLocal(arrayType))
                 {
                     il.Stloc(array); // stack: []
-                    il.Ldloca(array); // stack: [ref array]
-                    il.Ldloc(arrayIndex); // stack: [ref array, arrayIndex]
-                    il.Ldc_I4(1); // stack: [ref array, arrayIndex, 1]
-                    il.Add(); // stack: [ref array, arrayIndex + 1]
-                    il.Call(arrayResizeMethod.MakeGenericMethod(arrayType.GetElementType())); // Array.Resize(ref array, 1 + arrayIndex); stack: []
-                    switch(node.Left.NodeType)
+                    if(isArray)
+                    {
+                        il.Ldloca(array); // stack: [ref array]
+                        il.Ldloc(arrayIndex); // stack: [ref array, arrayIndex]
+                        il.Ldc_I4(1); // stack: [ref array, arrayIndex, 1]
+                        il.Add(); // stack: [ref array, arrayIndex + 1]
+                        il.Call(arrayResizeMethod.MakeGenericMethod(arrayType.GetElementType())); // Array.Resize(ref array, 1 + arrayIndex); stack: []
+                    }
+                    else
+                    {
+                        il.Ldloc(array); // stack: [list]
+                        il.Ldloc(arrayIndex); // stack: [list, arrayIndex]
+                        il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                        il.Add(); // stack: [list, arrayIndex + 1]
+                        il.Call(arrayType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic)); // list.EnsureCapacity(arrayIndex + 1); stack: []
+                        il.Ldloc(array); // stack: [list]
+                        il.Ldloc(arrayIndex); // stack: [list, arrayIndex]
+                        il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                        il.Add(); // stack: [list, arrayIndex + 1]
+                        il.Stfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic)); // list.Count = arrayIndex + 1; stack: []
+                    }
+                    switch(zarr.NodeType)
                     {
                     case ExpressionType.Parameter:
                     case ExpressionType.ArrayIndex:
@@ -105,7 +134,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         il.Stind(arrayType); // parameter = array; stack: []
                         break;
                     case ExpressionType.MemberAccess:
-                        var memberExpression = (MemberExpression)node.Left;
+                        var memberExpression = (MemberExpression)zarr;
                         if(memberExpression.Expression != null)
                             il.Ldloc(arrayOwner);
                         il.Ldloc(array);
@@ -126,31 +155,37 @@ namespace GrobExp.Compiler.ExpressionEmitters
                         }
                         break;
                     default:
-                        throw new InvalidOperationException("Unable to assign array to an expression with node type '" + node.Left.NodeType);
+                        throw new InvalidOperationException("Unable to assign array to an expression with node type '" + zarr.NodeType);
                     }
                     il.Ldloc(array);
                     context.MarkLabelAndSurroundWithSP(bigEnoughLabel);
                 }
             }
 
+            if(!isArray)
+            {
+                // TODO: это злобно, лист при всех операциях меняет _version, а мы нет
+                il.Ldfld(arrayType.GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic));
+            }
+
             if(extendArrayElement)
             {
                 // stack: [array]
-                var constructor = node.Type.GetConstructor(Type.EmptyTypes);
-                if(node.Type.IsArray || constructor != null)
+                var constructor = itemType.GetConstructor(Type.EmptyTypes);
+                if(itemType.IsArray || constructor != null)
                 {
-                    using(var array = context.DeclareLocal(node.Left.Type))
+                    using(var array = context.DeclareLocal(zarr.Type))
                     {
                         il.Dup(); // stack: [array, array]
                         il.Stloc(array); // stack: [array]
                         il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
-                        il.Ldelem(node.Type); // stack: [array[arrayIndex]]
+                        il.Ldelem(itemType); // stack: [array[arrayIndex]]
                         var elementIsNotNullLabel = il.DefineLabel("elementIsNotNull");
                         il.Brtrue(elementIsNotNullLabel);
                         il.Ldloc(array);
                         il.Ldloc(arrayIndex);
-                        context.Create(node.Type);
-                        il.Stelem(node.Type);
+                        context.Create(itemType);
+                        il.Stelem(itemType);
                         context.MarkLabelAndSurroundWithSP(elementIsNotNullLabel);
                         il.Ldloc(array);
                     }
@@ -164,24 +199,24 @@ namespace GrobExp.Compiler.ExpressionEmitters
             switch(whatReturn)
             {
             case ResultType.ByRefAll:
-                il.Ldelema(node.Type);
-                resultType = node.Type.MakeByRefType();
+                il.Ldelema(itemType);
+                resultType = itemType.MakeByRefType();
                 break;
             case ResultType.ByRefValueTypesOnly:
-                if(node.Type.IsValueType)
+                if(itemType.IsValueType)
                 {
-                    il.Ldelema(node.Type);
-                    resultType = node.Type.MakeByRefType();
+                    il.Ldelema(itemType);
+                    resultType = itemType.MakeByRefType();
                 }
                 else
                 {
-                    il.Ldelem(node.Type); // stack: [array[arrayIndex]]
-                    resultType = node.Type;
+                    il.Ldelem(itemType); // stack: [array[arrayIndex]]
+                    resultType = itemType;
                 }
                 break;
             default:
-                il.Ldelem(node.Type); // stack: [array[arrayIndex]]
-                resultType = node.Type;
+                il.Ldelem(itemType); // stack: [array[arrayIndex]]
+                resultType = itemType;
                 break;
             }
             return result;

@@ -239,6 +239,7 @@ namespace Compiler.Tests.AssignTests.Assign
         [Test]
         public void TestAssignToList()
         {
+            //LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var parameter = Expression.Parameter(typeof(TestClassA));
             var exp = Expression.Lambda<Func<TestClassA, string>>(Expression.Assign(Expression.MakeIndex(Expression.Property(parameter, "List"), typeof(List<string>).GetProperty("Item"), new[] { Expression.Constant(1) }), Expression.Constant("zzz")), parameter);
             var f = LambdaCompiler.Compile(exp, CompilerOptions.All);

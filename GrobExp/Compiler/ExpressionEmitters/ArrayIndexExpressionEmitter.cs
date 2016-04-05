@@ -1,8 +1,12 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 
 using GrEmit;
+using GrEmit.Utils;
 
 namespace GrobExp.Compiler.ExpressionEmitters
 {
@@ -44,7 +48,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     if(isArray)
                         il.Ldlen(); // stack: [array, array.Length]
                     else
-                        il.Ldfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
+                        EmitLoadField(context, arrayType, arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
                     il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                     il.Ble(returnDefaultValueLabel, false); // if(array.Length <= arrayIndex) goto returnDefaultValue; stack: [array]
                     il.Ldloc(arrayIndex); // stack: [array, arrayIndex]
@@ -96,7 +100,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 if(isArray)
                     il.Ldlen(); // stack: [array, array.Length]
                 else
-                    il.Ldfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
+                    EmitLoadField(context, arrayType, arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic));
                 il.Ldloc(arrayIndex); // stack: [array, array.Length, arrayIndex]
                 var bigEnoughLabel = il.DefineLabel("bigEnough");
                 il.Bgt(bigEnoughLabel, false); // if(array.Length > arrayIndex) goto bigEnough; stack: [array]
@@ -113,16 +117,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                     }
                     else
                     {
-                        il.Ldloc(array); // stack: [list]
-                        il.Ldloc(arrayIndex); // stack: [list, arrayIndex]
-                        il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
-                        il.Add(); // stack: [list, arrayIndex + 1]
-                        il.Call(arrayType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic)); // list.EnsureCapacity(arrayIndex + 1); stack: []
-                        il.Ldloc(array); // stack: [list]
-                        il.Ldloc(arrayIndex); // stack: [list, arrayIndex]
-                        il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
-                        il.Add(); // stack: [list, arrayIndex + 1]
-                        il.Stfld(arrayType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic)); // list.Count = arrayIndex + 1; stack: []
+                        EnsureCount(context, array, arrayIndex, arrayType);
                     }
                     switch(zarr.NodeType)
                     {
@@ -165,7 +160,8 @@ namespace GrobExp.Compiler.ExpressionEmitters
             if(!isArray)
             {
                 // TODO: это злобно, лист при всех операциях меняет _version, а мы нет
-                il.Ldfld(arrayType.GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic));
+                EmitLoadField(context, arrayType, arrayType.GetField("_items", BindingFlags.Instance | BindingFlags.NonPublic));
+                arrayType = itemType.MakeArrayType();
             }
 
             if(extendArrayElement)
@@ -174,7 +170,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 var constructor = itemType.GetConstructor(Type.EmptyTypes);
                 if(itemType.IsArray || constructor != null)
                 {
-                    using(var array = context.DeclareLocal(zarr.Type))
+                    using(var array = context.DeclareLocal(arrayType))
                     {
                         il.Dup(); // stack: [array, array]
                         il.Stloc(array); // stack: [array]
@@ -221,6 +217,122 @@ namespace GrobExp.Compiler.ExpressionEmitters
             }
             return result;
         }
+
+        private static void EmitLoadField(EmittingContext context, Type type, FieldInfo field)
+        {
+            var il = context.Il;
+            if(context.SkipVisibility || field.IsPublic)
+            {
+                il.Ldfld(field);
+            }
+            else
+            {
+                // todo убрать Reflection
+                var extractor = (Tuple<Delegate, IntPtr>)extractFieldMethod.MakeGenericMethod(type, field.FieldType).Invoke(null, new[] {(object)field});
+                il.Ldc_IntPtr(extractor.Item2);
+                il.Calli(CallingConventions.Standard, field.FieldType, new [] {type});
+            }
+        }
+
+        private static void EnsureCount(EmittingContext context, GroboIL.Local list, GroboIL.Local index, Type type)
+        {
+            var il = context.Il;
+            if(context.SkipVisibility)
+            {
+                il.Ldloc(list); // stack: [list]
+                il.Ldloc(index); // stack: [list, arrayIndex]
+                il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                il.Add(); // stack: [list, arrayIndex + 1]
+                il.Call(type.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic)); // list.EnsureCapacity(arrayIndex + 1); stack: []
+                il.Ldloc(list); // stack: [list]
+                il.Ldloc(index); // stack: [list, arrayIndex]
+                il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                il.Add(); // stack: [list, arrayIndex + 1]
+                il.Stfld(type.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic)); // list.Count = arrayIndex + 1; stack: []
+            }
+            else
+            {
+                // todo убрать Reflection
+                var resizer = (Tuple<Delegate, IntPtr>)resizeListMethod.MakeGenericMethod(type.GetGenericArguments()[0]).Invoke(null, new object[0]);
+                il.Ldloc(list);
+                il.Ldloc(index);
+                il.Ldc_IntPtr(resizer.Item2);
+                il.Calli(CallingConventions.Standard, typeof(void), new[] {type, typeof(int)});
+            }
+        }
+
+        private static readonly Hashtable hashtable = new Hashtable();
+        private static readonly object lockObject = new object();
+
+        private static Tuple<Delegate, IntPtr> GetFieldExtractor<T, TValue>(FieldInfo field)
+        {
+            var result = (Tuple<Delegate, IntPtr>)hashtable[field];
+            if (result == null)
+            {
+                lock (lockObject)
+                {
+                    result = (Tuple<Delegate, IntPtr>)hashtable[field];
+                    if (result == null)
+                    {
+                        hashtable[field] = result = EmitFieldExtractor<T, TValue>(field);
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Tuple<Delegate, IntPtr> GetListResizer<T>()
+        {
+            var key = typeof(T);
+            var result = (Tuple<Delegate, IntPtr>)hashtable[key];
+            if(result == null)
+            {
+                lock(lockObject)
+                {
+                    result = (Tuple<Delegate, IntPtr>)hashtable[key];
+                    if(result == null)
+                    {
+                        hashtable[key] = result = EmitListResizer<T>();
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static Tuple<Delegate, IntPtr> EmitListResizer<T>()
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new [] {typeof(List<T>), typeof(int)}, typeof(string), true);
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0); // stack: [list]
+                il.Ldarg(1); // stack: [list, arrayIndex]
+                il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                il.Add(); // stack: [list, arrayIndex + 1]
+                il.Call(typeof(List<T>).GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic)); // list.EnsureCapacity(arrayIndex + 1); stack: []
+                il.Ldarg(0); // stack: [list]
+                il.Ldarg(1); // stack: [list, arrayIndex]
+                il.Ldc_I4(1); // stack: [list, arrayIndex, 1]
+                il.Add(); // stack: [list, arrayIndex + 1]
+                il.Stfld(typeof(List<T>).GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic)); // list.Count = arrayIndex + 1; stack: []
+                il.Ret();
+            }
+            return new Tuple<Delegate, IntPtr>((Action<List<T>, int>)method.CreateDelegate(typeof(Action<List<T>, int>)), DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor(method));
+        }
+
+        private static Tuple<Delegate, IntPtr> EmitFieldExtractor<T, TValue>(FieldInfo field)
+        {
+            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(TValue), new [] {typeof(T)}, typeof(string), true);
+            using(var il = new GroboIL(method))
+            {
+                il.Ldarg(0); // stack: [list]
+                il.Ldfld(field);
+                il.Ret();
+            }
+            return new Tuple<Delegate, IntPtr>((Func<T, TValue>)method.CreateDelegate(typeof(Func<T, TValue>)), DynamicMethodInvokerBuilder.DynamicMethodPointerExtractor(method));
+        }
+
+        private static readonly MethodInfo extractFieldMethod = HackHelpers.GetMethodDefinition<int>(x => GetFieldExtractor<string, int>(null)).GetGenericMethodDefinition();
+        private static readonly MethodInfo resizeListMethod = HackHelpers.GetMethodDefinition<int>(x => GetListResizer<int>()).GetGenericMethodDefinition();
 
         private static bool CanAssign(MemberInfo member)
         {

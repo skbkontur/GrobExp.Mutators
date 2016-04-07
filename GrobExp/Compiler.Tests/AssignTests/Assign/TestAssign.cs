@@ -263,7 +263,8 @@ namespace Compiler.Tests.AssignTests.Assign
             }
 
             public Dictionary<string, TestClassB> Dict { get; set; }
-            public List<string> List { get; set; }
+            private readonly List<string> _list = new List<string>();
+            public List<string> List { get { return _list; } }
 
             public string S { get; set; }
             public TestClassA A { get; set; }

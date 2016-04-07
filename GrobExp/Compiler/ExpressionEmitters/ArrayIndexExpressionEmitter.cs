@@ -26,7 +26,7 @@ namespace GrobExp.Compiler.ExpressionEmitters
             var itemType = isArray ? arrayType.GetElementType() : arrayType.GetGenericArguments()[0];
             GroboIL il = context.Il;
             EmittingContext.LocalHolder arrayIndex = null;
-            bool extendArray = extend && CanAssign(zarr);
+            bool extendArray = extend && CanAssign(zarr) || !isArray;
             bool extendArrayElement = extend && itemType.IsClass;
             var result = false;
             if(!extendArray)
@@ -107,50 +107,49 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 using(var array = context.DeclareLocal(arrayType))
                 {
                     il.Stloc(array); // stack: []
-                    if(isArray)
+                    if(!isArray)
+                        EnsureCount(context, array, arrayIndex, arrayType);
+                    else
                     {
                         il.Ldloca(array); // stack: [ref array]
                         il.Ldloc(arrayIndex); // stack: [ref array, arrayIndex]
                         il.Ldc_I4(1); // stack: [ref array, arrayIndex, 1]
                         il.Add(); // stack: [ref array, arrayIndex + 1]
                         il.Call(arrayResizeMethod.MakeGenericMethod(arrayType.GetElementType())); // Array.Resize(ref array, 1 + arrayIndex); stack: []
-                    }
-                    else
-                    {
-                        EnsureCount(context, array, arrayIndex, arrayType);
-                    }
-                    switch(zarr.NodeType)
-                    {
-                    case ExpressionType.Parameter:
-                    case ExpressionType.ArrayIndex:
-                    case ExpressionType.Index:
-                        il.Ldloc(arrayOwner); // stack: [ref parameter]
-                        il.Ldloc(array); // stack: [ref parameter, array]
-                        il.Stind(arrayType); // parameter = array; stack: []
-                        break;
-                    case ExpressionType.MemberAccess:
-                        var memberExpression = (MemberExpression)zarr;
-                        if(memberExpression.Expression != null)
-                            il.Ldloc(arrayOwner);
-                        il.Ldloc(array);
-                        switch(memberExpression.Member.MemberType)
+
+                        switch(zarr.NodeType)
                         {
-                        case MemberTypes.Field:
-                            il.Stfld((FieldInfo)memberExpression.Member);
+                        case ExpressionType.Parameter:
+                        case ExpressionType.ArrayIndex:
+                        case ExpressionType.Index:
+                            il.Ldloc(arrayOwner); // stack: [ref parameter]
+                            il.Ldloc(array); // stack: [ref parameter, array]
+                            il.Stind(arrayType); // parameter = array; stack: []
                             break;
-                        case MemberTypes.Property:
-                            var propertyInfo = (PropertyInfo)memberExpression.Member;
-                            var setter = propertyInfo.GetSetMethod(context.SkipVisibility);
-                            if(setter == null)
-                                throw new MissingMethodException(propertyInfo.ReflectedType.ToString(), "set_" + propertyInfo.Name);
-                            il.Call(setter, memberExpression.Expression == null ? null : memberExpression.Expression.Type);
+                        case ExpressionType.MemberAccess:
+                            var memberExpression = (MemberExpression)zarr;
+                            if(memberExpression.Expression != null)
+                                il.Ldloc(arrayOwner);
+                            il.Ldloc(array);
+                            switch(memberExpression.Member.MemberType)
+                            {
+                            case MemberTypes.Field:
+                                il.Stfld((FieldInfo)memberExpression.Member);
+                                break;
+                            case MemberTypes.Property:
+                                var propertyInfo = (PropertyInfo)memberExpression.Member;
+                                var setter = propertyInfo.GetSetMethod(context.SkipVisibility);
+                                if(setter == null)
+                                    throw new MissingMethodException(propertyInfo.ReflectedType.ToString(), "set_" + propertyInfo.Name);
+                                il.Call(setter, memberExpression.Expression == null ? null : memberExpression.Expression.Type);
+                                break;
+                            default:
+                                throw new NotSupportedException("Member type '" + memberExpression.Member.MemberType + "' is not supported");
+                            }
                             break;
                         default:
-                            throw new NotSupportedException("Member type '" + memberExpression.Member.MemberType + "' is not supported");
+                            throw new InvalidOperationException("Unable to assign array to an expression with node type '" + zarr.NodeType);
                         }
-                        break;
-                    default:
-                        throw new InvalidOperationException("Unable to assign array to an expression with node type '" + zarr.NodeType);
                     }
                     il.Ldloc(array);
                     context.MarkLabelAndSurroundWithSP(bigEnoughLabel);

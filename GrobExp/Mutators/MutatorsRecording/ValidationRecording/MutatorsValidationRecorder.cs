@@ -15,6 +15,11 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             return recordsCollection.GetRecords();
         }
 
+        public List<RecordNode> GetErrorRecords()
+        {
+            return recordsCollection.GetErrorRecords();
+        } 
+
         public void Stop()
         {
             instance = null;

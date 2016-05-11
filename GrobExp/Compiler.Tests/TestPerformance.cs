@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -539,6 +540,147 @@ namespace Compiler.Tests
             MeasureSpeed(func4, "123456789.123456789", 10000001, ethalon);
             Console.WriteLine("regex compiled");
             MeasureSpeed(func5, "123456789.123456789", 10000001, ethalon);
+        }
+
+        private class ParsedXSD
+        {
+            public int? Length;
+            public int? MinLength;
+            public int? MaxLength;
+            public string MinInclusive;
+            public string MinExclusive;
+            public string MaxInclusive;
+            public string MaxExclusive;
+            public int? TotalDigits;
+            public int? FractionDigits;
+            public string Pattern;
+            public List<string> Enumeration;
+
+            public bool Check1(string str)
+            {
+                if (str.Length != Length.Value)
+                    return false;
+                return true;
+            }
+
+            public bool Check2(string str)
+            {
+                if (str.Length < MinLength.Value)
+                    return false;
+                if (str.Length < MaxLength.Value)
+                    return false;
+                return true;
+            }
+
+            public bool Check(string str)
+            {
+                if (Length != null)
+                {
+                    if (str.Length != Length.Value)
+                        return false;
+                }
+                if (MinLength != null)
+                {
+                    if (str.Length < MinLength.Value)
+                        return false;
+                }
+                if (MaxLength != null)
+                {
+                    if (str.Length < MaxLength.Value)
+                        return false;
+                }
+                if (MinInclusive != null)
+                {
+                    if (str != MinInclusive)
+                        return false;
+                }
+                if (MinExclusive != null)
+                {
+                    if (str != MinExclusive)
+                        return false;
+                }
+                if (MaxInclusive != null)
+                {
+                    if (str != MaxInclusive)
+                        return false;
+                }
+                if (MaxExclusive != null)
+                {
+                    if (str != MaxExclusive)
+                        return false;
+                }
+                if (TotalDigits != null)
+                {
+                    if (str.Length != TotalDigits.Value)
+                        return false;
+                }
+                if (FractionDigits != null)
+                {
+                    if (str.Length != FractionDigits.Value)
+                        return false;
+                }
+                if (Pattern != null)
+                {
+                    if (str != Pattern)
+                        return false;
+                }
+                if (Enumeration != null)
+                {
+                    if (str.Length != Enumeration.Count)
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        [Test]
+        public void Test_XSD()
+        {
+            var parsedXsd1 = new ParsedXSD
+                {
+                    Length = 5
+                };
+            var parsedXsd2 = new ParsedXSD
+                {
+                    MinLength = 5,
+                    MaxLength = 10
+                };
+            Func<string, bool> func = parsedXsd1.Check;
+            Func<string, bool> func1 = parsedXsd1.Check1;
+            Func<string, bool> func2 = parsedXsd2.Check2;
+            Console.WriteLine("Check");
+            var ethalon = MeasureSpeed(func, "1786348726", 1000000001, null);
+            Console.WriteLine("Check2");
+            MeasureSpeed(func2, "2135423542", 1000000001, ethalon);
+            Console.WriteLine("Check1");
+            MeasureSpeed(func1, "2345234533", 1000000001, ethalon);
+        }
+
+        [Test]
+        public void Test_Gen()
+        {
+            var output = new StringBuilder();
+            output.AppendLine("10 20 2");
+            output.AppendLine("9 1 3");
+            output.AppendLine("preflop");
+            for(int i = 1; i <= 9; ++i)
+                output.AppendLine(string.Format("Player{0} 20000", i));
+            int n = 110;
+            int[] bets = new int[9];
+            bets[1] = 10;
+            bets[2] = 20;
+            var actions = 8 + 9 * n;
+            output.AppendLine(string.Format("{0}", actions));
+            int k = 4;
+            for(int i = 0; i < actions; ++i)
+            {
+                output.AppendLine(string.Format("Player{0} raises 20 to {1}", k, 20 * (i + 2)));
+                bets[k - 1] = 20 * (i + 2);
+                k = 1 + (k - 1 + 1) % 9;
+            }
+            for(int i = 0; i < 9; ++i)
+                output.Append(string.Format("{0} ", 20000 - 2 - bets[i]));
+            System.IO.File.WriteAllText(@"c:\temp\big.in", output.ToString());
         }
 
         [Test, Ignore]

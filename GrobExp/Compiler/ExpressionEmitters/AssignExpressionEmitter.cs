@@ -56,17 +56,17 @@ namespace GrobExp.Compiler.ExpressionEmitters
                 var indexExpression = (IndexExpression)left;
                 if(indexExpression.Object == null)
                     throw new InvalidOperationException("Indexing of null object is invalid");
-                if(indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1)
+                if((indexExpression.Object.Type.IsArray && indexExpression.Object.Type.GetArrayRank() == 1) || indexExpression.Object.Type.IsList())
                 {
                     if(node.NodeType != ExpressionType.Assign && context.CanReturn)
                     {
-                        result |= ExpressionEmittersCollection.Emit(Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single()), context, returnDefaultValueLabel, ResultType.ByRefAll, extend, out assigneeType);
+                        result |= ArrayIndexExpressionEmitter.Emit(indexExpression.Object, indexExpression.Arguments.Single(), context, returnDefaultValueLabel, ResultType.ByRefAll, extend, out assigneeType);
                         checkNullReferences = false;
                     }
                     else
                     {
                         assigneeIsNullLabel = context.CanReturn ? il.DefineLabel("assigneeIsNull") : null;
-                        assigneeIsNullLabelUsed = ExpressionEmittersCollection.Emit(Expression.ArrayIndex(indexExpression.Object, indexExpression.Arguments.Single()), context, assigneeIsNullLabel, ResultType.ByRefAll, extend, out assigneeType);
+                        assigneeIsNullLabelUsed = ArrayIndexExpressionEmitter.Emit(indexExpression.Object, indexExpression.Arguments.Single(), context, assigneeIsNullLabel, ResultType.ByRefAll, extend, out assigneeType);
                     }
                     assigneeKind = AssigneeKind.SimpleArray;
                 }

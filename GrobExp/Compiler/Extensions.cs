@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
 namespace GrobExp.Compiler
 {
@@ -15,6 +14,11 @@ namespace GrobExp.Compiler
         public static bool IsStruct(this Type type)
         {
             return type.IsValueType && !type.IsPrimitive && !type.IsEnum;
+        }
+
+        public static bool IsList(this Type type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>);
         }
 
         public static bool IsDictionary(this Type type)

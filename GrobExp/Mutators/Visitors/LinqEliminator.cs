@@ -267,7 +267,7 @@ namespace GrobExp.Mutators.Visitors
                 itemGetter = Expression.Call(array, itemProperty.GetGetMethod(), index);
                 break;
             case CollectionKind.Enumerable:
-                init = null;
+                init = Expression.Call(array, typeof(IEnumerator).GetMethod("Reset", BindingFlags.Public | BindingFlags.Instance));
                 var moveNextMethod = typeof(IEnumerator).GetMethod("MoveNext", BindingFlags.Public | BindingFlags.Instance);
                 condition = Expression.Not(Expression.Call(array, moveNextMethod));
                 var currentProperty = collection.Type.GetProperty("Current", BindingFlags.Public | BindingFlags.Instance);

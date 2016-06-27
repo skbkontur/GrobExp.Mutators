@@ -633,7 +633,7 @@ namespace Compiler.Tests
             }
         }
 
-        [Test]
+        [Test, Ignore]
         public void Test_XSD()
         {
             var parsedXsd1 = new ParsedXSD

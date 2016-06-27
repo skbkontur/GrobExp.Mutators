@@ -435,10 +435,21 @@ namespace GrobExp.Mutators
                 if(methodCallExpression.Method.IsIndexerGetter())
                 {
                     var temp = Expression.Variable(methodCallExpression.Object.Type);
+                    Expression assignment;
+                    if(!methodCallExpression.Object.Type.IsDictionary())
+                        assignment = Expression.Call(temp, "set_Item", null, methodCallExpression.Arguments.Single(), value);
+                    else
+                    {
+                        assignment = Expression.Call(temp, "set_Item", null, methodCallExpression.Arguments.Single(), value);
+//                        assignment = Expression.IfThenElse(
+//                            Expression.Call(temp, "ContainsKey", null, methodCallExpression.Arguments.Single()),
+//                            ,
+//                            Expression.Call(temp, "Add", null, methodCallExpression.Arguments.Single(), value))
+                    }
                     return Expression.Block(new[] {temp},
                                             Expression.Assign(temp, methodCallExpression.Object),
                                             Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
-                                            Expression.Call(temp, methodCallExpression.Object.Type.IsDictionary() ? "Add" : "set_Item", null, methodCallExpression.Arguments.Single(), value));
+                                            assignment);
                 }
                 break;
             }

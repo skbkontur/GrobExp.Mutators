@@ -128,11 +128,11 @@ namespace GrobExp.Mutators
             }
             
             if(PathToValue != null)
-                root.Traverse(PathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(Condition == null ? rootMutator : rootMutator.If(Condition));
+                root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
             else
             {
                 foreach(var pathToValue in PathsToValue)
-                    root.Traverse(pathToValue.Body.ResolveInterfaceMembers(), true).AddMutator(Condition == null ? rootMutator : rootMutator.If(Condition));
+                    root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
             }
         }
 

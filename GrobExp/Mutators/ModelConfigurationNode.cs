@@ -86,6 +86,7 @@ namespace GrobExp.Mutators
             var validationResults = new List<Expression>();
             root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, new Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths>(), result, treeRootType, priority, validationResults);
 
+            validationResults = validationResults.Select(exp => CacheExternalExpressions(exp, expression => expression, result, priority)).ToList();
             validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
             Expression body;
@@ -101,7 +102,7 @@ namespace GrobExp.Mutators
                 body = Expression.Block(validationResults);
                 break;
             }
-            body = CacheExternalExpressions(body, expression => expression, parameter, result, priority);
+            //body = CacheExternalExpressions(body, expression => expression, result, priority);
             var lambda = Expression.Lambda(body, parameter, result, priority);
             return lambda;
         }

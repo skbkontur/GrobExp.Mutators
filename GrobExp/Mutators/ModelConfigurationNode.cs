@@ -1419,6 +1419,35 @@ namespace GrobExp.Mutators
                             paths.Remove(current);
 
 
+                            if(predicate != null)
+                            {
+                                var condition = Expression.Lambda(current, current).Merge(predicate).Body;
+                                for(int i = 0; i < childValidationResults.Count; ++i)
+                                {
+                                    childValidationResults[i] = Expression.IfThen(
+                                        Expression.Equal(
+                                            Expression.Convert(condition, typeof(bool?)),
+                                            Expression.Constant(true, typeof(bool?))),
+                                        childValidationResults[i]);
+                                }
+                            }
+
+                            for(int i = 0; i < childValidationResults.Count; ++i)
+                            {
+                                childValidationResults[i] = CacheExternalExpressions(childValidationResults[i],
+                                                                                     exp =>
+                                                                                         {
+                                                                                             return exp;
+                                                                                             //Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] { resolvedArray, Expression.Lambda(exp, new[] { childParameter, indexParameter }) });
+                                                                                             Expression res = exp;
+                                                                                             if(currentIndexes.Length > 0)
+                                                                                                 res = Expression.Block(currentIndexes, res);
+                                                                                             return res;
+                                                                                         },
+                                                                                     new[] {current, currentIndex}.Concat(currentIndexes));
+                            }
+                            return Expression.Block(childValidationResults.SplitToBatches());
+
                             Expression action = Expression.Block(childValidationResults.SplitToBatches());
                             if (predicate != null)
                             {

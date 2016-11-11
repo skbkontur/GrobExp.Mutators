@@ -327,13 +327,29 @@ namespace Mutators.Tests
             Expression<Func<TestData, int>> exp = data => data.A.SelectMany(a => a.B, (a, b) => b.C.FirstOrDefault().X).Where(i => i > 0).FirstOrDefault();
             //Expression<Func<TestData, string>> exp = data => (data.A.SelectMany(a => a.B, (a, b) => new {a, b}).Where(@t => @t.b.X > 0).Select(@t => @t.b.S)).FirstOrDefault();
             var testData = new TestData
-                {
-                    A = new[]
+            {
+                A = new[]
                         {
                             new A {B = new[] {new B {C = new[] {new C {S = "qxx"}, new C {S = "zzz", X = -1}}}, new B {C = new[] {new C {S = "zzz", X = 1},}},}},
                             new A {B = new[] {new B {C = new[] {new C {S = "qxx"}, new C {S = "zzz", X = -1}}}, new B {C = new[] {new C {S = "zzz", X = 1},}},}},
                         }
-                };
+            };
+            DoTest(exp, testData, "A.0.B.1.C.0.X");
+        }
+
+        [Test]
+        public void Test18()
+        {
+            Expression<Func<TestData, bool>> exp = data => data.A.SelectMany(a => a.B, (a, b) => b.C.FirstOrDefault().X).Where(i => i > 0).Any();
+            //Expression<Func<TestData, string>> exp = data => (data.A.SelectMany(a => a.B, (a, b) => new {a, b}).Where(@t => @t.b.X > 0).Select(@t => @t.b.S)).FirstOrDefault();
+            var testData = new TestData
+            {
+                A = new[]
+                        {
+                            new A {B = new[] {new B {C = new[] {new C {S = "qxx"}, new C {S = "zzz", X = -1}}}, new B {C = new[] {new C {S = "zzz", X = 1},}},}},
+                            new A {B = new[] {new B {C = new[] {new C {S = "qxx"}, new C {S = "zzz", X = -1}}}, new B {C = new[] {new C {S = "zzz", X = 1},}},}},
+                        }
+            };
             DoTest(exp, testData, "A.0.B.1.C.0.X");
         }
 

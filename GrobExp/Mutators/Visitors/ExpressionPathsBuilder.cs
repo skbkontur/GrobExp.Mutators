@@ -263,6 +263,8 @@ namespace GrobExp.Mutators.Visitors
                         case "FirstOrDefault":
                         case "Single":
                         case "SingleOrDefault":
+                        case "Any":
+                        case "All":
                             break;
                         case "Where":
                             {

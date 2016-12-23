@@ -45,7 +45,20 @@ namespace GrobExp.Mutators
 
         public MutatorsTree<TSource> GetValidationsTree(MutatorsContext context, int priority)
         {
-            return new SimpleMutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+            var slot = GetOrCreateHashtableSlot(context);
+            var result = (MutatorsTree<TSource>)slot.ValidationMutatorsTrees[priority];
+            if(result == null)
+            {
+                lock(lockObject)
+                {
+                    result = (MutatorsTree<TSource>)slot.ValidationMutatorsTrees[priority];
+                    if(result == null)
+                    {
+                        slot.ValidationMutatorsTrees[priority] = result = new SimpleMutatorsTree<TSource>(slot.ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+                    }
+                }
+            }
+            return result;
         }
 
         public MutatorsTree<TDest> MigratePaths(MutatorsTree<TDest> mutatorsTree, MutatorsContext context)
@@ -486,6 +499,8 @@ namespace GrobExp.Mutators
             public ModelConfigurationNode ValidationsTree { get; set; }
             public Func<TSource, TDest> Converter { get; set; }
             public Action<TSource, TDest> Merger { get; set; }
+
+            public Hashtable ValidationMutatorsTrees { get; set; }
         }
     }
 }

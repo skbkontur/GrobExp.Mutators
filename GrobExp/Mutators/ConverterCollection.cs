@@ -100,12 +100,12 @@ namespace GrobExp.Mutators
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if(slot == null || MutatorsAssignRecorder.IsRecording())
+            if(slot == null/* || MutatorsAssignRecorder.IsRecording()*/)
             {
                 lock(lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if(slot == null || MutatorsAssignRecorder.IsRecording())
+                    if(slot == null/* || MutatorsAssignRecorder.IsRecording()*/)
                     {
                         var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
@@ -130,9 +130,10 @@ namespace GrobExp.Mutators
                                         BeforeConvert(source);
                                         compiledTreeMutator(dest, source);
                                         AfterConvert(dest, source);
-                                    })
+                                    }),
+                                ValidationMutatorsTrees = new Hashtable()
                             };
-                        if(!MutatorsAssignRecorder.IsRecording())
+                        //if(!MutatorsAssignRecorder.IsRecording())
                             hashtable[key] = slot;
                     }
                 }

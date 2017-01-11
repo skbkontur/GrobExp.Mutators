@@ -148,6 +148,7 @@
     <Compile Include="Visitors\ExpressionSimplifier.cs" />
     <Compile Include="Visitors\ExpressionWrapper.cs" />
     <Compile Include="Visitors\ExternalExpressionsExtractor.cs" />
+    <Compile Include="Visitors\ExternalExpressionsTaker.cs" />
     <Compile Include="Visitors\InterfaceMemberResolver.cs" />
     <Compile Include="Visitors\IsConstantChecker.cs" />
     <Compile Include="Visitors\IsNullOrEmptyExtender.cs" />
@@ -162,6 +163,7 @@
     <Compile Include="Visitors\SelectManyCollectionSelectorExtender.cs" />
     <Compile Include="Visitors\TextGeneralizer.cs" />
     <Compile Include="Visitors\ArraysExtractor.cs" />
+    <Compile Include="Visitors\InvariantCodeExtractor.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Compiler\Compiler.csproj">

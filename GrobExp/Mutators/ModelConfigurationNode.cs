@@ -1012,6 +1012,27 @@ namespace GrobExp.Mutators
             return result;
         }
 
+        private static Expression ExtractLoopInvariantFatExpressions(Expression expression, IEnumerable<ParameterExpression> invariantParameters)
+        {
+            var extractedExpressions = new InvariantCodeExtractor(invariantParameters).Extract(expression);
+            if (extractedExpressions.Length == 0)
+                return expression;
+
+            var aliases = new Dictionary<Expression, Expression>();
+            var variables = new List<ParameterExpression>();
+            foreach (var exp in extractedExpressions)
+            {
+                if(!aliases.ContainsKey(exp))
+                {
+                    var variable = Expression.Variable(exp.Type);
+                    variables.Add(variable);
+                    aliases.Add(exp, variable);
+                }
+            }
+            var optimizedExpression = new ExpressionReplacer(aliases).Visit(expression);
+            return Expression.Block(variables, aliases.Select(pair => Expression.Assign(pair.Value, pair.Key)).Concat(new[] { optimizedExpression }));
+        }
+
         private static void CheckDependencies(ModelConfigurationNode root, MutatorConfiguration mutator)
         {
             if(root == null || mutator == null || mutator.Dependencies == null)
@@ -1434,17 +1455,7 @@ namespace GrobExp.Mutators
 
                             for(int i = 0; i < childValidationResults.Count; ++i)
                             {
-                                childValidationResults[i] = CacheExternalExpressions(childValidationResults[i],
-                                                                                     exp =>
-                                                                                         {
-                                                                                             return exp;
-                                                                                             //Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] { resolvedArray, Expression.Lambda(exp, new[] { childParameter, indexParameter }) });
-                                                                                             Expression res = exp;
-                                                                                             if(currentIndexes.Length > 0)
-                                                                                                 res = Expression.Block(currentIndexes, res);
-                                                                                             return res;
-                                                                                         },
-                                                                                     new[] {current, currentIndex}.Concat(currentIndexes));
+                                childValidationResults[i] = ExtractLoopInvariantFatExpressions(childValidationResults[i], aliases.Where(p => p.Key is ParameterExpression).Select(p => (ParameterExpression) p.Key));
                             }
                             return Expression.Block(childValidationResults.SplitToBatches());
 

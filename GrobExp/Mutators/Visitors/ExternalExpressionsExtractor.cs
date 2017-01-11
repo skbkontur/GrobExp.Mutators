@@ -9,33 +9,6 @@ namespace GrobExp.Mutators.Visitors
 {
     public class HackedExternalExpressionsExtractor : ExpressionVisitor
     {
-        private class ExternalExpressionsTaker : ExpressionVisitor
-        {
-            private readonly HashSet<Expression> externalNodes;
-            private readonly List<Expression> externalList = new List<Expression>();
-
-            public ExternalExpressionsTaker(HashSet<Expression> externalNodes)
-            {
-                this.externalNodes = externalNodes;
-            }
-
-            public List<Expression> Take(Expression expression)
-            {
-                Visit(expression);
-                return externalList;
-            }
-
-            public override Expression Visit(Expression node)
-            {
-                if(externalNodes.Contains(node))
-                {
-                    externalList.Add(node);
-                    return node;
-                }
-                return base.Visit(node);
-            }
-        }
-
         private class NodeInfo
         {
             public int Height { get; private set; }

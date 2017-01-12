@@ -47,9 +47,7 @@ namespace GrobExp.Mutators.Visitors
             var visitedNode = base.VisitBlock(node);
             FilterDependencies(node);
             if (ExtractableBlockWithLoop(node))
-            {
                 extractableExpressions.Add(node);
-            }
             return visitedNode;
         }
 
@@ -65,10 +63,15 @@ namespace GrobExp.Mutators.Visitors
             if(node.Method.IsDynamicMethod())
                 return node;
             var visitedNode = base.VisitMethodCall(node);
-            var currentNode = stack.Peek();
-            if (currentNode.Dependencies.All(d => invariantParameters.Contains(d)))
+            if (ExtractableMethodCall(node))
                 extractableExpressions.Add(node);
             return visitedNode;
+        }
+
+        private bool ExtractableMethodCall(MethodCallExpression node)
+        {
+            var currentNode = stack.Peek();
+            return node.Type != typeof(void) && currentNode.Dependencies.All(d => invariantParameters.Contains(d));
         }
 
         private void FilterDependencies(LambdaExpression node)
@@ -91,7 +94,7 @@ namespace GrobExp.Mutators.Visitors
 
         private bool ExtractableBlockWithLoop(BlockExpression node)
         {
-            if (node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
+            if (node.Type == typeof(void) || node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
                 return false;
             return stack.Peek().Dependencies.All(d => invariantParameters.Contains(d));
         }

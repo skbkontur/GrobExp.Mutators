@@ -86,7 +86,7 @@ namespace GrobExp.Mutators
             var validationResults = new List<Expression>();
             root.BuildValidator(pathFormatter, this == Root ? null : this, aliases, new Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths>(), result, treeRootType, priority, validationResults);
 
-            validationResults = validationResults.Select(exp => CacheExternalExpressions(exp, expression => expression, result, priority)).ToList();
+            //validationResults = validationResults.Select(exp => ExtractLoopInvariantFatExpressions(exp, new []{parameter}, expression => expression)).ToList();
             validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
             Expression body;
@@ -102,7 +102,7 @@ namespace GrobExp.Mutators
                 body = Expression.Block(validationResults);
                 break;
             }
-            //body = CacheExternalExpressions(body, expression => expression, result, priority);
+            body = ExtractLoopInvariantFatExpressions(body, new []{parameter}, expression => expression);
             var lambda = Expression.Lambda(body, parameter, result, priority);
             return lambda;
         }
@@ -916,7 +916,7 @@ namespace GrobExp.Mutators
             mutators = mutators.SplitToBatches(parameters.ToArray());
             mutators.Add(Expression.Empty());
             Expression body = Expression.Block(mutators);
-            CacheExternalExpressions(body, expression => expression, parameters);
+            body = ExtractLoopInvariantFatExpressions(body, invariantParameters, expression => expression);
             foreach(var actualParameter in body.ExtractParameters())
             {
                 var expectedParameter = parameters.Single(p => p.Type == actualParameter.Type);
@@ -984,35 +984,6 @@ namespace GrobExp.Mutators
                         var exp = grouping.First();
                         return cutTail && exp.NodeType == ExpressionType.Call ? ((MethodCallExpression)exp).Arguments[0] : exp;
                     }).FirstOrDefault());
-        }
-
-        private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, params ParameterExpression[] internalParameters)
-        {
-            return CacheExternalExpressions(expression, resultSelector, (IEnumerable<ParameterExpression>)internalParameters);
-        }
-
-        private static Expression CacheExternalExpressions(Expression expression, Func<Expression, Expression> resultSelector, IEnumerable<ParameterExpression> internalParameters)
-        {
-            //return resultSelector(expression);
-            Expression result;
-            var externalExpressions = new HackedExternalExpressionsExtractor(internalParameters).Extract(expression);
-            //var checking = new ExternalExpressionsExtractor(internalParameters).Extract(expression);
-            if(externalExpressions.Length == 0)
-                result = resultSelector(expression);
-            else
-            {
-                var aliases = new Dictionary<Expression, Expression>();
-                var variables = new List<ParameterExpression>();
-                foreach(var exp in externalExpressions)
-                {
-                    var variable = Expression.Variable(exp.Type);
-                    variables.Add(variable);
-                    aliases.Add(exp, variable);
-                }
-                var optimizedExpression = new ExpressionReplacer(aliases).Visit(expression);
-                result = Expression.Block(variables, aliases.Select(pair => Expression.Assign(pair.Value, pair.Key)).Concat(new[] {resultSelector(optimizedExpression)}));
-            }
-            return result;
         }
 
         private static Expression ExtractLoopInvariantFatExpressions(Expression expression, IEnumerable<ParameterExpression> invariantParameters, Func<Expression, Expression> resultSelector)
@@ -1471,26 +1442,6 @@ namespace GrobExp.Mutators
                                 childValidationResults[i] = ExtractLoopInvariantFatExpressions(childValidationResults[i], aliases.Where(p => p.Key is ParameterExpression).Select(p => (ParameterExpression) p.Key), e => e);
                             }
                             return Expression.Block(childValidationResults.SplitToBatches());
-
-                            Expression action = Expression.Block(childValidationResults.SplitToBatches());
-                            if (predicate != null)
-                            {
-                                var condition = Expression.Lambda(current, current).Merge(predicate).Body;
-                                action = Expression.IfThen(Expression.Equal(Expression.Convert(condition, typeof(bool?)), Expression.Constant(true, typeof(bool?))), action);
-                            }
-
-                            return CacheExternalExpressions(action,
-                                                                   exp =>
-                                                                       {
-                                                                           return exp;
-                                                                       //Expression res = Expression.Call(null, forEachReadonlyMethod.MakeGenericMethod(itemType), new[] { resolvedArray, Expression.Lambda(exp, new[] { childParameter, indexParameter }) });
-                                                                       Expression res = exp;
-                                                                       if (currentIndexes.Length > 0)
-                                                                           res = Expression.Block(currentIndexes, res);
-                                                                       return res;
-                                                                   },
-                                                                   new[] { current, currentIndex }.Concat(currentIndexes));
-
                         });
 
                     if(indexes != null && indexes.Length > 0)

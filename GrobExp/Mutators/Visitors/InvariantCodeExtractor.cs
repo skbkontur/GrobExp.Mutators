@@ -11,20 +11,23 @@ namespace GrobExp.Mutators.Visitors
             this.invariantParameters = new HashSet<ParameterExpression>(invariantParameters);
             extractableExpressions = new List<Expression>();
             stack = new Stack<NodeInfo>();
+            conditionalExpressions = 0;
         }
 
         public Expression[] Extract(Expression expression)
         {
+            if(invariantParameters.Count == 0)
+                return new Expression[0];
             extractableExpressions.Clear();
             stack.Clear();
-            stack.Push(new NodeInfo(null));
+            stack.Push(new NodeInfo());
             Visit(expression);
             return new ExternalExpressionsTaker(extractableExpressions).Take(expression).ToArray();
         }
 
         public override Expression Visit(Expression node)
         {
-            stack.Push(new NodeInfo(node));
+            stack.Push(new NodeInfo());
             var visitedNode = base.Visit(node);
             var child = stack.Peek();
             stack.Pop();
@@ -33,6 +36,14 @@ namespace GrobExp.Mutators.Visitors
             {
                 parent.Dependencies.Add(dependency);
             }
+            return visitedNode;
+        }
+
+        protected override Expression VisitConditional(ConditionalExpression node)
+        {
+            ++conditionalExpressions;
+            var visitedNode = base.VisitConditional(node);
+            --conditionalExpressions;
             return visitedNode;
         }
 
@@ -71,7 +82,7 @@ namespace GrobExp.Mutators.Visitors
         private bool ExtractableMethodCall(MethodCallExpression node)
         {
             var currentNode = stack.Peek();
-            return node.Type != typeof(void) && currentNode.Dependencies.All(d => invariantParameters.Contains(d));
+            return conditionalExpressions == 0 && node.Type != typeof(void) && currentNode.Dependencies.All(d => invariantParameters.Contains(d));
         }
 
         private void FilterDependencies(LambdaExpression node)
@@ -94,7 +105,7 @@ namespace GrobExp.Mutators.Visitors
 
         private bool ExtractableBlockWithLoop(BlockExpression node)
         {
-            if (node.Type == typeof(void) || node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
+            if (conditionalExpressions != 0 || node.Type == typeof(void) || node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
                 return false;
             return stack.Peek().Dependencies.All(d => invariantParameters.Contains(d));
         }
@@ -102,16 +113,14 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<Expression> extractableExpressions;
         private readonly HashSet<ParameterExpression> invariantParameters;
         private readonly Stack<NodeInfo> stack;
+        private int conditionalExpressions;
 
         private class NodeInfo
         {
-            public NodeInfo(Expression expression)
+            public NodeInfo()
             {
-                Expression = expression;
                 Dependencies = new HashSet<ParameterExpression>();
             }
-
-            public Expression Expression { get; private set; }
 
             public HashSet<ParameterExpression> Dependencies { get; private set; }
         }

@@ -11,7 +11,6 @@ namespace GrobExp.Mutators.Visitors
             this.invariantParameters = new HashSet<ParameterExpression>(invariantParameters);
             extractableExpressions = new List<Expression>();
             stack = new Stack<NodeInfo>();
-            conditionalExpressions = 0;
         }
 
         public Expression[] Extract(Expression expression)
@@ -36,14 +35,6 @@ namespace GrobExp.Mutators.Visitors
             {
                 parent.Dependencies.Add(dependency);
             }
-            return visitedNode;
-        }
-
-        protected override Expression VisitConditional(ConditionalExpression node)
-        {
-            ++conditionalExpressions;
-            var visitedNode = base.VisitConditional(node);
-            --conditionalExpressions;
             return visitedNode;
         }
 
@@ -82,7 +73,7 @@ namespace GrobExp.Mutators.Visitors
         private bool ExtractableMethodCall(MethodCallExpression node)
         {
             var currentNode = stack.Peek();
-            return conditionalExpressions == 0 && node.Type != typeof(void) && currentNode.Dependencies.All(d => invariantParameters.Contains(d));
+            return node.Type != typeof(void) && currentNode.Dependencies.All(d => invariantParameters.Contains(d));
         }
 
         private void FilterDependencies(LambdaExpression node)
@@ -105,7 +96,7 @@ namespace GrobExp.Mutators.Visitors
 
         private bool ExtractableBlockWithLoop(BlockExpression node)
         {
-            if (conditionalExpressions != 0 || node.Type == typeof(void) || node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
+            if (node.Type == typeof(void) || node.Expressions.Count(e => e.NodeType == ExpressionType.Loop) != 1)
                 return false;
             return stack.Peek().Dependencies.All(d => invariantParameters.Contains(d));
         }
@@ -113,7 +104,6 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<Expression> extractableExpressions;
         private readonly HashSet<ParameterExpression> invariantParameters;
         private readonly Stack<NodeInfo> stack;
-        private int conditionalExpressions;
 
         private class NodeInfo
         {

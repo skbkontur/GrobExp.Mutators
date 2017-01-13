@@ -68,7 +68,7 @@ namespace GrobExp.Mutators.Validators
             if(fullCondition != null)
                 return fullCondition;
             Expression valueIsNotNull = Prepare(Expression.Lambda(Expression.NotEqual(Path.Body, Expression.Constant(null, Path.Body.Type)), Path.Parameters)).Body;
-            Expression condition = Expression.Convert(Expression.AndAlso(valueIsNotNull, Expression.Not(Expression.Call(Expression.Constant(regex), regexIsMatchMethod, Path.Body))), typeof(bool?));
+            Expression condition = Expression.Convert(Expression.AndAlso(valueIsNotNull, Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Call(Expression.Constant(regex), regexIsMatchMethod, Path.Body)))), typeof(bool?));
             if(Condition != null)
             {
                 var parameterFromPath = Path.Parameters.Single();

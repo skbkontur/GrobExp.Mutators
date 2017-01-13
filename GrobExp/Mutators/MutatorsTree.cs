@@ -1,273 +1,169 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
-using GrobExp.Mutators.AutoEvaluators;
-using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
-    public abstract class MutatorsTree<TData>
+    public class MutatorsTree<TData> : MutatorsTreeBase<TData>
     {
-        public KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> GetRawMutators<TValue>(Expression<Func<TData, TValue>> path)
+        public MutatorsTree(ModelConfigurationNode tree, IPathFormatter pathFormatter, IPathFormatterCollection pathFormatterCollection, int priority)
         {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.RawMutators == null)
+            this.tree = tree;
+            this.pathFormatterCollection = pathFormatterCollection;
+            this.pathFormatter = pathFormatter;
+            this.priority = priority;
+        }
+
+        public override MutatorsTreeBase<TData> Merge(MutatorsTreeBase<TData> other)
+        {
+            return new MultipleMutatorsTree<TData>(new[] {this, other});
+        }
+
+        internal override MutatorsTreeBase<T> Migrate<T>(ModelConfigurationNode converterTree)
+        {
+            var migratedTree = ModelConfigurationNode.CreateRoot(typeof(T));
+            tree.Migrate(typeof(T), migratedTree, converterTree);
+            return new MutatorsTree<T>(migratedTree, pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection, priority);
+        }
+
+        internal override MutatorsTreeBase<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
+        {
+            var performer = new CompositionPerformer(typeof(TData), typeof(T), converterTree);
+            var resolver = new AliasesResolver(ExtractAliases(converterTree, performer));
+            return new MutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection.GetPathFormatter<TData>(), converterTree, performer, resolver), pathFormatterCollection, priority);
+        }
+
+        protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
+        {
+            var node = tree.Traverse(path.Body, create : false);
+            if(node == null)
+                return default(KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>);
+            IEnumerable<MutatorConfiguration> mutators;
+            var alienArray = node.NodeType.IsArray ? node.GetAlienArray() : null;
+            if(alienArray == null)
+                mutators = node.GetMutators();
+            else
             {
-                lock(lockObject)
-                    if(nodeInfo.RawMutators == null)
-                        nodeInfo.RawMutators = BuildRawMutators(path);
+                var setSourceArrayConfiguration = SetSourceArrayConfiguration.Create(Expression.Lambda(alienArray, alienArray.ExtractParameters()));
+                mutators = node.GetMutators().Concat(new[] {setSourceArrayConfiguration});
             }
-            return nodeInfo.RawMutators.Value;
+            return new KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>(node.Path, mutators.Select(mutator => new KeyValuePair<int, MutatorConfiguration>(priority, mutator)).ToList());
         }
 
-        public KeyValuePair<Expression, List<MutatorConfiguration>> GetMutators<TValue>(Expression<Func<TData, TValue>> path)
+        protected override KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.Mutators == null)
+            var rawMutators = GetRawMutators(path);
+            return new KeyValuePair<Expression, List<MutatorConfiguration>>(rawMutators.Key, Canonize(rawMutators.Value));
+        }
+
+        protected override Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path)
+        {
+            Expression<Action<TChild, ValidationResultTreeNode, int>> validator = null;
+            var node = tree.Traverse(path.Body, false);
+            if(node != null)
+                validator = (Expression<Action<TChild, ValidationResultTreeNode, int>>)node.BuildTreeValidator(pathFormatter);
+            if(validator == null)
+                return (child, validationResultTree) => { };
+            var compiledValidator = LambdaCompiler.Compile(validator, CompilerOptions.All);
+            return (child, validationResultTree) => compiledValidator(child, validationResultTree, priority);
+        }
+
+        protected override Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path)
+        {
+            Expression<Func<TValue, List<ValidationResult>>> validator = null;
+            var node = tree.Traverse(path.Body, false);
+            if(node != null)
+                validator = (Expression<Func<TValue, List<ValidationResult>>>)node.BuildStaticNodeValidator();
+            if(validator == null)
+                return value => true;
+            var compiledValidator = LambdaCompiler.Compile(validator, CompilerOptions.All);
+            return value => compiledValidator(value).All(validationResult => validationResult.Type != ValidationResultType.Error);
+        }
+
+        protected override Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path)
+        {
+            Expression<Action<TChild>> mutator = null;
+            var node = tree.Traverse(path.Body, false);
+            if(node != null)
+                mutator = (Expression<Action<TChild>>)node.BuildTreeMutator();
+            if(mutator == null)
+                return child => { };
+            return LambdaCompiler.Compile(mutator, CompilerOptions.All);
+        }
+
+        protected override void GetAllMutators(List<MutatorWithPath> mutators)
+        {
+            var subNodes = new List<ModelConfigurationNode>();
+            tree.FindSubNodes(subNodes);
+            foreach(var node in subNodes)
+                mutators.AddRange(node.GetMutatorsWithPath());
+        }
+
+        private static List<KeyValuePair<Expression, Expression>> ExtractAliases(ModelConfigurationNode converterTree, CompositionPerformer performer)
+        {
+            var aliases = new List<KeyValuePair<Expression, Expression>>();
+            ExtractAliases(converterTree, performer, aliases);
+            return aliases;
+        }
+
+        private static bool IsEachOrCurrent(Expression node)
+        {
+            if(node.NodeType != ExpressionType.Call) return false;
+            var method = ((MethodCallExpression)node).Method;
+            return method.IsEachMethod() || method.IsCurrentMethod();
+        }
+
+        private static void ExtractAliases(ModelConfigurationNode node, CompositionPerformer performer, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            if(node.GetMutators().Any())
             {
-                lock(lockObject)
-                    if(nodeInfo.Mutators == null)
-                        nodeInfo.Mutators = BuildMutators(path);
-            }
-            return nodeInfo.Mutators.Value;
-        }
-
-        public Func<TData, ValidationResultTreeNode> GetValidator()
-        {
-            if(MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.AddValidatorToRecord(GetType().ToString());
-            return GetValidator(data => data);
-        }
-
-        public Func<TChild, ValidationResultTreeNode> GetValidator<TChild>(Expression<Func<TData, TChild>> path)
-        {
-            var validator = GetValidatorInternal(path);
-            var factory = ValidationResultTreeNodeBuilder.BuildFactory(typeof(TChild), true);
-            return child =>
+                var conditionalSetters = performer.GetConditionalSetters(node.Path);
+                if(conditionalSetters != null && conditionalSetters.Count == 1)
                 {
-                    var tree = factory(null);
-                    validator(child, tree);
-                    return tree;
-                };
-        }
-
-        public Func<TValue, bool> GetStaticValidator<TValue>(Expression<Func<TData, TValue>> path)
-        {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.StaticValidator == null)
-            {
-                lock(lockObject)
-                    if(nodeInfo.StaticValidator == null)
-                        nodeInfo.StaticValidator = BuildStaticValidator(path);
-            }
-            return nodeInfo.StaticValidator;
-        }
-
-        public Action<TData> GetTreeMutator()
-        {
-            return GetTreeMutator(data => data);
-        }
-
-        public Action<TChild> GetTreeMutator<TChild>(Expression<Func<TData, TChild>> path)
-        {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.TreeMutator == null)
-            {
-                lock(lockObject)
-                    if(nodeInfo.TreeMutator == null)
-                        nodeInfo.TreeMutator = BuildTreeMutator(path);
-            }
-            return nodeInfo.TreeMutator;
-        }
-
-        public MutatorConfiguration[] GetAllMutators()
-        {
-            return GetAllMutatorsWithPaths().Select(mutator => mutator.Mutator).ToArray();
-        }
-
-        public override string ToString()
-        {
-            return ModelConfigurationNode.PrintAllMutators(GetAllMutatorsWithPaths());
-        }
-
-        public MutatorWithPath[] GetAllMutatorsWithPaths()
-        {
-            var result = new List<MutatorWithPath>();
-            GetAllMutators(result);
-            return result.ToArray();
-        }
-
-        internal MutatorsTree<T> Migrate<T>(string key, ModelConfigurationNode converterTree)
-        {
-            return GetMigratedTrees<T>(key, converterTree).EntirelyMigrated;
-        }
-
-        internal MutatorsTree<TData> MigratePaths<T>(string key, ModelConfigurationNode converterTree)
-        {
-            return GetMigratedTrees<T>(key, converterTree).PathsMigrated;
-        }
-
-        public abstract MutatorsTree<TData> Merge(MutatorsTree<TData> other);
-
-        internal Action<TChild, ValidationResultTreeNode> GetValidatorInternal<TChild>(Expression<Func<TData, TChild>> path)
-        {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.Validator == null)
-            {
-                lock(lockObject)
-                    if(nodeInfo.Validator == null)
-                        nodeInfo.Validator = BuildValidator(path);
-            }
-            return nodeInfo.Validator;
-        }
-
-        internal abstract MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree);
-        internal abstract MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree);
-
-        protected List<MutatorConfiguration> Canonize(IEnumerable<KeyValuePair<int, MutatorConfiguration>> mutators)
-        {
-            // todo ich: kill, as soon as scripts are fixed
-            // todo ich: handle validation priorities
-            if(mutators == null) return null;
-            var hideIfConfigurations = new List<HideIfConfiguration>();
-            var disableIfConfigurations = new List<DisableIfConfiguration>();
-            var staticAggregatorConfigurations = new Dictionary<string, List<ConditionalAggregatorConfiguration>>();
-            //var validatorConfigurations = new List<KeyValuePair<int, ValidatorConfiguration>>();
-            SetSourceArrayConfiguration setSourceArrayConfiguration = null;
-            var otherConfigurations = new List<MutatorConfiguration>();
-            foreach(var mutator in mutators)
-            {
-                if(mutator.Value is HideIfConfiguration)
-                    hideIfConfigurations.Add((HideIfConfiguration)mutator.Value);
-                else if(mutator.Value is DisableIfConfiguration)
-                    disableIfConfigurations.Add((DisableIfConfiguration)mutator.Value);
-//                else if(mutator.Value is ValidatorConfiguration)
-//                    validatorConfigurations.Add(new KeyValuePair<int, ValidatorConfiguration>(mutator.Key, (ValidatorConfiguration)mutator.Value));
-                else if(mutator.Value is SetSourceArrayConfiguration)
-                {
-                    var currentSetSourceArrayConfiguration = (SetSourceArrayConfiguration)mutator.Value;
-                    if(setSourceArrayConfiguration == null)
-                        setSourceArrayConfiguration = currentSetSourceArrayConfiguration;
-                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false, true))
-                        throw new InvalidOperationException("An attempt to set array from different sources: '" + setSourceArrayConfiguration.SourceArray + "' and '" + currentSetSourceArrayConfiguration.SourceArray + "'");
-                }
-                else if(mutator.Value is ConditionalAggregatorConfiguration)
-                {
-                    var staticAggregator = (ConditionalAggregatorConfiguration)mutator.Value;
-                    List<ConditionalAggregatorConfiguration> staticAggregators;
-                    if(!staticAggregatorConfigurations.TryGetValue(staticAggregator.Name, out staticAggregators))
-                        staticAggregatorConfigurations.Add(staticAggregator.Name, staticAggregators = new List<ConditionalAggregatorConfiguration>());
-                    staticAggregators.Add(staticAggregator);
-                }
-                else
-                    otherConfigurations.Add(mutator.Value);
-            }
-            if(hideIfConfigurations.Count == 1)
-                otherConfigurations.Add(hideIfConfigurations.Single());
-            else if(hideIfConfigurations.Count > 1)
-            {
-                var condition = hideIfConfigurations[0].Condition;
-                var type = hideIfConfigurations[0].Type;
-                for(var i = 1; i < hideIfConfigurations.Count; ++i)
-                    condition = condition.OrElse(hideIfConfigurations[i].Condition);
-                otherConfigurations.Add(new HideIfConfiguration(type, condition));
-            }
-            if(disableIfConfigurations.Count == 1)
-                otherConfigurations.Add(disableIfConfigurations.Single());
-            else if(disableIfConfigurations.Count > 1)
-            {
-                var condition = disableIfConfigurations[0].Condition;
-                var type = disableIfConfigurations[0].Type;
-                for(var i = 1; i < disableIfConfigurations.Count; ++i)
-                    condition = condition.OrElse(disableIfConfigurations[i].Condition);
-                otherConfigurations.Add(new DisableIfConfiguration(type, condition));
-            }
-            foreach(var item in staticAggregatorConfigurations)
-            {
-                var staticAggregators = item.Value;
-                if(staticAggregators.Count == 1)
-                    otherConfigurations.Add(staticAggregators.Single());
-                else
-                {
-                    var condition = staticAggregators[0].Condition;
-                    var type = staticAggregators[0].Type;
-                    for(var i = 1; i < staticAggregators.Count; ++i)
-                        condition = condition.OrElse(staticAggregators[i].Condition);
-                    otherConfigurations.Add(new ConditionalAggregatorConfiguration(type, condition, item.Key));
-                }
-            }
-            if(setSourceArrayConfiguration != null)
-                otherConfigurations.Add(setSourceArrayConfiguration);
-            return otherConfigurations;
-        }
-
-        protected abstract KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path);
-        protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
-        protected abstract void GetAllMutators(List<MutatorWithPath> mutators);
-
-        private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
-        {
-            var tuple = new Tuple<Type, string>(typeof(T), key);
-            var migratedTrees = (MigratedTrees<T>)hashtable[tuple];
-            if(migratedTrees == null)
-            {
-                lock(lockObject)
-                {
-                    migratedTrees = (MigratedTrees<T>)hashtable[tuple];
-                    if(migratedTrees == null)
+                    var setter = conditionalSetters.Single();
+                    if(setter.Value == null)
                     {
-                        hashtable[tuple] = migratedTrees = new MigratedTrees<T>
-                            {
-                                EntirelyMigrated = Migrate<T>(converterTree),
-                                PathsMigrated = MigratePaths<T>(converterTree)
-                            };
+                        var chains = setter.Key.CutToChains(true, true);
+                        if(chains.Length == 1)
+                        {
+                            var chain = chains.Single();
+                            aliases.Add(new KeyValuePair<Expression, Expression>(node.Path, chain));
+                            if(IsEachOrCurrent(node.Path))
+                                aliases.Add(new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(node.Path.Type), node.Path), Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(chain.Type), chain)));
+                        }
                     }
                 }
             }
-            return migratedTrees;
-        }
-
-        private NodeInfo<T> GetOrCreateNodeInfo<T>(Expression<Func<TData, T>> path)
-        {
-            var key = new ExpressionWrapper(path.Body, false);
-            var nodeInfo = (NodeInfo<T>)hashtable[key];
-            if(nodeInfo == null)
+            else if(IsEachOrCurrent(node.Path))
             {
-                lock(lockObject)
+                var conditionalSetters = performer.GetConditionalSetters(((MethodCallExpression)node.Path).Arguments.Single());
+                if (conditionalSetters != null && conditionalSetters.Count == 1)
                 {
-                    nodeInfo = (NodeInfo<T>)hashtable[key];
-                    if(nodeInfo == null)
-                        hashtable[key] = nodeInfo = new NodeInfo<T>();
+                    var setter = conditionalSetters.Single();
+                    if (setter.Value == null)
+                    {
+                        var chains = setter.Key.CutToChains(true, true);
+                        if (chains.Length == 1)
+                        {
+                            var chain = chains.Single();
+                            chain = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(chain.Type.GetItemType()), chain);
+                            aliases.Add(new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(node.Path.Type), node.Path), Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(chain.Type), chain)));
+                        }
+                    }
                 }
             }
-            return nodeInfo;
+            foreach(var child in node.Children)
+                ExtractAliases(child, performer, aliases);
         }
 
-        private readonly Hashtable hashtable = new Hashtable();
-        private readonly object lockObject = new object();
-
-        private class NodeInfo<T>
-        {
-            public KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>? RawMutators { get; set; }
-            public KeyValuePair<Expression, List<MutatorConfiguration>>? Mutators { get; set; }
-            public Action<T, ValidationResultTreeNode> Validator { get; set; }
-            public Func<T, bool> StaticValidator { get; set; }
-            public Action<T> TreeMutator { get; set; }
-        }
-
-        private class MigratedTrees<T>
-        {
-            public MutatorsTree<T> EntirelyMigrated { get; set; }
-            public MutatorsTree<TData> PathsMigrated { get; set; }
-        }
+        private readonly IPathFormatter pathFormatter;
+        private readonly int priority;
+        private readonly ModelConfigurationNode tree;
+        private readonly IPathFormatterCollection pathFormatterCollection;
     }
 }

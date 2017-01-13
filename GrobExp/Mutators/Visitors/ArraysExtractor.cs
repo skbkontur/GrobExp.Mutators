@@ -14,24 +14,30 @@ namespace GrobExp.Mutators.Visitors
         public void GetArrays(Expression value)
         {
             Type type;
-            new ArraysExtractorVisitor(arrays, false).GetArrays(value, out type);
+            new ArraysExtractorVisitor(arrays, paramTypeMustBeUnique : false).GetArrays(value, out type);
         }
 
         private readonly List<Dictionary<Type, List<Expression>>> arrays;
     }
 
+    /// <summary>
+    ///     Находит в выражении все массивы, отмеченные вызовами Each() или Current(),
+    ///     и сохраняет их, группируя по уровню вложенности (количество Each() и Current() в соответствующем выражении)
+    ///     и типу корня выражения.
+    /// </summary>
+    /// <returns>Максимальный уровень вложенности вызовов Each() и Current()</returns>
     public class ArraysExtractorVisitor : ExpressionVisitor
     {
-        public ArraysExtractorVisitor(List<Dictionary<Type, List<Expression>>> list, bool unique)
+        public ArraysExtractorVisitor(List<Dictionary<Type, List<Expression>>> list, bool paramTypeMustBeUnique)
         {
             this.list = list;
-            this.unique = unique;
+            this.paramTypeMustBeUnique = paramTypeMustBeUnique;
         }
 
         public int GetArrays(Expression value, out Type type)
         {
             Visit(value);
-            type = this.type;
+            type = rootParamType;
             return maxLevel;
         }
 
@@ -44,47 +50,48 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if(unique && type != null && type != node.Type)
+            if(paramTypeMustBeUnique && rootParamType != null && rootParamType != node.Type)
                 throw new InvalidOperationException("Type '" + node.Type + "' is not valid at this point");
-            type = node.Type;
+            rootParamType = node.Type;
             return node;
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if(IsArrayReduction(node))
+            if(IsEachOrCurrentCall(node))
             {
                 var chain = node;
                 var chainShards = chain.SmashToSmithereens();
                 int i, l;
-                if (chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke || chainShards[0].NodeType == ExpressionType.Constant)
+                if(chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke || chainShards[0].NodeType == ExpressionType.Constant)
                 {
                     i = chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke ? 0 : 1;
                     Type subType;
-                    var subMaxLevel = new ArraysExtractorVisitor(list, true).GetArrays(chainShards[i], out subType);
-                    if(unique && type != null && type != subType)
+                    var subMaxLevel = new ArraysExtractorVisitor(list, paramTypeMustBeUnique : true).GetArrays(chainShards[i], out subType);
+                    if(paramTypeMustBeUnique && rootParamType != null && rootParamType != subType)
                         throw new InvalidOperationException("Type '" + subType + "' is not valid at this point");
-                    type = subType;
+                    rootParamType = subType;
                     l = subMaxLevel;
                 }
                 else
                 {
-                    if(unique && type != null && type != chainShards[0].Type)
+                    if(paramTypeMustBeUnique && rootParamType != null && rootParamType != chainShards[0].Type)
                         throw new InvalidOperationException("Type '" + chainShards[0].Type + "' is not valid at this point");
-                    type = chainShards[0].Type;
+                    rootParamType = chainShards[0].Type;
                     l = 0;
                     i = 0;
                 }
                 for(++i; i < chainShards.Length; ++i)
                 {
-                    if(!IsArrayReduction(chainShards[i])) continue;
+                    if(!IsEachOrCurrentCall(chainShards[i])) continue;
                     ++l;
-                    if(l > maxLevel) maxLevel = l;
+                    if(l > maxLevel)
+                        maxLevel = l;
                     while(list.Count <= l)
                         list.Add(new Dictionary<Type, List<Expression>>());
                     List<Expression> arrays;
-                    if(!list[l].TryGetValue(type, out arrays))
-                        list[l].Add(type, arrays = new List<Expression>());
+                    if(!list[l].TryGetValue(rootParamType, out arrays))
+                        list[l].Add(rootParamType, arrays = new List<Expression>());
                     arrays.Add(chainShards[i]);
                 }
                 return node;
@@ -92,7 +99,7 @@ namespace GrobExp.Mutators.Visitors
             return base.VisitMethodCall(node);
         }
 
-        private static bool IsArrayReduction(Expression node)
+        private static bool IsEachOrCurrentCall(Expression node)
         {
             var methodCallExpression = node as MethodCallExpression;
             if(methodCallExpression == null)
@@ -102,8 +109,8 @@ namespace GrobExp.Mutators.Visitors
         }
 
         private int maxLevel;
-        private Type type;
+        private Type rootParamType;
         private readonly List<Dictionary<Type, List<Expression>>> list;
-        private readonly bool unique;
+        private readonly bool paramTypeMustBeUnique;
     }
 }

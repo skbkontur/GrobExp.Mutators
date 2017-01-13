@@ -4,20 +4,35 @@ using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class MutatorsHelperFunctionsProcessor : ExpressionVisitor
+    /// <summary>
+    ///     Replaces all IfNotNull calls in binary expressions with appropriate checks
+    ///     <br />
+    ///     Examples:
+    ///     <code>
+    /// x.IfNotNull() == y.IfNotNull() ->
+    /// x == null || y == null || x == y </code>
+    ///     <code>
+    /// igor.IfNotNull() == "GRobas" ->
+    /// string.IsNullOrEmpty(igor) || igor == "GRobas" </code>
+    /// </summary>
+    public class IfNotNullProcessor : ExpressionVisitor
     {
         protected override Expression VisitBinary(BinaryExpression node)
         {
             var left = node.Left;
             var right = node.Right;
-            bool leftIsIfNotNullCall = IsIfNotNullCall(ref left);
-            bool rightIsIfNotNullCall = IsIfNotNullCall(ref right);
+            var leftIsIfNotNullCall = TryUnwrapIfNotNull(ref left);
+            var rightIsIfNotNullCall = TryUnwrapIfNotNull(ref right);
             if(leftIsIfNotNullCall || rightIsIfNotNullCall)
             {
-                bool leftIsConstant = left.IsConstant();
-                bool rightIsConstant = right.IsConstant();
-                if(leftIsConstant) left = left.ToConstant();
-                if(rightIsConstant) right = right.ToConstant();
+                var leftIsConstant = left.IsConstant();
+                var rightIsConstant = right.IsConstant();
+
+                if(leftIsConstant)
+                    left = left.ToConstant();
+                if(rightIsConstant)
+                    right = right.ToConstant();
+
                 var result = Expression.MakeBinary(node.NodeType, left, right, node.IsLiftedToNull, node.Method, node.Conversion);
                 if(rightIsIfNotNullCall)
                     result = Expression.OrElse(IsEmpty(right, rightIsConstant), result);
@@ -35,12 +50,15 @@ namespace GrobExp.Mutators.Visitors
             return Expression.Equal(exp, Expression.Constant(null, exp.Type));
         }
 
-        private static bool IsIfNotNullCall(ref Expression node)
+        private static bool TryUnwrapIfNotNull(ref Expression node)
         {
-            if(node == null || node.NodeType != ExpressionType.Call) return false;
+            if(node == null || node.NodeType != ExpressionType.Call)
+                return false;
+
             var methodCallExpression = (MethodCallExpression)node;
             if(!methodCallExpression.Method.IsGenericMethod || methodCallExpression.Method.GetGenericMethodDefinition() != ifNotNullMethod)
                 return false;
+
             node = methodCallExpression.Arguments[0];
             return true;
         }

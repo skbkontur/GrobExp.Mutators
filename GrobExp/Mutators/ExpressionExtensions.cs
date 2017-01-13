@@ -20,20 +20,14 @@ namespace GrobExp.Mutators
             return node != null && node.NodeType == ExpressionType.New && node.Type.IsAnonymousType();
         }
 
+        public static bool IsOfType(this Expression node, ExpressionType type)
+        {
+            return node != null && node.NodeType == type;
+        }
+
         public static bool IsTupleCreation(this Expression node)
         {
             return node != null && node.NodeType == ExpressionType.New && node.Type.IsTuple();
-        }
-
-        public static bool IsLinkOfChain(this Expression node, bool rootOnlyParameter, bool hard)
-        {
-            return node != null &&
-                   (node.NodeType == ExpressionType.Parameter
-                    || (node.NodeType == ExpressionType.Constant && !rootOnlyParameter)
-                    || IsLinkOfChain(node as MemberExpression, rootOnlyParameter, hard)
-                    || IsLinkOfChain(node as BinaryExpression, rootOnlyParameter, hard)
-                    || IsLinkOfChain(node as UnaryExpression, rootOnlyParameter, hard)
-                    || IsLinkOfChain(node as MethodCallExpression, rootOnlyParameter, hard));
         }
 
         public static bool IsNull(this Expression node)
@@ -310,6 +304,11 @@ namespace GrobExp.Mutators
             return new InterfaceMemberResolver().Visit(expression);
         }
 
+        public static Expression ReplaceMethod(this Expression expression, MethodInfo from, MethodInfo to)
+        {
+            return new MethodReplacer(from, to).Visit(expression);
+        }
+
         public static LambdaExpression ResolveAbstractPath(LambdaExpression path, LambdaExpression abstractPath)
         {
             var parameters = new List<PathPrefix> {new PathPrefix(path.Body, path.Parameters[0])};
@@ -322,11 +321,11 @@ namespace GrobExp.Mutators
             return new AbstractPathResolver(pathPrefixes, true).Resolve(expression);
         }
 
-        public static Expression ResolveAliases(this Expression expression, List<KeyValuePair<Expression, Expression>> aliases, bool strictly = false)
+        public static Expression ResolveAliases(this Expression expression, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if(aliases == null || aliases.Count == 0)
                 return expression;
-            return new AliasesResolver(aliases, strictly).Visit(expression);
+            return new AliasesResolver(aliases).Visit(expression);
         }
 
         public static Expression[] SmashToSmithereens(this Expression exp)
@@ -511,46 +510,6 @@ namespace GrobExp.Mutators
                     rightBody = new ParameterReplacer(parameter, leftParameters[parameter.Type]).Visit(rightBody);
             }
             parameters = leftParameters.Values.ToArray();
-        }
-
-        private static bool IsLinkOfChain(UnaryExpression node, bool rootOnlyParameter, bool hard)
-        {
-            if(hard)
-                return node != null && node.NodeType == ExpressionType.Convert && IsLinkOfChain(node.Operand, rootOnlyParameter, true);
-            return node != null && node.NodeType == ExpressionType.Convert;
-        }
-
-        private static bool IsLinkOfChain(MemberExpression node, bool rootOnlyParameter, bool hard)
-        {
-            if(hard)
-                return node != null && IsLinkOfChain(node.Expression, rootOnlyParameter, true);
-            return node != null && node.Expression != null;
-        }
-
-        private static bool IsExtension(MethodInfo method)
-        {
-            return method.IsExtension(); // && !(method.DeclaringType == typeof(Enumerable) && (method.Name == "ToArray" || method.Name == "ToList"));
-        }
-
-        private static bool IsLinkOfChain(MethodCallExpression node, bool rootOnlyParameter, bool hard)
-        {
-            if(node == null || !IsAllowedMethod(node.Method))
-                return false;
-            if(hard)
-                return (node.Object != null && IsLinkOfChain(node.Object, rootOnlyParameter, true)) || (IsExtension(node.Method) && IsLinkOfChain(node.Arguments[0], rootOnlyParameter, true));
-            return node.Object != null || IsExtension(node.Method);
-        }
-
-        private static bool IsAllowedMethod(MethodInfo method)
-        {
-            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(DependenciesExtractorHelper) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
-        }
-
-        private static bool IsLinkOfChain(BinaryExpression node, bool rootOnlyParameter, bool hard)
-        {
-            if(hard)
-                return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, rootOnlyParameter, true);
-            return node != null && node.NodeType == ExpressionType.ArrayIndex;
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();

@@ -58,7 +58,9 @@
     <Compile Include="AutoEvaluators\EqualsToConfiguration.cs" />
     <Compile Include="Aggregators\HideIfConfiguration.cs" />
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
-    <Compile Include="ComplexMutatorsTree.cs" />
+    <Compile Include="ExpressionBuilder.cs" />
+    <Compile Include="IsLinkOfChainChecker.cs" />
+    <Compile Include="MultipleMutatorsTree.cs" />
     <Compile Include="ConfiguratorHelper.cs" />
     <Compile Include="ConverterCollection.cs" />
     <Compile Include="CustomFields\CustomFieldAttribute.cs" />
@@ -102,7 +104,7 @@
     <Compile Include="ReadonlyCollections\ReadonlyHashtable.cs" />
     <Compile Include="ReadonlyCollections\ReadonlySet.cs" />
     <Compile Include="ReadonlyCollections\TinyHashtable.cs" />
-    <Compile Include="SimpleMutatorsTree.cs" />
+    <Compile Include="MutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
     <Compile Include="IPathFormatter.cs" />
@@ -116,7 +118,7 @@
     <Compile Include="MutatorsContext.cs" />
     <Compile Include="MutatorsHelperFunctions.cs" />
     <Compile Include="MutatorConfiguration.cs" />
-    <Compile Include="MutatorsTree.cs" />
+    <Compile Include="MutatorsTreeBase.cs" />
     <Compile Include="PathPrefix.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimplePathFormatter.cs" />
@@ -139,6 +141,7 @@
     <Compile Include="Validators\ValidatorConfiguration.cs" />
     <Compile Include="Visitors\AbstractPathResolver.cs" />
     <Compile Include="Visitors\AliasesResolver.cs" />
+    <Compile Include="Visitors\ExpressionNodesCounter.cs" />
     <Compile Include="Visitors\ExpressionPathsBuilder.cs" />
     <Compile Include="Visitors\DependenciesExtractor.cs" />
     <Compile Include="Visitors\ExpressionConstantsExtractor.cs" />
@@ -156,7 +159,7 @@
     <Compile Include="Visitors\CompositionPerformer.cs" />
     <Compile Include="Visitors\LinqEliminator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
-    <Compile Include="Visitors\MutatorsHelperFunctionsProcessor.cs" />
+    <Compile Include="Visitors\IfNotNullProcessor.cs" />
     <Compile Include="Visitors\ParameterCanonizer.cs" />
     <Compile Include="Visitors\ParameterExistanceChecker.cs" />
     <Compile Include="Visitors\ParameterReplacer.cs" />

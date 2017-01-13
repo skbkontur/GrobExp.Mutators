@@ -122,7 +122,7 @@ namespace GrobExp.Mutators.Visitors
                     lambdaArg = Expression.Lambda(path, path.ExtractParameters()).Merge(lambdaArg);
                     var visitedArg = Visit(lambdaArg.Body);
                     var parameter = Expression.Parameter(visitedObj.Type.GetItemType());
-                    var resolvedArg = new AliasesResolver(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(visitedObj.Type.GetItemType()), visitedObj))}, false).Visit(visitedArg);
+                    var resolvedArg = new AliasesResolver(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(visitedObj.Type.GetItemType()), visitedObj))}).Visit(visitedArg);
                     visitedArguments.Add(Expression.Lambda(resolvedArg, parameter));
                 }
             }
@@ -203,7 +203,7 @@ namespace GrobExp.Mutators.Visitors
                             var performedFilter = Perform(filter.Body);
                             var parameter = Expression.Parameter(result.Type.GetItemType());
                             var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, methodCallExpression)};
-                            var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
+                            var resolvedPerformedFilter = new AliasesResolver(aliasez).Visit(performedFilter);
                             result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
                             result = Expression.Call(methodCallExpression.Method, result);
                             break;
@@ -223,7 +223,7 @@ namespace GrobExp.Mutators.Visitors
                 var performedFilter = Perform(filter.Body);
                 var parameter = Expression.Parameter(result.Type.GetItemType());
                 var aliasez = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node))};
-                var resolvedPerformedFilter = new AliasesResolver(aliasez, false).Visit(performedFilter);
+                var resolvedPerformedFilter = new AliasesResolver(aliasez).Visit(performedFilter);
                 result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
             }
             if(index < filters.Count)
@@ -272,7 +272,7 @@ namespace GrobExp.Mutators.Visitors
         private Expression ConstructByLeaves(Expression path, IEnumerable<KeyValuePair<Expression, Expression>> leaves)
         {
             ParameterExpression parameter = Expression.Parameter(path.Type);
-            var resolver = new AliasesResolver(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, path)}, false);
+            var resolver = new AliasesResolver(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, path)});
             var tree = new Hashtable();
             foreach(var leaf in leaves)
             {
@@ -316,14 +316,14 @@ namespace GrobExp.Mutators.Visitors
             List<KeyValuePair<Expression, Expression>> arrayAliases;
             var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
             if(convertationNode == null) return null;
-            var resolver = new AliasesResolver(arrayAliases, false);
+            var resolver = new AliasesResolver(arrayAliases);
             var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
             if(setters.Length == 0)
             {
                 onlyLeavesAreConvertible = true;
                 if(node.Type.IsArray /* || node.Type.IsDictionary()*/)
                 {
-                    var arrays = convertationNode.GetArrays(true);
+                    var arrays = convertationNode.GetArrays();
                     Expression array;
                     if(arrays.TryGetValue(To, out array) && array != null)
                     {

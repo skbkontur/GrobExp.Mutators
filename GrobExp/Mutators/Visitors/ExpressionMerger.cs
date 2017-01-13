@@ -8,6 +8,13 @@ using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
 {
+    /// <summary>
+    ///     Inlines given expressions (paths) into an expression
+    ///     <code>
+    /// paths = [x => x.a, y => y.b]
+    /// Merge(a, b => a + b) -> 
+    /// x, y => x.a + y.b </code>
+    /// </summary>
     public class ExpressionMerger : ExpressionVisitor
     {
         public ExpressionMerger(params LambdaExpression[] paths)
@@ -43,7 +50,7 @@ namespace GrobExp.Mutators.Visitors
                 return expression.Body;
             if(expression.Parameters.Count != paths.Length)
                 throw new ArgumentException("Expected lambda with exactly " + paths.Length + " parameters", "expression");
-            for(int i = 0; i < paths.Length; ++i)
+            for(var i = 0; i < paths.Length; ++i)
             {
                 if(paths[i].Type != expression.Parameters[i].Type)
                     throw new InvalidOperationException("Type of 'paths[" + i + "]' is not equal to corresponding parameter type of 'expression'");

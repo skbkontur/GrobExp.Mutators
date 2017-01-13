@@ -13,8 +13,6 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
-using GroBuf;
-
 namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
@@ -29,8 +27,7 @@ namespace GrobExp.Mutators
         {
             if(MutatorsAssignRecorder.IsRecording())
                 MutatorsAssignRecorder.RecordConverter(GetType().Name);
-            var converter = GetOrCreateHashtableSlot(context).Converter;
-            return converter;
+            return GetOrCreateHashtableSlot(context).Converter;
         }
 
         public Action<TSource, TDest> GetMerger(MutatorsContext context)
@@ -38,35 +35,19 @@ namespace GrobExp.Mutators
             return GetOrCreateHashtableSlot(context).Merger;
         }
 
-        public MutatorsTree<TSource> Migrate(MutatorsTree<TDest> mutatorsTree, MutatorsContext context)
+        public MutatorsTreeBase<TSource> Migrate(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
         {
             return mutatorsTree == null ? null : mutatorsTree.Migrate<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
         }
 
-        public MutatorsTree<TSource> GetValidationsTree(MutatorsContext context, int priority)
+        public MutatorsTreeBase<TSource> GetValidationsTree(MutatorsContext context, int priority)
         {
-            return new SimpleMutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+            return new MutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
         }
 
-        public MutatorsTree<TDest> MigratePaths(MutatorsTree<TDest> mutatorsTree, MutatorsContext context)
+        public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
         {
             return mutatorsTree == null ? null : mutatorsTree.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
-        }
-
-        public class CustomFieldInfoZ
-        {
-            public CustomFieldInfoZ(string path, PropertyInfo rootProperty, Type titleType, LambdaExpression value)
-            {
-                Path = path;
-                RootProperty = rootProperty;
-                TitleType = titleType;
-                Value = value;
-            }
-
-            public string Path { get; private set; }
-            public PropertyInfo RootProperty { get; private set; }
-            public Type TitleType { get; private set; }
-            public LambdaExpression Value { get; private set; }
         }
 
         protected abstract void Configure(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator);
@@ -94,37 +75,42 @@ namespace GrobExp.Mutators
                     slot = (HashtableSlot)hashtable[key];
                     if(slot == null || MutatorsAssignRecorder.IsRecording())
                     {
-                        var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
-                        ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
-                        var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
-                        tree.ExtractValidationsFromConverters(validationsTree);
-                        var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-                        var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
-                        slot = new HashtableSlot
-                            {
-                                ConverterTree = tree,
-                                ValidationsTree = validationsTree,
-                                Converter = (source =>
-                                    {
-                                        var dest = new TDest();
-                                        BeforeConvert(source);
-                                        compiledTreeMutator(dest, source);
-                                        AfterConvert(dest, source);
-                                        return dest;
-                                    }),
-                                Merger = ((source, dest) =>
-                                    {
-                                        BeforeConvert(source);
-                                        compiledTreeMutator(dest, source);
-                                        AfterConvert(dest, source);
-                                    })
-                            };
+                        slot = CreateHashtableSlot(context);
                         if(!MutatorsAssignRecorder.IsRecording())
                             hashtable[key] = slot;
                     }
                 }
             }
             return slot;
+        }
+
+        private HashtableSlot CreateHashtableSlot(MutatorsContext context)
+        {
+            var converterTree = ModelConfigurationNode.CreateRoot(typeof(TDest));
+            ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(converterTree));
+            var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
+            converterTree.ExtractValidationsFromConverters(validationsTree);
+            var treeMutator = (Expression<Action<TDest, TSource>>)converterTree.BuildTreeMutator(typeof(TSource));
+            var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
+            return new HashtableSlot
+                {
+                    ConverterTree = converterTree,
+                    ValidationsTree = validationsTree,
+                    Converter = source =>
+                        {
+                            var dest = new TDest();
+                            BeforeConvert(source);
+                            compiledTreeMutator(dest, source);
+                            AfterConvert(dest, source);
+                            return dest;
+                        },
+                    Merger = (source, dest) =>
+                        {
+                            BeforeConvert(source);
+                            compiledTreeMutator(dest, source);
+                            AfterConvert(dest, source);
+                        }
+                };
         }
 
         private static TypeCode GetTypeCode(Type type)
@@ -436,7 +422,7 @@ namespace GrobExp.Mutators
                     var node = tree.Traverse(pathToDestArray, false);
                     if(node == null)
                         continue;
-                    var arrays = node.GetArrays(true);
+                    var arrays = node.GetArrays();
                     Expression pathToSourceArray;
                     if(!arrays.TryGetValue(typeof(TSource), out pathToSourceArray))
                         continue;
@@ -459,10 +445,26 @@ namespace GrobExp.Mutators
         private readonly object lockObject = new object();
 
         private readonly Hashtable hashtable = new Hashtable();
-        private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>((object)null)).GetGenericMethodDefinition();
+        private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>(null)).GetGenericMethodDefinition();
         private readonly MethodInfo convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
         private readonly MethodInfo castMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.Cast<object>()).GetGenericMethodDefinition();
         private readonly MethodInfo toArrayMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.ToArray()).GetGenericMethodDefinition();
+
+        public class CustomFieldInfoZ
+        {
+            public CustomFieldInfoZ(string path, PropertyInfo rootProperty, Type titleType, LambdaExpression value)
+            {
+                Path = path;
+                RootProperty = rootProperty;
+                TitleType = titleType;
+                Value = value;
+            }
+
+            public string Path { get; private set; }
+            public PropertyInfo RootProperty { get; private set; }
+            public Type TitleType { get; private set; }
+            public LambdaExpression Value { get; private set; }
+        }
 
         private class CustomFieldInfo
         {

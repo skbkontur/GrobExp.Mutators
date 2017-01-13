@@ -25,22 +25,6 @@ namespace GrobExp.Mutators.Visitors
         private int count;
     }
 
-    public class ExpressionReplacer : ExpressionVisitor
-    {
-        public ExpressionReplacer(Dictionary<Expression, Expression> replacements)
-        {
-            this.replacements = replacements;
-        }
-
-        public override Expression Visit(Expression node)
-        {
-            Expression replacement;
-            return node != null && replacements.TryGetValue(node, out replacement) ? replacement : base.Visit(node);
-        }
-
-        private readonly Dictionary<Expression, Expression> replacements;
-    }
-
     public class AliasesResolver : ExpressionVisitor
     {
         public AliasesResolver(List<KeyValuePair<Expression, Expression>> aliases, bool strictly)

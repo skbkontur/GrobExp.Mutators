@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
+using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
 {
@@ -70,6 +73,18 @@ namespace GrobExp.Mutators.Visitors
             return visitedNode;
         }
 
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            if (!IsPrimitiveConstant(node.Type))
+                stack.Peek().Dependencies.Add(constantParameter);
+            return base.VisitConstant(node);
+        }
+
+        private bool IsPrimitiveConstant(Type type)
+        {
+            return type.IsPrimitive || type == typeof(string) || type.IsEnum || type.IsNullable() && IsPrimitiveConstant(type.GetGenericArguments()[0]);
+        }
+
         private bool ExtractableMethodCall(MethodCallExpression node)
         {
             var currentNode = stack.Peek();
@@ -104,6 +119,7 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<Expression> extractableExpressions;
         private readonly HashSet<ParameterExpression> invariantParameters;
         private readonly Stack<NodeInfo> stack;
+        private readonly ParameterExpression constantParameter = Expression.Parameter(typeof(int));
 
         private class NodeInfo
         {

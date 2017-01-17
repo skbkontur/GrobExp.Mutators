@@ -210,6 +210,20 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSimpleDependency()
+        {
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
+            {
+                configurator.Target(data => data.Qxx.A0).Set(data => data.A.B[0].Хрень[0].Length);
+                configurator.Target(data => data.A.B).Set(data => new[] {new B {Хрень = new[] {"GRobas"}}});
+            });
+            Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            var o = new TestData();
+            mutator(o);
+            Assert.AreEqual("GRobas".Length, o.Qxx.A0);
+        }
+
+        [Test]
         public void TestEqualsToLinq1()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Z).Set(data => data.A.B.Each().C.D.Sum(d => d.Z)));

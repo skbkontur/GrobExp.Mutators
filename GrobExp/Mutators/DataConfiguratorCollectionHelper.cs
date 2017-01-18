@@ -27,7 +27,7 @@ namespace GrobExp.Mutators
             return (IMutatorsTreeCreator<TData>)Activator.CreateInstance(type.MakeGenericType(types));
         }
 
-        public static MutatorsTree<T> Merge<T>(MutatorsTree<T> first, MutatorsTree<T> second)
+        public static MutatorsTreeBase<T> Merge<T>(MutatorsTreeBase<T> first, MutatorsTreeBase<T> second)
         {
             if(first == null) return second;
             if(second == null) return first;
@@ -38,7 +38,7 @@ namespace GrobExp.Mutators
 
         public interface IMutatorsTreeCreator<TData>
         {
-            MutatorsTree<TData> GetMutatorsTree(IDataConfiguratorCollectionFactory dataConfiguratorCollectionFactory, IConverterCollectionFactory converterCollectionFactory, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts);
+            MutatorsTreeBase<TData> GetMutatorsTree(IDataConfiguratorCollectionFactory dataConfiguratorCollectionFactory, IConverterCollectionFactory converterCollectionFactory, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts);
         }
 
         private static Type BuildMutatorsTreeCreator(int numberOfGenericParameters)
@@ -48,7 +48,7 @@ namespace GrobExp.Mutators
 
             var interfaceType = typeof(IMutatorsTreeCreator<>).MakeGenericType(genericParameters.Last());
             var method = TypeBuilder.GetMethod(interfaceType, typeof(IMutatorsTreeCreator<>).GetMethod(getMutatorsTreeMethodName, BindingFlags.Public | BindingFlags.Instance));
-            var methodBuilder = typeBuilder.DefineMethod(getMutatorsTreeMethodName, MethodAttributes.Public | MethodAttributes.Virtual, typeof(MutatorsTree<>).MakeGenericType(genericParameters.Last()),
+            var methodBuilder = typeBuilder.DefineMethod(getMutatorsTreeMethodName, MethodAttributes.Public | MethodAttributes.Virtual, typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters.Last()),
                                                          new[] {typeof(IDataConfiguratorCollectionFactory), typeof(IConverterCollectionFactory), typeof(MutatorsContext[]), typeof(MutatorsContext[])});
             using(var il = new GroboIL(methodBuilder))
             {
@@ -69,7 +69,7 @@ namespace GrobExp.Mutators
 
                 il.MarkLabel(sourceCollectionIsNullLabel);
 
-                var current = il.DeclareLocal(typeof(MutatorsTree<>).MakeGenericType(genericParameters[0]));
+                var current = il.DeclareLocal(typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters[0]));
                 for(var i = 0; i < numberOfGenericParameters - 1; ++i)
                 {
                     // First: Migrate tree
@@ -85,7 +85,7 @@ namespace GrobExp.Mutators
                     //il.Call(collectionType.GetMethod("Migrate", BindingFlags.Public | BindingFlags.Instance), collectionType); // stack: [converterCollection, converterCollection.Migrate(current, converterContexts[i])]
                     collectionType = typeof(IConverterCollection<,>).MakeGenericType(genericParameters[i + 1], genericParameters[i]);
                     il.Call(TypeBuilder.GetMethod(collectionType, typeof(IConverterCollection<,>).GetMethod("Migrate", BindingFlags.Public | BindingFlags.Instance)), collectionType); // stack: [converterCollection, converterCollection.Migrate(current, converterContexts[i])]
-                    current = il.DeclareLocal(typeof(MutatorsTree<>).MakeGenericType(genericParameters[i + 1]));
+                    current = il.DeclareLocal(typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters[i + 1]));
                     il.Stloc(current); // current = converterCollection.Migrate(current, converterContexts[i]); stack: [converterCollection]
 
                     // Second: Merge with validations tree
@@ -97,9 +97,9 @@ namespace GrobExp.Mutators
                     //il.Call(collectionType.GetMethod("GetValidationsTree", BindingFlags.Public | BindingFlags.Instance), collectionType); // stack: [converterCollection.GetValidationsTree(converterContexts[i], n + i) = validationsTree]
                     il.Call(TypeBuilder.GetMethod(collectionType, typeof(IConverterCollection<,>).GetMethod("GetValidationsTree", BindingFlags.Public | BindingFlags.Instance)), collectionType); // stack: [converterCollection.GetValidationsTree(converterContexts[i], n + i) = validationsTree]
                     il.Ldloc(current); // stack: [validationsTree, current]
-                    //var mutatorsTreeType = typeof(MutatorsTree<>).MakeGenericType(genericParameters[i + 1]);
+                    //var mutatorsTreeType = typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters[i + 1]);
                     //il.Call(mutatorsTreeType.GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance), mutatorsTreeType); // stack: [validationsTree.Merge(current)]
-                    //il.Call(TypeBuilder.GetMethod(mutatorsTreeType, typeof(MutatorsTree<>).GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance)), mutatorsTreeType); // stack: [validationsTree.Merge(current)]
+                    //il.Call(TypeBuilder.GetMethod(mutatorsTreeType, typeof(MutatorsTreeBase<>).GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance)), mutatorsTreeType); // stack: [validationsTree.Merge(current)]
                     il.Call(mergeMethod.MakeGenericMethod(genericParameters[i + 1])); // stack: [validationsTree.Merge(current)]
 
                     // Third: Merge with current mutators tree
@@ -120,7 +120,7 @@ namespace GrobExp.Mutators
 
                     il.MarkLabel(collectionIsNullLabel);
 
-                    //il.Call(TypeBuilder.GetMethod(mutatorsTreeType, typeof(MutatorsTree<>).GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance)), mutatorsTreeType); // stack: [validationsTree.Merge(current).Merge(collection.GetMutatorsTree(mutatorsContexts[i + 1], 0)) = current]
+                    //il.Call(TypeBuilder.GetMethod(mutatorsTreeType, typeof(MutatorsTreeBase<>).GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance)), mutatorsTreeType); // stack: [validationsTree.Merge(current).Merge(collection.GetMutatorsTree(mutatorsContexts[i + 1], 0)) = current]
                     il.Call(mergeMethod.MakeGenericMethod(genericParameters[i + 1])); // stack: [validationsTree.Merge(current).Merge(collection.GetMutatorsTree(mutatorsContexts[i + 1], 0)) = current]
                 }
                 il.Ret();
@@ -131,10 +131,10 @@ namespace GrobExp.Mutators
             return typeBuilder.CreateType();
         }
 
-        private static readonly string getMutatorsTreeMethodName = ((MethodCallExpression)((Expression<Func<IMutatorsTreeCreator<int>, MutatorsTree<int>>>)(creator => creator.GetMutatorsTree(null, null, null, null))).Body).Method.Name;
+        private static readonly string getMutatorsTreeMethodName = ((MethodCallExpression)((Expression<Func<IMutatorsTreeCreator<int>, MutatorsTreeBase<int>>>)(creator => creator.GetMutatorsTree(null, null, null, null))).Body).Method.Name;
         private static readonly MethodInfo getDataConfiguratorCollectionMethod = ((MethodCallExpression)((Expression<Func<IDataConfiguratorCollectionFactory, IDataConfiguratorCollection<int>>>)(factory => factory.Get<int>())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo getConverterCollectionMethod = ((MethodCallExpression)((Expression<Func<IConverterCollectionFactory, IConverterCollection<int, int>>>)(factory => factory.Get<int, int>())).Body).Method.GetGenericMethodDefinition();
-        private static readonly MethodInfo mergeMethod = ((MethodCallExpression)((Expression<Func<MutatorsTree<int>, MutatorsTree<int>, MutatorsTree<int>>>)((first, second) => Merge(first, second))).Body).Method.GetGenericMethodDefinition();
+        private static readonly MethodInfo mergeMethod = ((MethodCallExpression)((Expression<Func<MutatorsTreeBase<int>, MutatorsTreeBase<int>, MutatorsTreeBase<int>>>)((first, second) => Merge(first, second))).Body).Method.GetGenericMethodDefinition();
 
         private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(AssemblyName), AssemblyBuilderAccess.Run);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());

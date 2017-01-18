@@ -118,14 +118,7 @@ namespace GrobExp.Mutators
 
         public void SetMutator(MutatorConfiguration mutator)
         {
-            MutatorConfiguration rootMutator;
-            if(mutator.Type == typeof(TDestRoot))
-                rootMutator = mutator;
-            else
-            {
-                var pathToChild = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(PathToChild).ResolveInterfaceMembers();
-                rootMutator = mutator.ToRoot((Expression<Func<TDestRoot, TDestChild>>)pathToChild);
-            }
+            MutatorConfiguration rootMutator = GetRootMutator(mutator);
             
             if(PathToValue != null)
                 root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
@@ -134,6 +127,18 @@ namespace GrobExp.Mutators
                 foreach(var pathToValue in PathsToValue)
                     root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
             }
+        }
+
+        /// <summary>
+        ///     В случае, когда нахерачили всяких GoTo, пути в конфигурации могут идти не от рута. Здесь это фиксится.
+        /// </summary>
+        private MutatorConfiguration GetRootMutator(MutatorConfiguration mutator)
+        {
+            if (mutator.Type == typeof(TDestRoot))
+                return mutator;
+
+            var pathToChild = PathToChild.ReplaceMethod(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).ResolveInterfaceMembers();
+            return mutator.ToRoot((Expression<Func<TDestRoot, TDestChild>>)pathToChild);
         }
 
         public ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> WithoutCondition()

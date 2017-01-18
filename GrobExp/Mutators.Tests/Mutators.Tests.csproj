@@ -61,6 +61,7 @@
     <Compile Include="ExpressionHashCalculatorTest.cs" />
     <Compile Include="ExpressionMergerTests.cs" />
     <Compile Include="ExpressionSimplifierTest.cs" />
+    <Compile Include="IsLinkOfChainTests.cs" />
     <Compile Include="IsNullOrEmptyExtenderTest.cs" />
     <Compile Include="LinqEliminatorTest.cs" />
     <Compile Include="MutatorsAssignRecorderTest.cs" />

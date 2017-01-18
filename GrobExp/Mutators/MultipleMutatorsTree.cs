@@ -7,26 +7,26 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
-    public class ComplexMutatorsTree<TData> : MutatorsTree<TData>
+    public class MultipleMutatorsTree<TData> : MutatorsTreeBase<TData>
     {
-        public ComplexMutatorsTree(MutatorsTree<TData>[] trees)
+        public MultipleMutatorsTree(MutatorsTreeBase<TData>[] trees)
         {
             this.trees = trees;
         }
 
-        internal override MutatorsTree<T> Migrate<T>(ModelConfigurationNode converterTree)
+        internal override MutatorsTreeBase<T> Migrate<T>(ModelConfigurationNode converterTree)
         {
-            return new ComplexMutatorsTree<T>(trees.Select(tree => tree.Migrate<T>(converterTree)).ToArray());
+            return new MultipleMutatorsTree<T>(trees.Select(tree => tree.Migrate<T>(converterTree)).ToArray());
         }
 
-        internal override MutatorsTree<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
+        internal override MutatorsTreeBase<TData> MigratePaths<T>(ModelConfigurationNode converterTree)
         {
-            return new ComplexMutatorsTree<TData>(trees.Select(tree => tree.MigratePaths<T>(converterTree)).ToArray());
+            return new MultipleMutatorsTree<TData>(trees.Select(tree => tree.MigratePaths<T>(converterTree)).ToArray());
         }
 
-        public override MutatorsTree<TData> Merge(MutatorsTree<TData> other)
+        public override MutatorsTreeBase<TData> Merge(MutatorsTreeBase<TData> other)
         {
-            return new ComplexMutatorsTree<TData>(new[] {this, other});
+            return new MultipleMutatorsTree<TData>(new[] {this, other});
         }
 
         protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
@@ -87,6 +87,6 @@ namespace GrobExp.Mutators
                 mutators.AddRange(tree.GetAllMutatorsWithPaths());
         }
 
-        private readonly MutatorsTree<TData>[] trees;
+        private readonly MutatorsTreeBase<TData>[] trees;
     }
 }

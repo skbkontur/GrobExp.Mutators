@@ -13,25 +13,25 @@ namespace GrobExp.Mutators
             this.pathFormatterCollection = pathFormatterCollection;
         }
 
-        public MutatorsTree<TData> GetMutatorsTree(MutatorsContext context, int validationsPriority = 0)
+        public MutatorsTreeBase<TData> GetMutatorsTree(MutatorsContext context, int validationsPriority = 0)
         {
             if(context == null)
                 throw new ArgumentNullException("context");
             var slot = GetOrCreateHashtableSlot(context);
-            var result = (MutatorsTree<TData>)slot.MutatorsTrees[validationsPriority];
+            var result = (MutatorsTreeBase<TData>)slot.MutatorsTrees[validationsPriority];
             if(result == null)
             {
                 lock(lockObject)
                 {
-                    result = (MutatorsTree<TData>)slot.MutatorsTrees[validationsPriority];
+                    result = (MutatorsTreeBase<TData>)slot.MutatorsTrees[validationsPriority];
                     if(result == null)
-                        slot.MutatorsTrees[validationsPriority] = result = new SimpleMutatorsTree<TData>(slot.Tree, pathFormatterCollection.GetPathFormatter<TData>(), pathFormatterCollection, validationsPriority);
+                        slot.MutatorsTrees[validationsPriority] = result = new MutatorsTree<TData>(slot.Tree, pathFormatterCollection.GetPathFormatter<TData>(), pathFormatterCollection, validationsPriority);
                 }
             }
             return result;
         }
 
-        public MutatorsTree<TData> GetMutatorsTree(Type[] path, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts)
+        public MutatorsTreeBase<TData> GetMutatorsTree(Type[] path, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts)
         {
             if(path == null)
                 throw new ArgumentNullException("path");
@@ -62,12 +62,12 @@ namespace GrobExp.Mutators
                 }
             }
             key = string.Join("@", mutatorsContexts.Select(context => context.GetKey()).Concat(converterContexts.Select(context => context.GetKey())));
-            var result = (MutatorsTree<TData>)slot2.MutatorsTrees[key];
+            var result = (MutatorsTreeBase<TData>)slot2.MutatorsTrees[key];
             if(result == null)
             {
                 lock(lockObject)
                 {
-                    result = (MutatorsTree<TData>)slot2.MutatorsTrees[key];
+                    result = (MutatorsTreeBase<TData>)slot2.MutatorsTrees[key];
                     if(result == null)
                         slot2.MutatorsTrees[key] = result = slot2.MutatorsTreeCreator.GetMutatorsTree(dataConfiguratorCollectionFactory, converterCollectionFactory, mutatorsContexts, converterContexts);
                 }

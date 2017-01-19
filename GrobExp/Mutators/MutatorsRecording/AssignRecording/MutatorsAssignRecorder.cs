@@ -36,6 +36,18 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
                 instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
         }
 
+        public static void RecordExecutingExpressionWithValueObjectCheck(AssignLogInfo toLog, object executedValue)
+        {
+            if(executedValue != null)
+                RecordExecutingExpression(toLog);
+        }
+
+        public static void RecordExecutingExpressionWithNullableValueCheck<T>(AssignLogInfo toLog, T? executedValue) where T : struct 
+        {
+            if (executedValue != null)
+                RecordExecutingExpression(toLog);
+        }
+
         public static void RecordConverter(string converter)
         {
             instance.recordsCollection.AddConverterToRecord(converter);

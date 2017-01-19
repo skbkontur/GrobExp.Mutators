@@ -247,6 +247,32 @@ namespace Mutators.Tests
             Assert.AreSame(converter, converterCollection.GetConverter(MutatorsContext.Empty));
         }
 
+        [Test]
+        [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
+        public void TestSetNull()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullable, TestDataDestNullable>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.StrC).Set(x => x.StrA);
+                    configurator.Target(x => x.StrD).Set(x => x.StrB);
+                });
+
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
+            var source = new TestDataSourceNullable
+                {
+                    StrA = "qxx"
+                };
+            converter(source);
+            recorder.Stop();
+
+            var records = recorder.GetRecords();
+            Assert.AreEqual(1, records.Count);
+            Assert.AreEqual(3, records[0].CompiledCount);
+            Assert.AreEqual(1, records[0].ExecutedCount);
+        }
+
         private volatile Exception lastException;
         private IPathFormatterCollection pathFormatterCollection;
         private volatile bool start;
@@ -262,5 +288,17 @@ namespace Mutators.Tests
     {
         public int C = 1;
         public int D = 2;
+    }
+
+    public class TestDataSourceNullable
+    {
+        public string StrA { get; set; }
+        public string StrB { get; set; }
+    }
+
+    public class TestDataDestNullable
+    {
+        public string StrC { get; set; }
+        public string StrD { get; set; }
     }
 }

@@ -10,11 +10,6 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             recordsCollection = new ValidationRecordCollection();
         }
 
-        public List<RecordNode> GetRecords()
-        {
-            return recordsCollection.GetRecords();
-        }
-
         public List<RecordNode> GetErrorRecords()
         {
             return recordsCollection.GetErrorRecords();

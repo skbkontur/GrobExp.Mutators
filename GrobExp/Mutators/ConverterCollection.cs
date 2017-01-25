@@ -42,7 +42,20 @@ namespace GrobExp.Mutators
 
         public MutatorsTreeBase<TSource> GetValidationsTree(MutatorsContext context, int priority)
         {
-            return new MutatorsTree<TSource>(GetOrCreateHashtableSlot(context).ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+            var slot = GetOrCreateHashtableSlot(context);
+            var result = (MutatorsTreeBase<TSource>)slot.ValidationMutatorsTrees[priority];
+            if(result == null)
+            {
+                lock(lockObject)
+                {
+                    result = (MutatorsTreeBase<TSource>)slot.ValidationMutatorsTrees[priority];
+                    if(result == null)
+                    {
+                        slot.ValidationMutatorsTrees[priority] = result = new MutatorsTree<TSource>(slot.ValidationsTree, pathFormatterCollection.GetPathFormatter<TSource>(), pathFormatterCollection, priority);
+                    }
+                }
+            }
+            return result;
         }
 
         public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
@@ -68,15 +81,40 @@ namespace GrobExp.Mutators
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if(slot == null || MutatorsAssignRecorder.IsRecording())
+            if(slot == null/* || MutatorsAssignRecorder.IsRecording()*/)
             {
                 lock(lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if(slot == null || MutatorsAssignRecorder.IsRecording())
+                    if(slot == null/* || MutatorsAssignRecorder.IsRecording()*/)
                     {
-                        slot = CreateHashtableSlot(context);
-                        if(!MutatorsAssignRecorder.IsRecording())
+                        var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
+                        ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
+                        var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
+                        tree.ExtractValidationsFromConverters(validationsTree);
+                        var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
+                        var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
+                        slot = new HashtableSlot
+                            {
+                                ConverterTree = tree,
+                                ValidationsTree = validationsTree,
+                                Converter = (source =>
+                                    {
+                                        var dest = new TDest();
+                                        BeforeConvert(source);
+                                        compiledTreeMutator(dest, source);
+                                        AfterConvert(dest, source);
+                                        return dest;
+                                    }),
+                                Merger = ((source, dest) =>
+                                    {
+                                        BeforeConvert(source);
+                                        compiledTreeMutator(dest, source);
+                                        AfterConvert(dest, source);
+                                    }),
+                                ValidationMutatorsTrees = new Hashtable()
+                            };
+                        //if(!MutatorsAssignRecorder.IsRecording())
                             hashtable[key] = slot;
                     }
                 }
@@ -488,6 +526,8 @@ namespace GrobExp.Mutators
             public ModelConfigurationNode ValidationsTree { get; set; }
             public Func<TSource, TDest> Converter { get; set; }
             public Action<TSource, TDest> Merger { get; set; }
+
+            public Hashtable ValidationMutatorsTrees { get; set; }
         }
     }
 }

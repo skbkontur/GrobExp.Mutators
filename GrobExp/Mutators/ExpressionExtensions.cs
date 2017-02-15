@@ -83,13 +83,23 @@ namespace GrobExp.Mutators
         {
             if(!MutatorsAssignRecorder.IsRecording() || toLog == null)
                 return InternalAssign(path, value);
-
             MutatorsAssignRecorder.RecordCompilingExpression(toLog);
-            var temp = Expression.Parameter(value.Type, "temp");
+            MethodCallExpression recordingExpression;
+            var temp = Expression.Variable(value.Type, "temp");
+            
+            if(value.Type.IsNullable())
+            {
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithNullableValueCheck").MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(toLog), value);
+            }
+            else if(value.Type.IsValueType)
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog));
+            else
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithValueObjectCheck"), Expression.Constant(toLog), value);
+            
             return Expression.Block(new[] {temp},
                                     Expression.Assign(temp, value),
                                     InternalAssign(path, temp),
-                                    Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog)),
+                                    recordingExpression,
                                     temp);
         }
 
@@ -525,6 +535,7 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo singleWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.Single(i => i == 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithoutParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault(i => i == 0))).Body).Method.GetGenericMethodDefinition();
+      
         private const int maxNumberOfExpressionsInBatch = 1000;
     }
 }

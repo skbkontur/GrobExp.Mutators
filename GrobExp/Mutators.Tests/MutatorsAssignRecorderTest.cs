@@ -249,7 +249,7 @@ namespace Mutators.Tests
 
         [Test]
         [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
-        public void TestSetNull()
+        public void TestSetNullToString()
         {
             var converterCollection = new TestConverterCollection<TestDataSourceNullable, TestDataDestNullable>(pathFormatterCollection,
                 configurator =>
@@ -257,20 +257,76 @@ namespace Mutators.Tests
                     configurator.Target(x => x.StrC).Set(x => x.StrA);
                     configurator.Target(x => x.StrD).Set(x => x.StrB);
                 });
-
-            var recorder = AssignRecorderInitializer.StartAssignRecorder();
-            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
             var source = new TestDataSourceNullable
                 {
                     StrA = "qxx"
                 };
+            DoTestSetNull(converterCollection, source, 3, 1);
+        }
+
+        [Test]
+        [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
+        public void TestSetNullToNullableInt()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.IntC).Set(x => x.IntA);
+                    configurator.Target(x => x.IntD).Set(x => x.IntB);
+                });
+            var source = new TestDataSourceNullableInt
+            {
+                IntA = 12
+            };
+            DoTestSetNull(converterCollection, source, 3, 1);
+        }
+
+        [Test]
+        [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
+        public void TestSetNullToNullableEnum()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullableEnum, TestDataDestNullableEnum>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.FieldC).Set(x => x.FieldA);
+                    configurator.Target(x => x.FieldD).Set(x => x.FieldB);
+                });
+            var source = new TestDataSourceNullableEnum
+            {
+                FieldA = TestEnum.Black
+            };
+            DoTestSetNull(converterCollection, source, 3, 1);
+        }
+
+        [Test]
+        [Description("Если поле заполняем константным значением null, и это правило прописано в конвертере, считать покрытой конвертацией")]
+        public void TestSetNullInConverter()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.IntC).Set(x => null);
+                    configurator.Target(x => x.IntD).Set(x => x.IntB);
+                });
+            var source = new TestDataSourceNullableInt
+            {
+                IntA = 12,
+                IntB = 13
+            };
+            DoTestSetNull(converterCollection, source, 3, 2);
+        }
+
+        private static void DoTestSetNull<TSource, TDest>(TestConverterCollection<TSource, TDest> converterCollection, TSource source, int expectedCompiledCount, int expectedExecutedCount) where TDest : new()
+        {
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
             converter(source);
             recorder.Stop();
 
             var records = recorder.GetRecords();
             Assert.AreEqual(1, records.Count);
-            Assert.AreEqual(3, records[0].CompiledCount);
-            Assert.AreEqual(1, records[0].ExecutedCount);
+            Assert.AreEqual(expectedCompiledCount, records[0].CompiledCount);
+            Assert.AreEqual(expectedExecutedCount, records[0].ExecutedCount);
         }
 
         private volatile Exception lastException;
@@ -278,27 +334,57 @@ namespace Mutators.Tests
         private volatile bool start;
     }
 
-    public class TestDataSource
+    internal class TestDataSource
     {
         public int A = 12;
         public int B = 13;
     }
 
-    public class TestDataDest
+    internal class TestDataDest
     {
         public int C = 1;
         public int D = 2;
     }
 
-    public class TestDataSourceNullable
+    internal class TestDataSourceNullable
     {
         public string StrA { get; set; }
         public string StrB { get; set; }
     }
 
-    public class TestDataDestNullable
+    internal class TestDataDestNullable
     {
         public string StrC { get; set; }
         public string StrD { get; set; }
+    }
+
+    internal class TestDataSourceNullableInt
+    {
+        public int? IntA { get; set; }
+        public int? IntB { get; set; }
+    }
+
+    internal class TestDataDestNullableInt
+    {
+        public int? IntC { get; set; }
+        public int? IntD { get; set; }
+    }
+
+    internal class TestDataSourceNullableEnum
+    {
+        public TestEnum? FieldA { get; set; }
+        public TestEnum? FieldB { get; set; }
+    }
+
+    internal class TestDataDestNullableEnum
+    {
+        public TestEnum? FieldC { get; set; }
+        public TestEnum? FieldD { get; set; }
+    }
+
+    internal enum TestEnum
+    {
+        Black, 
+        White
     }
 }

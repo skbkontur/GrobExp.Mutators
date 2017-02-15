@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
@@ -44,7 +45,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         public static void RecordExecutingExpressionWithNullableValueCheck<T>(AssignLogInfo toLog, T? executedValue) where T : struct 
         {
-            if (executedValue != null)
+            if (executedValue != null || toLog.Value.NodeType == ExpressionType.Constant && toLog.Value.ToConstant().Value == null)
                 RecordExecutingExpression(toLog);
         }
 

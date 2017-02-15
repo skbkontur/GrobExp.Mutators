@@ -86,20 +86,16 @@ namespace GrobExp.Mutators
             MutatorsAssignRecorder.RecordCompilingExpression(toLog);
             MethodCallExpression recordingExpression;
             var temp = Expression.Variable(value.Type, "temp");
-            try
+            
+            if(value.Type.IsNullable())
             {
-                if(value.Type.IsValueType)
-                    recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog));
-                else if(value.Type.IsNullable())
-                    recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithNullableValueCheck"), Expression.Constant(toLog), value);
-                else
-                    recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithValueObjectCheck"), Expression.Constant(toLog), value);
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithNullableValueCheck").MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(toLog), value);
             }
-            catch(Exception)
-            {
-                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog), Expression.Constant(null));
-            }
-
+            else if(value.Type.IsValueType)
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog));
+            else
+                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithValueObjectCheck"), Expression.Constant(toLog), value);
+            
             return Expression.Block(new[] {temp},
                                     Expression.Assign(temp, value),
                                     InternalAssign(path, temp),

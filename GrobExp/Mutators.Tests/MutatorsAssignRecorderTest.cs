@@ -334,55 +334,55 @@ namespace Mutators.Tests
         private volatile bool start;
     }
 
-    internal class TestDataSource
+    public class TestDataSource
     {
         public int A = 12;
         public int B = 13;
     }
 
-    internal class TestDataDest
+    public class TestDataDest
     {
         public int C = 1;
         public int D = 2;
     }
 
-    internal class TestDataSourceNullable
+    public class TestDataSourceNullable
     {
         public string StrA { get; set; }
         public string StrB { get; set; }
     }
 
-    internal class TestDataDestNullable
+    public class TestDataDestNullable
     {
         public string StrC { get; set; }
         public string StrD { get; set; }
     }
 
-    internal class TestDataSourceNullableInt
+    public class TestDataSourceNullableInt
     {
         public int? IntA { get; set; }
         public int? IntB { get; set; }
     }
 
-    internal class TestDataDestNullableInt
+    public class TestDataDestNullableInt
     {
         public int? IntC { get; set; }
         public int? IntD { get; set; }
     }
 
-    internal class TestDataSourceNullableEnum
+    public class TestDataSourceNullableEnum
     {
         public TestEnum? FieldA { get; set; }
         public TestEnum? FieldB { get; set; }
     }
 
-    internal class TestDataDestNullableEnum
+    public class TestDataDestNullableEnum
     {
         public TestEnum? FieldC { get; set; }
         public TestEnum? FieldD { get; set; }
     }
 
-    internal enum TestEnum
+    public enum TestEnum
     {
         Black, 
         White

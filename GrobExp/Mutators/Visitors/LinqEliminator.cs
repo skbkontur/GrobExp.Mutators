@@ -462,6 +462,7 @@ namespace GrobExp.Mutators.Visitors
                             resultSelectorBody = new ParameterReplacer(resultSelector.Parameters[1], item).Visit(resultSelectorBody);
                             resultSelector = Expression.Lambda(resultSelectorBody, current, item);
                             current = CreateParameter(resultSelector.Body.Type, "current");
+                            cycleVariables.Add(current);
                             cycleBody.Add(Expression.Assign(current, Visit(resultSelector.Body)));
                         }
 

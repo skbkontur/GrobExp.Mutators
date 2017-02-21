@@ -235,6 +235,13 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSelectManyCollectionSelectorNotChainWithResultSelector()
+        {
+            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => new [] {a.B1, a.B2}, (a, b) => new {a, b}).FirstOrDefault(b => b.b.S == "zzz").b.S;
+            var func = EliminateLinq(exp);
+        }
+
+        [Test]
         public void TestSelectManyCollectionSelectorNotChain2()
         {
             Expression<Func<TestData, List<int>>> exp = data => data.A.SelectMany(a => Zzz(a)).ToList();

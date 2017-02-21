@@ -606,6 +606,43 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestConvertWithComplexSelectMany()
+        {
+            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
+                configurator => configurator
+                    .GoTo(data => data.A.B.Each(),
+                        data2 => data2.T.R.SelectMany(r => r.Чужь ?? new string[1], (x, y) => new {x, y}).Current())
+                    .BatchSet((x, y) => new Batch
+                    {
+                        {x.S, y.x.S},
+                        {x.Arr[0], y.y}
+                    })
+            );
+            var converter = collection.GetMerger(MutatorsContext.Empty);
+            var to = new TestData();
+            var from = new TestData2 {T = new T {R = new[] {new R {S = "zzz"}}}};
+            converter(from, to);
+            var expected = new TestData {A = new A {B = new[] {new B {S = "zzz", Arr = new string[] {null}}}}};
+            to.AssertEqualsToUsingGrobuf(expected);
+
+            to = new TestData();
+            from = new TestData2 {T = new T {R = new[] {new R {S = "zzz", Чужь = new[] {"qxx", "qzz"}}}}};
+            converter(from, to);
+            expected = new TestData
+            {
+                A = new A
+                {
+                    B = new[]
+                    {
+                        new B {S = "zzz", Arr = new[] {"qxx"}},
+                        new B {S = "zzz", Arr = new[] {"qzz"}}
+                    }
+                }
+            };
+            to.AssertEqualsToUsingGrobuf(expected);
+        }
+
+        [Test]
         public void TestConvertArrayWithFilter()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>

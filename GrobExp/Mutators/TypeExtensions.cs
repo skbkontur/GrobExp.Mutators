@@ -29,6 +29,8 @@ namespace GrobExp.Mutators
 
         public static Type TryGetItemType(this Type type)
         {
+            if(type == typeof(Hashtable))
+                return typeof(DictionaryEntry);
             if(type.IsArray) return type.GetElementType();
             if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return type.GetGenericArguments().Single();

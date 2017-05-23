@@ -266,7 +266,7 @@ namespace GrobExp.Mutators
                 }).ToArray();
         }
 
-        private void GetMutatorsWithPath(List<MutatorWithPath> result)
+        public void GetMutatorsWithPath(List<MutatorWithPath> result)
         {
             result.AddRange(GetMutatorsWithPath());
             foreach(var child in Children)

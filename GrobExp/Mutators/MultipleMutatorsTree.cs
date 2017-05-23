@@ -87,6 +87,14 @@ namespace GrobExp.Mutators
                 mutators.AddRange(tree.GetAllMutatorsWithPaths());
         }
 
+        protected override void GetAllMutatorsForWeb(List<MutatorWithPath> mutators)
+        {
+            foreach(var tree in trees)
+            {
+                mutators.AddRange(tree.GetAllMutatorsWithPathsForWeb());
+            }
+        }
+
         private readonly MutatorsTreeBase<TData>[] trees;
     }
 }

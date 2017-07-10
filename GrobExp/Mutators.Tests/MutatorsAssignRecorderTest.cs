@@ -201,8 +201,8 @@ namespace Mutators.Tests
                 throw lastException;
         }
 
-        [Category("Failing")]
         [Test]
+        [Category("Failing")]
         [Description("После повторного запуска не должны появляться записи с предыдущего. После повторного взятия конвертора все компиляции должны логироваться.")]
         public void TestDoubleGettingConverter()
         {

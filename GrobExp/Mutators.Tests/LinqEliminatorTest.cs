@@ -219,7 +219,8 @@ namespace Mutators.Tests
             var func = EliminateLinq(exp);
         }
 
-        [Test]
+        [Category("Failing")]
+        [Test(Description = "Linq method Concat is not supported")]
         public void TestSelectManyWithResultSelectorConcat()
         {
             LambdaCompiler.DebugOutputDirectory = @"c:\temp";

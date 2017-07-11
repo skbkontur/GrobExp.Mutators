@@ -104,6 +104,12 @@ namespace GrobExp.Mutators
                 mutators.AddRange(node.GetMutatorsWithPath());
         }
 
+        protected override void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators)
+        {
+            var node = tree.Traverse(path.Body, false);
+            node.GetMutatorsWithPath(mutators);
+        }
+
         private static List<KeyValuePair<Expression, Expression>> ExtractAliases(ModelConfigurationNode converterTree, CompositionPerformer performer)
         {
             var aliases = new List<KeyValuePair<Expression, Expression>>();

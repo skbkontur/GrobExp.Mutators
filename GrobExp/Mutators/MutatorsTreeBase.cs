@@ -101,6 +101,13 @@ namespace GrobExp.Mutators
             return result.ToArray();
         }
 
+        public MutatorWithPath[] GetAllMutatorsWithPathsForWeb<TValue>(Expression<Func<TData, TValue>> path)
+        {
+            var result = new List<MutatorWithPath>();
+            GetAllMutatorsForWeb(path, result);
+            return result.ToArray();
+        }
+
         internal MutatorsTreeBase<T> Migrate<T>(string key, ModelConfigurationNode converterTree)
         {
             return GetMigratedTrees<T>(key, converterTree).EntirelyMigrated;
@@ -211,6 +218,7 @@ namespace GrobExp.Mutators
         protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
         protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
         protected abstract void GetAllMutators(List<MutatorWithPath> mutators);
+        protected abstract void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators);
 
         private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
         {

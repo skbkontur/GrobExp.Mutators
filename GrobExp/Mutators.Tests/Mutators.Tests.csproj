@@ -81,6 +81,7 @@
     <Compile Include="TestMigration.cs" />
     <Compile Include="TreeMutatorsTest.cs" />
     <Compile Include="ValidatorsTest.cs" />
+    <Compile Include="Visitors\IsConstantCheckerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mutators\Mutators.csproj">

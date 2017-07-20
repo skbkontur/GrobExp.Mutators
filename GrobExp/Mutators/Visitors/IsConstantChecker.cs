@@ -7,6 +7,14 @@ namespace GrobExp.Mutators.Visitors
 {
     public class IsConstantChecker : ExpressionVisitor
     {
+        /// <summary>
+        /// An expression is considered not Constant if:
+        /// <list type="bullet">
+        /// <item>It references external parameters</item>
+        /// <item>It contains a call to DateTime.<see cref="DateTime.UtcNow"/></item>
+        /// <item>It contains a call to Guid.<see cref="Guid.NewGuid"/></item>
+        /// </list>
+        /// </summary>
         public bool IsConstant(Expression exp)
         {
             Visit(exp);

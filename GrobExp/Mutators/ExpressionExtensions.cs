@@ -185,6 +185,7 @@ namespace GrobExp.Mutators
             return new ExpressionSimplifier().Simplify(expression);
         }
 
+        /// <inheritdoc cref="IsConstantChecker.IsConstant"/>
         public static bool IsConstant(this Expression exp)
         {
             return new IsConstantChecker().IsConstant(exp);

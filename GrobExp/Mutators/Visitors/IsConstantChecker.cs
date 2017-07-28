@@ -13,6 +13,7 @@ namespace GrobExp.Mutators.Visitors
         /// <item>It references external parameters</item>
         /// <item>It contains a call to DateTime.<see cref="DateTime.UtcNow"/></item>
         /// <item>It contains a call to Guid.<see cref="Guid.NewGuid"/></item>
+        /// <item>It contains a call to <see cref="MutatorsHelperFunctions.Dynamic{T}"/></item>
         /// </list>
         /// </summary>
         public bool IsConstant(Expression exp)

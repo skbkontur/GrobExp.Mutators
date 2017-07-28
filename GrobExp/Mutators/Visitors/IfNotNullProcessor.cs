@@ -12,8 +12,8 @@ namespace GrobExp.Mutators.Visitors
     /// x.IfNotNull() == y.IfNotNull() ->
     /// x == null || y == null || x == y </code>
     ///     <code>
-    /// igor.IfNotNull() == "GRobas" ->
-    /// string.IsNullOrEmpty(igor) || igor == "GRobas" </code>
+    /// Igor().IfNotNull() == "GRobas" -> // If Igor() is a 'constant' function
+    /// string.IsNullOrEmpty(Igor()) || Igor() == "GRobas" </code>
     /// </summary>
     public class IfNotNullProcessor : ExpressionVisitor
     {

@@ -17,141 +17,125 @@ namespace Mutators.Tests
         }
 
         [Test]
-        public void TestConstant()
+        public void Constant()
         {
-            Expression<Func<A, bool>> exp = a => a.S == "zzz";
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => a.S == "zzz", a => a.S == "zzz");
         }
 
         [Test]
-        public void TestVariable1()
+        public void LocalVarValue()
         {
             string s = "zzz";
-            Expression<Func<A, bool>> exp = a => a.S == s;
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => a.S == s, a => a.S == "zzz");
         }
 
         [Test]
-        public void TestVariable2()
+        public void LocalVarFieldString()
         {
             var b = new B {S = "zzz"};
-            Expression<Func<A, bool>> exp = a => a.S == b.S;
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => a.S == b.S, a => a.S == "zzz");
         }
 
         [Test]
-        public void TestEnum()
+        public void LocalVarFieldEnum()
         {
             var x = new A {E = E.Two};
-            Expression<Func<A, bool>> exp = a => a.E == x.E;
-            DoTest(exp.Body, "(a.E == Two)");
-
+            Check((A a) => a.E == x.E, "a => (a.E == Two)");
         }
 
         [Test]
-        public void TestNullableEnum()
+        public void LocalVarFieldNullableEnum()
         {
             var x = new A {E2 = E.Two};
-            Expression<Func<A, bool>> exp = a => a.E2 == x.E2;
-            DoTest(exp.Body, "(a.E2 == Two)");
-
+            Check((A a) => a.E2 == x.E2, "a => (a.E2 == Two)");
         }
 
-        [Test]
-        public void TestVariableNull()
+        [Test(Description = "Since constants are compiled with All compiler options on, accessing a field of a 'null' object yields null")]
+        public void LocalVarNullField()
         {
             B b = null;
-            Expression<Func<A, bool>> exp = a => a.S == b.S;
-            DoTest(exp.Body, "(a.S == null)");
+            Check((A a) => a.S == b.S, a => a.S == null);
         }
 
         [Test]
-        public void TestIfNotNull1()
+        public void IfNotNullInlineValue()
         {
             var b = new B {S = "zzz"};
-            Expression<Func<A, bool>> exp = a => a.S == b.S.IfNotNull();
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => a.S == b.S.IfNotNull(), a => a.S == "zzz");
         }
 
         [Test]
-        public void TestIfNotNull2()
-        {
-            var b = new B();
-            Expression<Func<A, bool>> exp = a => a.S == b.S.IfNotNull();
-            DoTest(exp.Body, "True");
-        }
-
-        [Test]
-        public void TestIfNotNull3()
+        public void IfNotNullInlineValueAndAddNullCheck()
         {
             var b = new B {S = "zzz"};
-            Expression<Func<A, bool>> exp = a => a.S.IfNotNull() == b.S.IfNotNull();
-            DoTest(exp.Body, "((a.S == null) OrElse (a.S == \"zzz\"))");
+            Check((A a) => a.S.IfNotNull() == b.S.IfNotNull(), a => a.S == null || a.S == "zzz");
         }
 
         [Test]
-        public void TestIfNotNull4()
+        public void IfNotNullSubstituteNull()
         {
             var b = new B();
-            Expression<Func<A, bool>> exp = a => a.S.IfNotNull() == b.S.IfNotNull();
-            DoTest(exp.Body, "True");
+            Check((A a) => a.S == b.S.IfNotNull(), a => true);
         }
 
         [Test]
-        public void TestEliminateTrueInOr()
+        public void IfNotNullInlineNullAndAddNullCheck()
+        {
+            var b = new B();
+            Check((A a) => a.S.IfNotNull() == b.S.IfNotNull(), a => true);
+        }
+
+        [Test]
+        public void OrEliminateTrue()
         {
             int x = 1;
-            Expression<Func<A, bool>> exp = a => x == 1 || a.S == "zzz";
-            DoTest(exp.Body, "True");
+            Check((A a) => x == 1 || a.S == "zzz", a => true);
         }
 
         [Test]
-        public void TestEliminateFalseInOr()
+        public void OrEliminateFalse()
         {
             int x = 0;
-            Expression<Func<A, bool>> exp = a => x == 1 || a.S == "zzz";
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => x == 1 || a.S == "zzz", a => a.S == "zzz");
         }
 
         [Test]
-        public void TestEliminateTrueInAnd()
+        public void AndEliminateTrue()
         {
             int x = 1;
-            Expression<Func<A, bool>> exp = a => x == 1 && a.S == "zzz";
-            DoTest(exp.Body, "(a.S == \"zzz\")");
+            Check((A a) => x == 1 && a.S == "zzz", a => a.S == "zzz");
         }
 
         [Test]
-        public void TestEliminateFalseInAnd()
+        public void AndEliminateFalse()
         {
             int x = 0;
-            Expression<Func<A, bool>> exp = a => x == 1 && a.S == "zzz";
-            DoTest(exp.Body, "False");
+            Check((A a) => x == 1 && a.S == "zzz", a => false);
+        }
+
+
+        [Test]
+        public void LeaveIntactDynamic()
+        {
+            Check((A a) => a.DateTime > DateTime.Now.Dynamic(), a => a.DateTime > DateTime.Now.Dynamic());
         }
 
         [Test]
-        public void TestDateTime()
+        public void LeaveIntactDateTimeUtcNow()
         {
-            Expression<Func<A, bool>> exp = a => a.DateTime > DateTime.UtcNow;
-            var simplifiedExp = simplifier.Simplify(exp);
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(exp), ExpressionCompiler.DebugViewGetter(simplifiedExp));
+            Check((A a) => a.DateTime > DateTime.UtcNow, a => a.DateTime > DateTime.UtcNow);
         }
 
         [Test]
-        public void TestNewGuid()
+        public void LeaveIntactNewGuid()
         {
-            Expression<Func<A, bool>> exp = a => a.Id == Guid.NewGuid();
-            var simplifiedExp = simplifier.Simplify(exp);
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(exp), ExpressionCompiler.DebugViewGetter(simplifiedExp));
+            Check((A a) => a.Id == Guid.NewGuid(), a => a.Id == Guid.NewGuid());
         }
 
         [Test]
-        public void TestAnonymousType()
+        public void AnonymousTypeInlineField()
         {
-            Expression<Func<A, bool>> exp = a => new{s = a.S, a.B.S}.S == "zzz";
-            var simplifiedExp = simplifier.Simplify(exp);
-            Expression<Func<A, bool>> expectedExp = a => a.B.S == "zzz";
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expectedExp), ExpressionCompiler.DebugViewGetter(simplifiedExp));
+            Check((A a) => new { s = a.S, a.B.S }.S == "zzz", a => a.B.S == "zzz");
         }
 
         public class A
@@ -176,10 +160,17 @@ namespace Mutators.Tests
             Two
         }
 
-        private void DoTest(Expression exp, string expected)
+        private void Check<TArg, TResult>(Expression<Func<TArg, TResult>> expression, string expectedSimplified)
         {
-            var simplifiedExp = simplifier.Simplify(exp);
-            Assert.AreEqual(expected, simplifiedExp.ToString());
+            var simplifiedExpression = simplifier.Simplify(expression);
+            Assert.AreEqual(expectedSimplified, simplifiedExpression.ToString());
+        }
+
+        private void Check<TArg, TResult>(Expression<Func<TArg, TResult>> expression, Expression<Func<TArg, TResult>> expectedSimplified)
+        {
+            var simplifiedExpression = simplifier.Simplify(expression);
+            Assert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly: false, distinguishEachAndCurrent: true),
+                "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
         }
 
         private ExpressionSimplifier simplifier;

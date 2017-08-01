@@ -4,6 +4,8 @@ using System.Linq.Expressions;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Visitors;
 
+using JetBrains.Annotations;
+
 using NUnit.Framework;
 
 namespace Mutators.Tests
@@ -113,7 +115,6 @@ namespace Mutators.Tests
             Check((A a) => x == 1 && a.S == "zzz", a => false);
         }
 
-
         [Test]
         public void LeaveIntactDynamic()
         {
@@ -135,7 +136,7 @@ namespace Mutators.Tests
         [Test]
         public void AnonymousTypeInlineField()
         {
-            Check((A a) => new { s = a.S, a.B.S }.S == "zzz", a => a.B.S == "zzz");
+            Check((A a) => new {s = a.S, a.B.S}.S == "zzz", a => a.B.S == "zzz");
         }
 
         public class A
@@ -160,16 +161,16 @@ namespace Mutators.Tests
             Two
         }
 
-        private void Check<TArg, TResult>(Expression<Func<TArg, TResult>> expression, string expectedSimplified)
+        private void Check<TArg, TResult>([NotNull] Expression<Func<TArg, TResult>> expression, [NotNull] string expectedSimplified)
         {
             var simplifiedExpression = simplifier.Simplify(expression);
             Assert.AreEqual(expectedSimplified, simplifiedExpression.ToString());
         }
 
-        private void Check<TArg, TResult>(Expression<Func<TArg, TResult>> expression, Expression<Func<TArg, TResult>> expectedSimplified)
+        private void Check<TArg, TResult>([NotNull] Expression<Func<TArg, TResult>> expression, [NotNull] Expression<Func<TArg, TResult>> expectedSimplified)
         {
             var simplifiedExpression = simplifier.Simplify(expression);
-            Assert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly: false, distinguishEachAndCurrent: true),
+            Assert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly : false, distinguishEachAndCurrent : true),
                 "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
         }
 

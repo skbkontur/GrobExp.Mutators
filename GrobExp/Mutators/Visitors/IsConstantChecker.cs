@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using JetBrains.Annotations;
+
 namespace GrobExp.Mutators.Visitors
 {
     public class IsConstantChecker : ExpressionVisitor
@@ -16,7 +18,7 @@ namespace GrobExp.Mutators.Visitors
         /// <item>It contains a call to <see cref="MutatorsHelperFunctions.Dynamic{T}"/></item>
         /// </list>
         /// </summary>
-        public bool IsConstant(Expression exp)
+        public bool IsConstant([NotNull] Expression exp)
         {
             Visit(exp);
             return isConstant;

@@ -11,6 +11,8 @@ using GrobExp.Compiler;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
+using JetBrains.Annotations;
+
 namespace GrobExp.Mutators
 {
     public static class ExpressionExtensions
@@ -186,7 +188,7 @@ namespace GrobExp.Mutators
         }
 
         /// <inheritdoc cref="IsConstantChecker.IsConstant"/>
-        public static bool IsConstant(this Expression exp)
+        public static bool IsConstant([NotNull] this Expression exp)
         {
             return new IsConstantChecker().IsConstant(exp);
         }

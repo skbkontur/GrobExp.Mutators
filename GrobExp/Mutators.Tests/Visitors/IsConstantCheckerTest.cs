@@ -5,6 +5,8 @@ using System.Linq.Expressions;
 
 using GrobExp.Mutators;
 
+using JetBrains.Annotations;
+
 using NUnit.Framework;
 
 namespace Mutators.Tests.Visitors
@@ -84,32 +86,32 @@ namespace Mutators.Tests.Visitors
             IsNotConstant(() => new List<string>().Dynamic());
         }
 
-        private void IsConstant<T>(Expression<Func<T>> expression)
+        private void IsConstant<T>([NotNull] Expression<Func<T>> expression)
         {
             IsConstantExpression(expression);
         }
 
-        private void IsNotConstant<T>(Expression<Func<T>> expression)
+        private void IsNotConstant<T>([NotNull] Expression<Func<T>> expression)
         {
             IsNotConstantExpression(expression);
         }
 
-        private void IsConstant<TArg, T>(Expression<Func<TArg, T>> expression)
+        private void IsConstant<TArg, T>([NotNull] Expression<Func<TArg, T>> expression)
         {
             IsConstantExpression(expression);
         }
 
-        private void IsNotConstant<TArg, T>(Expression<Func<TArg, T>> expression)
+        private void IsNotConstant<TArg, T>([NotNull] Expression<Func<TArg, T>> expression)
         {
             IsNotConstantExpression(expression);
         }
 
-        private void IsConstantExpression(Expression expression)
+        private void IsConstantExpression([NotNull] Expression expression)
         {
             Assert.True(expression.IsConstant(), "Expression '{0}' should be constant", expression);
         }
 
-        private void IsNotConstantExpression(Expression expression)
+        private void IsNotConstantExpression([NotNull] Expression expression)
         {
             Assert.False(expression.IsConstant(), "Expression '{0}' should not be constant", expression);
         }

@@ -4,6 +4,8 @@ using System.Linq.Expressions;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Visitors;
 
+using JetBrains.Annotations;
+
 using NUnit.Framework;
 
 namespace Mutators.Tests.Visitors
@@ -72,8 +74,8 @@ namespace Mutators.Tests.Visitors
         }
 
         private void Check<TArg1, TArg2, TResult>(
-            Expression<Func<TArg1, TArg2, TResult>> rawExpression,
-            Expression<Func<TArg1, TArg2, TResult>> expectedExpression)
+            [NotNull] Expression<Func<TArg1, TArg2, TResult>> rawExpression,
+            [NotNull] Expression<Func<TArg1, TArg2, TResult>> expectedExpression)
         {
             var actualExpression = new IfNotNullProcessor().Visit(rawExpression);
             Assert.True(ExpressionEquivalenceChecker.Equivalent(actualExpression, expectedExpression, strictly : false, distinguishEachAndCurrent : true),

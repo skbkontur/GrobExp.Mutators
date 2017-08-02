@@ -63,6 +63,8 @@
     <Compile Include="AutoEvaluators\NullifyIfConfiguration.cs" />
     <Compile Include="ExpressionBuilder.cs" />
     <Compile Include="IsLinkOfChainChecker.cs" />
+    <Compile Include="ModelConfiguration\ModelConfigurationEdge.cs" />
+    <Compile Include="ModelConfiguration\MutatorWithPath.cs" />
     <Compile Include="MultipleMutatorsTree.cs" />
     <Compile Include="ConfiguratorHelper.cs" />
     <Compile Include="ConverterCollection.cs" />

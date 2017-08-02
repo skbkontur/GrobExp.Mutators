@@ -188,11 +188,11 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public void AddMutator(MutatorConfiguration mutator)
         {
-            if(IsUncoditionalSetter(mutator))
+            if(mutator.IsUncoditionalSetter())
             {
                 for(var i = 0; i < mutators.Count; ++i)
                 {
-                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(Path, mutators[i].Key, false, false))
+                    if(mutators[i].Value.IsUncoditionalSetter() && ExpressionEquivalenceChecker.Equivalent(Path, mutators[i].Key, false, false))
                     {
                         mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(Path, mutator);
                         return;
@@ -204,11 +204,11 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public void AddMutator(Expression path, MutatorConfiguration mutator)
         {
-            if(IsUncoditionalSetter(mutator))
+            if(mutator.IsUncoditionalSetter())
             {
                 for(var i = 0; i < mutators.Count; ++i)
                 {
-                    if(IsUncoditionalSetter(mutators[i].Value) && ExpressionEquivalenceChecker.Equivalent(path, mutators[i].Key, false, false))
+                    if(mutators[i].Value.IsUncoditionalSetter() && ExpressionEquivalenceChecker.Equivalent(path, mutators[i].Key, false, false))
                     {
                         mutators[i] = new KeyValuePair<Expression, MutatorConfiguration>(path, mutator);
                         return;
@@ -293,12 +293,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
         public const int PriorityShift = 1000;
-
-        private static bool IsUncoditionalSetter(MutatorConfiguration mutator)
-        {
-            return mutator is EqualsToConfiguration && !(mutator is EqualsToIfConfiguration);
-        }
-
+        
         private static bool Equivalent(Expression first, Expression second)
         {
             if(first.NodeType != second.NodeType)

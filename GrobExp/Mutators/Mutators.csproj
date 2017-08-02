@@ -55,6 +55,7 @@
     <Compile Include="Aggregators\ConditionalAggregatorConfiguration.cs" />
     <Compile Include="Aggregators\SetSourceArrayConfiguration.cs" />
     <Compile Include="AutoEvaluators\AutoEvaluatorConfiguration.cs" />
+    <Compile Include="AutoEvaluators\EqualsToConfigurationExtensions.cs" />
     <Compile Include="AutoEvaluators\SetArrayLengthConfiguration.cs" />
     <Compile Include="AutoEvaluators\EqualsToIfConfiguration.cs" />
     <Compile Include="Aggregators\DisableIfConfiguration.cs" />

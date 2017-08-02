@@ -69,6 +69,8 @@
     <Compile Include="ModelConfiguration\ModelConfigurationNodeFormatter.cs" />
     <Compile Include="ModelConfiguration\MutatorWithPath.cs" />
     <Compile Include="ModelConfiguration\PathSimplifier.cs" />
+    <Compile Include="ModelConfiguration\LoopInvariantFatExpressionsExtractor.cs" />
+    <Compile Include="ModelConfiguration\TreeMutatorBuilder.cs" />
     <Compile Include="MultipleMutatorsTree.cs" />
     <Compile Include="ConfiguratorHelper.cs" />
     <Compile Include="ConverterCollection.cs" />

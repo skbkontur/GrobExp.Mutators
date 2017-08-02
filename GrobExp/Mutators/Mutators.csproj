@@ -117,7 +117,7 @@
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
     <Compile Include="IPathFormatter.cs" />
-    <Compile Include="ModelConfigurationNode.cs" />
+    <Compile Include="ModelConfiguration\ModelConfigurationNode.cs" />
     <Compile Include="MultiLanguages\MultiLanguagePathText.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextBase.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextBaseWithPath.cs" />

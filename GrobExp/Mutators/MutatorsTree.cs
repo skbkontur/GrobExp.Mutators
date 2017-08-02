@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators

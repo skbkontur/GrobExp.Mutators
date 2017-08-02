@@ -4,6 +4,7 @@ using System.Linq;
 using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Validators.Texts;
 

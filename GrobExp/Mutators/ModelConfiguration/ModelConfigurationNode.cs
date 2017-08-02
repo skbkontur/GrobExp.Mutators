@@ -16,7 +16,7 @@ using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
 
-namespace GrobExp.Mutators
+namespace GrobExp.Mutators.ModelConfiguration
 {
     public class MutatorWithPath
     {

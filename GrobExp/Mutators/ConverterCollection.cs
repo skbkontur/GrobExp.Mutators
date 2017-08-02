@@ -10,6 +10,7 @@ using GrEmit.Utils;
 using GrobExp.Compiler;
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.CustomFields;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 

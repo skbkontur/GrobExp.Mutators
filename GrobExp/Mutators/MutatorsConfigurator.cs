@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Visitors;
 

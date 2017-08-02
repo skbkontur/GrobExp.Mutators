@@ -92,7 +92,7 @@ namespace GrobExp.Mutators
 
         public override string ToString()
         {
-            return ModelConfigurationNode.PrintAllMutators(GetAllMutatorsWithPaths());
+            return GetAllMutatorsWithPaths().ToPrettyString();
         }
 
         public MutatorWithPath[] GetAllMutatorsWithPaths()

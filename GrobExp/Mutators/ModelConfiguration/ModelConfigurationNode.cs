@@ -220,27 +220,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public override string ToString()
         {
-            var allMutators = new List<MutatorWithPath>();
-            GetMutatorsWithPath(allMutators);
-            return PrintAllMutators(allMutators);
-        }
-
-        public static string PrintAllMutators(IEnumerable<MutatorWithPath> mutators)
-        {
-            var result = new StringBuilder();
-            foreach(var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.PathToNode, false)))
-            {
-                result.AppendLine(group.Key.Expression.ToString());
-                foreach(var pair in group)
-                {
-                    result.Append("    PATH: ");
-                    result.AppendLine(pair.PathToMutator.ToString());
-                    result.Append("    MUTATOR: ");
-                    result.AppendLine(pair.Mutator.ToString());
-                    result.AppendLine();
-                }
-            }
-            return result.ToString();
+            return this.ToPrettyString();
         }
 
         public MutatorConfiguration[] GetMutators()
@@ -256,13 +236,6 @@ namespace GrobExp.Mutators.ModelConfiguration
                     PathToMutator = mutator.Key,
                     Mutator = mutator.Value
                 }).ToArray();
-        }
-
-        public void GetMutatorsWithPath(List<MutatorWithPath> result)
-        {
-            result.AddRange(GetMutatorsWithPath());
-            foreach(var child in Children)
-                child.GetMutatorsWithPath(result);
         }
 
         public void ExtractValidationsFromConverters(ModelConfigurationNode validationsTree)

@@ -67,6 +67,7 @@
     <Compile Include="ModelConfiguration\ExpressionAliaser.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationEdge.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeFormatter.cs" />
+    <Compile Include="ModelConfiguration\ModelConfigurationNodeMigration.cs" />
     <Compile Include="ModelConfiguration\MutatorWithPath.cs" />
     <Compile Include="ModelConfiguration\PathSimplifier.cs" />
     <Compile Include="ModelConfiguration\LoopInvariantFatExpressionsExtractor.cs" />

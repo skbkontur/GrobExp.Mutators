@@ -53,36 +53,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             MigrateTree(to, destTree, convertationTree, convertationTree, Parent == null ? Path : Expression.Parameter(NodeType, NodeType.Name), false);
         }
 
-        public LambdaExpression BuildStaticNodeValidator()
-        {
-            var parameter = Parent == null ? (ParameterExpression)Path : Expression.Parameter(NodeType, NodeType.Name);
-            var result = Expression.Variable(typeof(List<ValidationResult>), "result");
-            Expression initResult = Expression.Assign(result, Expression.New(listValidationResultConstructor));
-            var validationResults = new List<Expression> {initResult};
-            foreach(var mutator in mutators.Where(mutator => mutator.Value is ValidatorConfiguration))
-            {
-                var validator = (ValidatorConfiguration)mutator.Value;
-                var ok = true;
-                foreach(var dependency in validator.Dependencies ?? new LambdaExpression[0])
-                {
-                    ModelConfigurationNode child;
-                    if(!Root.Traverse(dependency.Body, this, out child, false) || child != this)
-                    {
-                        ok = false;
-                        break;
-                    }
-                }
-                if(ok)
-                {
-                    var current = validator.Apply(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, Path)});
-                    if(current != null)
-                        validationResults.Add(Expression.Call(result, listAddValidationResultMethod, current));
-                }
-            }
-            validationResults.Add(result);
-            Expression body = Expression.Block(new[] {result}, validationResults);
-            return Expression.Lambda(body, parameter);
-        }
+
 
 
         public ModelConfigurationNode GotoEachArrayElement(bool create)
@@ -732,13 +703,6 @@ namespace GrobExp.Mutators.ModelConfiguration
         internal ModelConfigurationNode Parent { get; private set; }
         internal ModelConfigurationEdge Edge { get; private set; }
         internal readonly List<KeyValuePair<Expression, MutatorConfiguration>> mutators;
-
-        private static readonly MethodInfo listAddValidationResultMethod = ((MethodCallExpression)((Expression<Action<List<ValidationResult>>>)(list => list.Add(null))).Body).Method;
-        private static readonly ConstructorInfo listValidationResultConstructor = ((NewExpression)((Expression<Func<List<ValidationResult>>>)(() => new List<ValidationResult>())).Body).Constructor;
-        
-
         internal readonly Dictionary<ModelConfigurationEdge, ModelConfigurationNode> children = new Dictionary<ModelConfigurationEdge, ModelConfigurationNode>();
-
-        
     }
 }

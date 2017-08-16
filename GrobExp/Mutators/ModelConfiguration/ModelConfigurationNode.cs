@@ -29,17 +29,13 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public Expression GetAlienArray()
         {
-            var arrays = GetArrays();
+            var arrays = this.GetArrays();
             Expression result;
             if(!arrays.TryGetValue(RootType, out result))
                 return null;
             return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, Path, false, true) ? null : result;
         }
 
-        public Dictionary<Type, Expression> GetArrays()
-        {
-            return GetArrays(Path);
-        }
 
         public void AddMutatorSmart(LambdaExpression path, MutatorConfiguration mutator)
         {
@@ -155,62 +151,6 @@ namespace GrobExp.Mutators.ModelConfiguration
             }
             foreach(var child in Children)
                 child.ExtractValidationsFromConvertersInternal(validationsTree, performer);
-        }
-
-        /// <summary>
-        ///     Runs <see cref="ArraysExtractor" /> for all mutators in all nodes in the sub-tree and
-        ///     saves to <paramref name="arrays" /> all expressions with level (count of Each() and Current() calls)
-        ///     matching the level of <paramref name="path" />.
-        /// </summary>
-        private void GetArrays(Expression path, Dictionary<Type, List<Expression>> arrays)
-        {
-            if(mutators != null && mutators.Count > 0)
-            {
-                var shards = path.SmashToSmithereens();
-                var level = 1;
-                foreach(var shard in shards)
-                {
-                    if(shard.NodeType == ExpressionType.Call && ((MethodCallExpression)shard).Method.IsEachMethod())
-                        ++level;
-                }
-
-                var list = new List<Dictionary<Type, List<Expression>>>();
-                var arraysExtractor = new ArraysExtractor(list);
-
-                foreach(var mutator in mutators)
-                    mutator.Value.GetArrays(arraysExtractor);
-
-                if(list.Count > level)
-                {
-                    var dict = list[level];
-                    foreach(var pair in dict)
-                    {
-                        List<Expression> lizd;
-                        if(!arrays.TryGetValue(pair.Key, out lizd))
-                            arrays.Add(pair.Key, lizd = new List<Expression>());
-                        lizd.AddRange(pair.Value);
-                    }
-                }
-            }
-            foreach(var child in children.Values)
-                child.GetArrays(path, arrays);
-        }
-
-        private Dictionary<Type, Expression> GetArrays(Expression path)
-        {
-            var arrays = new Dictionary<Type, List<Expression>>();
-            GetArrays(path, arrays);
-            return arrays
-                .Where(pair => pair.Value.Count > 0)
-                .ToDictionary(pair => pair.Key,
-                              pair => pair.Value
-                                          .GroupBy(expression => new ExpressionWrapper(expression, strictly : false))
-                                          .Select(grouping =>
-                                              {
-                                                  var exp = grouping.First();
-                                                  return exp.NodeType == ExpressionType.Call ? ((MethodCallExpression)exp).Arguments[0] : exp;
-                                              })
-                                          .FirstOrDefault());
         }
 
         internal ModelConfigurationNode Root { get; private set; }

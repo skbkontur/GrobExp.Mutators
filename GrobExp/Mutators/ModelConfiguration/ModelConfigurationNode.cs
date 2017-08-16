@@ -36,7 +36,6 @@ namespace GrobExp.Mutators.ModelConfiguration
             return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, Path, false, true) ? null : result;
         }
 
-
         public void AddMutatorSmart(LambdaExpression path, MutatorConfiguration mutator)
         {
             path = (LambdaExpression)path.Simplify();
@@ -98,12 +97,6 @@ namespace GrobExp.Mutators.ModelConfiguration
                 }).ToArray();
         }
 
-        public void ExtractValidationsFromConverters(ModelConfigurationNode validationsTree)
-        {
-            var performer = new CompositionPerformer(RootType, validationsTree.RootType, this);
-            ExtractValidationsFromConvertersInternal(validationsTree, performer);
-        }
-
         public void FindSubNodes(List<ModelConfigurationNode> result)
         {
             if(children.Count == 0 && mutators.Count > 0)
@@ -132,27 +125,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         public IEnumerable<ModelConfigurationNode> Children { get { return children.Values.Cast<ModelConfigurationNode>(); } }
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
-
-        private void ExtractValidationsFromConvertersInternal(ModelConfigurationNode validationsTree, CompositionPerformer performer)
-        {
-            foreach(var mutator in mutators)
-            {
-                var equalsToConfiguration = mutator.Value as EqualsToConfiguration;
-                if(equalsToConfiguration != null && equalsToConfiguration.Validator != null)
-                {
-                    var path = equalsToConfiguration.Validator.PathToNode;
-                    var primaryDependencies = path.ExtractPrimaryDependencies().Select(lambda => lambda.Body);
-                    var commonPath = primaryDependencies.FindLCP();
-                    var node = commonPath == null ? validationsTree : validationsTree.Traverse(commonPath, true);
-                    var mutatedValidator = equalsToConfiguration.Validator.Mutate(RootType, commonPath, performer);
-                    if(mutatedValidator != null)
-                        node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(equalsToConfiguration.Validator.PathToValue.Body, mutatedValidator));
-                }
-            }
-            foreach(var child in Children)
-                child.ExtractValidationsFromConvertersInternal(validationsTree, performer);
-        }
-
+        
         internal ModelConfigurationNode Root { get; private set; }
         internal ModelConfigurationNode Parent { get; private set; }
         internal ModelConfigurationEdge Edge { get; private set; }

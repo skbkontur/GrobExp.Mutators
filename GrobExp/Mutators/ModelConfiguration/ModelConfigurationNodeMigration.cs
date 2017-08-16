@@ -26,7 +26,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         private static void MigrateTree(this ModelConfigurationNode node, Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationRoot, ModelConfigurationNode convertationNode, Expression path, bool zzz)
         {
             node.MigrateNode(to, destTree, convertationRoot, path);
-            if(!zzz && convertationNode != null && convertationNode.mutators.Any(pair => pair.Value is EqualsToConfiguration))
+            if(!zzz && convertationNode != null && convertationNode.Mutators.Any(pair => pair.Value is EqualsToConfiguration))
                 zzz = true;
             foreach(var entry in node.children)
             {
@@ -91,7 +91,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             var parameters = new List<PathPrefix> {new PathPrefix(path, path.ExtractParameters().Single())};
             var abstractPathResolver = new AbstractPathResolver(parameters, false);
 
-            foreach(var mutator in node.mutators)
+            foreach(var mutator in node.Mutators)
             {
                 var mutatedMutator = mutator.Value.Mutate(to, path, performer);
                 if(mutatedMutator == null)

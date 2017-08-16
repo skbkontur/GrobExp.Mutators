@@ -42,7 +42,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         /// </summary>
         private static void GetArrays(this ModelConfigurationNode node, Expression path, Dictionary<Type, List<Expression>> arrays)
         {
-            if(node.mutators != null && node.mutators.Count > 0)
+            if(node.Mutators != null && node.Mutators.Count > 0)
             {
                 var shards = path.SmashToSmithereens();
                 var level = 1;
@@ -55,7 +55,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 var list = new List<Dictionary<Type, List<Expression>>>();
                 var arraysExtractor = new ArraysExtractor(list);
 
-                foreach(var mutator in node.mutators)
+                foreach(var mutator in node.Mutators)
                     mutator.Value.GetArrays(arraysExtractor);
 
                 if(list.Count > level)

@@ -75,6 +75,7 @@
     <Compile Include="ModelConfiguration\ModelConfigurationNodeEnumeration.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeFormatter.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeMigration.cs" />
+    <Compile Include="ModelConfiguration\ModelConfigurationNodeModification.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeTraversal.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeValidationsExtractor.cs" />
     <Compile Include="ModelConfiguration\MutatorWithPath.cs" />

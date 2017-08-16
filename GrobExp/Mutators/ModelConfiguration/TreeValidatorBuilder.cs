@@ -89,9 +89,9 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static void GetMutators(this ModelConfigurationNode node, Dictionary<ExpressionWrapper, List<MutatorConfiguration>> result)
         {
-            if(node.mutators != null)
+            if(node.Mutators != null)
             {
-                foreach(var pair in node.mutators)
+                foreach(var pair in node.Mutators)
                 {
                     var key = new ExpressionWrapper(pair.Key, false);
                     List<MutatorConfiguration> list;

@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             var result = Expression.Variable(typeof(List<ValidationResult>), "result");
             Expression initResult = Expression.Assign(result, Expression.New(listValidationResultConstructor));
             var validationResults = new List<Expression> {initResult};
-            foreach(var mutator in node.mutators.Where(mutator => mutator.Value is ValidatorConfiguration))
+            foreach(var mutator in node.Mutators.Where(mutator => mutator.Value is ValidatorConfiguration))
             {
                 var validator = (ValidatorConfiguration)mutator.Value;
                 var ok = true;

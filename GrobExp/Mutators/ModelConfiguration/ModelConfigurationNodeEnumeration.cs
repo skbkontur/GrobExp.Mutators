@@ -8,12 +8,12 @@ namespace GrobExp.Mutators.ModelConfiguration
     {
         public static MutatorConfiguration[] GetMutators(this ModelConfigurationNode node)
         {
-            return node.mutators.Select(pair => pair.Value).ToArray();
+            return node.Mutators.Select(pair => pair.Value).ToArray();
         }
 
         public static MutatorWithPath[] GetMutatorsWithPath(this ModelConfigurationNode node)
         {
-            return node.mutators.Select(mutator => new MutatorWithPath
+            return node.Mutators.Select(mutator => new MutatorWithPath
             {
                 PathToNode = node.Path,
                 PathToMutator = mutator.Key,
@@ -23,7 +23,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public static void FindSubNodes(this ModelConfigurationNode node, List<ModelConfigurationNode> result)
         {
-            if(node.children.Count == 0 && node.mutators.Count > 0)
+            if(node.children.Count == 0 && node.Mutators.Count > 0)
                 result.Add(node);
             foreach(var child in node.Children)
                 child.FindSubNodes(result);

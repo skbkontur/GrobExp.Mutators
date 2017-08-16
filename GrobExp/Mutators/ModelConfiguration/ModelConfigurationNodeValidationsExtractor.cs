@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static void ExtractValidationsFromConvertersInternal(this ModelConfigurationNode node, ModelConfigurationNode validationsTree, CompositionPerformer performer)
         {
-            foreach(var mutator in node.mutators)
+            foreach(var mutator in node.Mutators)
             {
                 var equalsToConfiguration = mutator.Value as EqualsToConfiguration;
                 if(equalsToConfiguration != null && equalsToConfiguration.Validator != null)

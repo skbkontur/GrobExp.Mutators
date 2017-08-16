@@ -9,6 +9,15 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     public static class ModelConfigurationNodeArraysExtraction
     {
+        public static Expression GetAlienArray(this ModelConfigurationNode node)
+        {
+            var arrays = node.GetArrays();
+            Expression result;
+            if(!arrays.TryGetValue(node.RootType, out result))
+                return null;
+            return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, node.Path, false, true) ? null : result;
+        }
+
         public static Dictionary<Type, Expression> GetArrays(this ModelConfigurationNode node)
         {
             var arrays = new Dictionary<Type, List<Expression>>();
@@ -17,7 +26,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 .Where(pair => pair.Value.Count > 0)
                 .ToDictionary(pair => pair.Key,
                     pair => pair.Value
-                        .GroupBy(expression => new ExpressionWrapper(expression, strictly: false))
+                        .GroupBy(expression => new ExpressionWrapper(expression, strictly : false))
                         .Select(grouping =>
                         {
                             var exp = grouping.First();
@@ -33,35 +42,35 @@ namespace GrobExp.Mutators.ModelConfiguration
         /// </summary>
         private static void GetArrays(this ModelConfigurationNode node, Expression path, Dictionary<Type, List<Expression>> arrays)
         {
-            if (node.mutators != null && node.mutators.Count > 0)
+            if(node.mutators != null && node.mutators.Count > 0)
             {
                 var shards = path.SmashToSmithereens();
                 var level = 1;
-                foreach (var shard in shards)
+                foreach(var shard in shards)
                 {
-                    if (shard.NodeType == ExpressionType.Call && ((MethodCallExpression)shard).Method.IsEachMethod())
+                    if(shard.NodeType == ExpressionType.Call && ((MethodCallExpression)shard).Method.IsEachMethod())
                         ++level;
                 }
 
                 var list = new List<Dictionary<Type, List<Expression>>>();
                 var arraysExtractor = new ArraysExtractor(list);
 
-                foreach (var mutator in node.mutators)
+                foreach(var mutator in node.mutators)
                     mutator.Value.GetArrays(arraysExtractor);
 
-                if (list.Count > level)
+                if(list.Count > level)
                 {
                     var dict = list[level];
-                    foreach (var pair in dict)
+                    foreach(var pair in dict)
                     {
                         List<Expression> lizd;
-                        if (!arrays.TryGetValue(pair.Key, out lizd))
+                        if(!arrays.TryGetValue(pair.Key, out lizd))
                             arrays.Add(pair.Key, lizd = new List<Expression>());
                         lizd.AddRange(pair.Value);
                     }
                 }
             }
-            foreach (var child in node.children.Values)
+            foreach(var child in node.children.Values)
                 child.GetArrays(path, arrays);
         }
     }

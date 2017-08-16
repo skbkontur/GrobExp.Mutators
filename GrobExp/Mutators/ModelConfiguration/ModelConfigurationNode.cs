@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Visitors;
@@ -25,15 +24,6 @@ namespace GrobExp.Mutators.ModelConfiguration
         public static ModelConfigurationNode CreateRoot(Type type)
         {
             return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type, type.Name));
-        }
-
-        public Expression GetAlienArray()
-        {
-            var arrays = this.GetArrays();
-            Expression result;
-            if(!arrays.TryGetValue(RootType, out result))
-                return null;
-            return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, Path, false, true) ? null : result;
         }
 
         public void AddMutatorSmart(LambdaExpression path, MutatorConfiguration mutator)
@@ -82,50 +72,11 @@ namespace GrobExp.Mutators.ModelConfiguration
             return this.ToPrettyString();
         }
 
-        public MutatorConfiguration[] GetMutators()
-        {
-            return mutators.Select(pair => pair.Value).ToArray();
-        }
-
-        public MutatorWithPath[] GetMutatorsWithPath()
-        {
-            return mutators.Select(mutator => new MutatorWithPath
-                {
-                    PathToNode = Path,
-                    PathToMutator = mutator.Key,
-                    Mutator = mutator.Value
-                }).ToArray();
-        }
-
-        public void FindSubNodes(List<ModelConfigurationNode> result)
-        {
-            if(children.Count == 0 && mutators.Count > 0)
-                result.Add(this);
-            foreach(var child in Children)
-                child.FindSubNodes(result);
-        }
-
-        public ModelConfigurationNode FindKeyLeaf()
-        {
-            foreach(var entry in children)
-            {
-                var edge = entry.Key;
-                var child = entry.Value;
-                var property = edge.Value as PropertyInfo;
-                if(property != null && property.GetCustomAttributes(typeof(KeyLeafAttribute), false).Any() && child.children.Count == 0)
-                    return child;
-                var result = child.FindKeyLeaf();
-                if(result != null)
-                    return result;
-            }
-            return null;
-        }
-
         public Expression Path { get; private set; }
         public IEnumerable<ModelConfigurationNode> Children { get { return children.Values.Cast<ModelConfigurationNode>(); } }
         public Type NodeType { get; private set; }
         public Type RootType { get; set; }
-        
+
         internal ModelConfigurationNode Root { get; private set; }
         internal ModelConfigurationNode Parent { get; private set; }
         internal ModelConfigurationEdge Edge { get; private set; }

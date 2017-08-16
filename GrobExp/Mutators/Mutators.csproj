@@ -66,6 +66,7 @@
     <Compile Include="IsLinkOfChainChecker.cs" />
     <Compile Include="ModelConfiguration\ExpressionAliaser.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationEdge.cs" />
+    <Compile Include="ModelConfiguration\ModelConfigurationNodeArraysExtraction.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeFormatter.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeMigration.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeTraversal.cs" />

@@ -406,6 +406,14 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestSelectWithExternalConverter()
+        {
+            Func<C, E> converter = c => new E { F = c.S };
+            Expression<Func<A, string>> expression = a => a.B.C.Select(c => converter(c)).FirstOrDefault().F;
+            DoTest(expression, a => a.B.C);
+        }
+
+        [Test]
         public void TestSelectMany1()
         {
             Expression<Func<A, object>> expression = a => a.B.C.Where(c => c.D.S == "zzz").SelectMany(c => c.D.E).Where(e => e.F == "qxx").Sum(e => e.X);

@@ -78,7 +78,7 @@
     <Compile Include="ModelConfiguration\ModelConfigurationNodeModification.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeTraversal.cs" />
     <Compile Include="ModelConfiguration\ModelConfigurationNodeValidationsExtractor.cs" />
-    <Compile Include="ModelConfiguration\MutatorWithPath.cs" />
+    <Compile Include="MutatorWithPath.cs" />
     <Compile Include="ModelConfiguration\PathSimplifier.cs" />
     <Compile Include="ModelConfiguration\LoopInvariantFatExpressionsExtractor.cs" />
     <Compile Include="ModelConfiguration\StaticNodeValidatorBuilder.cs" />
@@ -133,7 +133,7 @@
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />
     <Compile Include="IPathFormatter.cs" />
-    <Compile Include="ModelConfiguration\ModelConfigurationNode.cs" />
+    <Compile Include="ModelConfigurationNode.cs" />
     <Compile Include="MultiLanguages\MultiLanguagePathText.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextBase.cs" />
     <Compile Include="MultiLanguages\MultiLanguageTextBaseWithPath.cs" />

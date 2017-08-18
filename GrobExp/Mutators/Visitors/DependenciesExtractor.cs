@@ -374,7 +374,8 @@ namespace GrobExp.Mutators.Visitors
             while(index < smithereens.Length && current.Prefix != null)
             {
                 var shard = smithereens[index];
-                switch(shard.NodeType)
+                var prevPrefix = current.Prefix;
+                switch (shard.NodeType)
                 {
                 case ExpressionType.Call:
                     {
@@ -422,6 +423,11 @@ namespace GrobExp.Mutators.Visitors
                     break;
                 default:
                     throw new InvalidOperationException("Node type '" + shard.NodeType + "' is not supported");
+                }
+                if(current.Prefix == null)
+                {
+                    current.Prefix = prevPrefix;
+                    break;
                 }
                 ++index;
             }
@@ -547,6 +553,8 @@ namespace GrobExp.Mutators.Visitors
 
             var primarySubDependency = primarySubDependencies.SingleOrDefault();
             if(primarySubDependency == null)
+                return Expression.NewArrayInit(typeof(object));
+            if(!selector.ReturnType.IsAssignableFrom(primarySubDependency.ReturnType))
                 return null;
 
             if(!(primarySubDependency.Body is NewExpression))

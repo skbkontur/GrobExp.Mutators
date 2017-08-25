@@ -5,12 +5,13 @@ namespace GrobExp.Mutators.MutatorsRecording
 {
     public class RecordNode
     {
-        public RecordNode(string name, string parentFullName)
+        public RecordNode(string name, string parentFullName, bool isExcludedFromCovreage = false)
         {
             Name = name;
             Records = new List<RecordNode>();
             CompiledCount = 1;
             FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
+            IsExcludedFromCoverage = isExcludedFromCovreage;
         }
 
         public List<RecordNode> Records { get; private set; }
@@ -18,6 +19,7 @@ namespace GrobExp.Mutators.MutatorsRecording
         public int ExecutedCount { get; private set; }
         public string Name { get; private set; }
         public string FullName { get; private set; }
+        public bool IsExcludedFromCoverage { get; set; }
 
         private bool ContainsRecord(string recordName)
         {
@@ -29,7 +31,7 @@ namespace GrobExp.Mutators.MutatorsRecording
             return Records.FirstOrDefault(record => record.Name == recordName);
         }
 
-        public void RecordCompilingExpression(List<string> pathComponents, string value)
+        public void RecordCompilingExpression(List<string> pathComponents, string value, bool isExcludedFromCoverage = false)
         {
             CompiledCount++;
 
@@ -39,21 +41,21 @@ namespace GrobExp.Mutators.MutatorsRecording
                 node = GetRecordByName(recordName);
             else
             {
-                node = new RecordNode(recordName, FullName);
+                node = new RecordNode(recordName, FullName, isExcludedFromCoverage);
                 Records.Add(node);
             }
 
             if(pathComponents.Count == 1)
-                node.RecordCompilingExpression(value);
+                node.RecordCompilingExpression(value, isExcludedFromCoverage);
             else
-                node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value);
+                node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
         }
 
-        private void RecordCompilingExpression(string value)
+        private void RecordCompilingExpression(string value, bool isExcludedFromCoverage = false)
         {
             CompiledCount++;
             if (!ContainsRecord(value))
-                Records.Add(new RecordNode(value, FullName));
+                Records.Add(new RecordNode(value, FullName, isExcludedFromCoverage));
         }
 
         private void RecordExecutingExpression(string value)

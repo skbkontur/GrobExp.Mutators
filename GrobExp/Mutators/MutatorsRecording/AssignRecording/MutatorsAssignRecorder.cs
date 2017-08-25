@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {
-        public MutatorsAssignRecorder()
+        public MutatorsAssignRecorder(Type[] excludedFromCoverage)
         {
             recordsCollection = new AssignRecordCollection();
+            this.excludedFromCoverage = excludedFromCoverage;
         }
 
         public List<RecordNode> GetRecords()
@@ -21,14 +23,18 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             instance = null;
         }
 
-        public static MutatorsAssignRecorder StartRecording()
+        public static MutatorsAssignRecorder StartRecording(Type[] excludedFromCoverage)
         {
-            return instance ?? (instance = new MutatorsAssignRecorder());
+            return instance ?? (instance = new MutatorsAssignRecorder(excludedFromCoverage ?? new Type[0]));
         }
 
         public static void RecordCompilingExpression(AssignLogInfo toLog)
         {
-            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            var chainsOfPath = toLog.Path.SmashToSmithereens().Select(x => x.Type).ToArray();
+            var chainsOfValue = toLog.Value.SmashToSmithereens().Select(x => x.Type).ToArray();
+            var isExcluded = instance.excludedFromCoverage.Any(x => chainsOfPath.Contains(x) || chainsOfValue.Contains(x));
+
+            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
         }
 
         public static void RecordExecutingExpression(AssignLogInfo toLog)
@@ -66,6 +72,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
-        private readonly AssignRecordCollection recordsCollection;  
+        private readonly AssignRecordCollection recordsCollection;
+        private readonly Type[] excludedFromCoverage;
     }
 }

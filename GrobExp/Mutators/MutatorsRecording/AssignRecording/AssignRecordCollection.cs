@@ -23,10 +23,10 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             currentConverterRecord = null;
         }
 
-        public void RecordCompilingExpression(string path, string value)
+        public void RecordCompilingExpression(string path, string value, bool isExcludedFromCoverage = false)
         {
             if(currentConverterRecord != null)
-                currentConverterRecord.RecordCompilingExpression(path.Split('.').ToList(), value);
+                currentConverterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public void RecordExecutingExpression(string path, string value)

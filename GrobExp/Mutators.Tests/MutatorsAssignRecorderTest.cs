@@ -316,6 +316,48 @@ namespace Mutators.Tests
             DoTestSetNull(converterCollection, source, 3, 2);
         }
 
+        [Test]
+        [Description("Исключение из покрытия. " +
+                     "Исключаются конвертации полей заданного типа, включая дочерние поля. " +
+                     "Если поле заданного типа встретилось в конвертации в составе условия, конвертация не исключается")]
+        public void TestExcludeTypesFromCoverage()
+        {
+            var recorder = AssignRecorderInitializer.StartAssignRecorder(new[] { typeof(TestDataSource) });
+            var converterCollection = new TestConverterCollection<TestComplexDataSource, TestComplexDataDest>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.FieldC.A).Set(x => x.FieldA.B);
+                    configurator.Target(x => x.FieldC.B).Set(x => x.FieldA.A);
+                    configurator.Target(x => x.FieldD.StrB).Set(x => x.FieldB.StrA);
+                    configurator.Target(x => x.FieldD.StrA).Set(x => x.FieldB.StrB);
+                    configurator.Target(x => x.FieldY).If(x => x.FieldA.A > 10).Set(x => x.FieldX);
+                });
+            var source = new TestComplexDataSource
+            {
+                FieldA = new TestDataSource(),
+                FieldB = new TestDataSourceNullable
+                    {
+                        StrA = "a",
+                        StrB = "b"
+                    },
+                FieldX = "aba"
+            };
+            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
+            converter(source);
+            recorder.Stop();
+
+            var records = recorder.GetRecords()[0].Records[0].Records;
+            Assert.IsTrue(records[0].IsExcludedFromCoverage);
+            Assert.IsTrue(records[0].Records[0].IsExcludedFromCoverage);
+            Assert.IsTrue(records[0].Records[1].IsExcludedFromCoverage);
+
+            Assert.IsFalse(records[1].IsExcludedFromCoverage);
+            Assert.IsFalse(records[1].Records[0].IsExcludedFromCoverage);
+            Assert.IsFalse(records[1].Records[1].IsExcludedFromCoverage);
+
+            Assert.IsFalse(records[2].IsExcludedFromCoverage);
+        }
+
         private static void DoTestSetNull<TSource, TDest>(TestConverterCollection<TSource, TDest> converterCollection, TSource source, int expectedCompiledCount, int expectedExecutedCount) where TDest : new()
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
@@ -386,5 +428,19 @@ namespace Mutators.Tests
     {
         Black, 
         White
+    }
+
+    public class TestComplexDataSource
+    {
+        public TestDataSource FieldA { get; set; }
+        public TestDataSourceNullable FieldB { get; set; }
+        public string FieldX { get; set; }
+    }
+
+    public class TestComplexDataDest
+    {
+        public TestDataSource FieldC { get; set; }
+        public TestDataSourceNullable FieldD { get; set; }
+        public string FieldY { get; set; }
     }
 }

@@ -346,15 +346,26 @@ namespace Mutators.Tests
             converter(source);
             recorder.Stop();
 
-            var records = recorder.GetRecords()[0].Records[0].Records;
+            var records = recorder.GetRecords()[0].Records;
+            Assert.AreEqual("TestComplexDataDest", records[0].Name);
+            Assert.IsFalse(records[0].IsExcludedFromCoverage);
+
+            records = records[0].Records;
+            Assert.AreEqual("FieldC", records[0].Name);
             Assert.IsTrue(records[0].IsExcludedFromCoverage);
+            Assert.AreEqual("A", records[0].Records[0].Name);
             Assert.IsTrue(records[0].Records[0].IsExcludedFromCoverage);
+            Assert.AreEqual("B", records[0].Records[1].Name);
             Assert.IsTrue(records[0].Records[1].IsExcludedFromCoverage);
 
+            Assert.AreEqual("FieldD", records[1].Name);
             Assert.IsFalse(records[1].IsExcludedFromCoverage);
+            Assert.AreEqual("StrB", records[1].Records[0].Name);
             Assert.IsFalse(records[1].Records[0].IsExcludedFromCoverage);
+            Assert.AreEqual("StrA", records[1].Records[1].Name);
             Assert.IsFalse(records[1].Records[1].IsExcludedFromCoverage);
 
+            Assert.AreEqual("FieldY", records[2].Name);
             Assert.IsFalse(records[2].IsExcludedFromCoverage);
         }
 

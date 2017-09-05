@@ -41,7 +41,7 @@ namespace GrobExp.Mutators.MutatorsRecording
                 node = GetRecordByName(recordName);
             else
             {
-                node = new RecordNode(recordName, FullName, isExcludedFromCoverage);
+                node = new RecordNode(recordName, FullName);
                 Records.Add(node);
             }
 

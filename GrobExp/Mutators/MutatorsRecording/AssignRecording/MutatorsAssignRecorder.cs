@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     internal class MutatorsAssignRecorder : IMutatorsAssignRecorder
     {
-        public MutatorsAssignRecorder(Type[] excludedFromCoverage)
+        public MutatorsAssignRecorder(Type[] typesToExclude, PropertyInfo[] propertiesToExclude)
         {
             recordsCollection = new AssignRecordCollection();
-            this.excludedFromCoverage = excludedFromCoverage;
+            this.typesToExclude = typesToExclude;
+            this.propertiesToExclude = propertiesToExclude;
         }
 
         public List<RecordNode> GetRecords()
@@ -23,16 +25,18 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             instance = null;
         }
 
-        public static MutatorsAssignRecorder StartRecording(Type[] excludedFromCoverage)
+        public static MutatorsAssignRecorder StartRecording(Type[] excludedFromCoverage, PropertyInfo[] propertiesToExclude)
         {
-            return instance ?? (instance = new MutatorsAssignRecorder(excludedFromCoverage ?? new Type[0]));
+            return instance ?? (instance = new MutatorsAssignRecorder(excludedFromCoverage ?? new Type[0], propertiesToExclude ?? new PropertyInfo[0]));
         }
 
         public static void RecordCompilingExpression(AssignLogInfo toLog)
         {
+            var propsToExclude = GetInterfacePropertiesToExclude(toLog.Path).Union(instance.propertiesToExclude);
+            var isExcludedByProperty = toLog.Path.SmashToSmithereens().OfType<MemberExpression>().Any(x => propsToExclude.Contains(x.Member));
             var chainsOfPath = toLog.Path.SmashToSmithereens().Select(x => x.Type).ToArray();
             var chainsOfValue = toLog.Value.SmashToSmithereens().Select(x => x.Type).ToArray();
-            var isExcluded = instance.excludedFromCoverage.Any(x => chainsOfPath.Contains(x) || chainsOfValue.Contains(x));
+            var isExcluded = instance.typesToExclude.Any(x => chainsOfPath.Contains(x) || chainsOfValue.Contains(x)) || isExcludedByProperty;
 
             instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
         }
@@ -70,9 +74,24 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             instance.recordsCollection.ResetCurrentConvertor();
         }
 
+        private static IEnumerable<PropertyInfo> GetInterfacePropertiesToExclude(Expression exp)
+        {
+            var props = new List<PropertyInfo>();
+            foreach(var property in instance.propertiesToExclude.Where(x => x.DeclaringType != null && x.DeclaringType.IsInterface))
+            {
+                props.AddRange(exp.SmashToSmithereens()
+                                  .Where(x => x.Type.GetInterfaces().Select(y => y.IsGenericType ? y.GetGenericTypeDefinition() : y).Contains(property.DeclaringType))
+                                  .Select(x => x.Type.GetInterfaceMap(x.Type.GetInterface(property.DeclaringType.Name)))
+                                  .SelectMany(x => x.TargetType.GetProperties().Where(y => y.Name == property.Name)));
+            }
+
+            return props;
+        }
+
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
         private readonly AssignRecordCollection recordsCollection;
-        private readonly Type[] excludedFromCoverage;
+        private readonly Type[] typesToExclude;
+        private readonly PropertyInfo[] propertiesToExclude;
     }
 }

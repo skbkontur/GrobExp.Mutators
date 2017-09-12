@@ -34,6 +34,7 @@ namespace GrobExp.Mutators.MutatorsRecording
         public void RecordCompilingExpression(List<string> pathComponents, string value, bool isExcludedFromCoverage = false)
         {
             CompiledCount++;
+            IsExcludedFromCoverage &= isExcludedFromCoverage;
 
             var recordName = pathComponents[0];
             RecordNode node;
@@ -41,7 +42,7 @@ namespace GrobExp.Mutators.MutatorsRecording
                 node = GetRecordByName(recordName);
             else
             {
-                node = new RecordNode(recordName, FullName);
+                node = new RecordNode(recordName, FullName, isExcludedFromCoverage);
                 Records.Add(node);
             }
 
@@ -54,6 +55,7 @@ namespace GrobExp.Mutators.MutatorsRecording
         private void RecordCompilingExpression(string value, bool isExcludedFromCoverage = false)
         {
             CompiledCount++;
+            IsExcludedFromCoverage &= isExcludedFromCoverage;
             if (!ContainsRecord(value))
                 Records.Add(new RecordNode(value, FullName, isExcludedFromCoverage));
         }

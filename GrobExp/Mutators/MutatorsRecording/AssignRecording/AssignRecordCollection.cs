@@ -37,17 +37,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         public List<RecordNode> GetRecords()
         {
-            converterRecords.ForEach(x => ExcludeRecursively(x));
             return converterRecords;
-        }
-
-        private bool ExcludeRecursively(RecordNode node)
-        {
-            if (!node.Records.Any())
-                return node.IsExcludedFromCoverage;
-            var isEscluded = node.Records.All(ExcludeRecursively);
-            node.IsExcludedFromCoverage = isEscluded;
-            return isEscluded;
         }
 
         private readonly List<RecordNode> converterRecords;

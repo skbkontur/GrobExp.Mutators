@@ -264,22 +264,22 @@ namespace Mutators.Tests
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
-        //[Test]
-        //[Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
-        //public void TestSetNullToNullableInt()
-        //{
-        //    var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
-        //        configurator =>
-        //        {
-        //            configurator.Target(x => x.IntC).Set(x => x.IntA);
-        //            configurator.Target(x => x.IntD).Set(x => x.IntB);
-        //        });
-        //    var source = new TestDataSourceNullableInt
-        //    {
-        //        IntA = 12
-        //    };
-        //    DoTestSetNull(converterCollection, source, 3, 1);
-        //}
+        [Test]
+        [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
+        public void TestSetNullToNullableInt()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.IntC).Set(x => x.IntA);
+                    configurator.Target(x => x.IntD).Set(x => x.IntB);
+                });
+            var source = new TestDataSourceNullableInt
+            {
+                IntA = 12
+            };
+            DoTestSetNull(converterCollection, source, 3, 1);
+        }
 
         [Test]
         [Description("Если поле заполняем значением null, не считать покрытой конвертацией")]
@@ -298,23 +298,23 @@ namespace Mutators.Tests
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
-        //[Test]
-        //[Description("Если поле заполняем константным значением null, и это правило прописано в конвертере, считать покрытой конвертацией")]
-        //public void TestSetNullInConverter()
-        //{
-        //    var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
-        //        configurator =>
-        //        {
-        //            configurator.Target(x => x.IntC).Set(x => null);
-        //            configurator.Target(x => x.IntD).Set(x => x.IntB);
-        //        });
-        //    var source = new TestDataSourceNullableInt
-        //    {
-        //        IntA = 12,
-        //        IntB = 13
-        //    };
-        //    DoTestSetNull(converterCollection, source, 3, 2);
-        //}
+        [Test]
+        [Description("Если поле заполняем константным значением null, и это правило прописано в конвертере, считать покрытой конвертацией")]
+        public void TestSetNullInConverter()
+        {
+            var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
+                configurator =>
+                {
+                    configurator.Target(x => x.IntC).Set(x => null);
+                    configurator.Target(x => x.IntD).Set(x => x.IntB);
+                });
+            var source = new TestDataSourceNullableInt
+            {
+                IntA = 12,
+                IntB = 13
+            };
+            DoTestSetNull(converterCollection, source, 3, 2);
+        }
 
         [Test]
         [Description("Исключение из покрытия. " +
@@ -345,7 +345,7 @@ namespace Mutators.Tests
                 FieldX = "aba",
                 IntField = new TestDataSourceNullableInt
                     {
-                        IntA = new int?[] {1}
+                        IntA = 1
                     }
             };
             var converter = converterCollection.GetConverter(MutatorsContext.Empty);
@@ -426,7 +426,7 @@ namespace Mutators.Tests
 
     public class TestDataSourceNullableInt : ITestInterface<int>
     {
-        public int?[] IntA { get; set; }
+        public int? IntA { get; set; }
         public int? IntB { get; set; }
     }
 
@@ -472,6 +472,6 @@ namespace Mutators.Tests
 
     public interface ITestInterface<T>
     {
-        int?[] IntA { get; set; }
+        int? IntA { get; set; }
     }
 }

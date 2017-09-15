@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
@@ -29,10 +30,10 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
                 currentConverterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
-        public void RecordExecutingExpression(string path, string value)
+        public void RecordExecutingExpression(string path, string value, Lazy<bool> isExcludedFromCoverage = null)
         {
             if(currentConverterRecord != null)
-                currentConverterRecord.RecordExecutingExpression(path.Split('.').ToList(), value);
+                currentConverterRecord.RecordExecutingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public List<RecordNode> GetRecords()

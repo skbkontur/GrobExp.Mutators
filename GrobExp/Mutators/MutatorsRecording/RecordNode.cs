@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GrobExp.Mutators.MutatorsRecording
@@ -68,19 +69,19 @@ namespace GrobExp.Mutators.MutatorsRecording
             GetRecordByName(value).ExecutedCount++;
         }
 
-        public void RecordExecutingExpression(List<string> pathComponents, string value)
+        public void RecordExecutingExpression(List<string> pathComponents, string value, Lazy<bool> isExcludedFromCoverage = null)
         {
             ExecutedCount++;
 
             var recordName = pathComponents[0];
             if(!ContainsRecord(recordName))
-                RecordCompilingExpression(pathComponents, value);  
+                RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage == null ? false : isExcludedFromCoverage.Value);
 
             var node = GetRecordByName(recordName);
             if (pathComponents.Count == 1)
                 node.RecordExecutingExpression(value);
             else
-                node.RecordExecutingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value);
+                node.RecordExecutingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
         }
     }
 }

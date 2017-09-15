@@ -32,19 +32,27 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         public static void RecordCompilingExpression(AssignLogInfo toLog)
         {
+            var isExcluded = IsExcludedFromCoverage(toLog);
+            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+        }
+
+        private static bool IsExcludedFromCoverage(AssignLogInfo toLog)
+        {
             var propsToExclude = GetInterfacePropertiesToExclude(toLog.Path).Union(instance.propertiesToExclude);
             var isExcludedByProperty = toLog.Path.SmashToSmithereens().OfType<MemberExpression>().Any(x => propsToExclude.Contains(x.Member));
             var chainsOfPath = toLog.Path.SmashToSmithereens().Select(x => x.Type).ToArray();
             var chainsOfValue = toLog.Value.SmashToSmithereens().Select(x => x.Type).ToArray();
-            var isExcluded = instance.typesToExclude.Any(x => chainsOfPath.Contains(x) || chainsOfValue.Contains(x)) || isExcludedByProperty;
-
-            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+            var isExcluded = isExcludedByProperty || instance.typesToExclude.Any(x => chainsOfPath.Contains(x) || chainsOfValue.Contains(x));
+            return isExcluded;
         }
 
         public static void RecordExecutingExpression(AssignLogInfo toLog)
         {
             if(IsRecording())
-                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString());
+            {
+                var isExcluded = new Lazy<bool>(() => IsExcludedFromCoverage(toLog));
+                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+            }
         }
 
         public static void RecordExecutingExpressionWithValueObjectCheck(AssignLogInfo toLog, object executedValue)

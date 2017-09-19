@@ -258,9 +258,9 @@ namespace Mutators.Tests
                     configurator.Target(x => x.StrD).Set(x => x.StrB);
                 });
             var source = new TestDataSourceNullable
-                {
-                    StrA = "qxx"
-                };
+            {
+                StrA = "qxx"
+            };
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
@@ -322,7 +322,11 @@ namespace Mutators.Tests
                      "Если поле заданного типа встретилось в конвертации в составе условия, конвертация не исключается")]
         public void TestExcludeTypesFromCoverage()
         {
-            var recorder = AssignRecorderInitializer.StartAssignRecorder(new[] { typeof(TestDataSource) }, new []{ typeof(ITestInterface<>).GetProperty("IntA"), typeof(TestComplexDataDest).GetProperty("FieldY")});
+            var recorder = AssignRecorderInitializer.StartAssignRecorder()
+                .ExcludingType<TestDataSource>()
+                .ExcludingInterface<ITestInterface>()
+                .ExcludingProperty((TestComplexDataDest x) => x.FieldY)
+                .ExcludingGenericProperty((IGenericTestInterface<object> x) => x.IntA);
             var converterCollection = new TestConverterCollection<TestComplexDataSource, TestComplexDataDest>(pathFormatterCollection,
                 configurator =>
                 {
@@ -333,20 +337,22 @@ namespace Mutators.Tests
                     configurator.Target(x => x.FieldY).If(x => x.FieldA.A > 10).Set(x => x.FieldX);
                     configurator.Target(x => x.IntField.IntA).Set(x => x.IntField.IntA);
                     configurator.Target(x => x.IntField.IntB).Set(x => x.IntField.IntB);
+                    configurator.Target(x => x.TestProperty).Set(x => x.TestProperty.S);
                 });
             var source = new TestComplexDataSource
             {
                 FieldA = new TestDataSource(),
                 FieldB = new TestDataSourceNullable
-                    {
-                        StrA = "a",
-                        StrB = "b"
-                    },
+                {
+                    StrA = "a",
+                    StrB = "b"
+                },
                 FieldX = "aba",
                 IntField = new TestDataSourceNullableInt
-                    {
-                        IntA = 1
-                    }
+                {
+                    IntA = 1
+                },
+                TestProperty = new TestInterfaceImpl {S = "GRobas"}
             };
             var converter = converterCollection.GetConverter(MutatorsContext.Empty);
             converter(source);
@@ -380,6 +386,9 @@ namespace Mutators.Tests
             Assert.IsTrue(records[3].Records[0].IsExcludedFromCoverage);
             Assert.AreEqual("IntB", records[3].Records[1].Name);
             Assert.IsFalse(records[3].Records[1].IsExcludedFromCoverage);
+
+            Assert.AreEqual("TestProperty", records[4].Name);
+            Assert.IsTrue(records[4].IsExcludedFromCoverage);
         }
 
         private static void DoTestSetNull<TSource, TDest>(TestConverterCollection<TSource, TDest> converterCollection, TSource source, int expectedCompiledCount, int expectedExecutedCount) where TDest : new()
@@ -424,7 +433,7 @@ namespace Mutators.Tests
         public string StrD { get; set; }
     }
 
-    public class TestDataSourceNullableInt : ITestInterface<int>
+    public class TestDataSourceNullableInt : IGenericTestInterface<int>
     {
         public int? IntA { get; set; }
         public int? IntB { get; set; }
@@ -450,7 +459,7 @@ namespace Mutators.Tests
 
     public enum TestEnum
     {
-        Black, 
+        Black,
         White
     }
 
@@ -460,6 +469,7 @@ namespace Mutators.Tests
         public TestDataSourceNullable FieldB { get; set; }
         public TestDataSourceNullableInt IntField { get; set; }
         public string FieldX { get; set; }
+        public ITestInterface TestProperty { get; set; }
     }
 
     public class TestComplexDataDest
@@ -468,10 +478,21 @@ namespace Mutators.Tests
         public TestDataSourceNullable FieldD { get; set; }
         public TestDataSourceNullableInt IntField { get; set; }
         public string FieldY { get; set; }
+        public string TestProperty { get; set; }
     }
 
-    public interface ITestInterface<T>
+    public interface IGenericTestInterface<T>
     {
-        int? IntA { get; set; }
+        int? IntA { get; }
+    }
+
+    public interface ITestInterface
+    {
+        string S { get; set; }
+    }
+
+    public class TestInterfaceImpl : ITestInterface
+    {
+        public string S { get; set; }
     }
 }

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
@@ -6,5 +8,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
     {
         List<RecordNode> GetRecords();
         void Stop();
+        void ExcludeFromCoverage(Func<Expression, bool> excludeCriterion);
     }
 }

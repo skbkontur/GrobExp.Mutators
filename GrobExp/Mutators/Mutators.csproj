@@ -90,6 +90,7 @@
     <Compile Include="MutatorsRecording\AssignRecording\AssignRecorderInitializer.cs" />
     <Compile Include="MutatorsRecording\AssignRecording\IMutatorsAssignRecorder.cs" />
     <Compile Include="MutatorsRecording\AssignRecording\MutatorsAssignRecorder.cs" />
+    <Compile Include="MutatorsRecording\AssignRecording\MutatorsAssignRecorderExcludeExtensions.cs" />
     <Compile Include="MutatorsRecording\RecordNode.cs" />
     <Compile Include="MutatorsRecording\ValidationRecording\IMutatorsValidationRecorder.cs" />
     <Compile Include="MutatorsRecording\ValidationRecording\MutatorsValidationRecorder.cs" />

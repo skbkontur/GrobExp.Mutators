@@ -7,21 +7,9 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public static class MutatorsAssignRecorderExcludeExtensions
     {
-        public static IMutatorsAssignRecorder ExcludingType(this IMutatorsAssignRecorder recorder, Type typeToExclude)
-        {
-            recorder.ExcludeFromCoverage(x => x.Type == typeToExclude);
-            return recorder;
-        }
-
         public static IMutatorsAssignRecorder ExcludingType<T>(this IMutatorsAssignRecorder recorder)
         {
             return recorder.ExcludingType(typeof(T));
-        }
-
-        public static IMutatorsAssignRecorder ExcludingInterface(this IMutatorsAssignRecorder recorder, Type interfaceTypeToExclude)
-        {
-            recorder.ExcludeFromCoverage(x => interfaceTypeToExclude.IsAssignableFrom(x.Type));
-            return recorder;
         }
 
         public static IMutatorsAssignRecorder ExcludingInterface<T>(this IMutatorsAssignRecorder recorder)
@@ -36,20 +24,32 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return recorder;
         }
 
-        private static bool AreEqualProperties<TDeclaringType>(PropertyInfo expectedProperty, Expression expression)
-        {
-            var memberExpression = expression as MemberExpression;
-            if(memberExpression == null) return false;
-            var actualProperty = memberExpression.Member as PropertyInfo;
-            if(actualProperty == null || actualProperty.DeclaringType == null) return false;
-            return expectedProperty.Name == actualProperty.Name && typeof(TDeclaringType).IsAssignableFrom(actualProperty.DeclaringType);
-        }
-
         public static IMutatorsAssignRecorder ExcludingGenericProperty<TGenericType, TProperty>(this IMutatorsAssignRecorder recorder, Expression<Func<TGenericType, TProperty>> propertyExpression)
         {
             var propertyInfo = (PropertyInfo)((MemberExpression)propertyExpression.Body).Member;
             recorder.ExcludeFromCoverage(x => AreEqualGenericProperties<TGenericType>(propertyInfo, x));
             return recorder;
+        }
+
+        private static IMutatorsAssignRecorder ExcludingType(this IMutatorsAssignRecorder recorder, Type typeToExclude)
+        {
+            recorder.ExcludeFromCoverage(x => x.Type == typeToExclude);
+            return recorder;
+        }
+
+        private static IMutatorsAssignRecorder ExcludingInterface(this IMutatorsAssignRecorder recorder, Type interfaceTypeToExclude)
+        {
+            recorder.ExcludeFromCoverage(x => interfaceTypeToExclude.IsAssignableFrom(x.Type));
+            return recorder;
+        }
+
+        private static bool AreEqualProperties<TDeclaringType>(PropertyInfo expectedProperty, Expression expression)
+        {
+            var memberExpression = expression as MemberExpression;
+            if (memberExpression == null) return false;
+            var actualProperty = memberExpression.Member as PropertyInfo;
+            if (actualProperty == null || actualProperty.DeclaringType == null) return false;
+            return expectedProperty.Name == actualProperty.Name && typeof(TDeclaringType).IsAssignableFrom(actualProperty.DeclaringType);
         }
 
         private static bool AreEqualGenericProperties<TDeclaringType>(PropertyInfo expectedProperty, Expression expression)

@@ -35,8 +35,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="GrEmit">
-      <HintPath>..\..\Assemblies\GrEmit.dll</HintPath>
+    <Reference Include="GrEmit, Version=2.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\GrEmit.2.2.1\lib\net45\GrEmit.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -113,6 +113,9 @@
     <Compile Include="ResultType.cs" />
     <Compile Include="RuntimeVariablesInliner.cs" />
     <Compile Include="TypedDebugInfoExpression.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

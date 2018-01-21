@@ -4,8 +4,9 @@ obj
 [Rr]elease
 *.user
 *.suo
-_ReSharper.GrobExp
-_ReSharper.GrobExp2010
+.vs/
+_ReSharper.*
+/GrobExp/packages
 Assemblies/GrobExp.Compiler.dll
 Assemblies/GrobExp.Compiler.pdb
 Assemblies/GrobExp.Mutators.dll

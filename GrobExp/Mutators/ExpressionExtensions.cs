@@ -278,6 +278,9 @@ namespace GrobExp.Mutators
                 case ExpressionType.Convert:
                     result = Expression.Convert(result, shard.Type);
                     break;
+                case ExpressionType.Coalesce:
+                    result = Expression.Coalesce(result, ((BinaryExpression)shard).Right);
+                    break;
                 default:
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
@@ -370,6 +373,9 @@ namespace GrobExp.Mutators
                 case ExpressionType.Convert:
                 case ExpressionType.ConvertChecked:
                     exp = ((UnaryExpression)exp).Operand;
+                    break;
+                case ExpressionType.Coalesce:
+                    exp = ((BinaryExpression)exp).Left;
                     break;
                 default:
                     end = true;

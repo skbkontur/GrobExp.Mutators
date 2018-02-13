@@ -89,7 +89,8 @@ namespace Mutators.Tests
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"F", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"StrArr", new CustomFieldValue{TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
-                            {"Q", new CustomFieldValue{TypeCode = TypeCode.Double, Value = 2.0}},
+                            {"Q", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 2.0m}},
+                            {"Qq", new CustomFieldValue{TypeCode = TypeCode.Double, Value = 10.0}},
                             {"E", new CustomFieldValue{TypeCode = TypeCode.String, Value = "ZZZ"}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                             {"ComplexFieldёZёS", new CustomFieldValue {TypeCode = TypeCode.String, Value = "qzz"}},
@@ -105,6 +106,7 @@ namespace Mutators.Tests
             Assert.AreEqual("zzz", data.S);
             Assert.AreEqual("qxx", data.F);
             Assert.AreEqual(2.0m, data.Q);
+            Assert.AreEqual(10.0, data.Qq);
             Assert.AreEqual(TestEnum.Zzz, data.E);
             Assert.IsNotNull(data.ComplexField);
             Assert.AreEqual(123, data.ComplexField.X);
@@ -499,6 +501,9 @@ namespace Mutators.Tests
 
             [CustomField]
             public decimal? Q { get; set; }
+
+            [CustomField]
+            public double? Qq { get; set; }
 
             [CustomField]
             public ComplexCustomField[] ComplexArr { get; set; }

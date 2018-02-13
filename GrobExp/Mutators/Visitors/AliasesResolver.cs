@@ -103,6 +103,9 @@ namespace GrobExp.Mutators.Visitors
                 case ExpressionType.Convert:
                     result = Expression.Convert(result, shard.Type);
                     break;
+                case ExpressionType.Coalesce:
+                    result = Expression.Coalesce(result, Visit(((BinaryExpression)shard).Right));
+                    break;
                 default:
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }

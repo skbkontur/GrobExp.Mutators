@@ -392,13 +392,6 @@ namespace GrobExp.Mutators
                                         convertFromStringMethod.MakeGenericMethod(type),
                                         Expression.Convert(value, typeof(string)));
             }
-            else if(IsPrimitive(type))
-            {
-                if(needCoalesce)
-                    value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
-                needCoalesce = false;
-                value = Expression.Call(HackHelpers.GetMethodDefinition<int>(x => MutatorsHelperFunctions.ChangeType<int, int>(x)).GetGenericMethodDefinition().MakeGenericMethod(typeof(object), type), value);
-            }
             if(needCoalesce)
                 value = Expression.Coalesce(value, Expression.Convert(Expression.Default(type), typeof(object)));
             if(type.IsArray)

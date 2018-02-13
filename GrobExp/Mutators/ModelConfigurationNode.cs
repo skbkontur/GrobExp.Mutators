@@ -468,7 +468,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static AliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
+        private static LambdaAliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
         {
             var simplifiedPathShards = simplifiedPath.SmashToSmithereens();
             var pathShards = path.SmashToSmithereens();
@@ -486,7 +486,7 @@ namespace GrobExp.Mutators
             // To add alias with CurrentIndex call we need to trim simplifiedShard, 
             // because we replaced Select/Where calls with Current/Each calls from the tail of pathShard
             var cutSimplifiedShard = TrimTailToEachOrCurrent(simplifiedShard);
-            return new AliasesResolver(new List<KeyValuePair<Expression, Expression>>
+            return new LambdaAliasesResolver(new List<KeyValuePair<Expression, Expression>>
                 {
                     new KeyValuePair<Expression, Expression>(simplifiedShard, pathShard),
                     new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(cutSimplifiedShard.Type), cutSimplifiedShard),
@@ -931,7 +931,7 @@ namespace GrobExp.Mutators
                     ++i;
                     ++j;
                 }
-                mutator = mutator.ResolveAliases(new AliasesResolver(aliases)).If(condition);
+                mutator = mutator.ResolveAliases(new LambdaAliasesResolver(aliases)).If(condition);
             }
             return new KeyValuePair<Expression, MutatorConfiguration>(cleanedPath, mutator);
         }

@@ -53,9 +53,9 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(Type, Prepare(condition).AndAlso(Condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new EqualsToIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
+            return new EqualsToIfConfiguration(Type, resolver.Resolve(Condition), resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)

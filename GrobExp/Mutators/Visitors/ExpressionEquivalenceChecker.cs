@@ -8,6 +8,28 @@ namespace GrobExp.Mutators.Visitors
 {
     public static class ExpressionEquivalenceChecker
     {
+        public static bool Equivalent(Expression first, Expression second, bool strictly, bool distinguishEachAndCurrent, out List<(ParameterExpression firstExpressionParameter, ParameterExpression secondExpressionParameter)> parameterMappingFromFirstToSecondExpression)
+        {
+            var context = new Context
+            {
+                Strictly = strictly,
+                DistinguishEachAndCurrent = distinguishEachAndCurrent,
+                FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                FirstLabels = new Dictionary<LabelTarget, LabelTarget>(),
+                SecondLabels = new Dictionary<LabelTarget, LabelTarget>()
+            };
+            var result = Equivalent(first, second, context);
+            foreach (var contextFirstParameter in context.FirstParameters)
+                if (!context.SecondParameters.TryGetValue(contextFirstParameter.Value, out var secondParameter) || contextFirstParameter.Key != secondParameter)
+                    throw new Exception("Invalid state: expected FirstParameters and SecondParameters to be equivalent");
+            foreach (var contextSecondParameter in context.SecondParameters)
+                if(!context.FirstParameters.TryGetValue(contextSecondParameter.Value, out var firstParameter) || contextSecondParameter.Key != firstParameter)
+                    throw new Exception("Invalid state: expected FirstParameters and SecondParameters to be equivalent");
+            parameterMappingFromFirstToSecondExpression = context.FirstParameters.Select(pair => (pair.Key, pair.Value)).ToList();
+            return result;
+        }
+
         public static bool Equivalent(Expression first, Expression second, bool strictly, bool distinguishEachAndCurrent)
         {
             return Equivalent(first, second, new Context

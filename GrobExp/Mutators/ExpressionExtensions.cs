@@ -338,6 +338,13 @@ namespace GrobExp.Mutators
             return new AliasesResolver(aliases).Visit(expression);
         }
 
+        public static Expression ResolveAliasesInLambda(this LambdaExpression expression, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            if (aliases == null || aliases.Count == 0)
+                return expression;
+            return new LambdaAliasesResolver(aliases).Resolve(expression);
+        }
+
         public static Expression[] SmashToSmithereens(this Expression exp)
         {
             var result = new List<Expression>();

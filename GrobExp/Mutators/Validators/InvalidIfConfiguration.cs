@@ -42,9 +42,9 @@ namespace GrobExp.Mutators.Validators
             return new InvalidIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Message), validationResultType);
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new InvalidIfConfiguration(Type, Creator, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(Message), validationResultType);
+            return new InvalidIfConfiguration(Type, Creator, Priority, resolver.Resolve(Condition), resolver.Resolve(Message), validationResultType);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)

@@ -129,6 +129,65 @@ namespace Mutators.Tests
             resolved.AssertEqualsExpression(((Expression<Func<C, string>>)(c => c.D.S)).Body);
         }
 
+        [Test]
+        public void TestThatParameterNameDoesNotChangeOnAliasWithDiffentParams()
+        {
+            Expression<Func<F, H>> path1 = x => x.Gs.Current().Hs.Current();
+            Expression<Func<F, H>> path2 = data => data.Gs.Where(x => x.IsRemoved != true).Each().Hs.Current();
+            var parameters = new List<KeyValuePair<Expression, Expression>>
+            {
+                new KeyValuePair<Expression, Expression>(path1.Body, path2.Body),
+            };
+            Expression<Func<F, string>> exp = name => name.Gs.Where(x => x.IsRemoved != true).Current().Hs.Current().Value;
+            var resolved = exp.ResolveAliasesInLambda(parameters);
+
+            var expected = Expression.Lambda(((Expression<Func<F, string>>)(x => x.Gs.Current().Hs.Current().Value)).Body, ((Expression<Func<F, F>>)(name => name)).Parameters); // name => x.Gs.Current().Hs.Current().Value
+            resolved.AssertEqualsExpression(expected);
+        }
+
+        [Test]
+        public void TestThatLambdaParameterNameChanges()
+        {
+            Expression<Func<F, H>> path1 = data => data.Gs.Current().Hs.Current();
+            Expression<Func<F, H>> path2 = data => data.Gs.Where(inner => inner.IsRemoved != true).Each().Hs.Current();
+            var parameters = new List<KeyValuePair<Expression, Expression>>
+            {
+                new KeyValuePair<Expression, Expression>(path1.Body, path2.Body),
+            };
+            Expression<Func<F, string>> exp = lalala => lalala.Gs.Where(anyName => anyName.IsRemoved != true).Current().Hs.Current().Value;
+            var resolved = exp.ResolveAliasesInLambda(parameters);
+            resolved.AssertEqualsExpression((Expression<Func<F, string>>)(data => data.Gs.Current().Hs.Current().Value));
+        }
+
+        [Test]
+        public void TestThatLambdaParameterNameChangesWhenThereAreTwoParameters()
+        {
+            Expression<Func<F, H>> path1 = data => data.Gs.Current().Hs.Current();
+            Expression<Func<F, H>> path2 = data => data.Gs.Where(x => x.IsRemoved != true).Each().Hs.Current();
+            var parameters = new List<KeyValuePair<Expression, Expression>>
+            {
+                new KeyValuePair<Expression, Expression>(path1.Body, path2.Body),
+            };
+            Expression<Func<F, string, string>> exp = (name1, name2) => name1.Gs.Where(x => x.IsRemoved != true).Current().Hs.Current().Value + name2;
+            var resolved = exp.ResolveAliasesInLambda(parameters);
+            resolved.AssertEqualsExpression((Expression<Func<F, string, string>>)((data, name2) => data.Gs.Current().Hs.Current().Value + name2));
+        }
+
+
+        [Test]
+        public void TestThatLambdaParameterNameChangesWhenThereAreTwoParametersOfSameType()
+        {
+            Expression<Func<F, H>> path1 = p1 => p1.Gs.Current().Hs.Current();
+            Expression<Func<F, H>> path2 = p1 => p1.Gs.Where(x => x.IsRemoved != true).Each().Hs.Current();
+            var parameters = new List<KeyValuePair<Expression, Expression>>
+            {
+                new KeyValuePair<Expression, Expression>(path1.Body, path2.Body),
+            };
+            Expression<Func<F, F, string>> exp = (name1, name2) => name1.Gs.Where(x => x.IsRemoved != true).Current().Hs.Current().Value + name2.Gs.Current().IsRemoved;
+            var resolved = exp.ResolveAliasesInLambda(parameters);
+            resolved.AssertEqualsExpression((Expression<Func<F, F, string>>)((p1, name2) => p1.Gs.Current().Hs.Current().Value + name2.Gs.Current().IsRemoved));
+        }
+
         private class A
         {
             public B B { get; set; }
@@ -163,6 +222,20 @@ namespace Mutators.Tests
             public string F { get; set; }
             public string Z { get; set; }
             public int? X { get; set; }
+        }
+
+        private class F
+        {
+            public G[] Gs { get; set; }
+        }
+        private class G
+        {
+            public H[] Hs { get; set; }
+            public bool IsRemoved { get; set; }
+        }
+        private class H
+        {
+            public string Value { get; set; }
         }
     }
 }

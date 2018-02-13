@@ -51,7 +51,12 @@ namespace Mutators.Tests
     public class TestConverterCollection<TSource, TDest> : ConverterCollection<TSource, TDest> where TDest : new()
     {
         public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest>> action)
-            : base(pathFormatterCollection, new TestStringConverter())
+            : this(pathFormatterCollection, action, new TestStringConverter())
+        {
+        }
+
+        public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest>> action, IStringConverter stringConverter)
+            : base(pathFormatterCollection, stringConverter)
         {
             this.action = action;
         }

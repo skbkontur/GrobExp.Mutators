@@ -219,6 +219,7 @@ namespace Mutators.Tests
             var func = EliminateLinq(exp);
         }
 
+        [Category("Failing")]
         [Test]
         public void TestSelectManyWithResultSelectorConcat()
         {

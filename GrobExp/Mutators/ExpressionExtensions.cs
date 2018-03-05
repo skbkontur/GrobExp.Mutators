@@ -278,6 +278,9 @@ namespace GrobExp.Mutators
                 case ExpressionType.Convert:
                     result = Expression.Convert(result, shard.Type);
                     break;
+                case ExpressionType.Coalesce:
+                    result = Expression.Coalesce(result, ((BinaryExpression)shard).Right);
+                    break;
                 default:
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
@@ -338,6 +341,13 @@ namespace GrobExp.Mutators
             return new AliasesResolver(aliases).Visit(expression);
         }
 
+        public static Expression ResolveAliasesInLambda(this LambdaExpression expression, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            if (aliases == null || aliases.Count == 0)
+                return expression;
+            return new LambdaAliasesResolver(aliases).Resolve(expression);
+        }
+
         public static Expression[] SmashToSmithereens(this Expression exp)
         {
             var result = new List<Expression>();
@@ -363,6 +373,9 @@ namespace GrobExp.Mutators
                 case ExpressionType.Convert:
                 case ExpressionType.ConvertChecked:
                     exp = ((UnaryExpression)exp).Operand;
+                    break;
+                case ExpressionType.Coalesce:
+                    exp = ((BinaryExpression)exp).Left;
                     break;
                 default:
                     end = true;

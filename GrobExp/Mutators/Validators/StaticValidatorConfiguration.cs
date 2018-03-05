@@ -57,9 +57,9 @@ namespace GrobExp.Mutators.Validators
                 Resolve(path, performer, PathToValue), validator);
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, (LambdaExpression)resolver.Visit(Condition), (LambdaExpression)resolver.Visit(PathToNode), (LambdaExpression)resolver.Visit(PathToValue), validator);
+            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, resolver.Resolve(Condition), resolver.Resolve(PathToNode), resolver.Resolve(PathToValue), validator);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)

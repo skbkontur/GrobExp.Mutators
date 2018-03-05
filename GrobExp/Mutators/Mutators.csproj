@@ -163,6 +163,7 @@
     <Compile Include="Visitors\IsConstantChecker.cs" />
     <Compile Include="Visitors\IsNullOrEmptyExtender.cs" />
     <Compile Include="Visitors\CompositionPerformer.cs" />
+    <Compile Include="Visitors\LambdaAliasesResolver.cs" />
     <Compile Include="Visitors\LinqEliminator.cs" />
     <Compile Include="Visitors\MethodReplacer.cs" />
     <Compile Include="Visitors\IfNotNullProcessor.cs" />

@@ -10,6 +10,7 @@ using GroBuf.DataMembersExtracters;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
 
@@ -37,6 +38,14 @@ namespace Mutators.Tests
         public static void AssertEqualsExpression(this Expression actual, Expression expected)
         {
             Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
+        }
+        
+        public static void AssertEquivalentExpressions(this Expression actual, Expression expected, bool strictly, bool distinguishEachAndCurrent)
+        {
+            var equivalent = ExpressionEquivalenceChecker.Equivalent(actual, expected, false, true);
+            var expectedDebugView = ExpressionCompiler.DebugViewGetter(expected.Simplify());
+            var actualDebugView = ExpressionCompiler.DebugViewGetter(actual.Simplify());
+            Assert.IsTrue(equivalent, string.Format("Expressions are not equivalent.\nExpected:\n{0}\nActual:\n{1}", expectedDebugView, actualDebugView));
         }
 
         public static void AssertEqualsExpression<T>(this Expression<T> actual, Expression<T> expected)

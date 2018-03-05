@@ -29,9 +29,9 @@ namespace GrobExp.Mutators.Aggregators
             return new SetSourceArrayConfiguration(to, Resolve(path, performer, SourceArray));
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new SetSourceArrayConfiguration(Type, (LambdaExpression)resolver.Visit(SourceArray));
+            return new SetSourceArrayConfiguration(Type, resolver.Resolve(SourceArray));
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)

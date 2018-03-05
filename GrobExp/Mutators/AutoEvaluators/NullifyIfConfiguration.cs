@@ -38,9 +38,9 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new NullifyIfConfiguration(to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new NullifyIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition));
+            return new NullifyIfConfiguration(Type, resolver.Resolve(Condition));
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)

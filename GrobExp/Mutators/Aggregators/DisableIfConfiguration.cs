@@ -43,9 +43,9 @@ namespace GrobExp.Mutators.Aggregators
             return new DisableIfConfiguration(to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(AliasesResolver resolver)
+        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new DisableIfConfiguration(Type, (LambdaExpression)resolver.Visit(Condition));
+            return new DisableIfConfiguration(Type, resolver.Resolve(Condition));
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)

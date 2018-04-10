@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Linq;
 
+using GrobExp.Mutators.ModelConfiguration;
+
 namespace GrobExp.Mutators
 {
     public abstract class DataConfiguratorCollectionBase<TData> : IDataConfiguratorCollection<TData>

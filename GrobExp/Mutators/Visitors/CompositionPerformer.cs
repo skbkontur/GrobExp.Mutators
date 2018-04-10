@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Mutators.AutoEvaluators;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Validators;
 
 namespace GrobExp.Mutators.Visitors

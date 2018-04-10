@@ -220,7 +220,7 @@ namespace Mutators.Tests
         }
 
         [Category("Failing")]
-        [Test]
+        [Test(Description = "Linq method Concat is not supported")]
         public void TestSelectManyWithResultSelectorConcat()
         {
             LambdaCompiler.DebugOutputDirectory = @"c:\temp";

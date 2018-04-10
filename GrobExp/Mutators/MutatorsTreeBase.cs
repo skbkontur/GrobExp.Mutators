@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators.Aggregators;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -91,7 +92,7 @@ namespace GrobExp.Mutators
 
         public override string ToString()
         {
-            return ModelConfigurationNode.PrintAllMutators(GetAllMutatorsWithPaths());
+            return GetAllMutatorsWithPaths().ToPrettyString();
         }
 
         public MutatorWithPath[] GetAllMutatorsWithPaths()

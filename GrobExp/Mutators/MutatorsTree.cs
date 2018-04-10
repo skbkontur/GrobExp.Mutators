@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.Aggregators;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -148,13 +149,13 @@ namespace GrobExp.Mutators
             else if(IsEachOrCurrent(node.Path))
             {
                 var conditionalSetters = performer.GetConditionalSetters(((MethodCallExpression)node.Path).Arguments.Single());
-                if (conditionalSetters != null && conditionalSetters.Count == 1)
+                if(conditionalSetters != null && conditionalSetters.Count == 1)
                 {
                     var setter = conditionalSetters.Single();
-                    if (setter.Value == null)
+                    if(setter.Value == null)
                     {
                         var chains = setter.Key.CutToChains(true, true);
-                        if (chains.Length == 1)
+                        if(chains.Length == 1)
                         {
                             var chain = chains.Single();
                             chain = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(chain.Type.GetItemType()), chain);

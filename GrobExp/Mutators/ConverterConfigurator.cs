@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators

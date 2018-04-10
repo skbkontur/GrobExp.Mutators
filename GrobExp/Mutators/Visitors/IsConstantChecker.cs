@@ -3,11 +3,22 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using JetBrains.Annotations;
+
 namespace GrobExp.Mutators.Visitors
 {
     public class IsConstantChecker : ExpressionVisitor
     {
-        public bool IsConstant(Expression exp)
+        /// <summary>
+        /// An expression is considered not Constant if:
+        /// <list type="bullet">
+        /// <item>It references external parameters</item>
+        /// <item>It contains a call to DateTime.<see cref="DateTime.UtcNow"/></item>
+        /// <item>It contains a call to Guid.<see cref="Guid.NewGuid"/></item>
+        /// <item>It contains a call to <see cref="MutatorsHelperFunctions.Dynamic{T}"/></item>
+        /// </list>
+        /// </summary>
+        public bool IsConstant([NotNull] Expression exp)
         {
             Visit(exp);
             return isConstant;

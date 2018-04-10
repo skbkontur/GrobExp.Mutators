@@ -4,6 +4,7 @@ using System.Linq;
 using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
+using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Validators.Texts;
 
@@ -359,9 +360,9 @@ namespace Mutators.Tests
             converterCollectionFactory.Register(converterCollection);
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
-            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
-            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
-            validator(new TestData2 {S = "123456789123456789"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "123456789123456789", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * ModelConfigurationNode.PriorityShift)}});
+            validator(new TestData2()).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * TreeValidatorBuilder.PriorityShift)}});
+            validator(new TestData2 {S = "zzz"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * TreeValidatorBuilder.PriorityShift)}});
+            validator(new TestData2 {S = "123456789123456789"}).AssertEquivalent(new ValidationResultTreeNode<TestData2> {{"S", FormattedValidationResult.Error(null, "123456789123456789", new SimplePathFormatterText {Paths = new[] {"S"}}, 2 * TreeValidatorBuilder.PriorityShift)}});
             validator(new TestData2 {S = "123456789"}).AssertEquivalent(new ValidationResultTreeNode<TestData2>());
         }
 

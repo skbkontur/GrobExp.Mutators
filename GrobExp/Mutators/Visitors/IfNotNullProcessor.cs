@@ -2,6 +2,8 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
+using JetBrains.Annotations;
+
 namespace GrobExp.Mutators.Visitors
 {
     /// <summary>
@@ -12,8 +14,8 @@ namespace GrobExp.Mutators.Visitors
     /// x.IfNotNull() == y.IfNotNull() ->
     /// x == null || y == null || x == y </code>
     ///     <code>
-    /// igor.IfNotNull() == "GRobas" ->
-    /// string.IsNullOrEmpty(igor) || igor == "GRobas" </code>
+    /// Igor().IfNotNull() == "GRobas" -> // If Igor() is a 'constant' function
+    /// string.IsNullOrEmpty(Igor()) || Igor() == "GRobas" </code>
     /// </summary>
     public class IfNotNullProcessor : ExpressionVisitor
     {
@@ -43,14 +45,14 @@ namespace GrobExp.Mutators.Visitors
             return base.VisitBinary(node);
         }
 
-        private static Expression IsEmpty(Expression exp, bool isConstant)
+        private static Expression IsEmpty([NotNull] Expression exp, bool isConstant)
         {
             if(exp.Type == typeof(string) && isConstant)
                 return Expression.Call(isNullOrEmptyMethod, exp);
             return Expression.Equal(exp, Expression.Constant(null, exp.Type));
         }
 
-        private static bool TryUnwrapIfNotNull(ref Expression node)
+        private static bool TryUnwrapIfNotNull([NotNull] ref Expression node)
         {
             if(node == null || node.NodeType != ExpressionType.Call)
                 return false;

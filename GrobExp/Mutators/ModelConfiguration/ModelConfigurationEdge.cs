@@ -27,12 +27,12 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         public override bool Equals(object obj)
         {
-            if(ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, obj))
                 return true;
-            if(ReferenceEquals(this, null) || ReferenceEquals(obj, null))
+            if (ReferenceEquals(this, null) || ReferenceEquals(obj, null))
                 return ReferenceEquals(this, null) && ReferenceEquals(obj, null);
             var other = obj as ModelConfigurationEdge;
-            if(ReferenceEquals(other, null))
+            if (ReferenceEquals(other, null))
                 return false;
             return Compare(Value, other.Value);
         }
@@ -42,14 +42,14 @@ namespace GrobExp.Mutators.ModelConfiguration
         private static int GetHashCode(object value)
         {
             var arr = value as object[];
-            if(arr == null)
+            if (arr == null)
             {
-                if(value is int)
+                if (value is int)
                     return (int)value;
-                if(value is string)
+                if (value is string)
                     return value.GetHashCode();
                 var type = value as Type;
-                if(type != null)
+                if (type != null)
                     return type.GetHashCode();
                 var memberInfo = (MemberInfo)value;
                 unchecked
@@ -57,14 +57,16 @@ namespace GrobExp.Mutators.ModelConfiguration
                     return memberInfo.Module.MetadataToken * 397 + memberInfo.MetadataToken;
                 }
             }
+
             var result = 0;
-            foreach(var item in arr)
+            foreach (var item in arr)
             {
                 unchecked
                 {
                     result = result * 397 + GetHashCode(item);
                 }
             }
+
             return result;
         }
 
@@ -72,25 +74,27 @@ namespace GrobExp.Mutators.ModelConfiguration
         {
             var leftAsArray = left as object[];
             var rightAsArray = right as object[];
-            if(leftAsArray != null || rightAsArray != null)
+            if (leftAsArray != null || rightAsArray != null)
             {
-                if(leftAsArray == null || rightAsArray == null)
+                if (leftAsArray == null || rightAsArray == null)
                     return false;
-                if(leftAsArray.Length != rightAsArray.Length)
+                if (leftAsArray.Length != rightAsArray.Length)
                     return false;
                 return !leftAsArray.Where((t, i) => !Compare(t, rightAsArray[i])).Any();
             }
-            if(left is int || right is int)
+
+            if (left is int || right is int)
                 return left is int && right is int && (int)left == (int)right;
-            if(left is string || right is string)
+            if (left is string || right is string)
                 return left is string && right is string && (string)left == (string)right;
-            if(left is Type || right is Type)
+            if (left is Type || right is Type)
             {
-                if(!(left is Type && right is Type))
+                if (!(left is Type && right is Type))
                     return false;
                 return (Type)left == (Type)right;
             }
-            if(((MemberInfo)left).Module != ((MemberInfo)right).Module)
+
+            if (((MemberInfo)left).Module != ((MemberInfo)right).Module)
                 return false;
             return ((MemberInfo)left).MetadataToken == ((MemberInfo)right).MetadataToken;
         }

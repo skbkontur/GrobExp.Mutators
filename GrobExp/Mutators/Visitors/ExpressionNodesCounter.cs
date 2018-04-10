@@ -13,7 +13,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if(node == null)
+            if (node == null)
                 return null;
             ++count;
             return node.NodeType == ExpressionType.Invoke ? node : base.Visit(node);

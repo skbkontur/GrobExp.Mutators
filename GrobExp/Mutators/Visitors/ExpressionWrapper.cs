@@ -10,27 +10,26 @@ namespace GrobExp.Mutators.Visitors
     {
         public ExpressionWrapper(Expression expression, bool strictly)
         {
-            this.expression = expression;
+            this.Expression = expression;
             this.strictly = strictly;
         }
 
         public override bool Equals(object obj)
         {
-            if(ReferenceEquals(this, obj))
+            if (ReferenceEquals(this, obj))
                 return true;
             var other = obj as ExpressionWrapper;
-            if(other == null)
+            if (other == null)
                 return false;
-            return ExpressionEquivalenceChecker.Equivalent(expression, other.expression, strictly, true);
+            return ExpressionEquivalenceChecker.Equivalent(Expression, other.Expression, strictly, true);
         }
 
         public override int GetHashCode()
         {
-            return ExpressionHashCalculator.CalcHashCode(expression, strictly);
+            return ExpressionHashCalculator.CalcHashCode(Expression, strictly);
         }
 
-        public Expression Expression { get { return expression; } }
-        private readonly Expression expression;
+        public Expression Expression { get; }
         private readonly bool strictly;
     }
 }

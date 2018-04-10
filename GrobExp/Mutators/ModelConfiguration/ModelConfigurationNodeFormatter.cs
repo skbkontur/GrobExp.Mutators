@@ -25,10 +25,10 @@ namespace GrobExp.Mutators.ModelConfiguration
         public static string ToPrettyString(this IEnumerable<MutatorWithPath> mutators)
         {
             var result = new StringBuilder();
-            foreach(var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.PathToNode, false)))
+            foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.PathToNode, false)))
             {
                 result.AppendLine(group.Key.Expression.ToString());
-                foreach(var pair in group)
+                foreach (var pair in group)
                 {
                     result.Append("    PATH: ");
                     result.AppendLine(pair.PathToMutator.ToString());
@@ -37,6 +37,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                     result.AppendLine();
                 }
             }
+
             return result.ToString();
         }
     }

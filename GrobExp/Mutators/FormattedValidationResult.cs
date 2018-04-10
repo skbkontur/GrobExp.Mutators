@@ -12,7 +12,7 @@ namespace GrobExp.Mutators
             Type = validationResult.Type;
             Message = validationResult.Message;
             var multiLanguageTextBaseWithPath = Message as MultiLanguageTextBaseWithPath;
-            if(multiLanguageTextBaseWithPath != null)
+            if (multiLanguageTextBaseWithPath != null)
             {
                 multiLanguageTextBaseWithPath.Path = path;
                 multiLanguageTextBaseWithPath.Value = value;
@@ -26,27 +26,27 @@ namespace GrobExp.Mutators
 
         public int CompareTo(object obj)
         {
-            if(obj == null) return 1;
-            if(!(obj is FormattedValidationResult))
+            if (obj == null) return 1;
+            if (!(obj is FormattedValidationResult))
                 throw new ArgumentException();
             return CompareTo((FormattedValidationResult)obj);
         }
 
         public int CompareTo(FormattedValidationResult other)
         {
-            if(other == null)
+            if (other == null)
                 return 1;
-            if(ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(this, other)) return 0;
             var result = ((int)Type).CompareTo((int)other.Type);
-            if(result != 0)
+            if (result != 0)
                 return -result;
             result = (other.Priority).CompareTo(Priority);
-            if(result != 0)
+            if (result != 0)
                 return result;
             var path = GetPath();
             var otherPath = other.GetPath();
             result = path == null ? (otherPath == null ? 0 : -1) : path.CompareTo(otherPath);
-            if(result != 0)
+            if (result != 0)
                 return result;
             return String.Compare((Message == null ? "" : Message.GetText("RU")), other.Message == null ? "" : other.Message.GetText("RU"), StringComparison.InvariantCultureIgnoreCase);
         }

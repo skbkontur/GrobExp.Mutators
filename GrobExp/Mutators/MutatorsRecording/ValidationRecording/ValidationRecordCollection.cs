@@ -31,20 +31,20 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 
         public void RecordCompilingValidation(ValidationLogInfo validationInfo)
         {
-            if(currentErrorValidator != null)
+            if (currentErrorValidator != null)
                 currentErrorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
         }
 
         public void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)
         {
-            if(currentErrorValidator != null && validationResult == "Error")
-                currentErrorValidator.RecordExecutingExpression(new List<string>{validationInfo.Name, validationInfo.Condition}, validationResult);
+            if (currentErrorValidator != null && validationResult == "Error")
+                currentErrorValidator.RecordExecutingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, validationResult);
         }
 
         public List<RecordNode> GetErrorRecords()
         {
             return errorValidationRecords;
-        } 
+        }
 
         private readonly List<RecordNode> errorValidationRecords;
         private RecordNode currentErrorValidator;

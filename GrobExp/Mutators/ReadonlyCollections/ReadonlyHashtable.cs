@@ -9,9 +9,9 @@ namespace GrobExp.Mutators.ReadonlyCollections
     {
         public static IReadonlyHashtable<T> Create<T>(string[] keys, T[] values)
         {
-            if(keys.Length != values.Length)
+            if (keys.Length != values.Length)
                 throw new InvalidOperationException();
-            switch(keys.Length)
+            switch (keys.Length)
             {
             case 0:
                 return new ReadonlyHashtableWithNoChildren<T>();
@@ -67,7 +67,7 @@ namespace GrobExp.Mutators.ReadonlyCollections
                 n = this.keys.Length;
                 this.values = new T[n];
                 indexes = new int[keys.Length];
-                for(var i = 0; i < keys.Length; ++i)
+                for (var i = 0; i < keys.Length; ++i)
                 {
                     var key = keys[i];
                     var idx = (int)(((uint)key.GetHashCode()) % n);
@@ -79,11 +79,12 @@ namespace GrobExp.Mutators.ReadonlyCollections
             public bool TryGetValue(string key, out T value)
             {
                 var idx = (int)(((uint)key.GetHashCode()) % n);
-                if(keys[idx] == key)
+                if (keys[idx] == key)
                 {
                     value = values[idx];
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -91,24 +92,26 @@ namespace GrobExp.Mutators.ReadonlyCollections
             public bool TryUpdateValue(string key, T value)
             {
                 var idx = (int)(((uint)key.GetHashCode()) % n);
-                if(keys[idx] == key)
+                if (keys[idx] == key)
                 {
                     values[idx] = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
                 var idx = (int)(((uint)key.GetHashCode()) % n);
-                if(keys[idx] == key)
+                if (keys[idx] == key)
                 {
-                    if(updateFilter == null || updateFilter(values[idx]))
+                    if (updateFilter == null || updateFilter(values[idx]))
                         values[idx] = valueFactory();
                     value = values[idx];
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -122,20 +125,20 @@ namespace GrobExp.Mutators.ReadonlyCollections
             public IReadonlyHashtable<TTo> Clone<TTo>(Func<T, TTo> selector)
             {
                 var newValues = new TTo[values.Length];
-                for(int i = 0; i < newValues.Length; ++i)
+                for (int i = 0; i < newValues.Length; ++i)
                     newValues[i] = selector(values[i]);
                 return new ReadonlyHashtableWithArbitraryNumberOfKeys<TTo>(keys, newValues, indexes);
             }
 
             public void ForEach(Action<T> action)
             {
-                foreach(var idx in indexes)
+                foreach (var idx in indexes)
                     action(values[idx]);
             }
 
             public void ForEach(Action<string, T> action)
             {
-                foreach(var idx in indexes)
+                foreach (var idx in indexes)
                     action(keys[idx], values[idx]);
             }
 
@@ -146,7 +149,7 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
             {
-                foreach(var idx in indexes)
+                foreach (var idx in indexes)
                     yield return new KeyValuePair<string, T>(keys[idx], values[idx]);
             }
 
@@ -223,34 +226,37 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -306,51 +312,57 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -414,68 +426,77 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value = value2;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value2 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
-                    if(updateFilter == null || updateFilter(value2))
+                    if (updateFilter == null || updateFilter(value2))
                         value2 = valueFactory();
                     value = value2;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -548,85 +569,97 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value = value3;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value2 = value;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value3 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
-                    if(updateFilter == null || updateFilter(value2))
+                    if (updateFilter == null || updateFilter(value2))
                         value2 = valueFactory();
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
-                    if(updateFilter == null || updateFilter(value3))
+                    if (updateFilter == null || updateFilter(value3))
                         value3 = valueFactory();
                     value = value3;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -707,102 +740,117 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value = value4;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value2 = value;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value3 = value;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value4 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
-                    if(updateFilter == null || updateFilter(value2))
+                    if (updateFilter == null || updateFilter(value2))
                         value2 = valueFactory();
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
-                    if(updateFilter == null || updateFilter(value3))
+                    if (updateFilter == null || updateFilter(value3))
                         value3 = valueFactory();
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
-                    if(updateFilter == null || updateFilter(value4))
+                    if (updateFilter == null || updateFilter(value4))
                         value4 = valueFactory();
                     value = value4;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -891,119 +939,137 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value = value4;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
                     value = value5;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value2 = value;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value3 = value;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value4 = value;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
                     value5 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
-                    if(updateFilter == null || updateFilter(value2))
+                    if (updateFilter == null || updateFilter(value2))
                         value2 = valueFactory();
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
-                    if(updateFilter == null || updateFilter(value3))
+                    if (updateFilter == null || updateFilter(value3))
                         value3 = valueFactory();
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
-                    if(updateFilter == null || updateFilter(value4))
+                    if (updateFilter == null || updateFilter(value4))
                         value4 = valueFactory();
                     value = value4;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
-                    if(updateFilter == null || updateFilter(value5))
+                    if (updateFilter == null || updateFilter(value5))
                         value5 = valueFactory();
                     value = value5;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
@@ -1100,136 +1166,157 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public bool TryGetValue(string key, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value = value4;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
                     value = value5;
                     return true;
                 }
-                if(key == key6)
+
+                if (key == key6)
                 {
                     value = value6;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }
 
             public bool TryUpdateValue(string key, T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
                     value0 = value;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
                     value1 = value;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
                     value2 = value;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
                     value3 = value;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
                     value4 = value;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
                     value5 = value;
                     return true;
                 }
-                if(key == key6)
+
+                if (key == key6)
                 {
                     value6 = value;
                     return true;
                 }
+
                 return false;
             }
 
             public bool TryUpdateValue(string key, Func<T, bool> updateFilter, Func<T> valueFactory, out T value)
             {
-                if(key == key0)
+                if (key == key0)
                 {
-                    if(updateFilter == null || updateFilter(value0))
+                    if (updateFilter == null || updateFilter(value0))
                         value0 = valueFactory();
                     value = value0;
                     return true;
                 }
-                if(key == key1)
+
+                if (key == key1)
                 {
-                    if(updateFilter == null || updateFilter(value1))
+                    if (updateFilter == null || updateFilter(value1))
                         value1 = valueFactory();
                     value = value1;
                     return true;
                 }
-                if(key == key2)
+
+                if (key == key2)
                 {
-                    if(updateFilter == null || updateFilter(value2))
+                    if (updateFilter == null || updateFilter(value2))
                         value2 = valueFactory();
                     value = value2;
                     return true;
                 }
-                if(key == key3)
+
+                if (key == key3)
                 {
-                    if(updateFilter == null || updateFilter(value3))
+                    if (updateFilter == null || updateFilter(value3))
                         value3 = valueFactory();
                     value = value3;
                     return true;
                 }
-                if(key == key4)
+
+                if (key == key4)
                 {
-                    if(updateFilter == null || updateFilter(value4))
+                    if (updateFilter == null || updateFilter(value4))
                         value4 = valueFactory();
                     value = value4;
                     return true;
                 }
-                if(key == key5)
+
+                if (key == key5)
                 {
-                    if(updateFilter == null || updateFilter(value5))
+                    if (updateFilter == null || updateFilter(value5))
                         value5 = valueFactory();
                     value = value5;
                     return true;
                 }
-                if(key == key6)
+
+                if (key == key6)
                 {
-                    if(updateFilter == null || updateFilter(value6))
+                    if (updateFilter == null || updateFilter(value6))
                         value6 = valueFactory();
                     value = value6;
                     return true;
                 }
+
                 value = default(T);
                 return false;
             }

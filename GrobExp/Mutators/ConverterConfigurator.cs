@@ -79,16 +79,17 @@ namespace GrobExp.Mutators
 
         private static void CollectTargets<TValue>(Expression path, List<Expression> targets)
         {
-            if(path.Type == typeof(TValue))
+            if (path.Type == typeof(TValue))
             {
                 targets.Add(path);
                 return;
             }
+
             var properties = path.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach(var property in properties)
+            foreach (var property in properties)
             {
                 Expression nextPath = Expression.MakeMemberAccess(path, property);
-                if(property.PropertyType.IsArray)
+                if (property.PropertyType.IsArray)
                     nextPath = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(property.PropertyType.GetElementType()), nextPath);
                 CollectTargets<TValue>(nextPath, targets);
             }
@@ -120,12 +121,12 @@ namespace GrobExp.Mutators
         public void SetMutator(MutatorConfiguration mutator)
         {
             MutatorConfiguration rootMutator = GetRootMutator(mutator);
-            
-            if(PathToValue != null)
+
+            if (PathToValue != null)
                 root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
             else
             {
-                foreach(var pathToValue in PathsToValue)
+                foreach (var pathToValue in PathsToValue)
                     root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
             }
         }

@@ -20,7 +20,7 @@ namespace GrobExp.Mutators.Visitors
         public ExpressionMerger(params LambdaExpression[] paths)
         {
             // todo ich: избавиться бы от HashSet-а..
-            if(paths == null)
+            if (paths == null)
                 throw new ArgumentNullException("paths");
             this.paths = paths.Select(path => path.Body).ToArray();
             parameters = new HashSet<ParameterExpression>(paths.SelectMany(lambda => lambda.Parameters)).ToArray();
@@ -44,17 +44,18 @@ namespace GrobExp.Mutators.Visitors
 
         private Expression MergeInternal(LambdaExpression expression)
         {
-            if(expression == null)
+            if (expression == null)
                 throw new ArgumentNullException("expression");
-            if(expression.Parameters.Count == 0)
+            if (expression.Parameters.Count == 0)
                 return expression.Body;
-            if(expression.Parameters.Count != paths.Length)
+            if (expression.Parameters.Count != paths.Length)
                 throw new ArgumentException("Expected lambda with exactly " + paths.Length + " parameters", "expression");
-            for(var i = 0; i < paths.Length; ++i)
+            for (var i = 0; i < paths.Length; ++i)
             {
-                if(paths[i].Type != expression.Parameters[i].Type)
+                if (paths[i].Type != expression.Parameters[i].Type)
                     throw new InvalidOperationException("Type of 'paths[" + i + "]' is not equal to corresponding parameter type of 'expression'");
             }
+
             expressionParameters = expression.Parameters;
             return Visit(expression.Body);
         }

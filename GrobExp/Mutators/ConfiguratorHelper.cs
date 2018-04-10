@@ -34,12 +34,14 @@ namespace GrobExp.Mutators
                 result.Add(path);
                 return;
             }
+
             if (type.IsArray)
             {
                 var elementType = type.GetElementType();
                 GetLeaves(elementType, Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(elementType), path), result);
                 return;
             }
+
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             Func<PropertyInfo, bool> predicate = property => property.CanWrite && property.GetSetMethod(true).GetParameters().Length == 1;

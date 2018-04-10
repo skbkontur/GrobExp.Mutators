@@ -25,17 +25,17 @@ namespace GrobExp.Mutators.Visitors
         /// <returns></returns>
         public override Expression Visit(Expression exp)
         {
-            if(exp == null)
+            if (exp == null)
                 return null;
-            if(exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsDynamicMethod())
+            if (exp.NodeType == ExpressionType.Call && ((MethodCallExpression)exp).Method.IsDynamicMethod())
                 return exp;
-            if(exp.NodeType == ExpressionType.Lambda || exp.NodeType == ExpressionType.Goto ||
-               exp.NodeType == ExpressionType.Label || exp.NodeType == ExpressionType.Default ||
-               exp.NodeType == ExpressionType.New || exp.NodeType == ExpressionType.MemberInit ||
-               exp.NodeType == ExpressionType.Constant || !exp.IsConstant())
+            if (exp.NodeType == ExpressionType.Lambda || exp.NodeType == ExpressionType.Goto ||
+                exp.NodeType == ExpressionType.Label || exp.NodeType == ExpressionType.Default ||
+                exp.NodeType == ExpressionType.New || exp.NodeType == ExpressionType.MemberInit ||
+                exp.NodeType == ExpressionType.Constant || !exp.IsConstant())
                 return base.Visit(exp);
 
-            if(exp.IsOfType(ExpressionType.Convert))
+            if (exp.IsOfType(ExpressionType.Convert))
             {
                 var unaryExpression = (UnaryExpression)exp;
                 exp = TryRemoveEnumToIntCast(unaryExpression, unaryExpression.Operand) ?? unaryExpression;
@@ -50,14 +50,14 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var parameters = node.Method.GetParameters();
-            if(parameters.All(param => !param.ParameterType.IsByRef))
+            if (parameters.All(param => !param.ParameterType.IsByRef))
                 return base.VisitMethodCall(node);
             return Expression.Call(Visit(node.Object), node.Method, node.Arguments.Select((x, i) => parameters[i].ParameterType.IsByRef ? x : Visit(x)));
         }
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if(node.Expression.IsAnonymousTypeCreation())
+            if (node.Expression.IsAnonymousTypeCreation())
                 return InlineAnonymousTypeField(node);
 
             return TryUnwrapConversion(node) ?? base.VisitMember(node);
@@ -68,14 +68,14 @@ namespace GrobExp.Mutators.Visitors
         /// </summary>
         private Expression TryUnwrapConversion(MemberExpression node)
         {
-            if(!node.Expression.IsOfType(ExpressionType.Convert))
+            if (!node.Expression.IsOfType(ExpressionType.Convert))
                 return null;
 
             var unaryExpression = (UnaryExpression)node.Expression;
             var member = unaryExpression.Operand.Type
                                         .GetMember(node.Member.Name)
                                         .FirstOrDefault(memberInfo => HasType(memberInfo, node.Type));
-            if(member == null)
+            if (member == null)
                 return null;
 
             return Expression.MakeMemberAccess(Visit(unaryExpression.Operand), member);
@@ -93,16 +93,16 @@ namespace GrobExp.Mutators.Visitors
             var type = newExpression.Type;
             MemberInfo[] members;
 
-            if(node.Member is FieldInfo)
+            if (node.Member is FieldInfo)
                 // ReSharper disable once CoVariantArrayConversion
                 members = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
-            else if(node.Member is PropertyInfo)
+            else if (node.Member is PropertyInfo)
                 // ReSharper disable once CoVariantArrayConversion
                 members = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             else throw new NotSupportedException();
 
             var i = Array.IndexOf(members, node.Member);
-            if(i < 0 || i >= newExpression.Arguments.Count)
+            if (i < 0 || i >= newExpression.Arguments.Count)
                 throw new InvalidOperationException();
 
             return newExpression.Arguments[i];
@@ -114,42 +114,46 @@ namespace GrobExp.Mutators.Visitors
         /// </summary>
         protected override Expression VisitBinary(BinaryExpression b)
         {
-            switch(b.NodeType)
+            switch (b.NodeType)
             {
             case ExpressionType.AndAlso:
                 {
                     var left = Visit(b.Left);
                     var right = Visit(b.Right);
-                    if(left is ConstantExpression && (left.Type == typeof(bool)))
+                    if (left is ConstantExpression && (left.Type == typeof(bool)))
                     {
-                        if((bool)(left as ConstantExpression).Value)
+                        if ((bool)(left as ConstantExpression).Value)
                             return right;
                         return left;
                     }
-                    if(right is ConstantExpression && (right.Type == typeof(bool)))
+
+                    if (right is ConstantExpression && (right.Type == typeof(bool)))
                     {
-                        if((bool)(right as ConstantExpression).Value)
+                        if ((bool)(right as ConstantExpression).Value)
                             return left;
                         return right;
                     }
+
                     return b.Update(left, VisitAndConvert(b.Conversion, "VisitBinary"), right);
                 }
             case ExpressionType.OrElse:
                 {
                     var left = Visit(b.Left);
                     var right = Visit(b.Right);
-                    if(left is ConstantExpression && (left.Type == typeof(bool)))
+                    if (left is ConstantExpression && (left.Type == typeof(bool)))
                     {
-                        if((bool)(left as ConstantExpression).Value)
+                        if ((bool)(left as ConstantExpression).Value)
                             return left;
                         return right;
                     }
-                    if(right is ConstantExpression && (right.Type == typeof(bool)))
+
+                    if (right is ConstantExpression && (right.Type == typeof(bool)))
                     {
-                        if((bool)(right as ConstantExpression).Value)
+                        if ((bool)(right as ConstantExpression).Value)
                             return right;
                         return left;
                     }
+
                     return b.Update(left, VisitAndConvert(b.Conversion, "VisitBinary"), right);
                 }
             case ExpressionType.Equal:
@@ -159,23 +163,25 @@ namespace GrobExp.Mutators.Visitors
                     var right = b.Right;
                     var leftIsAConvertFromEnum = IsAConvertFromEnumToInt(left);
                     var rightIsAConvertFromEnum = IsAConvertFromEnumToInt(right);
-                    if(leftIsAConvertFromEnum || rightIsAConvertFromEnum)
+                    if (leftIsAConvertFromEnum || rightIsAConvertFromEnum)
                     {
-                        if(!leftIsAConvertFromEnum)
+                        if (!leftIsAConvertFromEnum)
                             left = Expression.Convert(left, ((UnaryExpression)right).Operand.Type);
-                        if(!rightIsAConvertFromEnum)
+                        if (!rightIsAConvertFromEnum)
                             right = Expression.Convert(right, ((UnaryExpression)left).Operand.Type);
                         return b.Update(Visit(left), VisitAndConvert(b.Conversion, "VisitBinary"), Visit(right));
                     }
+
                     return base.VisitBinary(b);
                 }
             }
+
             return base.VisitBinary(b);
         }
 
         protected override Expression VisitUnary(UnaryExpression u)
         {
-            if(u.IsOfType(ExpressionType.Convert))
+            if (u.IsOfType(ExpressionType.Convert))
             {
                 var operand = Visit(u.Operand);
                 return TryRemoveEnumToIntCast(u, operand) ?? u.Update(operand);
@@ -189,29 +195,30 @@ namespace GrobExp.Mutators.Visitors
         /// </summary>
         private static Expression TryRemoveEnumToIntCast(UnaryExpression unaryExpression, Expression operand)
         {
-            if(operand.Type.IsEnum)
+            if (operand.Type.IsEnum)
             {
-                if(unaryExpression.Type == typeof(int))
+                if (unaryExpression.Type == typeof(int))
                     return operand;
-                if(unaryExpression.Type == typeof(int?))
+                if (unaryExpression.Type == typeof(int?))
                     return Expression.Convert(operand, typeof(Nullable<>).MakeGenericType(operand.Type));
             }
-            else if(IsNullableEnum(operand.Type))
+            else if (IsNullableEnum(operand.Type))
             {
-                if(unaryExpression.Type == typeof(int))
+                if (unaryExpression.Type == typeof(int))
                     return Expression.Convert(operand, operand.Type.GetGenericArguments()[0]);
-                if(unaryExpression.Type == typeof(int?))
+                if (unaryExpression.Type == typeof(int?))
                     return operand;
             }
+
             return null;
         }
 
         protected override Expression VisitConditional(ConditionalExpression c)
         {
             var test = Visit(c.Test);
-            if(test.NodeType == ExpressionType.Constant)
+            if (test.NodeType == ExpressionType.Constant)
                 return (bool)((ConstantExpression)test).Value ? Visit(c.IfTrue) : Visit(c.IfFalse);
-            return c.Update(test, Visit(c.IfTrue), Visit(c.IfFalse)); 
+            return c.Update(test, Visit(c.IfTrue), Visit(c.IfFalse));
         }
 
         private static bool HasType(MemberInfo member, Type type)

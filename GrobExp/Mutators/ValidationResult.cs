@@ -22,9 +22,9 @@ namespace GrobExp.Mutators
 
         public override string ToString()
         {
-            switch(Type)
+            switch (Type)
             {
-                // For performance issues
+            // For performance issues
             case ValidationResultType.Ok:
                 return "Ok";
             case ValidationResultType.Error:

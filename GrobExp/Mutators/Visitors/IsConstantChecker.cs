@@ -10,13 +10,13 @@ namespace GrobExp.Mutators.Visitors
     public class IsConstantChecker : ExpressionVisitor
     {
         /// <summary>
-        /// An expression is considered not Constant if:
-        /// <list type="bullet">
-        /// <item>It references external parameters</item>
-        /// <item>It contains a call to DateTime.<see cref="DateTime.UtcNow"/></item>
-        /// <item>It contains a call to Guid.<see cref="Guid.NewGuid"/></item>
-        /// <item>It contains a call to <see cref="MutatorsHelperFunctions.Dynamic{T}"/></item>
-        /// </list>
+        ///     An expression is considered not Constant if:
+        ///     <list type="bullet">
+        ///         <item>It references external parameters</item>
+        ///         <item>It contains a call to DateTime.<see cref="DateTime.UtcNow" /></item>
+        ///         <item>It contains a call to Guid.<see cref="Guid.NewGuid" /></item>
+        ///         <item>It contains a call to <see cref="MutatorsHelperFunctions.Dynamic{T}" /></item>
+        ///     </list>
         /// </summary>
         public bool IsConstant([NotNull] Expression exp)
         {
@@ -34,21 +34,21 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if(node.Member == utcNowMember)
+            if (node.Member == utcNowMember)
                 isConstant = false;
             return base.VisitMember(node);
         }
 
         protected override Expression VisitParameter(ParameterExpression p)
         {
-            if(!parameters.Contains(p))
+            if (!parameters.Contains(p))
                 isConstant = false;
             return base.VisitParameter(p);
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if(node.Method.IsDynamicMethod() || node.Method == guidNewGuidMethod)
+            if (node.Method.IsDynamicMethod() || node.Method == guidNewGuidMethod)
                 isConstant = false;
             return base.VisitMethodCall(node);
         }

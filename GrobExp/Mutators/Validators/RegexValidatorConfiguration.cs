@@ -65,18 +65,19 @@ namespace GrobExp.Mutators.Validators
 
         public LambdaExpression GetFullCondition()
         {
-            if(fullCondition != null)
+            if (fullCondition != null)
                 return fullCondition;
             Expression valueIsNotNull = Prepare(Expression.Lambda(Expression.NotEqual(Path.Body, Expression.Constant(null, Path.Body.Type)), Path.Parameters)).Body;
             Expression condition = Expression.Convert(Expression.AndAlso(valueIsNotNull, Expression.Not(Expression.Call(Expression.Constant(regex), regexIsMatchMethod, Path.Body))), typeof(bool?));
-            if(Condition != null)
+            if (Condition != null)
             {
                 var parameterFromPath = Path.Parameters.Single();
                 var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
-                if(parameterFromCondition != null)
+                if (parameterFromCondition != null)
                     condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
                 condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
             }
+
             return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
@@ -88,10 +89,10 @@ namespace GrobExp.Mutators.Validators
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
             var toLog = new ValidationLogInfo("Regex = " + regex, condition.ToString());
-             
-            if(MutatorsValidationRecorder.IsRecording())
+
+            if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] { result }, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
+            return Expression.Block(new[] {result}, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
         }
 
         public LambdaExpression Path { get; private set; }
@@ -103,17 +104,17 @@ namespace GrobExp.Mutators.Validators
         {
             var condition = GetFullCondition();
             return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
+                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
         private static string PreparePattern(string pattern)
         {
-            if(pattern[0] != '^')
+            if (pattern[0] != '^')
                 pattern = "^" + pattern;
-            if(pattern[pattern.Length - 1] != '$')
+            if (pattern[pattern.Length - 1] != '$')
                 pattern = pattern + "$";
             return pattern;
         }

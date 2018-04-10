@@ -11,7 +11,7 @@ namespace GrobExp.Mutators
         public Expression GetFormattedPath(Expression[] paths)
         {
             var formattedPaths = paths.Select(GetText).ToArray();
-            if(formattedPaths.Any(path => path == null))
+            if (formattedPaths.Any(path => path == null))
                 return null;
             return Expression.MemberInit(
                 Expression.New(typeof(SimplePathFormatterText)),
@@ -22,28 +22,29 @@ namespace GrobExp.Mutators
         {
             var current = new StringBuilder();
             Expression result = null;
-            if(!GetText(path, current, ref result))
+            if (!GetText(path, current, ref result))
                 return null;
-            if(current.Length > 0)
+            if (current.Length > 0)
             {
                 Expression cur = Expression.Constant(current.ToString());
                 result = result == null ? cur : Expression.Add(result, cur, stringConcatMethod);
             }
+
             return result ?? Expression.Constant(null, typeof(string));
         }
 
         private bool GetText(Expression path, StringBuilder current, ref Expression result)
         {
-            switch(path.NodeType)
+            switch (path.NodeType)
             {
             case ExpressionType.Parameter:
                 break;
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)path;
-                    if(!GetText(memberExpression.Expression, current, ref result))
+                    if (!GetText(memberExpression.Expression, current, ref result))
                         return false;
-                    if(result != null || current.Length > 0)
+                    if (result != null || current.Length > 0)
                         current.Append(".");
                     current.Append(memberExpression.Member.Name);
                     break;
@@ -51,10 +52,10 @@ namespace GrobExp.Mutators
             case ExpressionType.ArrayIndex:
                 {
                     var binaryExpression = (BinaryExpression)path;
-                    if(!GetText(binaryExpression.Left, current, ref result))
+                    if (!GetText(binaryExpression.Left, current, ref result))
                         return false;
                     var index = binaryExpression.Right;
-                    if(index.NodeType == ExpressionType.Constant)
+                    if (index.NodeType == ExpressionType.Constant)
                     {
                         current.Append("[");
                         current.Append(((ConstantExpression)index).Value);
@@ -69,15 +70,16 @@ namespace GrobExp.Mutators
                         current.Clear();
                         current.Append("]");
                     }
+
                     break;
                 }
             case ExpressionType.Call:
                 {
                     var methodCallExpression = (MethodCallExpression)path;
-                    if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                    if (methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
                     {
                         Expression array = methodCallExpression.Arguments.Single();
-                        if(!GetText(array, current, ref result))
+                        if (!GetText(array, current, ref result))
                             return false;
                         current.Append("[");
                         Expression cur = Expression.Constant(current.ToString());
@@ -89,17 +91,19 @@ namespace GrobExp.Mutators
                         current.Append("]");
                         break;
                     }
-                    if(methodCallExpression.Method.IsWhereMethod() || methodCallExpression.Method.IsToArrayMethod() || methodCallExpression.Method.IsSelectMethod())
+
+                    if (methodCallExpression.Method.IsWhereMethod() || methodCallExpression.Method.IsToArrayMethod() || methodCallExpression.Method.IsSelectMethod())
                     {
-                        if(!GetText(methodCallExpression.Arguments[0], current, ref result))
+                        if (!GetText(methodCallExpression.Arguments[0], current, ref result))
                             return false;
                         break;
                     }
-                    if(methodCallExpression.Method.IsIndexerGetter())
+
+                    if (methodCallExpression.Method.IsIndexerGetter())
                     {
-                        if(!GetText(methodCallExpression.Object, current, ref result))
+                        if (!GetText(methodCallExpression.Object, current, ref result))
                             return false;
-                        if(methodCallExpression.Arguments.Count != 1)
+                        if (methodCallExpression.Arguments.Count != 1)
                             throw new NotSupportedException();
                         current.Append(".");
                         current.Append(((ConstantExpression)methodCallExpression.Arguments[0]).Value);
@@ -108,15 +112,17 @@ namespace GrobExp.Mutators
                         current.Clear();
                         break;
                     }
+
                     return false;
                 }
             case ExpressionType.Convert:
-                if(!GetText(((UnaryExpression)path).Operand, current, ref result))
+                if (!GetText(((UnaryExpression)path).Operand, current, ref result))
                     return false;
                 break;
             default:
                 return false;
             }
+
             return true;
         }
 

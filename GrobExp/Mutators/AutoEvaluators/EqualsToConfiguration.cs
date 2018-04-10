@@ -4,11 +4,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Visitors;
-
-using GrobExp.Compiler;
-using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 
 namespace GrobExp.Mutators.AutoEvaluators
 {
@@ -45,7 +43,7 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            if(Validator != null)
+            if (Validator != null)
                 throw new NotSupportedException();
             return new EqualsToConfiguration(to, Resolve(path, performer, Value), Validator);
         }
@@ -62,7 +60,7 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(Value == null) return null;
+            if (Value == null) return null;
             var infoToLog = new AssignLogInfo(path, Value.Body);
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);

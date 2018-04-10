@@ -11,20 +11,20 @@ namespace GrobExp.Mutators.Visitors
         public static bool Equivalent(Expression first, Expression second, bool strictly, bool distinguishEachAndCurrent, out List<(ParameterExpression firstExpressionParameter, ParameterExpression secondExpressionParameter)> parameterMappingFromFirstToSecondExpression)
         {
             var context = new Context
-            {
-                Strictly = strictly,
-                DistinguishEachAndCurrent = distinguishEachAndCurrent,
-                FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
-                SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
-                FirstLabels = new Dictionary<LabelTarget, LabelTarget>(),
-                SecondLabels = new Dictionary<LabelTarget, LabelTarget>()
-            };
+                {
+                    Strictly = strictly,
+                    DistinguishEachAndCurrent = distinguishEachAndCurrent,
+                    FirstParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                    SecondParameters = new Dictionary<ParameterExpression, ParameterExpression>(),
+                    FirstLabels = new Dictionary<LabelTarget, LabelTarget>(),
+                    SecondLabels = new Dictionary<LabelTarget, LabelTarget>()
+                };
             var result = Equivalent(first, second, context);
             foreach (var contextFirstParameter in context.FirstParameters)
                 if (!context.SecondParameters.TryGetValue(contextFirstParameter.Value, out var secondParameter) || contextFirstParameter.Key != secondParameter)
                     throw new Exception("Invalid state: expected FirstParameters and SecondParameters to be equivalent");
             foreach (var contextSecondParameter in context.SecondParameters)
-                if(!context.FirstParameters.TryGetValue(contextSecondParameter.Value, out var firstParameter) || contextSecondParameter.Key != firstParameter)
+                if (!context.FirstParameters.TryGetValue(contextSecondParameter.Value, out var firstParameter) || contextSecondParameter.Key != firstParameter)
                     throw new Exception("Invalid state: expected FirstParameters and SecondParameters to be equivalent");
             parameterMappingFromFirstToSecondExpression = context.FirstParameters.Select(pair => (pair.Key, pair.Value)).ToList();
             return result;
@@ -45,23 +45,24 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool Equivalent(IList<Expression> firstList, IList<Expression> secondList, Context context)
         {
-            if(firstList.Count != secondList.Count)
+            if (firstList.Count != secondList.Count)
                 return false;
-            for(int i = 0; i < firstList.Count; i++)
+            for (int i = 0; i < firstList.Count; i++)
             {
-                if(!Equivalent(firstList[i], secondList[i], context))
+                if (!Equivalent(firstList[i], secondList[i], context))
                     return false;
             }
+
             return true;
         }
 
         private static bool Equivalent(Expression first, Expression second, Context context)
         {
-            if(first == null || second == null)
+            if (first == null || second == null)
                 return first == null && second == null;
-            if(first.NodeType != second.NodeType || first.Type != second.Type)
+            if (first.NodeType != second.NodeType || first.Type != second.Type)
                 return false;
-            switch(first.NodeType)
+            switch (first.NodeType)
             {
             case ExpressionType.Add:
             case ExpressionType.AddAssign:
@@ -181,15 +182,15 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentParameter(ParameterExpression first, ParameterExpression second, Context context)
         {
-            if(context.Strictly)
+            if (context.Strictly)
             {
-                if(first == second)
+                if (first == second)
                     return true;
                 ParameterExpression firstMapsTo;
                 ParameterExpression secondMapsTo;
-                if(!context.FirstParameters.TryGetValue(first, out firstMapsTo) || firstMapsTo != second)
+                if (!context.FirstParameters.TryGetValue(first, out firstMapsTo) || firstMapsTo != second)
                     return false;
-                if(!context.SecondParameters.TryGetValue(second, out secondMapsTo) || secondMapsTo != first)
+                if (!context.SecondParameters.TryGetValue(second, out secondMapsTo) || secondMapsTo != first)
                     return false;
                 return true;
             }
@@ -197,13 +198,13 @@ namespace GrobExp.Mutators.Visitors
             {
                 ParameterExpression firstMapsTo;
                 ParameterExpression secondMapsTo;
-                if(!context.FirstParameters.TryGetValue(first, out firstMapsTo))
+                if (!context.FirstParameters.TryGetValue(first, out firstMapsTo))
                     context.FirstParameters.Add(first, second);
-                else if(firstMapsTo != second)
+                else if (firstMapsTo != second)
                     return false;
-                if(!context.SecondParameters.TryGetValue(second, out secondMapsTo))
+                if (!context.SecondParameters.TryGetValue(second, out secondMapsTo))
                     context.SecondParameters.Add(second, first);
-                else if(secondMapsTo != first)
+                else if (secondMapsTo != first)
                     return false;
                 return true;
             }
@@ -211,7 +212,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentLabel(LabelTarget first, LabelTarget second, Context context)
         {
-            if(first == null || second == null)
+            if (first == null || second == null)
                 return first == null && second == null;
             LabelTarget firstMapsTo;
             LabelTarget secondMapsTo;
@@ -224,7 +225,6 @@ namespace GrobExp.Mutators.Visitors
             else if (secondMapsTo != first)
                 return false;
             return true;
-
         }
 
         private static bool EquivalentUnary(UnaryExpression first, UnaryExpression second, Context context)
@@ -239,19 +239,21 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentBlock(BlockExpression first, BlockExpression second, Context context)
         {
-            if(first.Variables.Count != second.Variables.Count)
+            if (first.Variables.Count != second.Variables.Count)
                 return false;
-            for(int i = 0; i < first.Variables.Count; ++i)
+            for (int i = 0; i < first.Variables.Count; ++i)
             {
                 context.FirstParameters.Add(first.Variables[i], second.Variables[i]);
                 context.SecondParameters.Add(second.Variables[i], first.Variables[i]);
             }
+
             var result = Equivalent(first.Expressions, second.Expressions, context);
-            for(int i = 0; i < first.Variables.Count; ++i)
+            for (int i = 0; i < first.Variables.Count; ++i)
             {
                 context.FirstParameters.Remove(first.Variables[i]);
                 context.SecondParameters.Remove(second.Variables[i]);
             }
+
             return result;
         }
 
@@ -262,7 +264,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentMethods(MethodInfo first, MethodInfo second, Context context)
         {
-            if(MembersEqual(first, second))
+            if (MembersEqual(first, second))
                 return true;
             return !context.DistinguishEachAndCurrent && IsEachOrCurrentMethod(first) && IsEachOrCurrentMethod(second) && first.GetGenericArguments()[0] == second.GetGenericArguments()[0];
         }
@@ -293,15 +295,16 @@ namespace GrobExp.Mutators.Visitors
         {
             var firstArr = first as Array;
             var secondArr = second as Array;
-            if(firstArr != null && secondArr != null)
+            if (firstArr != null && secondArr != null)
             {
-                if(firstArr.Length != secondArr.Length)
+                if (firstArr.Length != secondArr.Length)
                     return false;
-                for(int i = 0; i < firstArr.Length; ++i)
-                    if(!EquivalentObjects(firstArr.GetValue(i), secondArr.GetValue(i)))
+                for (int i = 0; i < firstArr.Length; ++i)
+                    if (!EquivalentObjects(firstArr.GetValue(i), secondArr.GetValue(i)))
                         return false;
                 return true;
             }
+
             return false;
         }
 
@@ -347,43 +350,46 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentLambda(LambdaExpression first, LambdaExpression second, Context context)
         {
-            if(first.Parameters.Count != second.Parameters.Count)
+            if (first.Parameters.Count != second.Parameters.Count)
                 return false;
-            for(int i = 0; i < first.Parameters.Count; ++i)
+            for (int i = 0; i < first.Parameters.Count; ++i)
             {
                 context.FirstParameters.Add(first.Parameters[i], second.Parameters[i]);
                 context.SecondParameters.Add(second.Parameters[i], first.Parameters[i]);
             }
+
             var result = Equivalent(first.Body, second.Body, context);
-            for(int i = 0; i < first.Parameters.Count; ++i)
+            for (int i = 0; i < first.Parameters.Count; ++i)
             {
                 context.FirstParameters.Remove(first.Parameters[i]);
                 context.SecondParameters.Remove(second.Parameters[i]);
             }
+
             return result;
         }
 
         private static bool EquivalentListInit(ListInitExpression first, ListInitExpression second, Context context)
         {
-            if(!Equivalent(first.NewExpression, second.NewExpression, context))
+            if (!Equivalent(first.NewExpression, second.NewExpression, context))
                 return false;
-            if(first.Initializers.Count != second.Initializers.Count)
+            if (first.Initializers.Count != second.Initializers.Count)
                 return false;
-            for(int i = 0; i < first.Initializers.Count; ++i)
+            for (int i = 0; i < first.Initializers.Count; ++i)
             {
-                if(!EquivalentMethods(first.Initializers[i].AddMethod, second.Initializers[i].AddMethod, context))
+                if (!EquivalentMethods(first.Initializers[i].AddMethod, second.Initializers[i].AddMethod, context))
                     return false;
-                if(!Equivalent(first.Initializers[i].Arguments, second.Initializers[i].Arguments, context))
+                if (!Equivalent(first.Initializers[i].Arguments, second.Initializers[i].Arguments, context))
                     return false;
             }
+
             return true;
         }
 
         private static bool EquivalentLoop(LoopExpression first, LoopExpression second, Context context)
         {
-            return EquivalentLabel(first.BreakLabel, second.BreakLabel, context) 
-                && EquivalentLabel(first.ContinueLabel, second.ContinueLabel, context) 
-                && Equivalent(first.Body, second.Body, context);
+            return EquivalentLabel(first.BreakLabel, second.BreakLabel, context)
+                   && EquivalentLabel(first.ContinueLabel, second.ContinueLabel, context)
+                   && Equivalent(first.Body, second.Body, context);
         }
 
         private static bool MembersEqual(MemberInfo first, MemberInfo second)
@@ -398,19 +404,20 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentMemberInit(MemberInitExpression first, MemberInitExpression second, Context context)
         {
-            if(!EquivalentNew(first.NewExpression, second.NewExpression, context))
+            if (!EquivalentNew(first.NewExpression, second.NewExpression, context))
                 return false;
-            if(first.Bindings.Count != second.Bindings.Count)
+            if (first.Bindings.Count != second.Bindings.Count)
                 return false;
-            for(int i = 0; i < first.Bindings.Count; ++i)
+            for (int i = 0; i < first.Bindings.Count; ++i)
             {
                 var firstAssignment = (MemberAssignment)first.Bindings[i];
                 var secondAssignment = (MemberAssignment)second.Bindings[i];
-                if(firstAssignment.BindingType != secondAssignment.BindingType
-                   || !MembersEqual(firstAssignment.Member, secondAssignment.Member)
-                   || !Equivalent(firstAssignment.Expression, secondAssignment.Expression, context))
+                if (firstAssignment.BindingType != secondAssignment.BindingType
+                    || !MembersEqual(firstAssignment.Member, secondAssignment.Member)
+                    || !Equivalent(firstAssignment.Expression, secondAssignment.Expression, context))
                     return false;
             }
+
             return true;
         }
 

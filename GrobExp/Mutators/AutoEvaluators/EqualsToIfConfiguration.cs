@@ -43,7 +43,7 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            if(Validator != null)
+            if (Validator != null)
                 throw new NotSupportedException();
             return new EqualsToIfConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Value), Validator);
         }
@@ -60,12 +60,12 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(Value == null) return null;
+            if (Value == null) return null;
             var infoToLog = new AssignLogInfo(path, Value.Body);
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
             var assignment = path.Assign(value, infoToLog);
-            if(Condition == null)
+            if (Condition == null)
                 return assignment;
             var condition = Condition.Body;
             condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -77,10 +77,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
+                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
 //        protected override Expression[] GetChains()

@@ -139,21 +139,6 @@ namespace Mutators.Tests
             Check((A a) => new {s = a.S, a.B.S}.S == "zzz", a => a.B.S == "zzz");
         }
 
-        public class A
-        {
-            public string S { get; set; }
-            public B B { get; set; }
-            public DateTime? DateTime { get; set; }
-            public Guid? Id { get; set; }
-            public E E { get; set; }
-            public E? E2 { get; set; }
-        }
-
-        public class B
-        {
-            public string S { get; set; }
-        }
-
         public enum E
         {
             Zero,
@@ -171,9 +156,24 @@ namespace Mutators.Tests
         {
             var simplifiedExpression = simplifier.Simplify(expression);
             Assert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly : false, distinguishEachAndCurrent : true),
-                "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
+                        "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
         }
 
         private ExpressionSimplifier simplifier;
+
+        public class A
+        {
+            public string S { get; set; }
+            public B B { get; set; }
+            public DateTime? DateTime { get; set; }
+            public Guid? Id { get; set; }
+            public E E { get; set; }
+            public E? E2 { get; set; }
+        }
+
+        public class B
+        {
+            public string S { get; set; }
+        }
     }
 }

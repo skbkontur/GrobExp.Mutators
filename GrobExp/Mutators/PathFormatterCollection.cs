@@ -10,15 +10,15 @@ namespace GrobExp.Mutators
         {
             var type = typeof(T);
             var result = (IPathFormatter)hashtable[type];
-            if(result == null)
+            if (result == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     result = (IPathFormatter)hashtable[type];
-                    if(result == null)
+                    if (result == null)
                     {
                         var attribute = type.GetCustomAttributes(typeof(PathFormatterAttribute), true).Cast<PathFormatterAttribute>().SingleOrDefault();
-                        if(attribute == null)
+                        if (attribute == null)
                             result = defaultPathFormatter;
                         else
                             result = (IPathFormatter)Activator.CreateInstance(attribute.PathFormatterType);
@@ -26,6 +26,7 @@ namespace GrobExp.Mutators
                     }
                 }
             }
+
             return result;
         }
 

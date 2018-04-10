@@ -15,22 +15,23 @@ namespace GrobExp.Mutators
         {
             var types = path.Concat(new[] {typeof(TData)}).ToArray();
             var type = (Type)hashtable[path.Length];
-            if(type == null)
+            if (type == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     type = (Type)hashtable[path.Length];
-                    if(type == null)
+                    if (type == null)
                         hashtable[path.Length] = type = BuildMutatorsTreeCreator(types.Length);
                 }
             }
+
             return (IMutatorsTreeCreator<TData>)Activator.CreateInstance(type.MakeGenericType(types));
         }
 
         public static MutatorsTreeBase<T> Merge<T>(MutatorsTreeBase<T> first, MutatorsTreeBase<T> second)
         {
-            if(first == null) return second;
-            if(second == null) return first;
+            if (first == null) return second;
+            if (second == null) return first;
             return first.Merge(second);
         }
 
@@ -50,7 +51,7 @@ namespace GrobExp.Mutators
             var method = TypeBuilder.GetMethod(interfaceType, typeof(IMutatorsTreeCreator<>).GetMethod(getMutatorsTreeMethodName, BindingFlags.Public | BindingFlags.Instance));
             var methodBuilder = typeBuilder.DefineMethod(getMutatorsTreeMethodName, MethodAttributes.Public | MethodAttributes.Virtual, typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters.Last()),
                                                          new[] {typeof(IDataConfiguratorCollectionFactory), typeof(IConverterCollectionFactory), typeof(MutatorsContext[]), typeof(MutatorsContext[])});
-            using(var il = new GroboIL(methodBuilder))
+            using (var il = new GroboIL(methodBuilder))
             {
                 il.Ldarg(1); // stack: [dataConfiguratorCollectionFactory]
                 il.Call(getDataConfiguratorCollectionMethod.MakeGenericMethod(genericParameters[0]), typeof(IDataConfiguratorCollectionFactory)); // stack: [dataConfiguratorCollectionFactory.Get<TSource> = collection]
@@ -70,7 +71,7 @@ namespace GrobExp.Mutators
                 il.MarkLabel(sourceCollectionIsNullLabel);
 
                 var current = il.DeclareLocal(typeof(MutatorsTreeBase<>).MakeGenericType(genericParameters[0]));
-                for(var i = 0; i < numberOfGenericParameters - 1; ++i)
+                for (var i = 0; i < numberOfGenericParameters - 1; ++i)
                 {
                     // First: Migrate tree
                     il.Stloc(current);
@@ -123,6 +124,7 @@ namespace GrobExp.Mutators
                     //il.Call(TypeBuilder.GetMethod(mutatorsTreeType, typeof(MutatorsTreeBase<>).GetMethod("Merge", BindingFlags.Public | BindingFlags.Instance)), mutatorsTreeType); // stack: [validationsTree.Merge(current).Merge(collection.GetMutatorsTree(mutatorsContexts[i + 1], 0)) = current]
                     il.Call(mergeMethod.MakeGenericMethod(genericParameters[i + 1])); // stack: [validationsTree.Merge(current).Merge(collection.GetMutatorsTree(mutatorsContexts[i + 1], 0)) = current]
                 }
+
                 il.Ret();
             }
 

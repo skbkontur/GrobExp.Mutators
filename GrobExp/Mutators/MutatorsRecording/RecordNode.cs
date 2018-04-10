@@ -39,7 +39,7 @@ namespace GrobExp.Mutators.MutatorsRecording
 
             var recordName = pathComponents[0];
             RecordNode node;
-            if(ContainsRecord(recordName))
+            if (ContainsRecord(recordName))
                 node = GetRecordByName(recordName);
             else
             {
@@ -47,7 +47,7 @@ namespace GrobExp.Mutators.MutatorsRecording
                 Records.Add(node);
             }
 
-            if(pathComponents.Count == 1)
+            if (pathComponents.Count == 1)
                 node.RecordCompilingExpression(value, isExcludedFromCoverage);
             else
                 node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
@@ -64,7 +64,7 @@ namespace GrobExp.Mutators.MutatorsRecording
         private void RecordExecutingExpression(string value)
         {
             ExecutedCount++;
-            if(!ContainsRecord(value))
+            if (!ContainsRecord(value))
                 RecordCompilingExpression(value);
             GetRecordByName(value).ExecutedCount++;
         }
@@ -74,7 +74,7 @@ namespace GrobExp.Mutators.MutatorsRecording
             ExecutedCount++;
 
             var recordName = pathComponents[0];
-            if(!ContainsRecord(recordName))
+            if (!ContainsRecord(recordName))
                 RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage == null ? false : isExcludedFromCoverage.Value);
 
             var node = GetRecordByName(recordName);

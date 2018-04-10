@@ -27,7 +27,7 @@ namespace GrobExp.Mutators.Aggregators
 
         public Expression GetCondition(List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(Condition == null) return null;
+            if (Condition == null) return null;
             return Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
         }
 

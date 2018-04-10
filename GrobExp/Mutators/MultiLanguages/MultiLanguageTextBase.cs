@@ -20,12 +20,13 @@ namespace GrobExp.Mutators.MultiLanguages
         {
             Initialize();
             string key = GetKey(GetType(), language, context);
-            if(!functions.ContainsKey(key))
+            if (!functions.ContainsKey(key))
             {
-                if(context != Default)
+                if (context != Default)
                     return GetText(language, Default);
                 throw new UnknownLanguageException(key);
             }
+
             return ((Func<MultiLanguageTextBase, string>)functions[key])(this);
         }
 
@@ -40,12 +41,13 @@ namespace GrobExp.Mutators.MultiLanguages
         {
             Initialize();
             string key = GetKey(GetType(), language, context);
-            if(!expressions.ContainsKey(key))
+            if (!expressions.ContainsKey(key))
             {
-                if(context != Default)
+                if (context != Default)
                     return GetExpression(language, Default);
                 throw new UnknownLanguageException(key);
             }
+
             return (Expression<Func<MultiLanguageTextBase, string>>)expressions[key];
         }
 
@@ -71,10 +73,10 @@ namespace GrobExp.Mutators.MultiLanguages
         private void Initialize()
         {
             var type = GetType();
-            if(initialized[type] != null) return;
-            lock(lockObject)
+            if (initialized[type] != null) return;
+            lock (lockObject)
             {
-                if(initialized[type] != null) return;
+                if (initialized[type] != null) return;
                 Register();
                 initialized.Add(type, dummy);
             }

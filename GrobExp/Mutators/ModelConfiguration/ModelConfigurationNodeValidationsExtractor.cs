@@ -17,21 +17,22 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static void ExtractValidationsFromConvertersInternal(this ModelConfigurationNode node, ModelConfigurationNode validationsTree, CompositionPerformer performer)
         {
-            foreach(var mutator in node.Mutators)
+            foreach (var mutator in node.Mutators)
             {
                 var equalsToConfiguration = mutator.Value as EqualsToConfiguration;
-                if(equalsToConfiguration != null && equalsToConfiguration.Validator != null)
+                if (equalsToConfiguration != null && equalsToConfiguration.Validator != null)
                 {
                     var path = equalsToConfiguration.Validator.PathToNode;
                     var primaryDependencies = path.ExtractPrimaryDependencies().Select(lambda => lambda.Body);
                     var commonPath = primaryDependencies.FindLCP();
                     var validationsNode = commonPath == null ? validationsTree : validationsTree.Traverse(commonPath, true);
                     var mutatedValidator = equalsToConfiguration.Validator.Mutate(node.RootType, commonPath, performer);
-                    if(mutatedValidator != null)
+                    if (mutatedValidator != null)
                         validationsNode.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(equalsToConfiguration.Validator.PathToValue.Body, mutatedValidator));
                 }
             }
-            foreach(var child in node.Children)
+
+            foreach (var child in node.Children)
                 child.ExtractValidationsFromConvertersInternal(validationsTree, performer);
         }
     }

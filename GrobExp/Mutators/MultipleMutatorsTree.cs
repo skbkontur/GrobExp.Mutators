@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
@@ -34,19 +33,20 @@ namespace GrobExp.Mutators
         {
             List<KeyValuePair<int, MutatorConfiguration>> mutators = null;
             Expression abstractPath = null;
-            foreach(var tree in trees)
+            foreach (var tree in trees)
             {
                 var current = tree.GetRawMutators(path);
-                if(current.Key == null)
+                if (current.Key == null)
                     continue;
-                if(abstractPath != null && !ExpressionEquivalenceChecker.Equivalent(abstractPath, current.Key, false, true))
+                if (abstractPath != null && !ExpressionEquivalenceChecker.Equivalent(abstractPath, current.Key, false, true))
                     throw new InvalidOperationException();
                 abstractPath = current.Key;
-                if(mutators == null)
+                if (mutators == null)
                     mutators = current.Value;
                 else
                     mutators.AddRange(current.Value);
             }
+
             return new KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>(abstractPath, mutators);
         }
 
@@ -61,7 +61,7 @@ namespace GrobExp.Mutators
             var validators = trees.Select(tree => tree.GetValidatorInternal(path)).ToArray();
             return (child, tree) =>
                 {
-                    foreach(var validator in validators)
+                    foreach (var validator in validators)
                         validator(child, tree);
                 };
         }
@@ -77,20 +77,20 @@ namespace GrobExp.Mutators
             var mutators = trees.Select(tree => tree.GetTreeMutator(path)).ToArray();
             return child =>
                 {
-                    foreach(var mutator in mutators)
+                    foreach (var mutator in mutators)
                         mutator(child);
                 };
         }
 
         protected override void GetAllMutators(List<MutatorWithPath> mutators)
         {
-            foreach(var tree in trees)
+            foreach (var tree in trees)
                 mutators.AddRange(tree.GetAllMutatorsWithPaths());
         }
 
         protected override void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators)
         {
-            foreach(var tree in trees)
+            foreach (var tree in trees)
             {
                 mutators.AddRange(tree.GetAllMutatorsWithPathsForWeb(path));
             }

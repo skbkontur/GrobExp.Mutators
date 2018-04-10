@@ -9,16 +9,13 @@ namespace Mutators.Tests
 {
     public class TestStringConverter : StringConverterBase
     {
-        private static readonly Dictionary<string, TestCustomFields.TestEnum> beautifulNameToEnum;
-        private static readonly Dictionary<TestCustomFields.TestEnum, string> enumToBeautifulName;
-
         static TestStringConverter()
         {
             var fields = typeof(TestCustomFields.TestEnum).GetFields(BindingFlags.Static | BindingFlags.Public);
             var enumValues = fields.Select(field => (TestCustomFields.TestEnum)Enum.Parse(typeof(TestCustomFields.TestEnum), field.Name)).ToArray();
             beautifulNameToEnum = new Dictionary<string, TestCustomFields.TestEnum>();
             enumToBeautifulName = new Dictionary<TestCustomFields.TestEnum, string>();
-            for(int i = 0; i < fields.Length; ++i)
+            for (int i = 0; i < fields.Length; ++i)
             {
                 var name = ((TestCustomFields.BeatifulNameAttribute)fields[i].GetCustomAttribute(typeof(TestCustomFields.BeatifulNameAttribute))).Name;
                 beautifulNameToEnum.Add(name, enumValues[i]);
@@ -46,6 +43,9 @@ namespace Mutators.Tests
             TestCustomFields.TestEnum result;
             return value != null && beautifulNameToEnum.TryGetValue(value, out result) ? result : (object)null;
         }
+
+        private static readonly Dictionary<string, TestCustomFields.TestEnum> beautifulNameToEnum;
+        private static readonly Dictionary<TestCustomFields.TestEnum, string> enumToBeautifulName;
     }
 
     public class TestConverterCollection<TSource, TDest> : ConverterCollection<TSource, TDest> where TDest : new()

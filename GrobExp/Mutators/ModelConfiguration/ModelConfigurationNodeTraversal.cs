@@ -38,142 +38,152 @@ namespace GrobExp.Mutators.ModelConfiguration
         /// </returns>
         private static bool Traverse(this ModelConfigurationNode theNode, Expression path, ModelConfigurationNode subRoot, out ModelConfigurationNode child, bool create, List<KeyValuePair<Expression, Expression>> arrayAliases)
         {
-            switch(path.NodeType)
+            switch (path.NodeType)
             {
             case ExpressionType.Parameter:
-            {
-                //Check if we have reached root of the tree
-                if(path.Type != theNode.NodeType)
                 {
-                    // Shit happened
-                    child = null;
-                    return false;
-                }
-                // Ok, it's root
-                child = theNode;
-                return subRoot == theNode;
-            }
-            case ExpressionType.Convert:
-            {
-                // Traverse to the operand's node and go by 'convertation' edge.
-                var unaryExpression = (UnaryExpression)path;
-                var result = theNode.Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
-                child = child == null ? null : child.GotoConvertation(unaryExpression.Type, create);
-                return result || child == subRoot;
-            }
-            case ExpressionType.MemberAccess:
-            {
-                // Traverse to the node of containing object and go by 'member-access' edge
-                var memberExpression = (MemberExpression)path;
-                var result = theNode.Traverse(memberExpression.Expression, subRoot, out child, create, arrayAliases);
-                child = child == null ? null : child.GotoMember(memberExpression.Member, create);
-                return result || child == subRoot;
-            }
-            case ExpressionType.ArrayIndex:
-            {
-                var binaryExpression = (BinaryExpression)path;
-                // Traverse to the array's node
-                var result = theNode.Traverse(binaryExpression.Left, subRoot, out child, create, arrayAliases);
-                if(child != null)
-                {
-                    // Try go by 'array-index' edge
-                    var newChild = child.GotoArrayElement(GetIndex(binaryExpression.Right), create);
-                    // If no child exists and create:false go by 'each' edge and create array alias for migration
-                    if(newChild == null)
+                    //Check if we have reached root of the tree
+                    if (path.Type != theNode.NodeType)
                     {
-                        newChild = child.GotoEachArrayElement(create : false);
-                        var array = GetArrayMigrationAlias(child);
-                        if(array != null)
-                        {
-                            arrayAliases.Add(new KeyValuePair<Expression, Expression>(
-                                Expression.ArrayIndex(array, binaryExpression.Right),
-                                array.MakeEachCall())
-                            );
-                        }
+                        // Shit happened
+                        child = null;
+                        return false;
                     }
-                    child = newChild;
+
+                    // Ok, it's root
+                    child = theNode;
+                    return subRoot == theNode;
                 }
-                return result || child == subRoot;
-            }
-            case ExpressionType.Call:
-            {
-                var methodCallExpression = (MethodCallExpression)path;
-                var method = methodCallExpression.Method;
-                if(method.IsEachMethod() || method.IsCurrentMethod())
+            case ExpressionType.Convert:
                 {
-                    // Traverse to the array's node which is in Arguments[0], because Each() and Current() are extension methods, and go by 'each' edge
-                    var result = theNode.Traverse(methodCallExpression.Arguments[0], subRoot, out child, create, arrayAliases);
-                    child = child == null ? null : child.GotoEachArrayElement(create);
+                    // Traverse to the operand's node and go by 'convertation' edge.
+                    var unaryExpression = (UnaryExpression)path;
+                    var result = theNode.Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
+                    child = child == null ? null : child.GotoConvertation(unaryExpression.Type, create);
                     return result || child == subRoot;
                 }
-                if(method.IsArrayIndexer())
+            case ExpressionType.MemberAccess:
                 {
-                    // Traverse to the array's node which is Object of method call
-                    var result = theNode.Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
-                    if(child != null)
+                    // Traverse to the node of containing object and go by 'member-access' edge
+                    var memberExpression = (MemberExpression)path;
+                    var result = theNode.Traverse(memberExpression.Expression, subRoot, out child, create, arrayAliases);
+                    child = child == null ? null : child.GotoMember(memberExpression.Member, create);
+                    return result || child == subRoot;
+                }
+            case ExpressionType.ArrayIndex:
+                {
+                    var binaryExpression = (BinaryExpression)path;
+                    // Traverse to the array's node
+                    var result = theNode.Traverse(binaryExpression.Left, subRoot, out child, create, arrayAliases);
+                    if (child != null)
                     {
                         // Try go by 'array-index' edge
-                        var newChild = child.GotoArrayElement(GetIndex(methodCallExpression.Arguments[0]), create);
+                        var newChild = child.GotoArrayElement(GetIndex(binaryExpression.Right), create);
                         // If no child exists and create:false go by 'each' edge and create array alias for migration
-                        if(newChild == null)
+                        if (newChild == null)
                         {
-                            newChild = child.GotoEachArrayElement(false);
+                            newChild = child.GotoEachArrayElement(create : false);
                             var array = GetArrayMigrationAlias(child);
-                            if(array != null)
+                            if (array != null)
                             {
                                 arrayAliases.Add(new KeyValuePair<Expression, Expression>(
-                                    Expression.ArrayIndex(array, methodCallExpression.Arguments[0]),
-                                    array.MakeEachCall())
+                                                     Expression.ArrayIndex(array, binaryExpression.Right),
+                                                     array.MakeEachCall())
                                 );
                             }
                         }
+
                         child = newChild;
                     }
+
                     return result || child == subRoot;
                 }
-                if(method.IsIndexerGetter())
+            case ExpressionType.Call:
                 {
-                    // Traverse to the object's node which is Object of method call
-                    var result = theNode.Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
-                    if(child != null)
+                    var methodCallExpression = (MethodCallExpression)path;
+                    var method = methodCallExpression.Method;
+                    if (method.IsEachMethod() || method.IsCurrentMethod())
                     {
-                        var parameters = methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray();
-                        // Try go by 'indexer' edge
-                        var newChild = child.GotoIndexer(parameters, create);
-                        // If no child exists and create:false go by 'each' edge and create array alias for migration
-                        if(newChild == null)
+                        // Traverse to the array's node which is in Arguments[0], because Each() and Current() are extension methods, and go by 'each' edge
+                        var result = theNode.Traverse(methodCallExpression.Arguments[0], subRoot, out child, create, arrayAliases);
+                        child = child == null ? null : child.GotoEachArrayElement(create);
+                        return result || child == subRoot;
+                    }
+
+                    if (method.IsArrayIndexer())
+                    {
+                        // Traverse to the array's node which is Object of method call
+                        var result = theNode.Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
+                        if (child != null)
                         {
-                            newChild = child.GotoEachArrayElement(false);
-                            if(newChild != null)
+                            // Try go by 'array-index' edge
+                            var newChild = child.GotoArrayElement(GetIndex(methodCallExpression.Arguments[0]), create);
+                            // If no child exists and create:false go by 'each' edge and create array alias for migration
+                            if (newChild == null)
                             {
-                                newChild = newChild.GotoMember(newChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), false);
+                                newChild = child.GotoEachArrayElement(false);
                                 var array = GetArrayMigrationAlias(child);
-                                if(array != null)
+                                if (array != null)
                                 {
                                     arrayAliases.Add(new KeyValuePair<Expression, Expression>(
-                                        Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), methodCallExpression.Arguments),
-                                        Expression.Property(array.MakeEachCall(), "Value"))
+                                                         Expression.ArrayIndex(array, methodCallExpression.Arguments[0]),
+                                                         array.MakeEachCall())
                                     );
                                 }
                             }
+
+                            child = newChild;
                         }
-                        child = newChild;
+
+                        return result || child == subRoot;
                     }
+
+                    if (method.IsIndexerGetter())
+                    {
+                        // Traverse to the object's node which is Object of method call
+                        var result = theNode.Traverse(methodCallExpression.Object, subRoot, out child, create, arrayAliases);
+                        if (child != null)
+                        {
+                            var parameters = methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray();
+                            // Try go by 'indexer' edge
+                            var newChild = child.GotoIndexer(parameters, create);
+                            // If no child exists and create:false go by 'each' edge and create array alias for migration
+                            if (newChild == null)
+                            {
+                                newChild = child.GotoEachArrayElement(false);
+                                if (newChild != null)
+                                {
+                                    newChild = newChild.GotoMember(newChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), false);
+                                    var array = GetArrayMigrationAlias(child);
+                                    if (array != null)
+                                    {
+                                        arrayAliases.Add(new KeyValuePair<Expression, Expression>(
+                                                             Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), methodCallExpression.Arguments),
+                                                             Expression.Property(array.MakeEachCall(), "Value"))
+                                        );
+                                    }
+                                }
+                            }
+
+                            child = newChild;
+                        }
+
+                        return result || child == subRoot;
+                    }
+
+                    throw new NotSupportedException("Method " + method + " is not supported");
+                }
+            case ExpressionType.ArrayLength:
+                {
+                    // Traverse to the array's node and go by 'length' edge
+
+                    //                    if(create)
+                    //                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
+                    var unaryExpression = (UnaryExpression)path;
+                    var result = theNode.Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
+                    child = child == null ? null : child.GotoMember(ModelConfigurationEdge.ArrayLengthProperty, create);
                     return result || child == subRoot;
                 }
-                throw new NotSupportedException("Method " + method + " is not supported");
-            }
-            case ExpressionType.ArrayLength:
-            {
-                // Traverse to the array's node and go by 'length' edge
-
-                //                    if(create)
-                //                        throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
-                var unaryExpression = (UnaryExpression)path;
-                var result = theNode.Traverse(unaryExpression.Operand, subRoot, out child, create, arrayAliases);
-                child = child == null ? null : child.GotoMember(ModelConfigurationEdge.ArrayLengthProperty, create);
-                return result || child == subRoot;
-            }
             default:
                 throw new NotSupportedException("Node type " + path.NodeType + " is not supported");
             }
@@ -189,7 +199,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         private static int GetIndex(Expression exp)
         {
             // todo использовать ExpressionCompiler
-            if(exp.NodeType == ExpressionType.Constant)
+            if (exp.NodeType == ExpressionType.Constant)
                 return (int)((ConstantExpression)exp).Value;
             return Expression.Lambda<Func<int>>(Expression.Convert(exp, typeof(int))).Compile()();
         }
@@ -202,7 +212,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         internal static ModelConfigurationNode GotoMember(this ModelConfigurationNode node, MemberInfo member, bool create)
         {
             var edge = new ModelConfigurationEdge(member);
-            switch(member.MemberType)
+            switch (member.MemberType)
             {
             case MemberTypes.Field:
                 return node.GetChild(edge, ((FieldInfo)member).FieldType, create);
@@ -223,9 +233,9 @@ namespace GrobExp.Mutators.ModelConfiguration
         {
             var edge = new ModelConfigurationEdge(parameters);
             var property = node.NodeType.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance);
-            if(property == null)
+            if (property == null)
                 throw new InvalidOperationException("Type '" + node.NodeType + "' doesn't contain indexer");
-            if(!property.CanRead || !property.CanWrite)
+            if (!property.CanRead || !property.CanWrite)
                 throw new InvalidOperationException("Type '" + node.NodeType + "' has indexer that doesn't contain either getter or setter");
             return node.GetChild(edge, property.GetGetMethod().ReturnType, create);
         }
@@ -237,24 +247,25 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static ModelConfigurationNode GetChild(this ModelConfigurationNode node, ModelConfigurationEdge edge, Type childType, bool create)
         {
-            if(!node.children.TryGetValue(edge, out var child) && create)
+            if (!node.children.TryGetValue(edge, out var child) && create)
             {
                 Expression path;
-                if(edge.IsArrayIndex)
+                if (edge.IsArrayIndex)
                     path = node.Path.MakeArrayIndex((int)edge.Value);
-                else if(edge.IsMemberAccess)
+                else if (edge.IsMemberAccess)
                     path = node.Path.MakeMemberAccess((MemberInfo)edge.Value);
-                else if(edge.IsEachMethod)
+                else if (edge.IsEachMethod)
                     path = node.Path.MakeEachCall(childType);
-                else if(edge.IsConvertation)
+                else if (edge.IsConvertation)
                     path = node.Path.MakeConvertation((Type)edge.Value);
-                else if(edge.IsIndexerParams)
+                else if (edge.IsIndexerParams)
                     path = node.Path.MakeIndexerCall((object[])edge.Value, node.NodeType);
                 else throw new InvalidOperationException();
 
                 child = new ModelConfigurationNode(node.RootType, childType, node.Root, node, edge, path);
                 node.children.Add(edge, child);
             }
+
             return child;
         }
     }

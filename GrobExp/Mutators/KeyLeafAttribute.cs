@@ -2,7 +2,7 @@
 
 namespace GrobExp.Mutators
 {
-    public class KeyLeafAttribute: Attribute
+    public class KeyLeafAttribute : Attribute
     {
     }
 }

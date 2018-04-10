@@ -60,16 +60,16 @@ namespace GrobExp.Mutators.Validators
 
         public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(Condition == null) return null;
+            if (Condition == null) return null;
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             var message = Message == null ? Expression.Constant(null, typeof(MultiLanguageTextBase)) : Message.Body.ResolveAliases(aliases);
             var result = Expression.Variable(typeof(ValidationResult));
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(condition, Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
             var toLog = new ValidationLogInfo("invalidIf", condition.ToString());
-            if(MutatorsValidationRecorder.IsRecording())
+            if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] { result }, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+            return Expression.Block(new[] {result}, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }
@@ -78,10 +78,10 @@ namespace GrobExp.Mutators.Validators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
+                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
         private readonly ValidationResultType validationResultType;

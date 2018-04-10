@@ -8,11 +8,6 @@ namespace GrobExp.Mutators
 {
     public class ModelConfigurationNode
     {
-        public static ModelConfigurationNode CreateRoot(Type type)
-        {
-            return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type, type.Name));
-        }
-
         internal ModelConfigurationNode(Type rootType, Type nodeType, ModelConfigurationNode root, ModelConfigurationNode parent, ModelConfigurationEdge edge, Expression path)
         {
             RootType = rootType;
@@ -23,6 +18,11 @@ namespace GrobExp.Mutators
             Path = path;
             mutators = new List<KeyValuePair<Expression, MutatorConfiguration>>();
             children = new Dictionary<ModelConfigurationEdge, ModelConfigurationNode>();
+        }
+
+        public static ModelConfigurationNode CreateRoot(Type type)
+        {
+            return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type, type.Name));
         }
 
         public override string ToString()

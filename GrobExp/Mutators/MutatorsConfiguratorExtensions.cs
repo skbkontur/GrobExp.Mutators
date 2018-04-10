@@ -160,19 +160,20 @@ namespace GrobExp.Mutators
             ValidationResultType type = ValidationResultType.Error)
         {
             Expression sum = null;
-            if(targets.Body.NodeType != ExpressionType.NewArrayInit)
+            if (targets.Body.NodeType != ExpressionType.NewArrayInit)
                 throw new InvalidOperationException("Expected new array creation");
             Expression lcp = null;
-            foreach(var expression in ((NewArrayExpression)targets.Body).Expressions)
+            foreach (var expression in ((NewArrayExpression)targets.Body).Expressions)
             {
                 var target = expression.NodeType == ExpressionType.Convert ? ((UnaryExpression)expression).Operand : expression;
-                if(target.Type.IsValueType && !IsNullable(target.Type))
+                if (target.Type.IsValueType && !IsNullable(target.Type))
                     throw new InvalidOperationException("Type '" + target.Type + "' cannot be null");
                 lcp = lcp == null ? target : lcp.LCP(target);
                 Expression current = Expression.Condition(Expression.Equal(target, Expression.Constant(null, target.Type)), Expression.Constant(0), Expression.Constant(1));
                 sum = sum == null ? current : Expression.Add(sum, current);
             }
-            if(sum == null) return;
+
+            if (sum == null) return;
             Expression condition = Expression.NotEqual(sum, Expression.Constant(1));
             configurator.SetMutator(configurator.PathToChild.Merge(Expression.Lambda(lcp, targets.Parameters)).Body, configurator.PathToChild.Merge(targets).Body, InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, configurator.PathToChild.Merge(Expression.Lambda<Func<TChild, bool?>>(Expression.Convert(condition, typeof(bool?)), targets.Parameters)), configurator.PathToChild.Merge(message), type));
         }
@@ -434,9 +435,9 @@ namespace GrobExp.Mutators
             var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
             var condition = Expression.Convert(Expression.GreaterThan(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(length)), typeof(bool?));
             var message = Expression.Lambda<Func<TRoot, MultiLanguageTextBase>>(Expression.MemberInit(
-                Expression.New(typeof(LengthOutOfRangeText)),
-                Expression.Bind(lengthOutOfRangeTextToProperty, Expression.Constant(length, typeof(int?))),
-                Expression.Bind(lengthOutOfRangeTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase)))), pathToValue.Parameters);
+                                                                                    Expression.New(typeof(LengthOutOfRangeText)),
+                                                                                    Expression.Bind(lengthOutOfRangeTextToProperty, Expression.Constant(length, typeof(int?))),
+                                                                                    Expression.Bind(lengthOutOfRangeTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase)))), pathToValue.Parameters);
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), message, type));
             return configurator;
         }
@@ -465,10 +466,10 @@ namespace GrobExp.Mutators
 
             var condition = Expression.Convert(Expression.OrElse(leftExpression, rigthExpression), typeof(bool?));
             var message = Expression.Lambda<Func<TRoot, MultiLanguageTextBase>>(Expression.MemberInit(
-                Expression.New(typeof(LengthOutOfRangeText)),
-                Expression.Bind(lengthOutOfRangeTextToProperty, Expression.Constant(toLength, typeof(int?))),
-                Expression.Bind(lengthOutOfRangeTextFromProperty, Expression.Constant(fromLength, typeof(int?))),
-                Expression.Bind(lengthOutOfRangeTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase)))), pathToValue.Parameters);
+                                                                                    Expression.New(typeof(LengthOutOfRangeText)),
+                                                                                    Expression.Bind(lengthOutOfRangeTextToProperty, Expression.Constant(toLength, typeof(int?))),
+                                                                                    Expression.Bind(lengthOutOfRangeTextFromProperty, Expression.Constant(fromLength, typeof(int?))),
+                                                                                    Expression.Bind(lengthOutOfRangeTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase)))), pathToValue.Parameters);
 
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), message, type));
             return configurator;
@@ -489,10 +490,10 @@ namespace GrobExp.Mutators
             var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
             var condition = Expression.Convert(Expression.NotEqual(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(length)), typeof(bool?));
             var message = Expression.Lambda<Func<TRoot, MultiLanguageTextBase>>(Expression.MemberInit(
-                Expression.New(typeof(LengthNotExactlyEqualsText)),
-                Expression.Bind(lengthNotExactlyEqualsTextExacltyProperty, Expression.Constant(length, typeof(int?))),
-                Expression.Bind(lengthNotExactlyEqualsTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase))),
-                Expression.Bind(lengthNotExactlyEqualsTextValueProperty, pathToValue.Body)), pathToValue.Parameters);
+                                                                                    Expression.New(typeof(LengthNotExactlyEqualsText)),
+                                                                                    Expression.Bind(lengthNotExactlyEqualsTextExacltyProperty, Expression.Constant(length, typeof(int?))),
+                                                                                    Expression.Bind(lengthNotExactlyEqualsTextTitleProperty, Expression.Constant(title, typeof(MultiLanguageTextBase))),
+                                                                                    Expression.Bind(lengthNotExactlyEqualsTextValueProperty, pathToValue.Body)), pathToValue.Parameters);
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), message, type));
             return configurator;
         }

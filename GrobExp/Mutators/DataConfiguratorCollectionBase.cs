@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Linq;
 
-using GrobExp.Mutators.ModelConfiguration;
-
 namespace GrobExp.Mutators
 {
     public abstract class DataConfiguratorCollectionBase<TData> : IDataConfiguratorCollection<TData>
@@ -17,43 +15,44 @@ namespace GrobExp.Mutators
 
         public MutatorsTreeBase<TData> GetMutatorsTree(MutatorsContext context, int validationsPriority = 0)
         {
-            if(context == null)
+            if (context == null)
                 throw new ArgumentNullException("context");
             var slot = GetOrCreateHashtableSlot(context);
             var result = (MutatorsTreeBase<TData>)slot.MutatorsTrees[validationsPriority];
-            if(result == null)
+            if (result == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     result = (MutatorsTreeBase<TData>)slot.MutatorsTrees[validationsPriority];
-                    if(result == null)
+                    if (result == null)
                         slot.MutatorsTrees[validationsPriority] = result = new MutatorsTree<TData>(slot.Tree, pathFormatterCollection.GetPathFormatter<TData>(), pathFormatterCollection, validationsPriority);
                 }
             }
+
             return result;
         }
 
         public MutatorsTreeBase<TData> GetMutatorsTree(Type[] path, MutatorsContext[] mutatorsContexts, MutatorsContext[] converterContexts)
         {
-            if(path == null)
+            if (path == null)
                 throw new ArgumentNullException("path");
-            if(mutatorsContexts == null)
+            if (mutatorsContexts == null)
                 throw new ArgumentNullException("mutatorsContexts");
-            if(converterContexts == null)
+            if (converterContexts == null)
                 throw new ArgumentNullException("converterContexts");
             var n = path.Length;
-            if(mutatorsContexts.Length != n + 1)
+            if (mutatorsContexts.Length != n + 1)
                 throw new ArgumentException("Incorrect number of mutators contexts", "mutatorsContexts");
-            if(converterContexts.Length != n)
+            if (converterContexts.Length != n)
                 throw new ArgumentException("Incorrect number of converter contexts", "converterContexts");
             var key = string.Join("@", path.Select(type => type.FullName));
             var slot2 = (HashtableSlot2)hashtable[key];
-            if(slot2 == null)
+            if (slot2 == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     slot2 = (HashtableSlot2)hashtable[key];
-                    if(slot2 == null)
+                    if (slot2 == null)
                     {
                         hashtable[key] = slot2 = new HashtableSlot2
                             {
@@ -63,17 +62,19 @@ namespace GrobExp.Mutators
                     }
                 }
             }
+
             key = string.Join("@", mutatorsContexts.Select(context => context.GetKey()).Concat(converterContexts.Select(context => context.GetKey())));
             var result = (MutatorsTreeBase<TData>)slot2.MutatorsTrees[key];
-            if(result == null)
+            if (result == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     result = (MutatorsTreeBase<TData>)slot2.MutatorsTrees[key];
-                    if(result == null)
+                    if (result == null)
                         slot2.MutatorsTrees[key] = result = slot2.MutatorsTreeCreator.GetMutatorsTree(dataConfiguratorCollectionFactory, converterCollectionFactory, mutatorsContexts, converterContexts);
                 }
             }
+
             return result;
         }
 
@@ -83,12 +84,12 @@ namespace GrobExp.Mutators
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if(slot == null)
+            if (slot == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if(slot == null)
+                    if (slot == null)
                     {
                         var root = ModelConfigurationNode.CreateRoot(typeof(TData));
                         Configure(context, new MutatorsConfigurator<TData>(root));
@@ -100,6 +101,7 @@ namespace GrobExp.Mutators
                     }
                 }
             }
+
             return slot;
         }
 

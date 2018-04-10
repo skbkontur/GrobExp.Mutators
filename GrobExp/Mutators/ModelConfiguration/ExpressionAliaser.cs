@@ -21,6 +21,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 --i;
                 --j;
             }
+
             var simplifiedShard = simplifiedPathShards[i];
             var pathShard = pathShards[j];
             // To add alias with CurrentIndex call we need to trim simplifiedShard, 
@@ -36,9 +37,9 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static bool Equivalent(Expression first, Expression second)
         {
-            if(first.NodeType != second.NodeType)
+            if (first.NodeType != second.NodeType)
                 return false;
-            switch(first.NodeType)
+            switch (first.NodeType)
             {
             case ExpressionType.MemberAccess:
                 return ((MemberExpression)first).Member == ((MemberExpression)second).Member;
@@ -49,9 +50,9 @@ namespace GrobExp.Mutators.ModelConfiguration
             case ExpressionType.ArrayIndex:
                 var firstIndex = ((BinaryExpression)first).Right;
                 var secondIndex = ((BinaryExpression)second).Right;
-                if(firstIndex.NodeType != ExpressionType.Constant)
+                if (firstIndex.NodeType != ExpressionType.Constant)
                     throw new NotSupportedException(string.Format("Node type '{0}' is not supported", firstIndex.NodeType));
-                if(secondIndex.NodeType != ExpressionType.Constant)
+                if (secondIndex.NodeType != ExpressionType.Constant)
                     throw new NotSupportedException(string.Format("Node type '{0}' is not supported", secondIndex.NodeType));
                 return ((ConstantExpression)firstIndex).Value == ((ConstantExpression)secondIndex).Value;
             case ExpressionType.Convert:
@@ -64,14 +65,15 @@ namespace GrobExp.Mutators.ModelConfiguration
         private static Expression TrimTailToEachOrCurrent(Expression exp)
         {
             var shards = exp.SmashToSmithereens();
-            for(var i = shards.Length - 1; i > 0; --i)
+            for (var i = shards.Length - 1; i > 0; --i)
             {
-                if(shards[i].NodeType != ExpressionType.Call)
+                if (shards[i].NodeType != ExpressionType.Call)
                     continue;
                 var method = ((MethodCallExpression)shards[i]).Method;
-                if(method.IsCurrentMethod() || method.IsEachMethod())
+                if (method.IsCurrentMethod() || method.IsEachMethod())
                     return shards[i];
             }
+
             return exp;
         }
     }

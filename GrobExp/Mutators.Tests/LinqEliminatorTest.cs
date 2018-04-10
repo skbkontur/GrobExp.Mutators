@@ -14,14 +14,75 @@ namespace Mutators.Tests
 {
     public class LinqEliminatorTest : TestBase
     {
+        private Func<T1, T2> EliminateLinq<T1, T2>(Expression<Func<T1, T2>> exp)
+        {
+            var withoutLinq = (Expression<Func<T1, T2>>)new LinqEliminator().Visit(exp);
+            return LambdaCompiler.Compile(withoutLinq, CompilerOptions.All);
+        }
+
+        private void DoTest<T1, T2>(Expression<Func<T1, T2>> exp, T1 data, string expected)
+        {
+            var withoutLinq = (Expression<Func<T1, T2>>)new LinqEliminator().Visit(exp);
+            Console.WriteLine(withoutLinq);
+//            var resolved = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
+//            ParameterExpression[] parameters = resolved.ExtractParameters();
+//            Expression<Func<T1, string[]>> lambda = Expression.Lambda<Func<T1, string[]>>(resolved, parameters);
+//            Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)));
+        }
+
+        private class IndexedValue<T>
+        {
+            public IndexedValue(T value, IEnumerable<int> indexes)
+            {
+                Value = value;
+                Indexes = indexes.ToArray();
+            }
+
+            public T Value { get; set; }
+            public int[] Indexes { get; set; }
+        }
+
+        public class TestData
+        {
+            public A[] A { get; set; }
+            public string[] Strings { get; set; }
+        }
+
+        public class A
+        {
+            public string S { get; set; }
+            public int X { get; set; }
+            public int? Y { get; set; }
+            public decimal Z { get; set; }
+            public B[] B { get; set; }
+            public B B1 { get; set; }
+            public B B2 { get; set; }
+        }
+
+        public class B
+        {
+            public string S { get; set; }
+            public int X { get; set; }
+            public decimal Z { get; set; }
+            public C[] C { get; set; }
+        }
+
+        public class C
+        {
+            public string S { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
+            public decimal Z { get; set; }
+        }
+
         // ReSharper disable PossibleNullReferenceException
         [Test]
         public void TestSingleOrDefault()
         {
             Expression<Func<TestData, string>> exp = data => data.A.SingleOrDefault().S;
             var func = EliminateLinq(exp);
-            Assert.AreEqual("zzz", func(new TestData {A = new A[] {new A{S = "zzz"}, }}));
-            Assert.Throws<InvalidOperationException>(() => func(new TestData {A = new A[] {new A(), new A(), }}));
+            Assert.AreEqual("zzz", func(new TestData {A = new A[] {new A {S = "zzz"},}}));
+            Assert.Throws<InvalidOperationException>(() => func(new TestData {A = new A[] {new A(), new A(),}}));
             Assert.IsNull(func(new TestData {A = new A[0]}));
         }
 
@@ -30,7 +91,7 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData, string>> exp = data => data.A.Single().S;
             var func = EliminateLinq(exp);
-            Assert.AreEqual("zzz", func(new TestData {A = new A[] {new A{S = "zzz"}, }}));
+            Assert.AreEqual("zzz", func(new TestData {A = new A[] {new A {S = "zzz"},}}));
             Assert.Throws<InvalidOperationException>(() => func(new TestData {A = new A[0]}));
             Assert.Throws<InvalidOperationException>(() => func(new TestData()));
         }
@@ -57,7 +118,7 @@ namespace Mutators.Tests
             Expression<Func<TestData, bool>> exp = data => data.A.Any(a => a.X > 0);
             var withoutLinq = EliminateLinq(exp);
             Assert.IsFalse(withoutLinq(new TestData {A = new[] {new A(),}}));
-            Assert.IsTrue(withoutLinq(new TestData {A = new[] {new A{X = 1},}}));
+            Assert.IsTrue(withoutLinq(new TestData {A = new[] {new A {X = 1},}}));
         }
 
         [Test]
@@ -74,8 +135,8 @@ namespace Mutators.Tests
             Expression<Func<TestData, bool>> exp = data => data.Strings.Contains("zzz");
             var withoutLinq = EliminateLinq(exp);
             Assert.IsFalse(withoutLinq(new TestData { }));
-            Assert.IsFalse(withoutLinq(new TestData {Strings = new [] {"qxx"}}));
-            Assert.IsTrue(withoutLinq(new TestData {Strings = new [] {"zzz"}}));
+            Assert.IsFalse(withoutLinq(new TestData {Strings = new[] {"qxx"}}));
+            Assert.IsTrue(withoutLinq(new TestData {Strings = new[] {"zzz"}}));
         }
 
         [Test]
@@ -83,9 +144,9 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData, bool>> exp = data => data.A.All(a => a.X > 0);
             var withoutLinq = EliminateLinq(exp);
-            Assert.IsFalse(withoutLinq(new TestData { A = new[] { new A(), } }));
-            Assert.IsTrue(withoutLinq(new TestData { A = new[] { new A { X = 1 }, } }));
-            Assert.IsFalse(withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = -1 } } }));
+            Assert.IsFalse(withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.IsTrue(withoutLinq(new TestData {A = new[] {new A {X = 1},}}));
+            Assert.IsFalse(withoutLinq(new TestData {A = new[] {new A {X = 1}, new A {X = -1}}}));
         }
 
         [Test]
@@ -94,8 +155,8 @@ namespace Mutators.Tests
             Expression<Func<TestData, int>> exp = data => data.A.Sum(a => a.X);
             var withoutLinq = EliminateLinq(exp);
             Assert.AreEqual(0, withoutLinq(new TestData()));
-            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
-            Assert.AreEqual(3, withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = 2 } } }));
+            Assert.AreEqual(0, withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.AreEqual(3, withoutLinq(new TestData {A = new[] {new A {X = 1}, new A {X = 2}}}));
         }
 
         [Test]
@@ -104,8 +165,8 @@ namespace Mutators.Tests
             Expression<Func<TestData, int?>> exp = data => data.A.Sum(a => a.Y);
             var withoutLinq = EliminateLinq(exp);
             Assert.AreEqual(0, withoutLinq(new TestData()));
-            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
-            Assert.AreEqual(3, withoutLinq(new TestData { A = new[] { new A { Y = 1 }, new A { Y = 2 }, new A() } }));
+            Assert.AreEqual(0, withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.AreEqual(3, withoutLinq(new TestData {A = new[] {new A {Y = 1}, new A {Y = 2}, new A()}}));
         }
 
         [Test]
@@ -114,8 +175,8 @@ namespace Mutators.Tests
             Expression<Func<TestData, int>> exp = data => data.A.Select(a => a).Count();
             var withoutLinq = EliminateLinq(exp);
             Assert.AreEqual(0, withoutLinq(new TestData()));
-            Assert.AreEqual(1, withoutLinq(new TestData{A = new[] {new A(), }}));
-            Assert.AreEqual(2, withoutLinq(new TestData{A = new[] {new A(), new A{X = -1}, }}));
+            Assert.AreEqual(1, withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.AreEqual(2, withoutLinq(new TestData {A = new[] {new A(), new A {X = -1},}}));
         }
 
         [Test]
@@ -124,9 +185,9 @@ namespace Mutators.Tests
             Expression<Func<TestData, int>> exp = data => data.A.Count(a => a.X > 0);
             var withoutLinq = EliminateLinq(exp);
             Assert.AreEqual(0, withoutLinq(new TestData()));
-            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), }}));
-            Assert.AreEqual(0, withoutLinq(new TestData{A = new[] {new A(), new A{X = -1}, }}));
-            Assert.AreEqual(2, withoutLinq(new TestData { A = new[] { new A { X = 1 }, new A { X = -2 } , new A { X = 2 } } }));
+            Assert.AreEqual(0, withoutLinq(new TestData {A = new[] {new A(),}}));
+            Assert.AreEqual(0, withoutLinq(new TestData {A = new[] {new A(), new A {X = -1},}}));
+            Assert.AreEqual(2, withoutLinq(new TestData {A = new[] {new A {X = 1}, new A {X = -2}, new A {X = 2}}}));
         }
 
         [Test]
@@ -136,9 +197,9 @@ namespace Mutators.Tests
             var withoutLinq = EliminateLinq(exp);
 
             Assert.Throws<InvalidOperationException>(() => withoutLinq(new TestData()));
-            Assert.Throws<InvalidOperationException>(() => withoutLinq(new TestData{Strings = new string[0]}));
-            Assert.AreEqual("zzz", withoutLinq(new TestData{Strings = new[] {"zzz"}}));
-            Assert.AreEqual("zzzqxx", withoutLinq(new TestData{Strings = new[] {"zzz", "qxx"}}));
+            Assert.Throws<InvalidOperationException>(() => withoutLinq(new TestData {Strings = new string[0]}));
+            Assert.AreEqual("zzz", withoutLinq(new TestData {Strings = new[] {"zzz"}}));
+            Assert.AreEqual("zzzqxx", withoutLinq(new TestData {Strings = new[] {"zzz", "qxx"}}));
         }
 
         [Test]
@@ -148,9 +209,9 @@ namespace Mutators.Tests
             var withoutLinq = EliminateLinq(exp);
 
             Assert.AreEqual(0m, withoutLinq(new TestData()));
-            Assert.AreEqual(0m, withoutLinq(new TestData{A = new A[0]}));
-            Assert.AreEqual(1m, withoutLinq(new TestData{A = new [] {new A{Z = 1m}}}));
-            Assert.AreEqual(3m, withoutLinq(new TestData { A = new[] { new A { Z = 1m }, new A { Z = 2m } } }));
+            Assert.AreEqual(0m, withoutLinq(new TestData {A = new A[0]}));
+            Assert.AreEqual(1m, withoutLinq(new TestData {A = new[] {new A {Z = 1m}}}));
+            Assert.AreEqual(3m, withoutLinq(new TestData {A = new[] {new A {Z = 1m}, new A {Z = 2m}}}));
         }
 
         [Test]
@@ -160,9 +221,9 @@ namespace Mutators.Tests
             var withoutLinq = EliminateLinq(exp);
 
             Assert.AreEqual("0", withoutLinq(new TestData()));
-            Assert.AreEqual("0", withoutLinq(new TestData { A = new A[0] }));
-            Assert.AreEqual("1", withoutLinq(new TestData { A = new[] { new A { Z = 1m } } }));
-            Assert.AreEqual("3", withoutLinq(new TestData { A = new[] { new A { Z = 1m }, new A { Z = 2m } } }));
+            Assert.AreEqual("0", withoutLinq(new TestData {A = new A[0]}));
+            Assert.AreEqual("1", withoutLinq(new TestData {A = new[] {new A {Z = 1m}}}));
+            Assert.AreEqual("3", withoutLinq(new TestData {A = new[] {new A {Z = 1m}, new A {Z = 2m}}}));
         }
 
         [Test]
@@ -188,26 +249,26 @@ namespace Mutators.Tests
                                         {
                                             new B(),
                                             new B(),
-                                            new B(), 
+                                            new B(),
                                         }
                                 },
                             new A
                                 {
                                     B = new[]
                                         {
-                                            new B(), 
+                                            new B(),
                                         }
-                                }, 
+                                },
                             new A
                                 {
                                     B = new[]
                                         {
                                             new B(),
-                                            new B(), 
-                                            new B{X = 1},
-                                            new B{X = 2}, 
+                                            new B(),
+                                            new B {X = 1},
+                                            new B {X = 2},
                                         }
-                                }, 
+                                },
                         }
                 }));
         }
@@ -238,7 +299,7 @@ namespace Mutators.Tests
         [Test]
         public void TestSelectManyCollectionSelectorNotChainWithResultSelector()
         {
-            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => new [] {a.B1, a.B2}, (a, b) => new {a, b}).FirstOrDefault(b => b.b.S == "zzz").b.S;
+            Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => new[] {a.B1, a.B2}, (a, b) => new {a, b}).FirstOrDefault(b => b.b.S == "zzz").b.S;
             var func = EliminateLinq(exp);
         }
 
@@ -342,11 +403,11 @@ namespace Mutators.Tests
         public void Test9()
         {
             Expression<Func<TestData, string>> exp = data => (from a in data.A where a.X > 0 where a.X < 10 select a.S).FirstOrDefault();
-            DoTest(exp, new TestData { A = new[] { new A {X = -1}, new A {X = 11}, new A {X = 1} } }, "A.2.S");
-            DoTest(exp, new TestData { A = new[] { new A {X = -1}, new A {X = 11} } }, "A.-1.S");
-            DoTest(exp, new TestData { A = new[] { new A {X = -1} } }, "A.-1.S");
-            DoTest(exp, new TestData { A = new A[] { null } }, "A.-1.S");
-            DoTest(exp, new TestData { A = new A[0] }, "A.-1.S");
+            DoTest(exp, new TestData {A = new[] {new A {X = -1}, new A {X = 11}, new A {X = 1}}}, "A.2.S");
+            DoTest(exp, new TestData {A = new[] {new A {X = -1}, new A {X = 11}}}, "A.-1.S");
+            DoTest(exp, new TestData {A = new[] {new A {X = -1}}}, "A.-1.S");
+            DoTest(exp, new TestData {A = new A[] {null}}, "A.-1.S");
+            DoTest(exp, new TestData {A = new A[0]}, "A.-1.S");
             DoTest(exp, new TestData(), "A.-1.S");
             DoTest(exp, null, "A.-1.S");
         }
@@ -355,8 +416,8 @@ namespace Mutators.Tests
         public void Test10()
         {
             Expression<Func<TestData, string>> exp = data => data.A.Select(a => a.B.FirstOrDefault(b => b.X > 0).S).FirstOrDefault();
-            DoTest(exp, new TestData { A = new[] { new A {B = new[] {new B {X = -1}, new B {X = 1}}}, new A {B = new[] {new B {X = 1}, new B {X = -1}}}} }, "A.0.B.1.S");
-            DoTest(exp, new TestData { A = new[] { new A {B = new[] {new B {X = -1}, new B {X = -1}}}, new A {B = new[] {new B {X = 1}, new B {X = -1}}}} }, "A.0.B.-1.S");
+            DoTest(exp, new TestData {A = new[] {new A {B = new[] {new B {X = -1}, new B {X = 1}}}, new A {B = new[] {new B {X = 1}, new B {X = -1}}}}}, "A.0.B.1.S");
+            DoTest(exp, new TestData {A = new[] {new A {B = new[] {new B {X = -1}, new B {X = -1}}}, new A {B = new[] {new B {X = 1}, new B {X = -1}}}}}, "A.0.B.-1.S");
         }
 
         [Test]
@@ -381,11 +442,11 @@ namespace Mutators.Tests
             Func<TestData, string> func = data => data.A
                                                       .Select((a, i) => new IndexedValue<A>(a, new[] {i}))
                                                       .SelectMany(valueA =>
-                                                                      {
-                                                                          var indexes = new List<int>();
-                                                                          var temp = valueA.Value.B.Select((b, j) => new IndexedValue<B>(b, new[] {j}));
-                                                                          return temp.Select(valueB => new IndexedValue<B>(valueB.Value, valueA.Indexes.Concat(indexes).Concat(valueB.Indexes)));
-                                                                      })
+                                                          {
+                                                              var indexes = new List<int>();
+                                                              var temp = valueA.Value.B.Select((b, j) => new IndexedValue<B>(b, new[] {j}));
+                                                              return temp.Select(valueB => new IndexedValue<B>(valueB.Value, valueA.Indexes.Concat(indexes).Concat(valueB.Indexes)));
+                                                          })
                                                       .Where(value => value.Value.X > 0)
                                                       .Select(value => new IndexedValue<string>(value.Value.S, value.Indexes))
                                                       .FirstOrDefault().Value;
@@ -427,10 +488,10 @@ namespace Mutators.Tests
                 data => data.A
                             .Select((a, i) => new Tuple<A, int[]>(a, new[] {i}))
                             .SelectMany(tupleA =>
-                                            {
-                                                Tuple<B, int[]> temp = tupleA.Item1.B.Select((b, j) => new Tuple<B, int[]>(b, new[] {j})).FirstOrDefault(tupleB => tupleB.Item1.S == "zzz");
-                                                return temp.Item1.C.Select((c, k) => new Tuple<C, int[]>(c, tupleA.Item2.Concat(temp.Item2).Concat(new[] {k}).ToArray()));
-                                            })
+                                {
+                                    Tuple<B, int[]> temp = tupleA.Item1.B.Select((b, j) => new Tuple<B, int[]>(b, new[] {j})).FirstOrDefault(tupleB => tupleB.Item1.S == "zzz");
+                                    return temp.Item1.C.Select((c, k) => new Tuple<C, int[]>(c, tupleA.Item2.Concat(temp.Item2).Concat(new[] {k}).ToArray()));
+                                })
                             .Where(tuple => tuple.Item1.X > 0)
                             .Select(tuple => new Tuple<string, int[]>(tuple.Item1.S, tuple.Item2))
                             .FirstOrDefault().Item1;
@@ -535,66 +596,5 @@ namespace Mutators.Tests
         }
 
         // ReSharper restore PossibleNullReferenceException
-
-        private Func<T1, T2> EliminateLinq<T1, T2>(Expression<Func<T1, T2>> exp)
-        {
-            var withoutLinq = (Expression<Func<T1, T2>>)new LinqEliminator().Visit(exp);
-            return LambdaCompiler.Compile(withoutLinq, CompilerOptions.All);
-        }
-
-        private void DoTest<T1, T2>(Expression<Func<T1, T2>> exp, T1 data, string expected)
-        {
-            var withoutLinq = (Expression<Func<T1, T2>>)new LinqEliminator().Visit(exp);
-            Console.WriteLine(withoutLinq);
-//            var resolved = exp.Body.ResolveArrayIndexes()/*.ExtendNulls()*/;
-//            ParameterExpression[] parameters = resolved.ExtractParameters();
-//            Expression<Func<T1, string[]>> lambda = Expression.Lambda<Func<T1, string[]>>(resolved, parameters);
-//            Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All)/*.Compile()*/(data)));
-        }
-
-        private class IndexedValue<T>
-        {
-            public IndexedValue(T value, IEnumerable<int> indexes)
-            {
-                Value = value;
-                Indexes = indexes.ToArray();
-            }
-
-            public T Value { get; set; }
-            public int[] Indexes { get; set; }
-        }
-
-        public class TestData
-        {
-            public A[] A { get; set; }
-            public string[] Strings { get; set; }
-        }
-
-        public class A
-        {
-            public string S { get; set; }
-            public int X { get; set; }
-            public int? Y { get; set; }
-            public decimal Z { get; set; }
-            public B[] B { get; set; }
-            public B B1 { get; set; }
-            public B B2 { get; set; }
-        }
-
-        public class B
-        {
-            public string S { get; set; }
-            public int X { get; set; }
-            public decimal Z { get; set; }
-            public C[] C { get; set; }
-        }
-
-        public class C
-        {
-            public string S { get; set; }
-            public int X { get; set; }
-            public int Y { get; set; }
-            public decimal Z { get; set; }
-        }
     }
 }

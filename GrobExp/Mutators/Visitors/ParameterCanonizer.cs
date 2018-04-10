@@ -15,30 +15,30 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitLambda<T>(Expression<T> lambda)
         {
-            foreach(var parameter in lambda.Parameters)
+            foreach (var parameter in lambda.Parameters)
                 localParameters.Add(parameter);
             var res = base.VisitLambda(lambda);
-            foreach(var parameter in lambda.Parameters)
+            foreach (var parameter in lambda.Parameters)
                 localParameters.Remove(parameter);
             return res;
         }
 
         protected override Expression VisitBlock(BlockExpression node)
         {
-            foreach(var variable in node.Variables)
+            foreach (var variable in node.Variables)
                 localParameters.Add(variable);
             var res = base.VisitBlock(node);
-            foreach(var variable in node.Variables)
+            foreach (var variable in node.Variables)
                 localParameters.Remove(variable);
             return res;
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if(localParameters.Contains(node))
+            if (localParameters.Contains(node))
                 return node;
             ParameterExpression parameter;
-            if(parameters.TryGetValue(node.Type, out parameter))
+            if (parameters.TryGetValue(node.Type, out parameter))
                 return parameter;
             parameters.Add(node.Type, node);
             return node;

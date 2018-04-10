@@ -8,7 +8,6 @@ namespace Mutators.Tests
         [SetUp]
         protected virtual void SetUp()
         {
-            
         }
     }
 }

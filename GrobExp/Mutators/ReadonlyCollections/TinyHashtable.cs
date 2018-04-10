@@ -9,28 +9,31 @@ namespace GrobExp.Mutators.ReadonlyCollections
         {
             CheckDifferent(values);
             var hashSet = new HashSet<int>();
-            for(var n = Math.Max(values.Length, 1);; ++n)
+            for (var n = Math.Max(values.Length, 1);; ++n)
             {
                 hashSet.Clear();
                 var ok = true;
-                foreach(var str in values)
+                foreach (var str in values)
                 {
                     var idx = (int)(((uint)str.GetHashCode()) % n);
-                    if(hashSet.Contains(idx))
+                    if (hashSet.Contains(idx))
                     {
                         ok = false;
                         break;
                     }
+
                     hashSet.Add(idx);
                 }
-                if(ok)
+
+                if (ok)
                 {
                     var result = new string[n];
-                    foreach(var str in values)
+                    foreach (var str in values)
                     {
                         var idx = (int)(((uint)str.GetHashCode()) % n);
                         result[idx] = str;
                     }
+
                     return result;
                 }
             }
@@ -39,9 +42,9 @@ namespace GrobExp.Mutators.ReadonlyCollections
         private static void CheckDifferent(string[] values)
         {
             var hashSet = new HashSet<string>();
-            foreach(var str in values)
+            foreach (var str in values)
             {
-                if(hashSet.Contains(str))
+                if (hashSet.Contains(str))
                     throw new InvalidOperationException(string.Format("Duplicate value '{0}'", str));
                 hashSet.Add(str);
             }

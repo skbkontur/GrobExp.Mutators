@@ -18,7 +18,7 @@ namespace GrobExp.Mutators.Visitors
 
         public Expression[] Extract(Expression expression)
         {
-            if(invariantParameters.Count == 0)
+            if (invariantParameters.Count == 0)
                 return new Expression[0];
             extractableExpressions.Clear();
             stack.Clear();
@@ -38,6 +38,7 @@ namespace GrobExp.Mutators.Visitors
             {
                 parent.Dependencies.Add(dependency);
             }
+
             return visitedNode;
         }
 
@@ -65,7 +66,7 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if(node.Method.IsDynamicMethod())
+            if (node.Method.IsDynamicMethod())
                 return node;
             var visitedNode = base.VisitMethodCall(node);
             if (ExtractableMethodCall(node))

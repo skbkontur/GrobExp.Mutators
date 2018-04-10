@@ -213,10 +213,10 @@ namespace Mutators.Tests
         public void TestSimpleDependency()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
-            {
-                configurator.Target(data => data.Qxx.A0).Set(data => data.A.B[0].Хрень[0].Length);
-                configurator.Target(data => data.A.B).Set(data => new[] {new B {Хрень = new[] {"GRobas"}}});
-            });
+                {
+                    configurator.Target(data => data.Qxx.A0).Set(data => data.A.B[0].Хрень[0].Length);
+                    configurator.Target(data => data.A.B).Set(data => new[] {new B {Хрень = new[] {"GRobas"}}});
+                });
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
@@ -539,35 +539,20 @@ namespace Mutators.Tests
                 });
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
-            var from = new TestData2 { T = new T { S = "qzz" }, S = "zzz" };
+            var from = new TestData2 {T = new T {S = "qzz"}, S = "zzz"};
             converter(from, to);
-            var expected = new TestData { A = new A { B = new[] { new B {S = "qxx"}, new B {S = "qzz"}, } } };
+            var expected = new TestData {A = new A {B = new[] {new B {S = "qxx"}, new B {S = "qzz"},}}};
             to.AssertEqualsToUsingGrobuf(expected);
             to = new TestData();
-            from = new TestData2 { T = new T { S = "zzz" }, S = "qzz" };
+            from = new TestData2 {T = new T {S = "zzz"}, S = "qzz"};
             converter(from, to);
-            expected = new TestData { A = new A { B = new[] { new B {S = "qzz"}, new B {S = "qxx"}, } } };
+            expected = new TestData {A = new A {B = new[] {new B {S = "qzz"}, new B {S = "qxx"},}}};
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
         interface IZzz
         {
             string Trololo { get; }
-        }
-
-        private class Zzz : IZzz
-        {
-            public string Trololo { get; private set; }
-        }
-
-        class MyClassQxx
-        {
-            public string[] Data;
-
-            public string this[int x]
-            {
-                get { return Data[x]; }
-            }
         }
 
         private bool IsFucked(string x)
@@ -587,11 +572,11 @@ namespace Mutators.Tests
 //            Assert.That(qxx.Body.IsLinkOfChain(false, recursive : false), Is.True);
 //            return;
             var collection = new TestConverterCollection<TestData2, MyClassQxx>(pathFormatterCollection, configurator =>
-            {
-                configurator.Target(data => data.Data.Select(x => x).Each().Current()).Set(data2 => data2.Чужь.Current().Current());
+                {
+                    configurator.Target(data => data.Data.Select(x => x).Each().Current()).Set(data2 => data2.Чужь.Current().Current());
 //                configurator.Target(data => data.Data.Where(x => x.EndsWith("GRobas")).Select(x => x.ToArray()).Where(x => x.Length > 0).Each().Current()).Set(data2 => data2.Чужь.Current().Current());
-                //configurator.Target(data => data.Data.Where(x => IsFucked(x)).Select(x => x.ToString()).Each()).Set(data2 => data2.Чужь.Current());
-            });
+                    //configurator.Target(data => data.Data.Where(x => IsFucked(x)).Select(x => x.ToString()).Each()).Set(data2 => data2.Чужь.Current());
+                });
             var converter = collection.GetMerger(MutatorsContext.Empty);
             Console.Out.WriteLine(converter);
 //            var to = new TestData();
@@ -611,14 +596,14 @@ namespace Mutators.Tests
         public void TestConvertWithComplexSelectMany()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
-                configurator => configurator
-                    .GoTo(data => data.A.B.Each(),
-                        data2 => data2.T.R.SelectMany(r => r.Чужь ?? new string[1], (x, y) => new {x, y}).Current())
-                    .BatchSet((x, y) => new Batch
-                    {
-                        {x.S, y.x.S},
-                        {x.Arr[0], y.y}
-                    })
+                                                                              configurator => configurator
+                                                                                              .GoTo(data => data.A.B.Each(),
+                                                                                                    data2 => data2.T.R.SelectMany(r => r.Чужь ?? new string[1], (x, y) => new {x, y}).Current())
+                                                                                              .BatchSet((x, y) => new Batch
+                                                                                                  {
+                                                                                                      {x.S, y.x.S},
+                                                                                                      {x.Arr[0], y.y}
+                                                                                                  })
             );
             var converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
@@ -631,16 +616,16 @@ namespace Mutators.Tests
             from = new TestData2 {T = new T {R = new[] {new R {S = "zzz", Чужь = new[] {"qxx", "qzz"}}}}};
             converter(from, to);
             expected = new TestData
-            {
-                A = new A
                 {
-                    B = new[]
-                    {
-                        new B {S = "zzz", Arr = new[] {"qxx"}},
-                        new B {S = "zzz", Arr = new[] {"qzz"}}
-                    }
-                }
-            };
+                    A = new A
+                        {
+                            B = new[]
+                                {
+                                    new B {S = "zzz", Arr = new[] {"qxx"}},
+                                    new B {S = "zzz", Arr = new[] {"qzz"}}
+                                }
+                        }
+                };
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
@@ -858,7 +843,7 @@ namespace Mutators.Tests
                 {
                     T = new T
                         {
-                            R = new[] {new R {}, new R {}, new R {},}
+                            R = new[] {new R { }, new R { }, new R { },}
                         }
                 };
             converter(from, to);
@@ -930,7 +915,7 @@ namespace Mutators.Tests
                     T = new T()
                 };
             converter(from, to);
-            var expected = new TestData {};
+            var expected = new TestData { };
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
@@ -980,8 +965,6 @@ namespace Mutators.Tests
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
-        private static int numberOfCalls;
-
         private static string Format(string z)
         {
             ++numberOfCalls;
@@ -993,7 +976,7 @@ namespace Mutators.Tests
         {
             numberOfCalls = 0;
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
-                configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S + Format(data2.T.S)));
+                                                                                  configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S + Format(data2.T.S)));
             var converter = collection.GetConverter(MutatorsContext.Empty);
 
             converter(new TestData2 {T = new T {R = new[] {new R(), new R(), new R(),}}});
@@ -1116,7 +1099,7 @@ namespace Mutators.Tests
             expressions.ForEach(item => SetValues(o, 3, 0, 1, 2, item[0], item[1], item[2], item[3]));
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             mutator(o);
-            for(int index = 0; index < expressions.Count; index++)
+            for (int index = 0; index < expressions.Count; index++)
             {
                 Expression<Func<TestData, int?>>[] item = expressions[index];
                 Expression<Func<TestData, int?>> a = item[0];
@@ -1172,7 +1155,7 @@ namespace Mutators.Tests
             b = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(b);
             c = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(c);
             d = Expression.Lambda<Func<TestData, TestData>>(p, new[] {p}).Merge(d);
-            if(random.Next(6) > 2)
+            if (random.Next(6) > 2)
             {
                 configurator.Target(a).NullifyIf(Expression.Lambda<Func<TestData, bool?>>(Expression.Convert(Expression.LessThan(b.Body, c.Body), typeof(bool?)), new[] {p}));
                 configurator.Target(b).NullifyIf((Expression.Lambda<Func<TestData, bool?>>(Expression.Convert(Expression.LessThan(c.Body, d.Body), typeof(bool?)), new[] {p})));
@@ -1184,10 +1167,24 @@ namespace Mutators.Tests
             }
         }
 
+        private static int numberOfCalls;
+
         private static int filterArrayCalls;
 
         private Random random;
         private IPathFormatterCollection pathFormatterCollection;
+
+        private class Zzz : IZzz
+        {
+            public string Trololo { get; private set; }
+        }
+
+        class MyClassQxx
+        {
+            public string this[int x] { get { return Data[x]; } }
+
+            public string[] Data;
+        }
 
         public class IdGenerator
         {

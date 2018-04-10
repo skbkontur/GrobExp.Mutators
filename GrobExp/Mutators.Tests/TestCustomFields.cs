@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Reflection;
+using System.Linq;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Validators.Texts;
 
-using GroBuf;
-
 using NUnit.Framework;
-
-using System.Linq;
 
 namespace Mutators.Tests
 {
@@ -26,7 +21,7 @@ namespace Mutators.Tests
 
         public object ConvertFromString(string value, TypeCode typeCode)
         {
-            switch(typeCode)
+            switch (typeCode)
             {
             case TypeCode.Int32:
                 return int.Parse(value);
@@ -39,7 +34,7 @@ namespace Mutators.Tests
 
         public Type GetType(TypeCode typeCode)
         {
-            switch(typeCode)
+            switch (typeCode)
             {
             case TypeCode.Int32:
                 return typeof(int);
@@ -60,14 +55,8 @@ namespace Mutators.Tests
             LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             converterCollectionFactory = new TestConverterCollectionFactory();
             pathFormatterCollection = new PathFormatterCollection();
-            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator =>
-                {
-                    configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id);
-                });
-            var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, configurator =>
-                {
-                    configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id);
-                });
+            var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator => { configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id); });
+            var modelDataToWebDataConverterCollection = new TestConverterCollection<ModelData, WebData>(pathFormatterCollection, configurator => { configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id); });
             converterCollectionFactory.Register(webDataToDataConverterCollection);
             converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
         }
@@ -88,19 +77,21 @@ namespace Mutators.Tests
                         {
                             {"S", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
                             {"F", new CustomFieldValue {TypeCode = TypeCode.String, Value = "zzz"}},
-                            {"StrArr", new CustomFieldValue{TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
-                            {"Q", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 2.0m}},
-                            {"Qq", new CustomFieldValue{TypeCode = TypeCode.Double, Value = 10.0}},
-                            {"E", new CustomFieldValue{TypeCode = TypeCode.String, Value = "ZZZ"}},
+                            {"StrArr", new CustomFieldValue {TypeCode = TypeCode.String, Value = new[] {"zzz", "qxx"}, IsArray = true}},
+                            {"Q", new CustomFieldValue {TypeCode = TypeCode.Decimal, Value = 2.0m}},
+                            {"Qq", new CustomFieldValue {TypeCode = TypeCode.Double, Value = 10.0}},
+                            {"E", new CustomFieldValue {TypeCode = TypeCode.String, Value = "ZZZ"}},
                             {"ComplexFieldёX", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 123}},
                             {"ComplexFieldёZёS", new CustomFieldValue {TypeCode = TypeCode.String, Value = "qzz"}},
-                            {"ComplexArr", new CustomFieldValue
-                                {
-                                    TypeCode = TypeCode.Object,
-                                    IsArray = true,
-                                    TypeCodes = new Dictionary<string, TypeCode>{{"X", TypeCode.Int32}, {"ZёS", TypeCode.String}, {"ZёE", TypeCode.String}},
-                                    Value = new[] {new Hashtable{{"X", 314}, {"ZёS", "qzz"}}, new Hashtable{{"X", 271}, {"ZёS", "xxx"}, {"ZёE", "QXX"}}}
-                                }}
+                            {
+                                "ComplexArr", new CustomFieldValue
+                                    {
+                                        TypeCode = TypeCode.Object,
+                                        IsArray = true,
+                                        TypeCodes = new Dictionary<string, TypeCode> {{"X", TypeCode.Int32}, {"ZёS", TypeCode.String}, {"ZёE", TypeCode.String}},
+                                        Value = new[] {new Hashtable {{"X", 314}, {"ZёS", "qzz"}}, new Hashtable {{"X", 271}, {"ZёS", "xxx"}, {"ZёE", "QXX"}}}
+                                    }
+                            }
                         })
                 });
             Assert.AreEqual("zzz", data.S);
@@ -145,9 +136,9 @@ namespace Mutators.Tests
                     S = "zzz",
                     F = "qxx",
                     E = TestEnum.Qxx,
-                    StrArr = new [] {"zzz", "qxx"},
-                    ComplexField = new ComplexCustomField{ X = 123},
-                    ComplexArr = new[] {new ComplexCustomField{X = 314, Z = new ComplexCustomFieldSubClass{S = "qzz", E = TestEnum.Qxx}}, new ComplexCustomField{X = 271, Z = new ComplexCustomFieldSubClass{S = "xxx"}}}
+                    StrArr = new[] {"zzz", "qxx"},
+                    ComplexField = new ComplexCustomField {X = 123},
+                    ComplexArr = new[] {new ComplexCustomField {X = 314, Z = new ComplexCustomFieldSubClass {S = "qzz", E = TestEnum.Qxx}}, new ComplexCustomField {X = 271, Z = new ComplexCustomFieldSubClass {S = "xxx"}}}
                 });
             Assert.IsNotNull(data.CustomFields);
             Assert.IsFalse(data.CustomFields.Value.ContainsKey("F"));
@@ -207,12 +198,12 @@ namespace Mutators.Tests
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
-                configurator =>
-                    {
-                        configurator.Target(data => data.S).Required();
-                        configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
-                        configurator.Target(data => data.Items.Each().S).Required();
-                    }
+                                                                                      configurator =>
+                                                                                          {
+                                                                                              configurator.Target(data => data.S).Required();
+                                                                                              configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
+                                                                                              configurator.Target(data => data.Items.Each().S).Required();
+                                                                                          }
             );
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
@@ -247,12 +238,12 @@ namespace Mutators.Tests
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
-                configurator =>
-                    {
-                        configurator.Target(data => data.S).Required();
-                        configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
-                        configurator.Target(data => data.Items.Each().S).Required();
-                    }
+                                                                                      configurator =>
+                                                                                          {
+                                                                                              configurator.Target(data => data.S).Required();
+                                                                                              configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
+                                                                                              configurator.Target(data => data.Items.Each().S).Required();
+                                                                                          }
             );
             var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
@@ -290,13 +281,13 @@ namespace Mutators.Tests
             LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
-                configurator =>
-                    {
-                        configurator.Target(data => data.X).Set(data => data.Y + data.Z);
-                        configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
-                        configurator.Target(data => data.Sum).Set(data => data.DecimalArr.Sum());
-                        configurator.Target(data => data.ComplexArrSum).Set(data => data.ComplexArr.Sum(x => x.Y));
-                    }
+                                                                                      configurator =>
+                                                                                          {
+                                                                                              configurator.Target(data => data.X).Set(data => data.Y + data.Z);
+                                                                                              configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
+                                                                                              configurator.Target(data => data.Sum).Set(data => data.DecimalArr.Sum());
+                                                                                              configurator.Target(data => data.ComplexArrSum).Set(data => data.ComplexArr.Sum(x => x.Y));
+                                                                                          }
             );
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
@@ -306,19 +297,21 @@ namespace Mutators.Tests
                 {
                     CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                         {
-                            {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
-                            {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
-                            {"Z", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 2}},
-                            {"Sum", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 0m}},
-                            {"ComplexArrSum", new CustomFieldValue{TypeCode = TypeCode.Decimal, Value = 0m}},
-                            {"DecimalArr", new CustomFieldValue{TypeCode = TypeCode.Decimal, IsArray = true, Value = new object[] {1m, 2m, 3m}}},
-                            {"ComplexArr", new CustomFieldValue
-                                {
-                                    TypeCode = TypeCode.Object,
-                                    IsArray = true,
-                                    TypeCodes = new Dictionary<string, TypeCode>{{"Y", TypeCode.Decimal}},
-                                    Value = new[] {new Hashtable{{"Y", 1m}, }, new Hashtable{{"Y", 2m}}}
-                                }}
+                            {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
+                            {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
+                            {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}},
+                            {"Sum", new CustomFieldValue {TypeCode = TypeCode.Decimal, Value = 0m}},
+                            {"ComplexArrSum", new CustomFieldValue {TypeCode = TypeCode.Decimal, Value = 0m}},
+                            {"DecimalArr", new CustomFieldValue {TypeCode = TypeCode.Decimal, IsArray = true, Value = new object[] {1m, 2m, 3m}}},
+                            {
+                                "ComplexArr", new CustomFieldValue
+                                    {
+                                        TypeCode = TypeCode.Object,
+                                        IsArray = true,
+                                        TypeCodes = new Dictionary<string, TypeCode> {{"Y", TypeCode.Decimal}},
+                                        Value = new[] {new Hashtable {{"Y", 1m},}, new Hashtable {{"Y", 2m}}}
+                                    }
+                            }
                         }),
                     Items = new[]
                         {
@@ -326,11 +319,11 @@ namespace Mutators.Tests
                                 {
                                     CustomFields = new Dictionary<string, CustomFieldValue>
                                         {
-                                            {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
-                                            {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
-                                            {"Z", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 2}}
+                                            {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
+                                            {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
+                                            {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
                                         },
-                                }, 
+                                },
                         }
                 };
             webMutator(webData);
@@ -345,11 +338,11 @@ namespace Mutators.Tests
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
-                configurator =>
-                    {
-                        configurator.Target(data => data.X).Set(data => data.Y + data.Z);
-                        configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
-                    }
+                                                                                      configurator =>
+                                                                                          {
+                                                                                              configurator.Target(data => data.X).Set(data => data.Y + data.Z);
+                                                                                              configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
+                                                                                          }
             );
             var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
@@ -370,11 +363,11 @@ namespace Mutators.Tests
                                 {
                                     CustomFields = new Dictionary<string, CustomFieldValue>
                                         {
-                                            {"X", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 0}},
-                                            {"Y", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 1}},
-                                            {"Z", new CustomFieldValue{TypeCode = TypeCode.Int32, Value = 2}}
+                                            {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
+                                            {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
+                                            {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
                                         },
-                                }, 
+                                },
                         }
                 };
             modelMutator(modelData);
@@ -387,27 +380,36 @@ namespace Mutators.Tests
         {
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
-            {
-                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Key).Set(x => x.CustomFields.Value.Current().Key);
-                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Value).Set(x => x.CustomFields.Value.Current().Value.Value);
-                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.TypeCode).Set(x => x.CustomFields.Value.Current().Value.TypeCode);
-                configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Title).Set(x => x.CustomFields.Value.Current().Value.Title);
-            });
+                {
+                    configurator.Target(x => x.CustomFieldsCopy.Value.Each().Key).Set(x => x.CustomFields.Value.Current().Key);
+                    configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Value).Set(x => x.CustomFields.Value.Current().Value.Value);
+                    configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.TypeCode).Set(x => x.CustomFields.Value.Current().Value.TypeCode);
+                    configurator.Target(x => x.CustomFieldsCopy.Value.Each().Value.Title).Set(x => x.CustomFields.Value.Current().Value.Title);
+                });
 
             var mutator = dataConfiguratorCollection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var data = new WebData
-            {
-                CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
                 {
-                    {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
-                    {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
-                    {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
-                }),
-            };
+                    CustomFields = new Lazy<Dictionary<string, CustomFieldValue>>(() => new Dictionary<string, CustomFieldValue>
+                        {
+                            {"X", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 0}},
+                            {"Y", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 1}},
+                            {"Z", new CustomFieldValue {TypeCode = TypeCode.Int32, Value = 2}}
+                        }),
+                };
             mutator(data);
             Assert.AreEqual(0, data.CustomFieldsCopy.Value["X"].Value);
             Assert.AreEqual(1, data.CustomFieldsCopy.Value["Y"].Value);
             Assert.AreEqual(2, data.CustomFieldsCopy.Value["Z"].Value);
+        }
+
+        public enum TestEnum
+        {
+            [BeatifulName("ZZZ")]
+            Zzz,
+
+            [BeatifulName("QXX")]
+            Qxx
         }
 
         private TestConverterCollectionFactory converterCollectionFactory;
@@ -421,15 +423,6 @@ namespace Mutators.Tests
             }
 
             public string Name { get; private set; }
-        }
-
-        public enum TestEnum
-        {
-            [BeatifulName("ZZZ")]
-            Zzz,
-
-            [BeatifulName("QXX")]
-            Qxx
         }
 
         public class ComplexCustomFieldSubClass

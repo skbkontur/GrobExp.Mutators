@@ -43,14 +43,14 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitInvocation(InvocationExpression node)
         {
-            foreach(var arg in node.Arguments)
+            foreach (var arg in node.Arguments)
                 Visit(arg);
             return node;
         }
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if(paramTypeMustBeUnique && rootParamType != null && rootParamType != node.Type)
+            if (paramTypeMustBeUnique && rootParamType != null && rootParamType != node.Type)
                 throw new InvalidOperationException("Type '" + node.Type + "' is not valid at this point");
             rootParamType = node.Type;
             return node;
@@ -58,51 +58,54 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if(IsEachOrCurrentCall(node))
+            if (IsEachOrCurrentCall(node))
             {
                 var chain = node;
                 var chainShards = chain.SmashToSmithereens();
                 int i, l;
-                if(chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke || chainShards[0].NodeType == ExpressionType.Constant)
+                if (chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke || chainShards[0].NodeType == ExpressionType.Constant)
                 {
                     i = chainShards[0].NodeType == ExpressionType.Call || chainShards[0].NodeType == ExpressionType.Invoke ? 0 : 1;
                     Type subType;
                     var subMaxLevel = new ArraysExtractorVisitor(list, paramTypeMustBeUnique : true).GetArrays(chainShards[i], out subType);
-                    if(paramTypeMustBeUnique && rootParamType != null && rootParamType != subType)
+                    if (paramTypeMustBeUnique && rootParamType != null && rootParamType != subType)
                         throw new InvalidOperationException("Type '" + subType + "' is not valid at this point");
                     rootParamType = subType;
                     l = subMaxLevel;
                 }
                 else
                 {
-                    if(paramTypeMustBeUnique && rootParamType != null && rootParamType != chainShards[0].Type)
+                    if (paramTypeMustBeUnique && rootParamType != null && rootParamType != chainShards[0].Type)
                         throw new InvalidOperationException("Type '" + chainShards[0].Type + "' is not valid at this point");
                     rootParamType = chainShards[0].Type;
                     l = 0;
                     i = 0;
                 }
-                for(++i; i < chainShards.Length; ++i)
+
+                for (++i; i < chainShards.Length; ++i)
                 {
-                    if(!IsEachOrCurrentCall(chainShards[i])) continue;
+                    if (!IsEachOrCurrentCall(chainShards[i])) continue;
                     ++l;
-                    if(l > maxLevel)
+                    if (l > maxLevel)
                         maxLevel = l;
-                    while(list.Count <= l)
+                    while (list.Count <= l)
                         list.Add(new Dictionary<Type, List<Expression>>());
                     List<Expression> arrays;
-                    if(!list[l].TryGetValue(rootParamType, out arrays))
+                    if (!list[l].TryGetValue(rootParamType, out arrays))
                         list[l].Add(rootParamType, arrays = new List<Expression>());
                     arrays.Add(chainShards[i]);
                 }
+
                 return node;
             }
+
             return base.VisitMethodCall(node);
         }
 
         private static bool IsEachOrCurrentCall(Expression node)
         {
             var methodCallExpression = node as MethodCallExpression;
-            if(methodCallExpression == null)
+            if (methodCallExpression == null)
                 return false;
             var method = methodCallExpression.Method;
             return method.IsEachMethod() || method.IsCurrentMethod();

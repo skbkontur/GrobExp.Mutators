@@ -28,15 +28,15 @@ namespace Mutators.Tests
         [Test, Timeout(20000)]
         public void TestCompilePerformance()
         {
-            for(int i = 0; i < 100000; i++)
+            for (int i = 0; i < 100000; i++)
                 ExpressionCompiler.Compile<Z, string>(z => z.Q[22].Qzz);
         }
 
-        [Test/*, Timeout(20000)*/]
+        [Test /*, Timeout(20000)*/]
         public void TestCompilePerformance2()
         {
             Func<string, Expression<Func<Z, bool>>> f = qzz => z => z.Q[0].Qzz == qzz;
-            for(int i = 0; i < 100000; i++)
+            for (int i = 0; i < 100000; i++)
             {
                 var g = ExpressionCompiler.Compile(f(i.ToString()));
                 Assert.That(g(new Z {Q = new[] {new Q {Qzz = i.ToString()}}}));

@@ -5,11 +5,11 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-using GroBuf.Readers;
-
 using GrobExp.Compiler;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
+
+using GroBuf.Readers;
 
 using JetBrains.Annotations;
 
@@ -53,20 +53,22 @@ namespace GrobExp.Mutators
             var currentBatch = new List<Expression>();
             var expressionsInBatch = 0;
 
-            foreach(var expression in expressions)
+            foreach (var expression in expressions)
             {
                 var count = expressionsCounter.Count(expression);
-                if(expressionsInBatch + count > maxNumberOfExpressionsInBatch)
+                if (expressionsInBatch + count > maxNumberOfExpressionsInBatch)
                 {
-                    if(currentBatch.Count > 0)
+                    if (currentBatch.Count > 0)
                         result.Add(MakeInvocation(currentBatch, parameters));
                     currentBatch.Clear();
                     expressionsInBatch = 0;
                 }
+
                 expressionsInBatch += count;
                 currentBatch.Add(expression);
             }
-            if(currentBatch.Count > 0)
+
+            if (currentBatch.Count > 0)
                 result.Add(MakeInvocation(currentBatch, parameters));
             return result;
         }
@@ -83,21 +85,21 @@ namespace GrobExp.Mutators
 
         public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)
         {
-            if(!MutatorsAssignRecorder.IsRecording() || toLog == null)
+            if (!MutatorsAssignRecorder.IsRecording() || toLog == null)
                 return InternalAssign(path, value);
             MutatorsAssignRecorder.RecordCompilingExpression(toLog);
             MethodCallExpression recordingExpression;
             var temp = Expression.Variable(value.Type, "temp");
-            
-            if(value.Type.IsNullable())
+
+            if (value.Type.IsNullable())
             {
                 recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithNullableValueCheck").MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(toLog), value);
             }
-            else if(value.Type.IsValueType)
+            else if (value.Type.IsValueType)
                 recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog));
             else
                 recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithValueObjectCheck"), Expression.Constant(toLog), value);
-            
+
             return Expression.Block(new[] {temp},
                                     Expression.Assign(temp, value),
                                     InternalAssign(path, temp),
@@ -164,7 +166,7 @@ namespace GrobExp.Mutators
 
         public static Expression<Func<TRoot, TValue>> ReplaceParameter<TRoot, TValue>(this Expression<Func<TRoot, TValue>> expression, ParameterExpression newParameter)
         {
-            if(newParameter.Type != typeof(TRoot))
+            if (newParameter.Type != typeof(TRoot))
                 throw new ArgumentException("Parameter of type '" + typeof(TRoot) + "' expected");
             return Expression.Lambda<Func<TRoot, TRoot>>(newParameter, newParameter).Merge(expression);
         }
@@ -177,7 +179,7 @@ namespace GrobExp.Mutators
 
         public static object Evaluate(this Expression exp)
         {
-            if(exp.Type != typeof(object))
+            if (exp.Type != typeof(object))
                 exp = Expression.Convert(exp, typeof(object));
             return ExpressionCompiler.Compile(Expression.Lambda<Func<object>>(exp))();
         }
@@ -187,7 +189,7 @@ namespace GrobExp.Mutators
             return new ExpressionSimplifier().Simplify(expression);
         }
 
-        /// <inheritdoc cref="IsConstantChecker.IsConstant"/>
+        /// <inheritdoc cref="IsConstantChecker.IsConstant" />
         public static bool IsConstant([NotNull] this Expression exp)
         {
             return new IsConstantChecker().IsConstant(exp);
@@ -200,8 +202,8 @@ namespace GrobExp.Mutators
 
         public static LambdaExpression AndAlso(this LambdaExpression left, LambdaExpression right, bool convertToNullable = true)
         {
-            if(left == null) return right;
-            if(right == null) return left;
+            if (left == null) return right;
+            if (right == null) return left;
             Expression leftBody, rightBody;
             ParameterExpression[] parameters;
             Canonize(left, right, out leftBody, out rightBody, out parameters);
@@ -210,8 +212,8 @@ namespace GrobExp.Mutators
 
         public static LambdaExpression OrElse(this LambdaExpression left, LambdaExpression right, bool convertToNullable = true)
         {
-            if(left == null) return right;
-            if(right == null) return left;
+            if (left == null) return right;
+            if (right == null) return left;
             Expression leftBody, rightBody;
             ParameterExpression[] parameters;
             Canonize(left, right, out leftBody, out rightBody, out parameters);
@@ -229,7 +231,7 @@ namespace GrobExp.Mutators
         {
             LambdaExpression[] primaryDependencies;
             LambdaExpression[] additionalDependencies;
-            if(lambda == null) return new LambdaExpression[0];
+            if (lambda == null) return new LambdaExpression[0];
             new DependenciesExtractor(lambda, lambda.Parameters).Extract(out primaryDependencies, out additionalDependencies);
             return primaryDependencies;
         }
@@ -237,7 +239,7 @@ namespace GrobExp.Mutators
         public static LambdaExpression[] ExtractDependencies(this LambdaExpression lambda, IEnumerable<ParameterExpression> parameters)
         {
             var parametersArray = parameters.ToArray();
-            if(parametersArray.Length == 0)
+            if (parametersArray.Length == 0)
                 return new LambdaExpression[0];
             LambdaExpression[] primaryDependencies;
             LambdaExpression[] additionalDependencies;
@@ -249,11 +251,11 @@ namespace GrobExp.Mutators
             var shards = node.SmashToSmithereens();
             var result = shards[0];
             var i = 0;
-            while(i + 1 < shards.Length)
+            while (i + 1 < shards.Length)
             {
                 ++i;
                 var shard = shards[i];
-                switch(shard.NodeType)
+                switch (shard.NodeType)
                 {
                 case ExpressionType.MemberAccess:
                     result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
@@ -263,7 +265,7 @@ namespace GrobExp.Mutators
                     break;
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)shard;
-                    if(methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
+                    if (methodCallExpression.Method.IsWhereMethod() && i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))
                     {
                         result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
                         filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
@@ -271,12 +273,13 @@ namespace GrobExp.Mutators
                     }
                     else
                     {
-                        if(methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
+                        if (methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
                             filters.Add(null);
                         result = methodCallExpression.Method.IsStatic
                                      ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
                                      : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
                     }
+
                     break;
                 case ExpressionType.Convert:
                     result = Expression.Convert(result, shard.Type);
@@ -288,6 +291,7 @@ namespace GrobExp.Mutators
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
             }
+
             return result;
         }
 
@@ -333,13 +337,13 @@ namespace GrobExp.Mutators
 
         public static Expression ResolveAbstractPath(this Expression expression, List<PathPrefix> pathPrefixes)
         {
-            if(pathPrefixes == null || pathPrefixes.Count == 0) return expression;
+            if (pathPrefixes == null || pathPrefixes.Count == 0) return expression;
             return new AbstractPathResolver(pathPrefixes, true).Resolve(expression);
         }
 
         public static Expression ResolveAliases(this Expression expression, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(aliases == null || aliases.Count == 0)
+            if (aliases == null || aliases.Count == 0)
                 return expression;
             return new AliasesResolver(aliases).Visit(expression);
         }
@@ -354,11 +358,11 @@ namespace GrobExp.Mutators
         public static Expression[] SmashToSmithereens(this Expression exp)
         {
             var result = new List<Expression>();
-            while(exp != null)
+            while (exp != null)
             {
                 var end = false;
                 result.Add(exp);
-                switch(exp.NodeType)
+                switch (exp.NodeType)
                 {
                 case ExpressionType.MemberAccess:
                     exp = ((MemberExpression)exp).Expression;
@@ -384,46 +388,50 @@ namespace GrobExp.Mutators
                     end = true;
                     break;
                 }
-                if(end) break;
+
+                if (end) break;
             }
+
             result.Reverse();
             return result.ToArray();
         }
 
         public static Expression LCP(this Expression exp1, Expression exp2)
         {
-            if(exp1 == null || exp2 == null) return null;
+            if (exp1 == null || exp2 == null) return null;
             var shards1 = exp1.SmashToSmithereens();
             var shards2 = exp2.SmashToSmithereens();
             int i;
-            for(i = 0; i < shards1.Length && i < shards2.Length; ++i)
+            for (i = 0; i < shards1.Length && i < shards2.Length; ++i)
             {
-                if(!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false, true))
+                if (!ExpressionEquivalenceChecker.Equivalent(shards1[i], shards2[i], false, true))
                     break;
             }
+
             return i == 0 ? null : shards1[i - 1];
         }
 
         private static void BuildCustomFieldName(Expression node, StringBuilder result)
         {
-            switch(node.NodeType)
+            switch (node.NodeType)
             {
             case ExpressionType.Parameter:
                 return;
             case ExpressionType.MemberAccess:
                 var memberExpression = (MemberExpression)node;
                 BuildCustomFieldName(memberExpression.Expression, result);
-                if(result.Length > 0)
+                if (result.Length > 0)
                     result.Append("ё");
                 result.Append(string.Intern(memberExpression.Member.Name));
                 break;
             case ExpressionType.Call:
                 var methodCallExpression = (MethodCallExpression)node;
-                if(methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod())
+                if (methodCallExpression.Method.IsEachMethod() || methodCallExpression.Method.IsCurrentMethod())
                 {
                     BuildCustomFieldName(methodCallExpression.Arguments.Single(), result);
                     break;
                 }
+
                 throw new InvalidOperationException(string.Format("The method '{0}' is not supported", methodCallExpression.Method));
             default:
                 throw new InvalidOperationException(string.Format("Node type '{0}' is not supported", node.NodeType));
@@ -432,9 +440,9 @@ namespace GrobExp.Mutators
 
         private static Expression InternalAssign(this Expression path, Expression value)
         {
-            if(path.NodeType == ExpressionType.Convert)
+            if (path.NodeType == ExpressionType.Convert)
                 path = ((UnaryExpression)path).Operand;
-            switch(path.NodeType)
+            switch (path.NodeType)
             {
             case ExpressionType.ArrayIndex:
                 var binaryExpression = (BinaryExpression)path;
@@ -443,7 +451,7 @@ namespace GrobExp.Mutators
             case ExpressionType.MemberAccess:
                 {
                     var memberExpression = (MemberExpression)path;
-                    if(memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
+                    if (memberExpression.Expression.Type.IsArray && memberExpression.Member.Name == "Length")
                     {
                         var temp = Expression.Variable(memberExpression.Expression.Type);
                         return Expression.Block(new[] {temp},
@@ -451,17 +459,18 @@ namespace GrobExp.Mutators
                                                 Expression.Call(arrayResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetElementType()), temp, value),
                                                 Expression.Assign(memberExpression.Expression, temp));
                     }
-                    if(memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
+
+                    if (memberExpression.Expression.Type.IsGenericType && memberExpression.Expression.Type.GetGenericTypeDefinition() == typeof(List<>) && memberExpression.Member.Name == "Count")
                         return Expression.Call(listResizeMethod.MakeGenericMethod(memberExpression.Expression.Type.GetItemType()), memberExpression.Expression, value);
                 }
                 break;
             case ExpressionType.Call:
                 var methodCallExpression = (MethodCallExpression)path;
-                if(methodCallExpression.Method.IsIndexerGetter())
+                if (methodCallExpression.Method.IsIndexerGetter())
                 {
                     var temp = Expression.Variable(methodCallExpression.Object.Type);
                     Expression assignment;
-                    if(!methodCallExpression.Object.Type.IsDictionary())
+                    if (!methodCallExpression.Object.Type.IsDictionary())
                         assignment = Expression.Call(temp, "set_Item", null, methodCallExpression.Arguments.Single(), value);
                     else
                     {
@@ -471,13 +480,16 @@ namespace GrobExp.Mutators
 //                            ,
 //                            Expression.Call(temp, "Add", null, methodCallExpression.Arguments.Single(), value))
                     }
+
                     return Expression.Block(new[] {temp},
                                             Expression.Assign(temp, methodCallExpression.Object),
                                             Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
                                             assignment);
                 }
+
                 break;
             }
+
             return Expression.Assign(path, value);
         }
 
@@ -489,15 +501,15 @@ namespace GrobExp.Mutators
         private static void Resize<T>(List<T> list, int size)
         {
             // todo emit
-            if(list.Count > size)
+            if (list.Count > size)
             {
-                while(list.Count > size)
+                while (list.Count > size)
                     list.RemoveAt(list.Count - 1);
             }
             else
             {
                 var f = ObjectConstructionHelper.ConstructType(typeof(T));
-                while(list.Count < size)
+                while (list.Count < size)
                     list.Add((T)f());
             }
         }
@@ -510,33 +522,39 @@ namespace GrobExp.Mutators
         private static void Canonize(LambdaExpression left, LambdaExpression right, out Expression leftBody, out Expression rightBody, out ParameterExpression[] parameters)
         {
             var leftParameters = new Dictionary<Type, ParameterExpression>();
-            foreach(var parameter in left.Parameters)
+            foreach (var parameter in left.Parameters)
             {
-                if(leftParameters.ContainsKey(parameter.Type))
+                if (leftParameters.ContainsKey(parameter.Type))
                     throw new InvalidOperationException("Two parameters of the same type are prohibited");
                 leftParameters.Add(parameter.Type, parameter);
             }
+
             var rightParameters = new Dictionary<Type, ParameterExpression>();
-            foreach(var parameter in right.Parameters)
+            foreach (var parameter in right.Parameters)
             {
-                if(rightParameters.ContainsKey(parameter.Type))
+                if (rightParameters.ContainsKey(parameter.Type))
                     throw new InvalidOperationException("Two parameters of the same type are prohibited");
                 rightParameters.Add(parameter.Type, parameter);
             }
-            foreach(var item in rightParameters)
+
+            foreach (var item in rightParameters)
             {
-                if(!leftParameters.ContainsKey(item.Key))
+                if (!leftParameters.ContainsKey(item.Key))
                     leftParameters.Add(item.Key, item.Value);
             }
+
             leftBody = left.Body;
             rightBody = right.Body;
-            foreach(var parameter in right.Parameters)
+            foreach (var parameter in right.Parameters)
             {
-                if(leftParameters[parameter.Type] != parameter)
+                if (leftParameters[parameter.Type] != parameter)
                     rightBody = new ParameterReplacer(parameter, leftParameters[parameter.Type]).Visit(rightBody);
             }
+
             parameters = leftParameters.Values.ToArray();
         }
+
+        private const int maxNumberOfExpressionsInBatch = 1000;
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(arr => Resize(arr, 0))).Body).Method.GetGenericMethodDefinition();
@@ -551,7 +569,5 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo singleWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.Single(i => i == 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithoutParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo singleOrDefaultWithParametersMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => arr.SingleOrDefault(i => i == 0))).Body).Method.GetGenericMethodDefinition();
-      
-        private const int maxNumberOfExpressionsInBatch = 1000;
     }
 }

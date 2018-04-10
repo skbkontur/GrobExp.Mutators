@@ -22,11 +22,11 @@ namespace Mutators.Tests
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.Target(x => x.D).Set(x => x.B);
-                });
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                 });
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
 
             var testDataSource = new TestDataSource();
@@ -63,11 +63,11 @@ namespace Mutators.Tests
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
 
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.Target(x => x.D).Set(x => x.B);
-                });
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                 });
 
             recorder.Stop();
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
@@ -83,11 +83,11 @@ namespace Mutators.Tests
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
 
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.Target(x => x.D).Set(x => x.B);
-                });
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                 });
 
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
             converter(new TestDataSource());
@@ -106,11 +106,11 @@ namespace Mutators.Tests
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
 
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.If(x => x.B == 13).Target(x => x.D).Set(x => x.B);
-                });
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                     configurator.If(x => x.B == 13).Target(x => x.D).Set(x => x.B);
+                                                                                                 });
 
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
             var actualData = converter(new TestDataSource());
@@ -131,11 +131,11 @@ namespace Mutators.Tests
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
 
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.If(x => x.B == 10000).Target(x => x.D).Set(x => x.B);
-                });
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                     configurator.If(x => x.B == 10000).Target(x => x.D).Set(x => x.B);
+                                                                                                 });
 
             var converter = testConfigurator.GetConverter(MutatorsContext.Empty);
             var actualData = converter(new TestDataSource());
@@ -157,47 +157,48 @@ namespace Mutators.Tests
         {
             var actualDataList = new ConcurrentBag<TestDataDest>();
             var threads = new ConcurrentBag<Thread>();
-            for(var i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var thread = new Thread(() =>
-                {
-                    while(!start)
                     {
-                    }
-                    try
-                    {
-                        var recorder = AssignRecorderInitializer.StartAssignRecorder();
-                        var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                            configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
-                        actualDataList.Add(converter(new TestDataSource()));
-                        recorder.Stop();
-                        Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
-                        Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
-                    }
-                    catch(Exception e)
-                    {
-                        lastException = e;
-                        Console.WriteLine(e);
-                    }
-                });
+                        while (!start)
+                        {
+                        }
+
+                        try
+                        {
+                            var recorder = AssignRecorderInitializer.StartAssignRecorder();
+                            var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                                                                                                      configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
+                            actualDataList.Add(converter(new TestDataSource()));
+                            recorder.Stop();
+                            Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
+                            Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
+                        }
+                        catch (Exception e)
+                        {
+                            lastException = e;
+                            Console.WriteLine(e);
+                        }
+                    });
                 thread.Start();
                 threads.Add(thread);
             }
 
             start = true;
 
-            foreach(var thread in threads)
+            foreach (var thread in threads)
             {
                 thread.Join();
             }
 
             Assert.AreEqual(10, actualDataList.Count);
-            foreach(var data in actualDataList)
+            foreach (var data in actualDataList)
             {
                 Assert.AreEqual(12, data.C);
             }
 
-            if(lastException != null)
+            if (lastException != null)
                 throw lastException;
         }
 
@@ -207,12 +208,12 @@ namespace Mutators.Tests
         public void TestDoubleGettingConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.Target(x => x.D).Set(x => x.B);
-                });
-            for(var i = 0; i < 2; i++)
+                                                                                                configurator =>
+                                                                                                    {
+                                                                                                        configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                        configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                    });
+            for (var i = 0; i < 2; i++)
             {
                 var recorder = AssignRecorderInitializer.StartAssignRecorder();
                 var converter = converterCollection.GetConverter(MutatorsContext.Empty);
@@ -232,11 +233,11 @@ namespace Mutators.Tests
         public void TestCacheConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.C).Set(x => x.A);
-                    configurator.Target(x => x.D).Set(x => x.B);
-                });
+                                                                                                configurator =>
+                                                                                                    {
+                                                                                                        configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                        configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                    });
 
             var converter = converterCollection.GetConverter(MutatorsContext.Empty);
             Assert.AreSame(converter, converterCollection.GetConverter(MutatorsContext.Empty));
@@ -254,15 +255,15 @@ namespace Mutators.Tests
         public void TestSetNullToString()
         {
             var converterCollection = new TestConverterCollection<TestDataSourceNullable, TestDataDestNullable>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.StrC).Set(x => x.StrA);
-                    configurator.Target(x => x.StrD).Set(x => x.StrB);
-                });
+                                                                                                                configurator =>
+                                                                                                                    {
+                                                                                                                        configurator.Target(x => x.StrC).Set(x => x.StrA);
+                                                                                                                        configurator.Target(x => x.StrD).Set(x => x.StrB);
+                                                                                                                    });
             var source = new TestDataSourceNullable
-            {
-                StrA = "qxx"
-            };
+                {
+                    StrA = "qxx"
+                };
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
@@ -271,15 +272,15 @@ namespace Mutators.Tests
         public void TestSetNullToNullableInt()
         {
             var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.IntC).Set(x => x.IntA);
-                    configurator.Target(x => x.IntD).Set(x => x.IntB);
-                });
+                                                                                                                      configurator =>
+                                                                                                                          {
+                                                                                                                              configurator.Target(x => x.IntC).Set(x => x.IntA);
+                                                                                                                              configurator.Target(x => x.IntD).Set(x => x.IntB);
+                                                                                                                          });
             var source = new TestDataSourceNullableInt
-            {
-                IntA = 12
-            };
+                {
+                    IntA = 12
+                };
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
@@ -288,15 +289,15 @@ namespace Mutators.Tests
         public void TestSetNullToNullableEnum()
         {
             var converterCollection = new TestConverterCollection<TestDataSourceNullableEnum, TestDataDestNullableEnum>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.FieldC).Set(x => x.FieldA);
-                    configurator.Target(x => x.FieldD).Set(x => x.FieldB);
-                });
+                                                                                                                        configurator =>
+                                                                                                                            {
+                                                                                                                                configurator.Target(x => x.FieldC).Set(x => x.FieldA);
+                                                                                                                                configurator.Target(x => x.FieldD).Set(x => x.FieldB);
+                                                                                                                            });
             var source = new TestDataSourceNullableEnum
-            {
-                FieldA = TestEnum.Black
-            };
+                {
+                    FieldA = TestEnum.Black
+                };
             DoTestSetNull(converterCollection, source, 3, 1);
         }
 
@@ -305,16 +306,16 @@ namespace Mutators.Tests
         public void TestSetNullInConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSourceNullableInt, TestDataDestNullableInt>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.IntC).Set(x => null);
-                    configurator.Target(x => x.IntD).Set(x => x.IntB);
-                });
+                                                                                                                      configurator =>
+                                                                                                                          {
+                                                                                                                              configurator.Target(x => x.IntC).Set(x => null);
+                                                                                                                              configurator.Target(x => x.IntD).Set(x => x.IntB);
+                                                                                                                          });
             var source = new TestDataSourceNullableInt
-            {
-                IntA = 12,
-                IntB = 13
-            };
+                {
+                    IntA = 12,
+                    IntB = 13
+                };
             DoTestSetNull(converterCollection, source, 3, 2);
         }
 
@@ -325,37 +326,37 @@ namespace Mutators.Tests
         public void TestExcludeTypesFromCoverage()
         {
             var recorder = AssignRecorderInitializer.StartAssignRecorder()
-                .ExcludingType<TestDataSource>()
-                .ExcludingInterface<ITestInterface>()
-                .ExcludingProperty((TestComplexDataDest x) => x.FieldY)
-                .ExcludingGenericProperty((IGenericTestInterface<object> x) => x.IntA);
+                                                    .ExcludingType<TestDataSource>()
+                                                    .ExcludingInterface<ITestInterface>()
+                                                    .ExcludingProperty((TestComplexDataDest x) => x.FieldY)
+                                                    .ExcludingGenericProperty((IGenericTestInterface<object> x) => x.IntA);
             var converterCollection = new TestConverterCollection<TestComplexDataSource, TestComplexDataDest>(pathFormatterCollection,
-                configurator =>
-                {
-                    configurator.Target(x => x.FieldC.A).Set(x => x.FieldA.B);
-                    configurator.Target(x => x.FieldC.B).Set(x => x.FieldA.A);
-                    configurator.Target(x => x.FieldD.StrB).Set(x => x.FieldB.StrA);
-                    configurator.Target(x => x.FieldD.StrA).Set(x => x.FieldB.StrB);
-                    configurator.Target(x => x.FieldY).If(x => x.FieldA.A > 10).Set(x => x.FieldX);
-                    configurator.Target(x => x.IntField.IntA).Set(x => x.IntField.IntA);
-                    configurator.Target(x => x.IntField.IntB).Set(x => x.IntField.IntB);
-                    configurator.Target(x => x.TestProperty).Set(x => x.TestProperty.S);
-                });
+                                                                                                              configurator =>
+                                                                                                                  {
+                                                                                                                      configurator.Target(x => x.FieldC.A).Set(x => x.FieldA.B);
+                                                                                                                      configurator.Target(x => x.FieldC.B).Set(x => x.FieldA.A);
+                                                                                                                      configurator.Target(x => x.FieldD.StrB).Set(x => x.FieldB.StrA);
+                                                                                                                      configurator.Target(x => x.FieldD.StrA).Set(x => x.FieldB.StrB);
+                                                                                                                      configurator.Target(x => x.FieldY).If(x => x.FieldA.A > 10).Set(x => x.FieldX);
+                                                                                                                      configurator.Target(x => x.IntField.IntA).Set(x => x.IntField.IntA);
+                                                                                                                      configurator.Target(x => x.IntField.IntB).Set(x => x.IntField.IntB);
+                                                                                                                      configurator.Target(x => x.TestProperty).Set(x => x.TestProperty.S);
+                                                                                                                  });
             var source = new TestComplexDataSource
-            {
-                FieldA = new TestDataSource(),
-                FieldB = new TestDataSourceNullable
                 {
-                    StrA = "a",
-                    StrB = "b"
-                },
-                FieldX = "aba",
-                IntField = new TestDataSourceNullableInt
-                {
-                    IntA = 1
-                },
-                TestProperty = new TestInterfaceImpl {S = "GRobas"}
-            };
+                    FieldA = new TestDataSource(),
+                    FieldB = new TestDataSourceNullable
+                        {
+                            StrA = "a",
+                            StrB = "b"
+                        },
+                    FieldX = "aba",
+                    IntField = new TestDataSourceNullableInt
+                        {
+                            IntA = 1
+                        },
+                    TestProperty = new TestInterfaceImpl {S = "GRobas"}
+                };
             var converter = converterCollection.GetConverter(MutatorsContext.Empty);
             converter(source);
             recorder.Stop();

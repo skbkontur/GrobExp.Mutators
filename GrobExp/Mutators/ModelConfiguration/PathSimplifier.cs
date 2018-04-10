@@ -20,19 +20,20 @@ namespace GrobExp.Mutators.ModelConfiguration
             filter = null;
             var shards = path.Body.SmashToSmithereens();
             int i;
-            for(i = 0; i < shards.Length; ++i)
+            for (i = 0; i < shards.Length; ++i)
             {
-                if(shards[i].NodeType == ExpressionType.Call && ((MethodCallExpression)shards[i]).Method.DeclaringType == typeof(Enumerable))
+                if (shards[i].NodeType == ExpressionType.Call && ((MethodCallExpression)shards[i]).Method.DeclaringType == typeof(Enumerable))
                     break;
             }
-            if(i >= shards.Length)
+
+            if (i >= shards.Length)
                 return path;
             var result = shards[i - 1];
             var currents = 0;
-            for(; i < shards.Length; ++i)
+            for (; i < shards.Length; ++i)
             {
                 var shard = shards[i];
-                switch(shard.NodeType)
+                switch (shard.NodeType)
                 {
                 case ExpressionType.MemberAccess:
                     result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
@@ -43,9 +44,9 @@ namespace GrobExp.Mutators.ModelConfiguration
                 case ExpressionType.Call:
                     var methodCallExpression = (MethodCallExpression)shard;
                     var method = methodCallExpression.Method;
-                    if(method.DeclaringType == typeof(Enumerable))
+                    if (method.DeclaringType == typeof(Enumerable))
                     {
-                        switch(method.Name)
+                        switch (method.Name)
                         {
                         case "Select":
                             // Substitute call to Select method with Current
@@ -53,10 +54,10 @@ namespace GrobExp.Mutators.ModelConfiguration
                             var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                             result =
                                 Expression.Lambda(
-                                        Expression.Call(
-                                            MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters)
-                                    .Merge(selector)
-                                    .Body;
+                                              Expression.Call(
+                                                  MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters)
+                                          .Merge(selector)
+                                          .Body;
                             ++currents;
                             break;
                         case "Where":
@@ -71,8 +72,8 @@ namespace GrobExp.Mutators.ModelConfiguration
                             // filter := filter && arr.Current().y.z > 0
                             var predicate = (LambdaExpression)methodCallExpression.Arguments[1];
                             var callExpression = result.Type == predicate.Parameters[0].Type
-                                ? result
-                                : Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result);
+                                                     ? result
+                                                     : Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result);
                             var currentFilter = Expression.Lambda(callExpression, path.Parameters).Merge(predicate);
                             filter = filter == null ? currentFilter : filter.AndAlso(currentFilter, false);
                             break;
@@ -80,19 +81,20 @@ namespace GrobExp.Mutators.ModelConfiguration
                             throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
                         }
                     }
-                    else if(method.DeclaringType == typeof(MutatorsHelperFunctions))
+                    else if (method.DeclaringType == typeof(MutatorsHelperFunctions))
                     {
-                        switch(method.Name)
+                        switch (method.Name)
                         {
                         case "Current":
                         case "Each":
                             // Remove Each/Current call if it is added before by processing of Select/Where calls.
                             --currents;
-                            if(currents < 0)
+                            if (currents < 0)
                             {
                                 result = Expression.Call(method.GetGenericMethodDefinition().MakeGenericMethod(result.Type.GetItemType()), result);
                                 ++currents;
                             }
+
                             break;
                         default:
                             throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
@@ -100,6 +102,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                     }
                     else
                         throw new NotSupportedException(string.Format("Method '{0}' is not supported", method));
+
                     break;
                 case ExpressionType.ArrayLength:
                     result = Expression.ArrayLength(result);
@@ -111,6 +114,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                     throw new NotSupportedException(string.Format("Node type '{0}' is not valid at this point", shard.NodeType));
                 }
             }
+
             return Expression.Lambda(result, path.Parameters);
         }
     }

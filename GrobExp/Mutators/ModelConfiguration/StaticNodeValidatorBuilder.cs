@@ -16,26 +16,28 @@ namespace GrobExp.Mutators.ModelConfiguration
             var result = Expression.Variable(typeof(List<ValidationResult>), "result");
             Expression initResult = Expression.Assign(result, Expression.New(listValidationResultConstructor));
             var validationResults = new List<Expression> {initResult};
-            foreach(var mutator in node.Mutators.Where(mutator => mutator.Value is ValidatorConfiguration))
+            foreach (var mutator in node.Mutators.Where(mutator => mutator.Value is ValidatorConfiguration))
             {
                 var validator = (ValidatorConfiguration)mutator.Value;
                 var ok = true;
-                foreach(var dependency in validator.Dependencies ?? new LambdaExpression[0])
+                foreach (var dependency in validator.Dependencies ?? new LambdaExpression[0])
                 {
                     ModelConfigurationNode child;
-                    if(!node.Root.Traverse(dependency.Body, node, out child, false) || child != node)
+                    if (!node.Root.Traverse(dependency.Body, node, out child, false) || child != node)
                     {
                         ok = false;
                         break;
                     }
                 }
-                if(ok)
+
+                if (ok)
                 {
                     var current = validator.Apply(new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.Path)});
-                    if(current != null)
+                    if (current != null)
                         validationResults.Add(Expression.Call(result, listAddValidationResultMethod, current));
                 }
             }
+
             validationResults.Add(result);
             Expression body = Expression.Block(new[] {result}, validationResults);
             return Expression.Lambda(body, parameter);

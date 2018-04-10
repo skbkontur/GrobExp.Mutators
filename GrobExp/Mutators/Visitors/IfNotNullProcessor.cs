@@ -25,40 +25,41 @@ namespace GrobExp.Mutators.Visitors
             var right = node.Right;
             var leftIsIfNotNullCall = TryUnwrapIfNotNull(ref left);
             var rightIsIfNotNullCall = TryUnwrapIfNotNull(ref right);
-            if(leftIsIfNotNullCall || rightIsIfNotNullCall)
+            if (leftIsIfNotNullCall || rightIsIfNotNullCall)
             {
                 var leftIsConstant = left.IsConstant();
                 var rightIsConstant = right.IsConstant();
 
-                if(leftIsConstant)
+                if (leftIsConstant)
                     left = left.ToConstant();
-                if(rightIsConstant)
+                if (rightIsConstant)
                     right = right.ToConstant();
 
                 var result = Expression.MakeBinary(node.NodeType, left, right, node.IsLiftedToNull, node.Method, node.Conversion);
-                if(rightIsIfNotNullCall)
+                if (rightIsIfNotNullCall)
                     result = Expression.OrElse(IsEmpty(right, rightIsConstant), result);
-                if(leftIsIfNotNullCall)
+                if (leftIsIfNotNullCall)
                     result = Expression.OrElse(IsEmpty(left, leftIsConstant), result);
                 return result;
             }
+
             return base.VisitBinary(node);
         }
 
         private static Expression IsEmpty([NotNull] Expression exp, bool isConstant)
         {
-            if(exp.Type == typeof(string) && isConstant)
+            if (exp.Type == typeof(string) && isConstant)
                 return Expression.Call(isNullOrEmptyMethod, exp);
             return Expression.Equal(exp, Expression.Constant(null, exp.Type));
         }
 
         private static bool TryUnwrapIfNotNull([NotNull] ref Expression node)
         {
-            if(node == null || node.NodeType != ExpressionType.Call)
+            if (node == null || node.NodeType != ExpressionType.Call)
                 return false;
 
             var methodCallExpression = (MethodCallExpression)node;
-            if(!methodCallExpression.Method.IsGenericMethod || methodCallExpression.Method.GetGenericMethodDefinition() != ifNotNullMethod)
+            if (!methodCallExpression.Method.IsGenericMethod || methodCallExpression.Method.GetGenericMethodDefinition() != ifNotNullMethod)
                 return false;
 
             node = methodCallExpression.Arguments[0];

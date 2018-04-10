@@ -112,38 +112,40 @@ namespace GrobExp.Mutators
             var merger = new ExpressionMerger(pathToSourceChild);
             var initializers = ((ListInitExpression)batch.Body).Initializers;
             Expression primaryKeyIsEmpty = null;
-            foreach(var initializer in initializers)
+            foreach (var initializer in initializers)
             {
                 Expression dest = initializer.Arguments[0];
                 var clearedDest = ClearNotNull(dest);
-                if(clearedDest != null)
+                if (clearedDest != null)
                 {
                     var current = Expression.Equal(clearedDest, Expression.Constant(null, clearedDest.Type));
                     primaryKeyIsEmpty = primaryKeyIsEmpty == null ? current : Expression.AndAlso(primaryKeyIsEmpty, current);
                 }
+
                 dest = clearedDest ?? dest;
-                if(dest.Type != typeof(object))
+                if (dest.Type != typeof(object))
                     dest = Expression.Convert(dest, typeof(object));
                 Expression source = methodReplacer.Visit(initializer.Arguments[1]);
 //                if(source.Type != typeof(object))
 //                    source = Expression.Convert(source, typeof(object));
                 LambdaExpression value = merger.Merge(Expression.Lambda(source, batch.Parameters[1]));
-                if(dest.NodeType == ExpressionType.Convert)
+                if (dest.NodeType == ExpressionType.Convert)
                     dest = ((UnaryExpression)dest).Operand;
                 dest = pathToChild.Merge(Expression.Lambda(dest, batch.Parameters[0])).Body;
                 configurator.ToRoot().SetMutator(dest, EqualsToConfiguration.Create(typeof(TDestRoot), value, null));
                 //configurator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), value, null));
             }
-            if(primaryKeyIsEmpty == null) return;
+
+            if (primaryKeyIsEmpty == null) return;
             var condition = (Expression<Func<TDestRoot, bool?>>)pathToChild.Merge(Expression.Lambda(Expression.Convert(methodReplacer.Visit(primaryKeyIsEmpty), typeof(bool?)), batch.Parameters[0]));
-            foreach(var initializer in initializers)
+            foreach (var initializer in initializers)
             {
                 Expression dest = initializer.Arguments[0];
-                if(ClearNotNull(dest) != null)
+                if (ClearNotNull(dest) != null)
                     continue;
-                if(dest.Type != typeof(object))
+                if (dest.Type != typeof(object))
                     dest = Expression.Convert(dest, typeof(object));
-                if(dest.NodeType == ExpressionType.Convert)
+                if (dest.NodeType == ExpressionType.Convert)
                     dest = ((UnaryExpression)dest).Operand;
                 dest = pathToChild.Merge(Expression.Lambda(dest, batch.Parameters[0])).Body;
                 configurator.ToRoot().SetMutator(dest, NullifyIfConfiguration.Create(condition));
@@ -154,14 +156,15 @@ namespace GrobExp.Mutators
 
         private static Expression ClearNotNull(Expression path)
         {
-            while(path.NodeType == ExpressionType.Convert)
+            while (path.NodeType == ExpressionType.Convert)
                 path = ((UnaryExpression)path).Operand;
-            if(path.NodeType == ExpressionType.Call)
+            if (path.NodeType == ExpressionType.Call)
             {
                 var methodCallExpression = (MethodCallExpression)path;
-                if(methodCallExpression.Method.IsNotNullMethod())
+                if (methodCallExpression.Method.IsNotNullMethod())
                     return methodCallExpression.Arguments.Single();
             }
+
             return null;
         }
 

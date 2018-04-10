@@ -79,7 +79,7 @@ namespace Mutators.Tests.Visitors
         {
             var actualExpression = new IfNotNullProcessor().Visit(rawExpression);
             Assert.True(ExpressionEquivalenceChecker.Equivalent(actualExpression, expectedExpression, strictly : false, distinguishEachAndCurrent : true),
-                "Failed to eliminate IfNotNull:\nExpected to get '{0}',\n        but got '{1}'", expectedExpression, actualExpression);
+                        "Failed to eliminate IfNotNull:\nExpected to get '{0}',\n        but got '{1}'", expectedExpression, actualExpression);
         }
     }
 }

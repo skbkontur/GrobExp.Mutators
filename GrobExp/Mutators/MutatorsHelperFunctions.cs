@@ -72,16 +72,16 @@ namespace GrobExp.Mutators
 
         public static void ForEach<T>(IList<T> arr, Func<T, int, T> func)
         {
-            if(arr == null) return;
-            for(var index = 0; index < arr.Count; ++index)
+            if (arr == null) return;
+            for (var index = 0; index < arr.Count; ++index)
                 arr[index] = func(arr[index], index);
         }
 
         public static void ForEach<T>(IEnumerable<T> enumerable, Action<T, int> action)
         {
-            if(enumerable == null) return;
+            if (enumerable == null) return;
             var index = 0;
-            foreach(var item in enumerable)
+            foreach (var item in enumerable)
                 action(item, index++);
         }
 
@@ -91,12 +91,12 @@ namespace GrobExp.Mutators
             Func<TSourceKey, TDestKey> keySelector,
             Func<TSourceValue, TDestValue, TDestValue> valueSelector)
         {
-            if(source == null) return;
-            foreach(var pair in source)
+            if (source == null) return;
+            foreach (var pair in source)
             {
                 var key = keySelector(pair.Key);
                 TDestValue value;
-                if(!dest.TryGetValue(key, out value))
+                if (!dest.TryGetValue(key, out value))
                     dest.Add(key, value = default(TDestValue));
                 dest[key] = valueSelector(pair.Value, value);
             }
@@ -109,7 +109,7 @@ namespace GrobExp.Mutators
 
         public static bool IsNullOrEmpty(IEnumerable enumerable)
         {
-            if(enumerable == null)
+            if (enumerable == null)
                 return true;
             var enumerator = enumerable.GetEnumerator();
             return !enumerator.MoveNext();
@@ -162,27 +162,27 @@ namespace GrobExp.Mutators
 
         public static bool IsWhereMethod(this MethodInfo method)
         {
-            if(method.DeclaringType != typeof(Enumerable))
+            if (method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!method.IsGenericMethod)
+            if (!method.IsGenericMethod)
                 return false;
             return method.GetGenericMethodDefinition().Name == "Where";
         }
 
         public static bool IsToArrayMethod(this MethodInfo method)
         {
-            if(method.DeclaringType != typeof(Enumerable))
+            if (method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!method.IsGenericMethod)
+            if (!method.IsGenericMethod)
                 return false;
             return method.GetGenericMethodDefinition().Name == "ToArray";
         }
 
         public static bool IsSelectMethod(this MethodInfo method)
         {
-            if(method.DeclaringType != typeof(Enumerable))
+            if (method.DeclaringType != typeof(Enumerable))
                 return false;
-            if(!method.IsGenericMethod)
+            if (!method.IsGenericMethod)
                 return false;
             return method.GetGenericMethodDefinition().Name == "Select";
         }

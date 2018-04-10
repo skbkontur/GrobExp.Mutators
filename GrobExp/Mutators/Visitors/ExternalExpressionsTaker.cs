@@ -5,9 +5,6 @@ namespace GrobExp.Mutators.Visitors
 {
     public class ExternalExpressionsTaker : ExpressionVisitor
     {
-        private readonly HashSet<Expression> externalNodes;
-        private readonly List<Expression> externalList = new List<Expression>();
-
         public ExternalExpressionsTaker(IEnumerable<Expression> externalNodes)
         {
             this.externalNodes = new HashSet<Expression>(externalNodes);
@@ -26,7 +23,11 @@ namespace GrobExp.Mutators.Visitors
                 externalList.Add(node);
                 return node;
             }
+
             return base.Visit(node);
         }
+
+        private readonly HashSet<Expression> externalNodes;
+        private readonly List<Expression> externalList = new List<Expression>();
     }
 }

@@ -20,7 +20,7 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public IEnumerator<string> GetEnumerator()
             {
-                foreach(var kvp in readonlyHashtable)
+                foreach (var kvp in readonlyHashtable)
                     yield return kvp.Key;
             }
 
@@ -36,7 +36,7 @@ namespace GrobExp.Mutators.ReadonlyCollections
 
             public void ForEach(Action<string> action)
             {
-                foreach(var kvp in readonlyHashtable)
+                foreach (var kvp in readonlyHashtable)
                     action(kvp.Key);
             }
 

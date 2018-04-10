@@ -23,7 +23,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             node.GetMutators(allMutators);
 
             var root = new ZzzNode();
-            foreach(var pair in allMutators)
+            foreach (var pair in allMutators)
             {
                 var arrays = GetArrays(node.RootType, pair.Key.Expression, pair.Value);
                 var arrayNode = arrays.Aggregate(root, (current, array) => current.Traverse(array));
@@ -45,7 +45,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             validationResults = validationResults.SplitToBatches(parameter, result, priority);
 
             Expression body;
-            switch(validationResults.Count)
+            switch (validationResults.Count)
             {
             case 0:
                 body = Expression.Empty();
@@ -57,6 +57,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 body = Expression.Block(validationResults);
                 break;
             }
+
             body = body.ExtractLoopInvariantFatExpressions(new[] {parameter}, expression => expression);
             var lambda = Expression.Lambda(body, parameter, result, priority);
             return lambda;
@@ -67,58 +68,60 @@ namespace GrobExp.Mutators.ModelConfiguration
             var arrays = new List<Dictionary<Type, List<Expression>>>();
             var arraysExtractor = new ArraysExtractor(arrays);
             arraysExtractor.GetArrays(path);
-            foreach(var mutator in mutators)
+            foreach (var mutator in mutators)
                 mutator.GetArrays(arraysExtractor);
             var result = new List<Expression>();
             var replacer = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod);
-            for(var i = 1; i < arrays.Count; ++i)
+            for (var i = 1; i < arrays.Count; ++i)
             {
                 var dict = arrays[i];
-                if(dict.Count > 1)
+                if (dict.Count > 1)
                     throw new InvalidOperationException("Too many root types");
                 List<Expression> list;
-                if(!dict.TryGetValue(rootType, out list))
+                if (!dict.TryGetValue(rootType, out list))
                     throw new InvalidOperationException("Invalid root type");
                 var arraysOfCurrentLevel = list.GroupBy(exp => new ExpressionWrapper(replacer.Visit(exp), false)).Select(grouping => grouping.First()).ToArray();
-                if(arraysOfCurrentLevel.Length > 1)
+                if (arraysOfCurrentLevel.Length > 1)
                     throw new NotSupportedException("Iteration over more than one array is not supported");
                 result.Add(arraysOfCurrentLevel[0]);
             }
+
             return result;
         }
 
         private static void GetMutators(this ModelConfigurationNode node, Dictionary<ExpressionWrapper, List<MutatorConfiguration>> result)
         {
-            if(node.Mutators != null)
+            if (node.Mutators != null)
             {
-                foreach(var pair in node.Mutators)
+                foreach (var pair in node.Mutators)
                 {
                     var key = new ExpressionWrapper(pair.Key, false);
                     List<MutatorConfiguration> list;
-                    if(!result.TryGetValue(key, out list))
+                    if (!result.TryGetValue(key, out list))
                         result.Add(key, list = new List<MutatorConfiguration>());
                     list.Add(pair.Value);
                 }
             }
-            foreach(var child in node.Children)
+
+            foreach (var child in node.Children)
                 child.GetMutators(result);
         }
 
         public const int PriorityShift = 1000;
 
-        private static readonly ConstructorInfo formattedValidationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult, FormattedValidationResult>>)(o => new FormattedValidationResult(o, null, null, 0))).Body).Constructor;
-
         private static void CheckDependencies(ModelConfigurationNode root, MutatorConfiguration mutator)
         {
-            if(root == null || mutator == null || mutator.Dependencies == null)
+            if (root == null || mutator == null || mutator.Dependencies == null)
                 return;
-            foreach(var dependency in mutator.Dependencies)
+            foreach (var dependency in mutator.Dependencies)
             {
                 ModelConfigurationNode child;
-                if(!root.Root.Traverse(dependency.Body, root, out child, false))
+                if (!root.Root.Traverse(dependency.Body, root, out child, false))
                     throw new FoundExternalDependencyException("Unable to build validator for the subtree '" + root.Parent + "' due to the external dependency '" + dependency + "'");
             }
         }
+
+        private static readonly ConstructorInfo formattedValidationResultConstructor = ((NewExpression)((Expression<Func<ValidationResult, FormattedValidationResult>>)(o => new FormattedValidationResult(o, null, null, 0))).Body).Constructor;
 
         private class ZzzNode
         {
@@ -126,16 +129,16 @@ namespace GrobExp.Mutators.ModelConfiguration
             {
                 var edge = new ExpressionWrapper(exp, false);
                 ZzzNode child;
-                if(!children.TryGetValue(edge, out child))
+                if (!children.TryGetValue(edge, out child))
                     children.Add(edge, child = new ZzzNode());
                 return child;
             }
 
             public void BuildValidator(IPathFormatter pathFormatter, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths> paths, ParameterExpression result, Type treeRootType, ParameterExpression priority, List<Expression> validationResults)
             {
-                foreach(var pair in mutators)
+                foreach (var pair in mutators)
                     BuildNodeValidator(pathFormatter, pair.Key, pair.Value, root, aliases, paths, result, treeRootType, priority, validationResults);
-                foreach(var pair in children)
+                foreach (var pair in children)
                 {
                     var edge = pair.Key.Expression;
                     var child = pair.Value;
@@ -146,13 +149,13 @@ namespace GrobExp.Mutators.ModelConfiguration
                     var itemType = resolvedArray.Type.GetItemType();
                     var item = Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), array);
                     var index = Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(itemType), item);
-                    if(!resolvedArray.Type.IsArray)
+                    if (!resolvedArray.Type.IsArray)
                     {
                         // Filtered array
-                        if(resolvedArray.NodeType == ExpressionType.Call)
+                        if (resolvedArray.NodeType == ExpressionType.Call)
                         {
                             var methodCallExpression = (MethodCallExpression)resolvedArray;
-                            if(methodCallExpression.Method.IsWhereMethod())
+                            if (methodCallExpression.Method.IsWhereMethod())
                             {
                                 resolvedArray = methodCallExpression.Arguments[0];
                                 predicate = (LambdaExpression)methodCallExpression.Arguments[1];
@@ -166,42 +169,43 @@ namespace GrobExp.Mutators.ModelConfiguration
                     adjustedResolvedArray = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), adjustedResolvedArray);
 
                     var monster = new LinqEliminator().EliminateAndEnumerate(adjustedResolvedArray, (current, currentIndex, currentIndexes) =>
-                    {
-                        indexes = currentIndexes;
-                        aliases.Add(new KeyValuePair<Expression, Expression>(current, item));
-                        aliases.Add(new KeyValuePair<Expression, Expression>(currentIndex, index));
-                        var currentPaths = ExpressionPathsBuilder.BuildPaths(adjustedResolvedArray, currentIndexes, paths);
-                        //currentPaths.Add(currentIndex);
-                        paths.Add(current, currentPaths);
-
-                        var childValidationResults = new List<Expression>();
-                        child.BuildValidator(pathFormatter, root, aliases, paths, result, treeRootType, priority, childValidationResults);
-                        aliases.RemoveAt(aliases.Count - 1);
-                        aliases.RemoveAt(aliases.Count - 1);
-
-                        paths.Remove(current);
-
-                        if(predicate != null)
                         {
-                            var condition = Expression.Lambda(current, current).Merge(predicate).Body;
-                            for(var i = 0; i < childValidationResults.Count; ++i)
+                            indexes = currentIndexes;
+                            aliases.Add(new KeyValuePair<Expression, Expression>(current, item));
+                            aliases.Add(new KeyValuePair<Expression, Expression>(currentIndex, index));
+                            var currentPaths = ExpressionPathsBuilder.BuildPaths(adjustedResolvedArray, currentIndexes, paths);
+                            //currentPaths.Add(currentIndex);
+                            paths.Add(current, currentPaths);
+
+                            var childValidationResults = new List<Expression>();
+                            child.BuildValidator(pathFormatter, root, aliases, paths, result, treeRootType, priority, childValidationResults);
+                            aliases.RemoveAt(aliases.Count - 1);
+                            aliases.RemoveAt(aliases.Count - 1);
+
+                            paths.Remove(current);
+
+                            if (predicate != null)
                             {
-                                childValidationResults[i] = Expression.IfThen(
-                                    Expression.Equal(
-                                        Expression.Convert(condition, typeof(bool?)),
-                                        Expression.Constant(true, typeof(bool?))),
-                                    childValidationResults[i]);
+                                var condition = Expression.Lambda(current, current).Merge(predicate).Body;
+                                for (var i = 0; i < childValidationResults.Count; ++i)
+                                {
+                                    childValidationResults[i] = Expression.IfThen(
+                                        Expression.Equal(
+                                            Expression.Convert(condition, typeof(bool?)),
+                                            Expression.Constant(true, typeof(bool?))),
+                                        childValidationResults[i]);
+                                }
                             }
-                        }
 
-                        for(var i = 0; i < childValidationResults.Count; ++i)
-                        {
-                            childValidationResults[i] = childValidationResults[i].ExtractLoopInvariantFatExpressions(aliases.Where(p => p.Key is ParameterExpression).Select(p => (ParameterExpression)p.Key), e => e);
-                        }
-                        return Expression.Block(childValidationResults.SplitToBatches());
-                    });
+                            for (var i = 0; i < childValidationResults.Count; ++i)
+                            {
+                                childValidationResults[i] = childValidationResults[i].ExtractLoopInvariantFatExpressions(aliases.Where(p => p.Key is ParameterExpression).Select(p => (ParameterExpression)p.Key), e => e);
+                            }
 
-                    if(indexes != null && indexes.Length > 0)
+                            return Expression.Block(childValidationResults.SplitToBatches());
+                        });
+
+                    if (indexes != null && indexes.Length > 0)
                         monster = Expression.Block(indexes, monster);
                     validationResults.Add(monster);
                 }
@@ -209,16 +213,16 @@ namespace GrobExp.Mutators.ModelConfiguration
 
             private static void BuildNodeValidator(IPathFormatter pathFormatter, Expression path, List<MutatorConfiguration> mutators, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths> paths, ParameterExpression result, Type treeRootType, ParameterExpression priority, List<Expression> validationResults)
             {
-                if(mutators.All(mutator => !(mutator is ValidatorConfiguration)))
+                if (mutators.All(mutator => !(mutator is ValidatorConfiguration)))
                     return;
                 Expression isDisabled = null;
-                foreach(var mutator in mutators)
+                foreach (var mutator in mutators)
                 {
                     var disableIfConfiguration = mutator as DisableIfConfiguration;
-                    if(disableIfConfiguration == null) continue;
+                    if (disableIfConfiguration == null) continue;
                     CheckDependencies(root, disableIfConfiguration);
                     var current = disableIfConfiguration.GetCondition(aliases);
-                    if(current != null)
+                    if (current != null)
                         isDisabled = isDisabled == null ? current : Expression.OrElse(current, isDisabled);
                 }
 
@@ -242,31 +246,32 @@ namespace GrobExp.Mutators.ModelConfiguration
 
                 Expression formattedChains = null;
 
-                if(pathFormatter != null)
+                if (pathFormatter != null)
                 {
                     formattedChains = pathFormatter.GetFormattedPath(chains);
-                    if(formattedChains != null)
+                    if (formattedChains != null)
                         formattedChains = formattedChains.ResolveAliases(aliasesInTermsOfFirst);
                 }
-                if(formattedChains == null)
+
+                if (formattedChains == null)
                 {
                     // Default path formatting - simply list all the paths along the object tree
-                    if(!(pathFormatter is PathFormatterWrapper))
+                    if (!(pathFormatter is PathFormatterWrapper))
                         formattedChains = FormatPaths(currentPaths);
                     else
                         formattedChains = Expression.Constant(null, typeof(MultiLanguagePathText));
                 }
 
                 var localResults = new List<Expression> {valueAssignment};
-                foreach(var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
+                foreach (var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
                     var appliedValidator = validator.Apply(aliases).EliminateLinq();
-                    if(appliedValidator == null) continue;
+                    if (appliedValidator == null) continue;
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
-                    if(validator.Priority < 0)
+                    if (validator.Priority < 0)
                         throw new PriorityOutOfRangeException("Validator's priority cannot be less than zero");
-                    if(validator.Priority >= PriorityShift)
+                    if (validator.Priority >= PriorityShift)
                         throw new PriorityOutOfRangeException("Validator's priority must be less than " + PriorityShift);
                     var validatorPriority = Expression.Constant(validator.Priority);
                     Expression currentPriority = Expression.AddChecked(Expression.MultiplyChecked(priority, Expression.Constant(PriorityShift)), validatorPriority);
@@ -281,8 +286,9 @@ namespace GrobExp.Mutators.ModelConfiguration
                     var localResult = Expression.IfThen(Expression.Not(Expression.Call(MutatorsHelperFunctions.DynamicMethod.MakeGenericMethod(typeof(bool)), Expression.Property(result, validationResultTreeNodeExhaustedProperty))), Expression.Block(new[] {currentValidationResult}, Expression.Assign(currentValidationResult, appliedValidator), condition));
                     localResults.Add(localResult);
                 }
+
                 var appliedValidators = Expression.Block(new[] {value}.Concat(currentIndexes), localResults);
-                if(isDisabled == null)
+                if (isDisabled == null)
                     validationResults.Add(appliedValidators);
                 else
                 {
@@ -293,7 +299,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
             private static Expression ClearConverts(Expression exp)
             {
-                while(exp.NodeType == ExpressionType.Convert)
+                while (exp.NodeType == ExpressionType.Convert)
                     exp = ((UnaryExpression)exp).Operand;
                 return exp;
             }
@@ -302,25 +308,25 @@ namespace GrobExp.Mutators.ModelConfiguration
             {
                 var stringBuilder = new StringBuilder();
                 var formattedPaths = new List<Expression>();
-                foreach(var path in paths.paths)
+                foreach (var path in paths.paths)
                 {
                     var arguments = new List<Expression>();
                     stringBuilder.Clear();
                     var first = true;
-                    for(var i = 0; i < path.Count; i++)
+                    for (var i = 0; i < path.Count; i++)
                     {
                         var piece = ClearConverts(path[i]);
-                        if(piece.Type == typeof(string))
+                        if (piece.Type == typeof(string))
                         {
                             // property or hashtable key
-                            if(piece.NodeType != ExpressionType.Constant)
+                            if (piece.NodeType != ExpressionType.Constant)
                                 throw new InvalidOperationException("Expected constant");
-                            if(!first)
+                            if (!first)
                                 stringBuilder.Append('.');
                             first = false;
                             stringBuilder.Append((string)((ConstantExpression)piece).Value);
                         }
-                        else if(piece.Type == typeof(int))
+                        else if (piece.Type == typeof(int))
                         {
                             // index
                             stringBuilder.Append("[{");
@@ -329,10 +335,12 @@ namespace GrobExp.Mutators.ModelConfiguration
                             arguments.Add(Expression.Convert(piece, typeof(object)));
                         }
                     }
+
                     formattedPaths.Add(Expression.Call(stringFormatMethod,
-                        Expression.Constant(stringBuilder.ToString()),
-                        Expression.NewArrayInit(typeof(object), arguments)));
+                                                       Expression.Constant(stringBuilder.ToString()),
+                                                       Expression.NewArrayInit(typeof(object), arguments)));
                 }
+
                 return Expression.MemberInit(
                     Expression.New(typeof(SimplePathFormatterText)),
                     Expression.Bind(pathsProperty, Expression.NewArrayInit(typeof(string), formattedPaths)));
@@ -340,39 +348,40 @@ namespace GrobExp.Mutators.ModelConfiguration
 
             private static Expression SelectTargetNode(ParameterExpression root, Type treeRootType, ResolvedArrayIndexes[] paths)
             {
-                if(paths.Length == 0)
+                if (paths.Length == 0)
                     return root;
                 var lcp = 0;
-                for(;; ++lcp)
+                for (;; ++lcp)
                 {
                     var ok = true;
                     Expression ethalon = null;
-                    foreach(var path in paths)
+                    foreach (var path in paths)
                     {
                         var pieces = path.path;
-                        if(lcp >= pieces.Count)
+                        if (lcp >= pieces.Count)
                         {
                             ok = false;
                             break;
                         }
+
                         var piece = ClearConverts(pieces[lcp]);
-                        if(ethalon == null)
+                        if (ethalon == null)
                             ethalon = piece;
                         else
                         {
                             // expected either a constant or a parameter which is an index
-                            if(ethalon.Type == typeof(int))
+                            if (ethalon.Type == typeof(int))
                             {
                                 // index
                             }
-                            else if(ethalon.Type == typeof(string))
+                            else if (ethalon.Type == typeof(string))
                             {
                                 // property or hashtable key
-                                if(ethalon.NodeType != ExpressionType.Constant)
+                                if (ethalon.NodeType != ExpressionType.Constant)
                                     throw new InvalidOperationException("Expected constant");
-                                if(piece.NodeType != ExpressionType.Constant)
+                                if (piece.NodeType != ExpressionType.Constant)
                                     throw new InvalidOperationException("Expected constant");
-                                if((string)((ConstantExpression)ethalon).Value != (string)((ConstantExpression)piece).Value)
+                                if ((string)((ConstantExpression)ethalon).Value != (string)((ConstantExpression)piece).Value)
                                 {
                                     ok = false;
                                     break;
@@ -381,56 +390,59 @@ namespace GrobExp.Mutators.ModelConfiguration
                             else throw new InvalidOperationException(string.Format("Type '{0}' is not valid at this point", ethalon.Type));
                         }
                     }
-                    if(!ok)
+
+                    if (!ok)
                         break;
                 }
+
                 --lcp;
                 var retLabel = Expression.Label(typeof(ValidationResultTreeNode));
                 var temps = new List<ParameterExpression>();
                 var expressions = new List<Expression>();
-                foreach(var path in paths)
+                foreach (var path in paths)
                 {
-                    if(path.indexes != null)
+                    if (path.indexes != null)
                         temps.Add(path.indexes);
-                    if(path.indexesInit != null)
+                    if (path.indexesInit != null)
                         expressions.Add(path.indexesInit);
                 }
+
                 var start = Expression.Parameter(treeRootType);
                 temps.Add(start);
                 Expression cur = start;
                 expressions.Add(Expression.Assign(cur, Expression.Convert(root, treeRootType)));
                 var curType = treeRootType;
                 var insideHashtable = false;
-                for(var i = 0; i <= lcp; ++i)
+                for (var i = 0; i <= lcp; ++i)
                 {
                     var piece = ClearConverts(paths[0].path[i]);
-                    if(insideHashtable)
+                    if (insideHashtable)
                     {
                         var gotoChildMethod = HackHelpers.GetMethodDefinition<ValidationResultTreeUniversalNode>(x => x.GotoChild(null));
-                        if(gotoChildMethod == null)
+                        if (gotoChildMethod == null)
                             throw new InvalidOperationException("Method 'GotoChild' is not found");
                         cur = Expression.Call(Expression.Convert(cur, typeof(ValidationResultTreeUniversalNode)), gotoChildMethod, Expression.Call(piece, typeof(object).GetMethod("ToString", Type.EmptyTypes)));
                     }
                     else
                     {
-                        if(piece.Type == typeof(string))
+                        if (piece.Type == typeof(string))
                         {
                             {
                                 var fieldName = (string)((ConstantExpression)piece).Value;
                                 var field = curType.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
-                                if(field == null)
+                                if (field == null)
                                     throw new InvalidOperationException(string.Format("Type '{0}' has no field '{1}'", curType, fieldName));
                                 var next = Expression.Parameter(field.FieldType);
                                 temps.Add(next);
                                 var constructor = field.FieldType.GetConstructor(new[] {typeof(ValidationResultTreeNode)});
-                                if(constructor == null)
+                                if (constructor == null)
                                     throw new InvalidOperationException(string.Format("The type '{0}' has no constructor accepting one parameter of type '{1}'", field.FieldType, typeof(ValidationResultTreeNode)));
                                 expressions.Add(Expression.Assign(next, Expression.Field(cur, field)));
                                 expressions.Add(Expression.IfThen(Expression.Equal(next, Expression.Constant(null, typeof(ValidationResultTreeNode))),
-                                    Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(constructor, cur)))));
+                                                                  Expression.Assign(Expression.Field(cur, field), Expression.Assign(next, Expression.New(constructor, cur)))));
                                 cur = next;
                                 curType = field.FieldType;
-                                if(curType == typeof(ValidationResultTreeUniversalNode))
+                                if (curType == typeof(ValidationResultTreeUniversalNode))
                                 {
                                     insideHashtable = true;
                                 }
@@ -440,15 +452,16 @@ namespace GrobExp.Mutators.ModelConfiguration
                         {
                             // index
                             var curIndexes = new List<Expression>();
-                            for(var j = 0; j < paths.Length; ++j)
+                            for (var j = 0; j < paths.Length; ++j)
                             {
                                 curIndexes.Add(ClearConverts(paths[j].path[i]));
                             }
+
                             var elementType = curType.GetGenericArguments()[0];
                             var temp = Expression.Parameter(elementType);
                             temps.Add(temp);
                             var gotoChildMethod = curType.GetMethod("GotoChild", new[] {typeof(int[])});
-                            if(gotoChildMethod == null)
+                            if (gotoChildMethod == null)
                                 throw new InvalidOperationException("Method 'GotoChild' is not found");
                             expressions.Add(Expression.Assign(temp, Expression.Convert(Expression.Call(cur, gotoChildMethod, Expression.NewArrayInit(typeof(int), curIndexes)), elementType)));
                             expressions.Add(Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, typeof(ValidationResultTreeNode))), Expression.Return(retLabel, cur)));
@@ -457,6 +470,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                         }
                     }
                 }
+
                 expressions.Add(Expression.Label(retLabel, cur));
                 return Expression.Block(typeof(ValidationResultTreeNode), temps, expressions);
             }

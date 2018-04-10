@@ -21,24 +21,24 @@ namespace GrobExp.Mutators
         public Expression GetFormattedPath(Expression[] paths)
         {
             var migratedPaths = new List<Expression>();
-            foreach(var path in paths)
+            foreach (var path in paths)
             {
                 var conditionalSetters = performer.GetConditionalSetters(path);
-                if(conditionalSetters != null)
+                if (conditionalSetters != null)
                     migratedPaths.AddRange(conditionalSetters.SelectMany(setter => setter.Key.CutToChains(true, true)));
                 else
                 {
                     var performedPath = performer.Perform(path);
-                    if(performedPath.NodeType == ExpressionType.Constant && ((ConstantExpression)performedPath).Value == null)
+                    if (performedPath.NodeType == ExpressionType.Constant && ((ConstantExpression)performedPath).Value == null)
                     {
                         var primaryDependencies = Expression.Lambda(path, path.ExtractParameters()).ExtractPrimaryDependencies().Select(lambda => lambda.Body).ToArray();
-                        if(primaryDependencies.Length > 1)
+                        if (primaryDependencies.Length > 1)
                             return basePathFormatter.GetFormattedPath(paths);
                         var subRoot = converterTree.Traverse(primaryDependencies[0], false);
-                        if(subRoot == null)
+                        if (subRoot == null)
                             return basePathFormatter.GetFormattedPath(paths);
                         ModelConfigurationNode keyLeaf = subRoot.FindKeyLeaf();
-                        if(keyLeaf != null)
+                        if (keyLeaf != null)
                             performedPath = performer.Perform(keyLeaf.Path);
                         else
                         {
@@ -47,12 +47,14 @@ namespace GrobExp.Mutators
                             performedPath = Expression.NewArrayInit(typeof(object), subNodes.Select(node => Expression.Convert(performer.Perform(node.Path), typeof(object))));
                         }
                     }
+
                     var primaryDependenciez = Expression.Lambda(performedPath, performedPath.ExtractParameters()).ExtractPrimaryDependencies();
-                    if(primaryDependenciez.Length == 0)
+                    if (primaryDependenciez.Length == 0)
                         return basePathFormatter.GetFormattedPath(paths);
                     migratedPaths.AddRange(performedPath.CutToChains(true, true));
                 }
             }
+
             return resolver.Visit(pathFormatter.GetFormattedPath(migratedPaths.GroupBy(chain => new ExpressionWrapper(chain, false)).Select(grouping => grouping.Key.Expression).ToArray()));
         }
 

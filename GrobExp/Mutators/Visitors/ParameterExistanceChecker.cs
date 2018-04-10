@@ -18,7 +18,7 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            if(parameters.Contains(node))
+            if (parameters.Contains(node))
                 exists = true;
             return base.VisitParameter(node);
         }

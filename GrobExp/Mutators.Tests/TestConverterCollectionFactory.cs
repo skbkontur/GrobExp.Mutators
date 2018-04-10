@@ -11,7 +11,7 @@ namespace Mutators.Tests
         {
             var key = new Tuple<Type, Type>(typeof(TSource), typeof(TDest));
             var converterCollection = (IConverterCollection<TSource, TDest>)hashtable[key];
-            if(converterCollection == null)
+            if (converterCollection == null)
                 throw new InvalidOperationException("Converter collection from '" + typeof(TSource) + "' to '" + typeof(TDest) + "' is not registered");
             return converterCollection;
         }

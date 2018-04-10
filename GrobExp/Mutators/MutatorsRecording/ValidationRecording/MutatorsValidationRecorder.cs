@@ -13,7 +13,7 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
         public List<RecordNode> GetErrorRecords()
         {
             return recordsCollection.GetErrorRecords();
-        } 
+        }
 
         public void Stop()
         {
@@ -30,10 +30,9 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             instance.recordsCollection.RecordCompilingValidation(validationInfo);
         }
 
-
         public static void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)
         {
-            if(IsRecording())
+            if (IsRecording())
                 instance.recordsCollection.RecordExecutingValidation(validationInfo, validationResult);
         }
 
@@ -49,6 +48,7 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 
         [ThreadStatic]
         private static MutatorsValidationRecorder instance;
-        private readonly ValidationRecordCollection recordsCollection;  
+
+        private readonly ValidationRecordCollection recordsCollection;
     }
 }

@@ -21,10 +21,10 @@ namespace GrobExp.Mutators.ModelConfiguration
         public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, Type type)
         {
             return node.BuildTreeMutator(new List<ParameterExpression>
-            {
-                node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name),
-                Expression.Parameter(type, type.Name)
-            });
+                {
+                    node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name),
+                    Expression.Parameter(type, type.Name)
+                });
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             //Добавляем алиас для случая, когда билдим жиромутатор для поддерева, чтобы заменить путь до корня на реальный параметр выражения
             var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameters[0], node.Path)};
             var invariantParameters = new List<ParameterExpression>();
-            if(parameters.Count > 1)
+            if (parameters.Count > 1)
                 invariantParameters.Add(parameters[1]);
             node.BuildTreeMutator(null, node, aliases, mutatorExpressions, visitedNodes, processedNodes, mutatorExpressions, invariantParameters);
 
@@ -52,12 +52,13 @@ namespace GrobExp.Mutators.ModelConfiguration
             body = LoopInvariantFatExpressionsExtractor.ExtractLoopInvariantFatExpressions(body, invariantParameters, expression => expression);
 
             //Далее параметры мутаторов подменяются на параметры итогового выражения
-            foreach(var actualParameter in body.ExtractParameters())
+            foreach (var actualParameter in body.ExtractParameters())
             {
                 var expectedParameter = parameters.Single(p => p.Type == actualParameter.Type);
-                if(actualParameter != expectedParameter)
+                if (actualParameter != expectedParameter)
                     body = new ParameterReplacer(actualParameter, expectedParameter).Visit(body);
             }
+
             var result = Expression.Lambda(body, parameters);
             return result;
         }
@@ -66,15 +67,15 @@ namespace GrobExp.Mutators.ModelConfiguration
         ///     Просто выполняет переход по ребру и строит выражения для перечисления массивов и словарей.
         /// </summary>
         private static void BuildTreeMutator(this ModelConfigurationNode node, ModelConfigurationEdge edge, Stack<ModelConfigurationEdge> edges, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, List<Expression> localResult,
-            HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
+                                             HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
         {
             var child = node.children[edge];
-            if(edge.IsMemberAccess || edge.IsArrayIndex || edge.IsConvertation || edge.IsIndexerParams)
+            if (edge.IsMemberAccess || edge.IsArrayIndex || edge.IsConvertation || edge.IsIndexerParams)
                 child.BuildTreeMutator(edges, root, aliases, localResult, visitedNodes, processedNodes, globalResult, invariantParameters);
-            else if(edge.IsEachMethod)
+            else if (edge.IsEachMethod)
             {
                 var path = node.Path.ResolveAliases(aliases);
-                if(node.NodeType.IsDictionary())
+                if (node.NodeType.IsDictionary())
                     node.BuildTreeMutatorForDictionary(child, edges, root, aliases, localResult, visitedNodes, processedNodes, path, globalResult, invariantParameters);
                 else
                     node.BuildTreeMutatorForArray(child, edges, root, aliases, localResult, visitedNodes, processedNodes, path, globalResult, invariantParameters);
@@ -127,7 +128,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
             ParameterExpression arrayParameter = null;
             var itemType = array == null ? null : array.Type.GetItemType();
-            if(array != null)
+            if (array != null)
             {
                 // If any array found - create a variable for it and aliases for Each() and CurrentIndex()
                 arrayParameter = Expression.Variable(itemType.MakeArrayType());
@@ -148,14 +149,14 @@ namespace GrobExp.Mutators.ModelConfiguration
             // Remove all created aliases
             aliases.RemoveAt(aliases.Count - 1);
             aliases.RemoveAt(aliases.Count - 1);
-            if(array != null)
+            if (array != null)
             {
                 invariantParameters.RemoveAt(invariantParameters.Count - 1);
                 aliases.RemoveAt(aliases.Count - 1);
                 aliases.RemoveAt(aliases.Count - 1);
             }
 
-            if(childResult.Count > 0)
+            if (childResult.Count > 0)
             {
                 // ForEach method requires mutators block to return the target item
                 childResult.Add(childParameter);
@@ -165,7 +166,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 // Make a call to MutatorsHelperFunctions.ForEach
                 var forEach = action.ExtractLoopInvariantFatExpressions(invariantParameters, exp => Expression.Call(null, forEachMethod.MakeGenericMethod(child.NodeType), new[] {path, Expression.Lambda(exp, childParameter, indexParameter)}));
                 Expression result;
-                if(array == null)
+                if (array == null)
                     result = forEach;
                 else
                 {
@@ -176,9 +177,11 @@ namespace GrobExp.Mutators.ModelConfiguration
                     var resizeIfNeeded = CreateOrResizeArrayIfNeeded(child, path, arrayParameter);
                     result = Expression.Block(new[] {arrayParameter}, assign, resizeIfNeeded, forEach);
                 }
+
                 localResult.Add(result);
             }
-            if(array != null)
+
+            if (array != null)
             {
                 invariantParameters.RemoveAt(invariantParameters.Count - 1);
                 invariantParameters.RemoveAt(invariantParameters.Count - 1);
@@ -189,27 +192,28 @@ namespace GrobExp.Mutators.ModelConfiguration
         {
             Expression destArrayIsNull = Expression.ReferenceEqual(path, Expression.Constant(null, path.Type));
             Expression resizeIfNeeded;
-            if(path.Type.IsArray)
+            if (path.Type.IsArray)
             {
                 Expression lengthsAreDifferent = Expression.OrElse(destArrayIsNull, Expression.NotEqual(Expression.ArrayLength(path), Expression.ArrayLength(arrayParameter)));
                 var temp = Expression.Parameter(path.Type, path.Type.Name);
                 resizeIfNeeded = Expression.IfThen(
                     lengthsAreDifferent,
                     Expression.IfThenElse(destArrayIsNull,
-                        path.Assign(Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
-                        Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(temp))
+                                          path.Assign(Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
+                                          Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(temp))
                     ));
             }
-            else if(path.Type.IsGenericType && path.Type.GetGenericTypeDefinition() == typeof(List<>))
+            else if (path.Type.IsGenericType && path.Type.GetGenericTypeDefinition() == typeof(List<>))
             {
                 Expression lengthsAreDifferent = Expression.NotEqual(Expression.Property(path, "Count"), Expression.ArrayLength(arrayParameter));
                 var expressions = new List<Expression>();
-                if(path.NodeType == ExpressionType.MemberAccess && CanWrite(((MemberExpression)path).Member))
+                if (path.NodeType == ExpressionType.MemberAccess && CanWrite(((MemberExpression)path).Member))
                     expressions.Add(Expression.IfThen(destArrayIsNull, Expression.Assign(path, Expression.New(path.Type.GetConstructor(new[] {typeof(int)}), Expression.ArrayLength(arrayParameter)))));
                 expressions.Add(Expression.Call(listResizeMethod.MakeGenericMethod(child.NodeType), path, Expression.ArrayLength(arrayParameter)));
                 resizeIfNeeded = Expression.IfThen(lengthsAreDifferent, Expression.Block(expressions));
             }
             else throw new NotSupportedException("Enumeration over '" + path.Type + "' is not supported");
+
             return resizeIfNeeded;
         }
 
@@ -258,18 +262,19 @@ namespace GrobExp.Mutators.ModelConfiguration
             aliases.RemoveAt(aliases.Count - 1);
             aliases.RemoveAt(aliases.Count - 1);
             aliases.RemoveAt(aliases.Count - 1);
-            if(childResult.Count > 0)
+            if (childResult.Count > 0)
             {
                 var indexOfKeyAssigner = -1;
-                for(var i = 0; i < childResult.Count; ++i)
+                for (var i = 0; i < childResult.Count; ++i)
                 {
-                    if(childResult[i].NodeType == ExpressionType.Assign && ((BinaryExpression)childResult[i]).Left == destKeyParameter)
+                    if (childResult[i].NodeType == ExpressionType.Assign && ((BinaryExpression)childResult[i]).Left == destKeyParameter)
                     {
                         indexOfKeyAssigner = i;
                         break;
                     }
                 }
-                if(indexOfKeyAssigner < 0)
+
+                if (indexOfKeyAssigner < 0)
                     throw new InvalidOperationException("Key selector is missing");
                 var keySelector = Expression.Lambda(((BinaryExpression)childResult[indexOfKeyAssigner]).Right, sourceKeyParameter);
                 childResult.RemoveAt(indexOfKeyAssigner);
@@ -285,19 +290,20 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static Expression CreateDictIfNull(Expression path)
         {
-            if(path.NodeType == ExpressionType.MemberAccess)
+            if (path.NodeType == ExpressionType.MemberAccess)
             {
                 var memberExpression = (MemberExpression)path;
                 var lazyType = typeof(Lazy<>).MakeGenericType(path.Type);
-                if(memberExpression.Member == lazyType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public))
+                if (memberExpression.Member == lazyType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public))
                 {
                     var lazyConstructor = lazyType.GetConstructor(new[] {typeof(Func<>).MakeGenericType(path.Type)});
                     return Expression.IfThen(
                         Expression.ReferenceEqual(memberExpression.Expression, Expression.Constant(null, lazyType)),
                         Expression.Assign(memberExpression.Expression,
-                            Expression.New(lazyConstructor, Expression.Lambda(Expression.New(path.Type)))));
+                                          Expression.New(lazyConstructor, Expression.Lambda(Expression.New(path.Type)))));
                 }
             }
+
             return Expression.IfThen(
                 Expression.ReferenceEqual(path, Expression.Constant(null, path.Type)),
                 Expression.Assign(path, Expression.New(path.Type)));
@@ -317,63 +323,66 @@ namespace GrobExp.Mutators.ModelConfiguration
         /// <param name="globalResult">Общий список, куда складываем все построенные Expression-ы.</param>
         /// <param name="invariantParameters">Список параметров, использующихся в <see cref="LoopInvariantFatExpressionsExtractor.ExtractLoopInvariantFatExpressions">ExtractLoopInvariantFatExpressions</see> для оптимизации циклов. Эти параметры - синонимы путей от source</param>
         private static void BuildTreeMutator(this ModelConfigurationNode node, Stack<ModelConfigurationEdge> edges, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases, List<Expression> localResult,
-            HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
+                                             HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
         {
             // Если у нас есть ещё рёбра - переходим по ним, 'телепортируясь' к ноде с нужной нам зависимостью.
-            if(edges != null && edges.Count != 0)
+            if (edges != null && edges.Count != 0)
                 node.BuildTreeMutator(edges.Pop(), edges, root, aliases, localResult, visitedNodes, processedNodes, globalResult, invariantParameters);
             else
             {
                 node.BuildNodeMutator(root, aliases, localResult, visitedNodes, processedNodes, globalResult, invariantParameters);
-                foreach(var entry in node.children)
+                foreach (var entry in node.children)
                     node.BuildTreeMutator(entry.Key, edges, root, aliases, localResult, visitedNodes, processedNodes, globalResult, invariantParameters);
             }
         }
 
         private static void BuildNodeMutator(this ModelConfigurationNode node, ModelConfigurationNode root, List<KeyValuePair<Expression, Expression>> aliases,
-            List<Expression> localResult, HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
+                                             List<Expression> localResult, HashSet<ModelConfigurationNode> visitedNodes, HashSet<ModelConfigurationNode> processedNodes, List<Expression> globalResult, List<ParameterExpression> invariantParameters)
         {
             var path = node.Path.ResolveAliases(aliases);
-            if(visitedNodes.Contains(node))
+            if (visitedNodes.Contains(node))
             {
-                if(!processedNodes.Contains(node))
+                if (!processedNodes.Contains(node))
                     throw new FoundCyclicDependencyException("A cycle encountered started at '" + node.Path + "'");
                 return;
             }
+
             visitedNodes.Add(node);
 
             var selfDependentMutators = new List<AutoEvaluatorConfiguration>();
             var otherMutators = new List<AutoEvaluatorConfiguration>();
-            foreach(var mutator in node.Mutators.Where(mutator => mutator.Value is AutoEvaluatorConfiguration))
+            foreach (var mutator in node.Mutators.Where(mutator => mutator.Value is AutoEvaluatorConfiguration))
             {
                 var selfDependent = false;
-                foreach(var dependency in mutator.Value.Dependencies ?? new LambdaExpression[0])
+                foreach (var dependency in mutator.Value.Dependencies ?? new LambdaExpression[0])
                 {
                     ModelConfigurationNode child;
                     // Спускаемся из глобального корня по найденной зависимости.
                     // Важно, чтобы путь проходил через корень поддерва, для которого мы изначально запустили BuildTreeMutator.
                     // Иначе есть какая-то внешняя зависимость, и ничего работать не будет.
-                    if(!node.Root.Traverse(dependency.Body, root, out child, false))
+                    if (!node.Root.Traverse(dependency.Body, root, out child, false))
                         throw new FoundExternalDependencyException("Unable to build mutator for the subtree '" + node.Path + "' due to the external dependency '" + dependency + "'");
 
-                    if(child == null)
+                    if (child == null)
                     {
                         // Если у нас в дереве нет вершины соответствующей пути до зависимости, т.е. нет конфигураций для её заполнения,
                         // нужно найти самый длинный префикс этого пути, в котором такая конфигурация есть.
                         var found = false;
                         var shards = dependency.Body.SmashToSmithereens();
-                        for(var i = shards.Length - 1; i >= 0; --i)
+                        for (var i = shards.Length - 1; i >= 0; --i)
                         {
                             node.Root.Traverse(shards[i], root, out child, false);
-                            if(child != null && child.Mutators.Any(pair => pair.Value is EqualsToConfiguration))
+                            if (child != null && child.Mutators.Any(pair => pair.Value is EqualsToConfiguration))
                             {
                                 found = true;
                                 break;
                             }
                         }
-                        if(!found) child = null;
+
+                        if (!found) child = null;
                     }
-                    if(child != null && child != node)
+
+                    if (child != null && child != node)
                     {
                         // Если зависимости соответствует какая-то вершина в дереве (кроме корня), то надо сначала построить выражения 
                         // для её поддерева, которые должны идти перед выражениями для текущей вершины. 
@@ -381,38 +390,42 @@ namespace GrobExp.Mutators.ModelConfiguration
                         // Для этого, запоминаем путь до неё в стек рёбер.
                         var edges = new Stack<ModelConfigurationEdge>();
                         var upNode = child;
-                        while(upNode != root)
+                        while (upNode != root)
                         {
                             edges.Push(upNode.Edge);
                             upNode = upNode.Parent;
                         }
+
                         // Запускаем билд для зависимости, безо всех текущих алиасов на массивы.
                         root.BuildTreeMutator(edges, root, new List<KeyValuePair<Expression, Expression>> {aliases.First()}, globalResult, visitedNodes, processedNodes, globalResult, invariantParameters);
                     }
+
                     selfDependent |= child == node;
                 }
+
                 (selfDependent ? selfDependentMutators : otherMutators).Add((AutoEvaluatorConfiguration)mutator.Value);
             }
+
             // Добавляем все выражения мутаторов к результату.
             // При этом важно, чтобы выражения мутаторов, которые зависят от себя, шли после всех остальных. 
             // Например поле заполняется, а потом, при определённом условии реконфигурируется.
             localResult.AddRange(otherMutators.Concat(selfDependentMutators)
-                .Select(mutator => mutator.Apply(path, aliases).EliminateLinq())
-                .Where(expression => expression != null));
+                                              .Select(mutator => mutator.Apply(path, aliases).EliminateLinq())
+                                              .Where(expression => expression != null));
             processedNodes.Add(node);
         }
 
         private static void Resize<T>(List<T> list, int size)
         {
             // todo emit
-            if(list.Count > size)
+            if (list.Count > size)
             {
-                while(list.Count > size)
+                while (list.Count > size)
                     list.RemoveAt(list.Count - 1);
             }
             else
             {
-                while(list.Count < size)
+                while (list.Count < size)
                     list.Add(default(T));
             }
         }

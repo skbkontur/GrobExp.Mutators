@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Linq.Expressions;
-
-using GrobExp.Mutators.Visitors;
-
-using NUnit.Framework;
-
 using System.Linq;
+using System.Linq.Expressions;
 
 using GrobExp.Compiler;
 
+using NUnit.Framework;
+
 namespace Mutators.Tests
 {
-    public class ExpressionHashCalculatorTest: TestBase
+    public class ExpressionHashCalculatorTest : TestBase
     {
         [Test]
         public void Test1()
@@ -51,8 +48,6 @@ namespace Mutators.Tests
             hash2 = ExpressionHashCalculator.CalcHashCode(exp2, false);
             Assert.AreEqual(hash1, hash2);
         }
-
-
 
         private class TestClassA
         {

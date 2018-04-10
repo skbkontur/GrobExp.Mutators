@@ -41,12 +41,12 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
         private static bool IsExcludedFromCoverage(AssignLogInfo toLog)
         {
             return toLog.Path.SmashToSmithereens().Concat(toLog.Value.SmashToSmithereens())
-                .Any(exp => instance.excludeCriteria.Any(criterion => criterion(exp)));
+                        .Any(exp => instance.excludeCriteria.Any(criterion => criterion(exp)));
         }
 
         public static void RecordExecutingExpression(AssignLogInfo toLog)
         {
-            if(IsRecording())
+            if (IsRecording())
             {
                 var isExcluded = new Lazy<bool>(() => IsExcludedFromCoverage(toLog));
                 instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
@@ -55,13 +55,13 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 
         public static void RecordExecutingExpressionWithValueObjectCheck(AssignLogInfo toLog, object executedValue)
         {
-            if(executedValue != null)
+            if (executedValue != null)
                 RecordExecutingExpression(toLog);
         }
 
         public static void RecordExecutingExpressionWithNullableValueCheck<T>(AssignLogInfo toLog, T? executedValue) where T : struct
         {
-            if(executedValue != null || toLog.Value.NodeType == ExpressionType.Constant && toLog.Value.ToConstant().Value == null)
+            if (executedValue != null || toLog.Value.NodeType == ExpressionType.Constant && toLog.Value.ToConstant().Value == null)
                 RecordExecutingExpression(toLog);
         }
 

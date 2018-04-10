@@ -20,7 +20,7 @@ namespace GrobExp.Mutators.Validators
         {
             Condition = condition;
             Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
-            if(Path.Body.NodeType == ExpressionType.Constant)
+            if (Path.Body.NodeType == ExpressionType.Constant)
                 throw new ArgumentNullException("path");
             Message = message;
             this.validationResultType = validationResultType;
@@ -51,7 +51,7 @@ namespace GrobExp.Mutators.Validators
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             var resolvedPath = Resolve(path, performer, Path);
-            if(resolvedPath.Body.NodeType == ExpressionType.Constant)
+            if (resolvedPath.Body.NodeType == ExpressionType.Constant)
                 return null;
             return new RequiredIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), resolvedPath, Resolve(path, performer, Message), validationResultType);
         }
@@ -75,33 +75,35 @@ namespace GrobExp.Mutators.Validators
 
         private static Expression CheckIfEmpty(Expression exp)
         {
-            if(exp.Type == typeof(string))
+            if (exp.Type == typeof(string))
                 return Expression.Call(stringIsNullOrEmptyMethod, exp);
             var itemType = exp.Type.TryGetItemType();
-            if(itemType != null)
+            if (itemType != null)
             {
-                if(itemType == typeof(string))
+                if (itemType == typeof(string))
                     return Expression.Call(MutatorsHelperFunctions.StringArrayIsNullOrEmptyMethod, exp);
                 return Expression.Not(Expression.Call(anyMethod.MakeGenericMethod(itemType), exp));
             }
-            if(exp.Type.IsValueType && !exp.Type.IsNullable())
+
+            if (exp.Type.IsValueType && !exp.Type.IsNullable())
                 return Expression.Constant(false);
             return Expression.Equal(exp, Expression.Constant(null, exp.Type));
         }
 
         public LambdaExpression GetFullCondition()
         {
-            if(fullCondition != null)
+            if (fullCondition != null)
                 return fullCondition;
             Expression condition = Prepare(Expression.Lambda(Expression.Convert(CheckIfEmpty(Path.Body), typeof(bool?)), Path.Parameters)).Body;
-            if(Condition != null)
+            if (Condition != null)
             {
                 var parameterFromPath = Path.Parameters.Single();
                 var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
-                if(parameterFromCondition != null)
+                if (parameterFromCondition != null)
                     condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
                 condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
             }
+
             return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
@@ -113,9 +115,9 @@ namespace GrobExp.Mutators.Validators
             var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
             var toLog = new ValidationLogInfo("required", condition.ToString());
-            if(MutatorsValidationRecorder.IsRecording())
+            if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] { result }, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+            return Expression.Block(new[] {result}, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }
@@ -126,10 +128,10 @@ namespace GrobExp.Mutators.Validators
         {
             var condition = GetFullCondition();
             return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
+                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
         private LambdaExpression fullCondition;

@@ -15,9 +15,9 @@ namespace GrobExp.Mutators.Visitors
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var method = node.Method;
-            if(method == from)
+            if (method == from)
                 return Expression.Call(Visit(node.Object), to, node.Arguments.Select(Visit));
-            if(method.IsGenericMethod && method.GetGenericMethodDefinition() == from)
+            if (method.IsGenericMethod && method.GetGenericMethodDefinition() == from)
                 return Expression.Call(Visit(node.Object), to.MakeGenericMethod(method.GetGenericArguments()), node.Arguments.Select(Visit));
             return base.VisitMethodCall(node);
         }

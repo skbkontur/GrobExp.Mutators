@@ -8,12 +8,11 @@ namespace GrobExp.Mutators.Visitors
     /// <summary>
     ///     Visits all nodes in a given Expression and substitutes matching aliases.
     ///     Aliases are given by key-value pairs, where values is an expression to search, and key is substitution.
-    ///     
     ///     Value of alias is non-strictly searched in expression
     ///     So, parameters may differ, but alias still will be resolved:
-    ///         new AliasesResolver(new { (x.A, x.A) }).Visit(data.A) returns x.A (sic! parameter is replaced)
+    ///     new AliasesResolver(new { (x.A, x.A) }).Visit(data.A) returns x.A (sic! parameter is replaced)
     ///     Sometimes it causes uncompilable expressions:
-    ///         new AliasesResolver(new { (x.A, x.A) }).Visit(data => data.A) returns data => x.A (compilation will fail because of unknown parameter x)
+    ///     new AliasesResolver(new { (x.A, x.A) }).Visit(data => data.A) returns data => x.A (compilation will fail because of unknown parameter x)
     ///     This behaviour is actively used in some places, so it can't be easily fixed to be more clear.
     /// </summary>
     public class AliasesResolver : ExpressionVisitor
@@ -25,9 +24,9 @@ namespace GrobExp.Mutators.Visitors
         }
 
         /// <summary>
-        /// Using this resolver on lambdas causes problems sometimes (more info about it - in summary of this AliasesResolver class).
-        /// If you are sure that you want to use it, just cast argument to Expression to invoke method with another signature.
-        /// If you are really sure that using this class with LambdaExpression is not encouraged to no purpose, feel free to remove Obsolete attribute.
+        ///     Using this resolver on lambdas causes problems sometimes (more info about it - in summary of this AliasesResolver class).
+        ///     If you are sure that you want to use it, just cast argument to Expression to invoke method with another signature.
+        ///     If you are really sure that using this class with LambdaExpression is not encouraged to no purpose, feel free to remove Obsolete attribute.
         /// </summary>
         /// <param name="node"></param>
         /// <returns></returns>
@@ -48,42 +47,45 @@ namespace GrobExp.Mutators.Visitors
             int index;
             Expression replacement = null;
             // Search for longest shard, matching some alias
-            for(index = shards.Length - 1; index >= 0; --index)
+            for (index = shards.Length - 1; index >= 0; --index)
             {
-                foreach(var pair in aliases)
+                foreach (var pair in aliases)
                 {
                     var pattern = pair.Value;
-                    if(Fits(shards[index], pattern, out var parameterMappingFromTargetToPatternExpression))
+                    if (Fits(shards[index], pattern, out var parameterMappingFromTargetToPatternExpression))
                     {
                         replacement = pair.Key;
                         var replacementParameterDict = new Dictionary<(string, Type), ParameterExpression>();
-                        foreach(var replacementParameter in replacement.ExtractParameters())
+                        foreach (var replacementParameter in replacement.ExtractParameters())
                         {
                             if (replacementParameterDict.ContainsKey((replacementParameter.Name, replacementParameter.Type)))
                                 throw new Exception("More than one parameter with same name");
                             replacementParameterDict[(replacementParameter.Name, replacementParameter.Type)] = replacementParameter;
                         }
 
-                        foreach(var (targetExpressionParameter, patternExpressionParameter) in parameterMappingFromTargetToPatternExpression)
+                        foreach (var (targetExpressionParameter, patternExpressionParameter) in parameterMappingFromTargetToPatternExpression)
                         {
-                            if(!replacementParameterDict.TryGetValue((patternExpressionParameter.Name, patternExpressionParameter.Type), out var replacementParameter))
+                            if (!replacementParameterDict.TryGetValue((patternExpressionParameter.Name, patternExpressionParameter.Type), out var replacementParameter))
                                 continue;
                             targetParameterToReplacementParameterMapping[targetExpressionParameter] = replacementParameter;
                         }
+
                         break;
                     }
                 }
-                if(replacement != null)
+
+                if (replacement != null)
                     break;
             }
-            if(replacement == null)
+
+            if (replacement == null)
                 return base.Visit(chain);
             var result = replacement;
             // Rebuild tail after substituting prefix of chain with found alias
-            for(++index; index < shards.Length; ++index)
+            for (++index; index < shards.Length; ++index)
             {
                 var shard = shards[index];
-                switch(shard.NodeType)
+                switch (shard.NodeType)
                 {
                 case ExpressionType.MemberAccess:
                     result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
@@ -110,6 +112,7 @@ namespace GrobExp.Mutators.Visitors
                     throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
                 }
             }
+
             return result;
         }
 

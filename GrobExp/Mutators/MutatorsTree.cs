@@ -42,17 +42,18 @@ namespace GrobExp.Mutators
         protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var node = tree.Traverse(path.Body, create : false);
-            if(node == null)
+            if (node == null)
                 return default(KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>);
             IEnumerable<MutatorConfiguration> mutators;
             var alienArray = node.NodeType.IsArray ? node.GetAlienArray() : null;
-            if(alienArray == null)
+            if (alienArray == null)
                 mutators = node.GetMutators();
             else
             {
                 var setSourceArrayConfiguration = SetSourceArrayConfiguration.Create(Expression.Lambda(alienArray, alienArray.ExtractParameters()));
                 mutators = node.GetMutators().Concat(new[] {setSourceArrayConfiguration});
             }
+
             return new KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>(node.Path, mutators.Select(mutator => new KeyValuePair<int, MutatorConfiguration>(priority, mutator)).ToList());
         }
 
@@ -66,9 +67,9 @@ namespace GrobExp.Mutators
         {
             Expression<Action<TChild, ValidationResultTreeNode, int>> validator = null;
             var node = tree.Traverse(path.Body, false);
-            if(node != null)
+            if (node != null)
                 validator = (Expression<Action<TChild, ValidationResultTreeNode, int>>)node.BuildTreeValidator(pathFormatter);
-            if(validator == null)
+            if (validator == null)
                 return (child, validationResultTree) => { };
             var compiledValidator = LambdaCompiler.Compile(validator, CompilerOptions.All);
             return (child, validationResultTree) => compiledValidator(child, validationResultTree, priority);
@@ -78,9 +79,9 @@ namespace GrobExp.Mutators
         {
             Expression<Func<TValue, List<ValidationResult>>> validator = null;
             var node = tree.Traverse(path.Body, false);
-            if(node != null)
+            if (node != null)
                 validator = (Expression<Func<TValue, List<ValidationResult>>>)node.BuildStaticNodeValidator();
-            if(validator == null)
+            if (validator == null)
                 return value => true;
             var compiledValidator = LambdaCompiler.Compile(validator, CompilerOptions.All);
             return value => compiledValidator(value).All(validationResult => validationResult.Type != ValidationResultType.Error);
@@ -90,9 +91,9 @@ namespace GrobExp.Mutators
         {
             Expression<Action<TChild>> mutator = null;
             var node = tree.Traverse(path.Body, false);
-            if(node != null)
+            if (node != null)
                 mutator = (Expression<Action<TChild>>)node.BuildTreeMutator();
-            if(mutator == null)
+            if (mutator == null)
                 return child => { };
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
         }
@@ -101,7 +102,7 @@ namespace GrobExp.Mutators
         {
             var subNodes = new List<ModelConfigurationNode>();
             tree.FindSubNodes(subNodes);
-            foreach(var node in subNodes)
+            foreach (var node in subNodes)
                 mutators.AddRange(node.GetMutatorsWithPath());
         }
 
@@ -120,42 +121,42 @@ namespace GrobExp.Mutators
 
         private static bool IsEachOrCurrent(Expression node)
         {
-            if(node.NodeType != ExpressionType.Call) return false;
+            if (node.NodeType != ExpressionType.Call) return false;
             var method = ((MethodCallExpression)node).Method;
             return method.IsEachMethod() || method.IsCurrentMethod();
         }
 
         private static void ExtractAliases(ModelConfigurationNode node, CompositionPerformer performer, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(node.GetMutators().Any())
+            if (node.GetMutators().Any())
             {
                 var conditionalSetters = performer.GetConditionalSetters(node.Path);
-                if(conditionalSetters != null && conditionalSetters.Count == 1)
+                if (conditionalSetters != null && conditionalSetters.Count == 1)
                 {
                     var setter = conditionalSetters.Single();
-                    if(setter.Value == null)
+                    if (setter.Value == null)
                     {
                         var chains = setter.Key.CutToChains(true, true);
-                        if(chains.Length == 1)
+                        if (chains.Length == 1)
                         {
                             var chain = chains.Single();
                             aliases.Add(new KeyValuePair<Expression, Expression>(node.Path, chain));
-                            if(IsEachOrCurrent(node.Path))
+                            if (IsEachOrCurrent(node.Path))
                                 aliases.Add(new KeyValuePair<Expression, Expression>(Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(node.Path.Type), node.Path), Expression.Call(MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(chain.Type), chain)));
                         }
                     }
                 }
             }
-            else if(IsEachOrCurrent(node.Path))
+            else if (IsEachOrCurrent(node.Path))
             {
                 var conditionalSetters = performer.GetConditionalSetters(((MethodCallExpression)node.Path).Arguments.Single());
-                if(conditionalSetters != null && conditionalSetters.Count == 1)
+                if (conditionalSetters != null && conditionalSetters.Count == 1)
                 {
                     var setter = conditionalSetters.Single();
-                    if(setter.Value == null)
+                    if (setter.Value == null)
                     {
                         var chains = setter.Key.CutToChains(true, true);
-                        if(chains.Length == 1)
+                        if (chains.Length == 1)
                         {
                             var chain = chains.Single();
                             chain = Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(chain.Type.GetItemType()), chain);
@@ -164,7 +165,8 @@ namespace GrobExp.Mutators
                     }
                 }
             }
-            foreach(var child in node.Children)
+
+            foreach (var child in node.Children)
                 ExtractAliases(child, performer, aliases);
         }
 

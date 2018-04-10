@@ -24,30 +24,30 @@ namespace GrobExp.Mutators
 
         private static bool IsLinkOfChain(UnaryExpression node, bool restrictConstants, bool recursive)
         {
-            if(recursive)
+            if (recursive)
                 return node != null && node.NodeType == ExpressionType.Convert && IsLinkOfChain(node.Operand, restrictConstants, true);
             return node != null && node.NodeType == ExpressionType.Convert;
         }
 
         private static bool IsLinkOfChain(MemberExpression node, bool restrictConstants, bool recursive)
         {
-            if(recursive)
+            if (recursive)
                 return node != null && IsLinkOfChain(node.Expression, restrictConstants, true);
             return node != null && node.Expression != null;
         }
 
         private static bool IsLinkOfChain(MethodCallExpression node, bool restrictConstants, bool recursive)
         {
-            if(node == null || !IsAllowedMethod(node.Method))
+            if (node == null || !IsAllowedMethod(node.Method))
                 return false;
-            if(recursive)
+            if (recursive)
                 return (node.Object != null && IsLinkOfChain(node.Object, restrictConstants, true)) || (node.Method.IsExtension() && IsLinkOfChain(node.Arguments[0], restrictConstants, true));
             return node.Object != null || node.Method.IsExtension();
         }
 
         private static bool IsLinkOfChain(BinaryExpression node, bool restrictConstants, bool recursive)
         {
-            if(recursive)
+            if (recursive)
                 return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, restrictConstants, true);
             return node != null && node.NodeType == ExpressionType.ArrayIndex;
         }

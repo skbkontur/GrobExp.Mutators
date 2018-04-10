@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.Visitors
         {
             var result = Visit(exp);
             constants = new object[hashtable.Count];
-            foreach(DictionaryEntry entry in hashtable)
+            foreach (DictionaryEntry entry in hashtable)
                 constants[(int)entry.Value] = ((KeyValuePair<Type, object>)entry.Key).Value;
             return result;
         }
@@ -25,11 +25,12 @@ namespace GrobExp.Mutators.Visitors
         {
             var key = new KeyValuePair<Type, object>(node.Type, node.Value);
             var index = hashtable[key];
-            if(index == null)
+            if (index == null)
             {
                 index = constIndex++;
                 hashtable[key] = index;
             }
+
             return Expression.Convert(Expression.ArrayIndex(constantsAccessor, Expression.Constant(index, typeof(int))), node.Type);
         }
 

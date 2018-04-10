@@ -16,30 +16,32 @@ namespace GrobExp.Mutators
         public KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> GetRawMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.RawMutators == null)
+            if (nodeInfo.RawMutators == null)
             {
-                lock(lockObject)
-                    if(nodeInfo.RawMutators == null)
+                lock (lockObject)
+                    if (nodeInfo.RawMutators == null)
                         nodeInfo.RawMutators = BuildRawMutators(path);
             }
+
             return nodeInfo.RawMutators.Value;
         }
 
         public KeyValuePair<Expression, List<MutatorConfiguration>> GetMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.Mutators == null)
+            if (nodeInfo.Mutators == null)
             {
-                lock(lockObject)
-                    if(nodeInfo.Mutators == null)
+                lock (lockObject)
+                    if (nodeInfo.Mutators == null)
                         nodeInfo.Mutators = BuildMutators(path);
             }
+
             return nodeInfo.Mutators.Value;
         }
 
         public Func<TData, ValidationResultTreeNode> GetValidator()
         {
-            if(MutatorsValidationRecorder.IsRecording())
+            if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.AddValidatorToRecord(GetType().ToString());
             return GetValidator(data => data);
         }
@@ -59,12 +61,13 @@ namespace GrobExp.Mutators
         public Func<TValue, bool> GetStaticValidator<TValue>(Expression<Func<TData, TValue>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.StaticValidator == null)
+            if (nodeInfo.StaticValidator == null)
             {
-                lock(lockObject)
-                    if(nodeInfo.StaticValidator == null)
+                lock (lockObject)
+                    if (nodeInfo.StaticValidator == null)
                         nodeInfo.StaticValidator = BuildStaticValidator(path);
             }
+
             return nodeInfo.StaticValidator;
         }
 
@@ -76,12 +79,13 @@ namespace GrobExp.Mutators
         public Action<TChild> GetTreeMutator<TChild>(Expression<Func<TData, TChild>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.TreeMutator == null)
+            if (nodeInfo.TreeMutator == null)
             {
-                lock(lockObject)
-                    if(nodeInfo.TreeMutator == null)
+                lock (lockObject)
+                    if (nodeInfo.TreeMutator == null)
                         nodeInfo.TreeMutator = BuildTreeMutator(path);
             }
+
             return nodeInfo.TreeMutator;
         }
 
@@ -124,12 +128,13 @@ namespace GrobExp.Mutators
         internal Action<TChild, ValidationResultTreeNode> GetValidatorInternal<TChild>(Expression<Func<TData, TChild>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
-            if(nodeInfo.Validator == null)
+            if (nodeInfo.Validator == null)
             {
-                lock(lockObject)
-                    if(nodeInfo.Validator == null)
+                lock (lockObject)
+                    if (nodeInfo.Validator == null)
                         nodeInfo.Validator = BuildValidator(path);
             }
+
             return nodeInfo.Validator;
         }
 
@@ -140,75 +145,79 @@ namespace GrobExp.Mutators
         {
             // todo ich: kill, as soon as scripts are fixed
             // todo ich: handle validation priorities
-            if(mutators == null) return null;
+            if (mutators == null) return null;
             var hideIfConfigurations = new List<HideIfConfiguration>();
             var disableIfConfigurations = new List<DisableIfConfiguration>();
             var staticAggregatorConfigurations = new Dictionary<string, List<ConditionalAggregatorConfiguration>>();
             //var validatorConfigurations = new List<KeyValuePair<int, ValidatorConfiguration>>();
             SetSourceArrayConfiguration setSourceArrayConfiguration = null;
             var otherConfigurations = new List<MutatorConfiguration>();
-            foreach(var mutator in mutators)
+            foreach (var mutator in mutators)
             {
-                if(mutator.Value is HideIfConfiguration)
+                if (mutator.Value is HideIfConfiguration)
                     hideIfConfigurations.Add((HideIfConfiguration)mutator.Value);
-                else if(mutator.Value is DisableIfConfiguration)
+                else if (mutator.Value is DisableIfConfiguration)
                     disableIfConfigurations.Add((DisableIfConfiguration)mutator.Value);
 //                else if(mutator.Value is ValidatorConfiguration)
 //                    validatorConfigurations.Add(new KeyValuePair<int, ValidatorConfiguration>(mutator.Key, (ValidatorConfiguration)mutator.Value));
-                else if(mutator.Value is SetSourceArrayConfiguration)
+                else if (mutator.Value is SetSourceArrayConfiguration)
                 {
                     var currentSetSourceArrayConfiguration = (SetSourceArrayConfiguration)mutator.Value;
-                    if(setSourceArrayConfiguration == null)
+                    if (setSourceArrayConfiguration == null)
                         setSourceArrayConfiguration = currentSetSourceArrayConfiguration;
-                    else if(!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false, true))
+                    else if (!ExpressionEquivalenceChecker.Equivalent(setSourceArrayConfiguration.SourceArray, currentSetSourceArrayConfiguration.SourceArray, false, true))
                         throw new InvalidOperationException("An attempt to set array from different sources: '" + setSourceArrayConfiguration.SourceArray + "' and '" + currentSetSourceArrayConfiguration.SourceArray + "'");
                 }
-                else if(mutator.Value is ConditionalAggregatorConfiguration)
+                else if (mutator.Value is ConditionalAggregatorConfiguration)
                 {
                     var staticAggregator = (ConditionalAggregatorConfiguration)mutator.Value;
                     List<ConditionalAggregatorConfiguration> staticAggregators;
-                    if(!staticAggregatorConfigurations.TryGetValue(staticAggregator.Name, out staticAggregators))
+                    if (!staticAggregatorConfigurations.TryGetValue(staticAggregator.Name, out staticAggregators))
                         staticAggregatorConfigurations.Add(staticAggregator.Name, staticAggregators = new List<ConditionalAggregatorConfiguration>());
                     staticAggregators.Add(staticAggregator);
                 }
                 else
                     otherConfigurations.Add(mutator.Value);
             }
-            if(hideIfConfigurations.Count == 1)
+
+            if (hideIfConfigurations.Count == 1)
                 otherConfigurations.Add(hideIfConfigurations.Single());
-            else if(hideIfConfigurations.Count > 1)
+            else if (hideIfConfigurations.Count > 1)
             {
                 var condition = hideIfConfigurations[0].Condition;
                 var type = hideIfConfigurations[0].Type;
-                for(var i = 1; i < hideIfConfigurations.Count; ++i)
+                for (var i = 1; i < hideIfConfigurations.Count; ++i)
                     condition = condition.OrElse(hideIfConfigurations[i].Condition);
                 otherConfigurations.Add(new HideIfConfiguration(type, condition));
             }
-            if(disableIfConfigurations.Count == 1)
+
+            if (disableIfConfigurations.Count == 1)
                 otherConfigurations.Add(disableIfConfigurations.Single());
-            else if(disableIfConfigurations.Count > 1)
+            else if (disableIfConfigurations.Count > 1)
             {
                 var condition = disableIfConfigurations[0].Condition;
                 var type = disableIfConfigurations[0].Type;
-                for(var i = 1; i < disableIfConfigurations.Count; ++i)
+                for (var i = 1; i < disableIfConfigurations.Count; ++i)
                     condition = condition.OrElse(disableIfConfigurations[i].Condition);
                 otherConfigurations.Add(new DisableIfConfiguration(type, condition));
             }
-            foreach(var item in staticAggregatorConfigurations)
+
+            foreach (var item in staticAggregatorConfigurations)
             {
                 var staticAggregators = item.Value;
-                if(staticAggregators.Count == 1)
+                if (staticAggregators.Count == 1)
                     otherConfigurations.Add(staticAggregators.Single());
                 else
                 {
                     var condition = staticAggregators[0].Condition;
                     var type = staticAggregators[0].Type;
-                    for(var i = 1; i < staticAggregators.Count; ++i)
+                    for (var i = 1; i < staticAggregators.Count; ++i)
                         condition = condition.OrElse(staticAggregators[i].Condition);
                     otherConfigurations.Add(new ConditionalAggregatorConfiguration(type, condition, item.Key));
                 }
             }
-            if(setSourceArrayConfiguration != null)
+
+            if (setSourceArrayConfiguration != null)
                 otherConfigurations.Add(setSourceArrayConfiguration);
             return otherConfigurations;
         }
@@ -225,12 +234,12 @@ namespace GrobExp.Mutators
         {
             var tuple = new Tuple<Type, string>(typeof(T), key);
             var migratedTrees = (MigratedTrees<T>)hashtable[tuple];
-            if(migratedTrees == null)
+            if (migratedTrees == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     migratedTrees = (MigratedTrees<T>)hashtable[tuple];
-                    if(migratedTrees == null)
+                    if (migratedTrees == null)
                     {
                         hashtable[tuple] = migratedTrees = new MigratedTrees<T>
                             {
@@ -240,6 +249,7 @@ namespace GrobExp.Mutators
                     }
                 }
             }
+
             return migratedTrees;
         }
 
@@ -247,15 +257,16 @@ namespace GrobExp.Mutators
         {
             var key = new ExpressionWrapper(path.Body, strictly : false);
             var nodeInfo = (NodeInfo<T>)hashtable[key];
-            if(nodeInfo == null)
+            if (nodeInfo == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     nodeInfo = (NodeInfo<T>)hashtable[key];
-                    if(nodeInfo == null)
+                    if (nodeInfo == null)
                         hashtable[key] = nodeInfo = new NodeInfo<T>();
                 }
             }
+
             return nodeInfo;
         }
 

@@ -33,8 +33,6 @@ namespace GrobExp.Mutators
             return (arg1, arg2) => func(arg1, arg2, constants);
         }
 
-        public static readonly Func<Expression, string> DebugViewGetter = BuildDebugViewGetter();
-
         private static LambdaExpression KillConstants(LambdaExpression lambda, out object[] constants)
         {
             var constantsParameter = Expression.Parameter(typeof(object[]), "C0NSTS");
@@ -47,18 +45,19 @@ namespace GrobExp.Mutators
             //var key = new ExpressionWrapper(lambda);
             var key = DebugViewGetter(lambda);
             var result = hashtable[key];
-            if(result == null)
+            if (result == null)
             {
-                lock(lockObject)
+                lock (lockObject)
                 {
                     result = hashtable[key];
-                    if(result == null)
+                    if (result == null)
                     {
                         result = LambdaCompiler.Compile(lambda, CompilerOptions.All); //lambda.Compile();
                         hashtable[key] = result;
                     }
                 }
             }
+
             return (Delegate)result;
         }
 
@@ -68,15 +67,17 @@ namespace GrobExp.Mutators
             var il = method.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0); // stack: [exp]
             var debugViewProperty = typeof(Expression).GetProperty("DebugView", BindingFlags.Instance | BindingFlags.NonPublic);
-            if(debugViewProperty == null)
+            if (debugViewProperty == null)
                 throw new MissingMemberException("Expression.DebugView");
             var getter = debugViewProperty.GetGetMethod(true);
-            if(getter == null)
+            if (getter == null)
                 throw new MissingMethodException("Expression.DebugView_get");
             il.Emit(getter.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, getter); // stack: [exp.DebugView]
             il.Emit(OpCodes.Ret);
             return (Func<Expression, string>)method.CreateDelegate(typeof(Func<Expression, string>));
         }
+
+        public static readonly Func<Expression, string> DebugViewGetter = BuildDebugViewGetter();
 
         private static readonly Hashtable hashtable = new Hashtable();
         private static readonly object lockObject = new object();

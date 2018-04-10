@@ -408,7 +408,7 @@ namespace Mutators.Tests
         [Test]
         public void TestSelectWithExternalConverter()
         {
-            Func<C, E> converter = c => new E { F = c.S };
+            Func<C, E> converter = c => new E {F = c.S};
             Expression<Func<A, string>> expression = a => a.B.C.Select(c => converter(c)).FirstOrDefault().F;
             DoTest(expression, a => a.B.C);
         }
@@ -472,7 +472,7 @@ namespace Mutators.Tests
 
         private static Expression ClearConverts(Expression node)
         {
-            while(node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.ConvertChecked)
+            while (node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.ConvertChecked)
                 node = ((UnaryExpression)node).Operand;
             return node;
         }

@@ -60,7 +60,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             var temp = Expression.Variable(path.Type);
             var resize = Expression.Call(arrayResizeMethod, temp, Length.Body.ResolveAliases(aliases));
             var block = Expression.Block(new[] {temp}, Expression.Assign(temp, path), resize, Expression.Assign(PrepareForAssign(path), temp));
-            if(Condition == null)
+            if (Condition == null)
                 return block;
             var condition = Condition.Body;
             condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -73,10 +73,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
+                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 1))).Body).Method;

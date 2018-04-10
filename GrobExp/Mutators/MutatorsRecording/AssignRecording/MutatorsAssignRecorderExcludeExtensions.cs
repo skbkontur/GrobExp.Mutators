@@ -55,11 +55,11 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
         private static bool AreEqualGenericProperties<TDeclaringType>(PropertyInfo expectedProperty, Expression expression)
         {
             var memberExpression = expression as MemberExpression;
-            if(memberExpression == null) return false;
+            if (memberExpression == null) return false;
             var actualProperty = memberExpression.Member as PropertyInfo;
-            if(actualProperty == null || actualProperty.DeclaringType == null) return false;
+            if (actualProperty == null || actualProperty.DeclaringType == null) return false;
             var declaringType = typeof(TDeclaringType).TryGetGenericTypeDefinition();
-            if(actualProperty.DeclaringType.GetInterfaces().All(x => x.TryGetGenericTypeDefinition() != declaringType)) return false;
+            if (actualProperty.DeclaringType.GetInterfaces().All(x => x.TryGetGenericTypeDefinition() != declaringType)) return false;
             return expectedProperty.Name == actualProperty.Name;
         }
 

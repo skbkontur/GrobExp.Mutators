@@ -20,15 +20,16 @@ namespace GrobExp.Mutators
         {
             type = buildType ? BuildType(type) : type;
             var result = (Func<ValidationResultTreeNode, ValidationResultTreeNode>)factories[type];
-            if(result == null)
+            if (result == null)
             {
-                lock(factoriesLock)
+                lock (factoriesLock)
                 {
                     result = (Func<ValidationResultTreeNode, ValidationResultTreeNode>)factories[type];
-                    if(result == null)
+                    if (result == null)
                         factories[type] = result = BuildFactoryInternal(type);
                 }
             }
+
             return result;
         }
 
@@ -40,36 +41,38 @@ namespace GrobExp.Mutators
         private static Type BuildType(Type type, bool returnBeingBuilt)
         {
             var result = (Type)types[type];
-            if(result == null)
+            if (result == null)
             {
-                lock(typesLock)
+                lock (typesLock)
                 {
                     result = (Type)types[type];
                     var typeBeingBuilt = (Type)typesBeingBuilt[type];
-                    if(result == null)
+                    if (result == null)
                     {
-                        if(returnBeingBuilt && typeBeingBuilt != null)
+                        if (returnBeingBuilt && typeBeingBuilt != null)
                             return typeBeingBuilt;
                         types[type] = result = BuildTypeInternal(type);
                     }
                 }
             }
+
             return result;
         }
 
         private static Func<ValidationResultTreeNode, ValidationResultTreeNode> BuildFactoryInternal(Type type)
         {
-            var parameterTypes = new [] {typeof(ValidationResultTreeNode)};
+            var parameterTypes = new[] {typeof(ValidationResultTreeNode)};
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(ValidationResultTreeNode), parameterTypes, typeof(string), true);
-            using(var il = new GroboIL(method))
+            using (var il = new GroboIL(method))
             {
                 var constructor = type.GetConstructor(parameterTypes);
-                if(constructor == null)
+                if (constructor == null)
                     throw new InvalidOperationException(string.Format("The type '{0}' has no constructor accepting one parameter of type '{1}'", type, typeof(ValidationResultTreeNode)));
                 il.Ldarg(0);
                 il.Newobj(constructor);
                 il.Ret();
             }
+
             return (Func<ValidationResultTreeNode, ValidationResultTreeNode>)method.CreateDelegate(typeof(Func<ValidationResultTreeNode, ValidationResultTreeNode>));
         }
 
@@ -82,7 +85,7 @@ namespace GrobExp.Mutators
             typesBeingBuilt[type] = typeBuilder;
 
             var constructor = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, new[] {parentType});
-            using(var il = new GroboIL(constructor))
+            using (var il = new GroboIL(constructor))
             {
                 il.Ldarg(0); // stack: [this]
                 il.Ldarg(1); // stack: [this, parent]
@@ -90,23 +93,25 @@ namespace GrobExp.Mutators
                 il.Call(baseConstructor); // base(parent); stack: []
                 il.Ret();
             }
+
             var fields = new Dictionary<string, FieldBuilder>();
-            foreach(var property in properties)
+            foreach (var property in properties)
             {
                 var propertyType = property.PropertyType;
                 Type fieldType;
-                if(propertyType.IsArray)
+                if (propertyType.IsArray)
                     fieldType = typeof(ValidationResultTreeArrayNode<>).MakeGenericType(BuildType(propertyType.GetElementType()));
-                else if(propertyType.IsDictionary() || propertyType == typeof(Hashtable))
+                else if (propertyType.IsDictionary() || propertyType == typeof(Hashtable))
                     fieldType = typeof(ValidationResultTreeUniversalNode);
                 else
                     fieldType = BuildType(propertyType, true);
                 var field = typeBuilder.DefineField(property.Name, fieldType, FieldAttributes.Public);
                 fields.Add(property.Name, field);
             }
+
             var getChildrenMethod = parentType.GetMethod("GetChildren", BindingFlags.Instance | BindingFlags.NonPublic);
             var getChildrenMethodBuilder = typeBuilder.DefineMethod(getChildrenMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, typeof(IEnumerable<KeyValuePair<object, ValidationResultTreeNode>>), Type.EmptyTypes);
-            using(var il = new GroboIL(getChildrenMethodBuilder))
+            using (var il = new GroboIL(getChildrenMethodBuilder))
             {
                 var listType = typeof(List<KeyValuePair<object, ValidationResultTreeNode>>);
                 var addMethod = listType.GetMethod("Add", new[] {typeof(KeyValuePair<object, ValidationResultTreeNode>)});
@@ -114,7 +119,7 @@ namespace GrobExp.Mutators
                 var list = il.DeclareLocal(listType);
                 il.Newobj(listType.GetConstructor(Type.EmptyTypes)); // stack: [new List<>()]
                 il.Stloc(list); // list = new List<>(); stack: []
-                foreach(var field in fields.Values)
+                foreach (var field in fields.Values)
                 {
                     il.Ldarg(0); // stack: [this]
                     il.Ldfld(field); // stack: [this.field]
@@ -128,14 +133,16 @@ namespace GrobExp.Mutators
                     il.Call(addMethod); // list.Add(new KeyValuePair<object, ValidationResultTreeNode>(field.Name, this.field)); stack: []
                     il.MarkLabel(nextLabel);
                 }
+
                 il.Ldloc(list);
                 il.Ret();
             }
+
             typeBuilder.DefineMethodOverride(getChildrenMethodBuilder, getChildrenMethod);
 
             var traverseEdgeMethod = parentType.GetMethod("TraverseEdge", BindingFlags.Instance | BindingFlags.NonPublic);
-            var traverseEdgeMethodBuilder = typeBuilder.DefineMethod(traverseEdgeMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, parentType, new[] { typeof(Expression) });
-            using(var il = new GroboIL(traverseEdgeMethodBuilder))
+            var traverseEdgeMethodBuilder = typeBuilder.DefineMethod(traverseEdgeMethod.Name, MethodAttributes.Public | MethodAttributes.Virtual, parentType, new[] {typeof(Expression)});
+            using (var il = new GroboIL(traverseEdgeMethodBuilder))
             {
                 il.Ldarg(1); // stack: [edge]
                 il.Castclass(typeof(MemberExpression)); // stack: [(MemberExpression)edge]
@@ -143,7 +150,7 @@ namespace GrobExp.Mutators
                 il.Call(HackHelpers.GetProp<MemberInfo>(x => x.Name).GetGetMethod()); // stack: [((MemberExpresion)edge).Member.Name]
                 var member = il.DeclareLocal(typeof(string));
                 il.Stloc(member);
-                foreach(var property in properties)
+                foreach (var property in properties)
                 {
                     il.Ldstr(property.Name); // stack: [property.Name]
                     il.Ldloc(member); // stack: [property.Name, member]
@@ -155,9 +162,11 @@ namespace GrobExp.Mutators
                     il.Ret(); // return this.field;
                     il.MarkLabel(nextLabel);
                 }
+
                 il.Ldnull();
                 il.Ret();
             }
+
             typeBuilder.DefineMethodOverride(traverseEdgeMethodBuilder, traverseEdgeMethod);
 
             var result = typeBuilder.CreateType();
@@ -197,22 +206,23 @@ namespace GrobExp.Mutators
         {
             var pieces = path.Split(new[] {'.'}, StringSplitOptions.RemoveEmptyEntries);
             var node = root;
-            foreach(var edge in pieces)
+            foreach (var edge in pieces)
             {
-                if(node is ValidationResultTreeUniversalNode)
+                if (node is ValidationResultTreeUniversalNode)
                     node = ((ValidationResultTreeUniversalNode)node).GotoChild(edge);
-                else if(node is ValidationResultTreeArrayNode)
+                else if (node is ValidationResultTreeArrayNode)
                     node = ((ValidationResultTreeArrayNode)node).GotoChild(int.Parse(edge));
                 else
                 {
                     var nodeType = node.GetType();
                     var field = nodeType.GetField(edge, BindingFlags.Instance | BindingFlags.Public);
                     var child = (ValidationResultTreeNode)field.GetValue(node);
-                    if(child == null)
+                    if (child == null)
                         field.SetValue(node, child = ValidationResultTreeNodeBuilder.BuildFactory(field.FieldType, false)(node));
                     node = child;
                 }
             }
+
             node.ValidationResults.Add(validationResult);
         }
 
@@ -229,7 +239,7 @@ namespace GrobExp.Mutators
         public ValidationResultTreeNode GotoChild(object edge)
         {
             ValidationResultTreeNode child;
-            if(!children.TryGetValue(edge, out child))
+            if (!children.TryGetValue(edge, out child))
                 children.Add(edge, child = new ValidationResultTreeUniversalNode(this));
             return child;
         }
@@ -268,53 +278,54 @@ namespace GrobExp.Mutators
 
         public ValidationResultTreeNode GotoChild(int[] indexes)
         {
-            if(indexes.Length == 0)
+            if (indexes.Length == 0)
                 return null;
             var index = indexes[0];
-            for(var i = 1; i < indexes.Length; ++i)
+            for (var i = 1; i < indexes.Length; ++i)
             {
-                if(indexes[i] != index)
+                if (indexes[i] != index)
                     return null;
             }
+
             return GotoChild(index);
         }
 
         public ValidationResultTreeNode GotoChild(int index)
         {
-            if(index == -1)
+            if (index == -1)
                 return negativeChild ?? (negativeChild = childFactory(this));
-            if(index >= children.Count)
+            if (index >= children.Count)
                 forceCount(children, index + 1);
             return children[index] ?? (children[index] = childFactory(this));
         }
 
         protected override ValidationResultTreeNode TraverseEdge(Expression edge)
         {
-            if(edge.NodeType != ExpressionType.ArrayIndex)
+            if (edge.NodeType != ExpressionType.ArrayIndex)
                 throw new InvalidOperationException("Expected array indexing but was '" + edge.NodeType + "'");
             int index = GetIndex(((BinaryExpression)edge).Right);
-            if(index == -1)
+            if (index == -1)
                 return negativeChild;
-            if(index < 0 || index>= children.Count)
+            if (index < 0 || index >= children.Count)
                 return null;
             return children[index];
         }
 
         private static int GetIndex(Expression node)
         {
-            if(node.NodeType == ExpressionType.Constant)
+            if (node.NodeType == ExpressionType.Constant)
                 return (int)((ConstantExpression)node).Value;
             return ExpressionCompiler.Compile(Expression.Lambda<Func<int>>(node))();
         }
 
         protected override IEnumerable<KeyValuePair<object, ValidationResultTreeNode>> GetChildren()
         {
-            if(negativeChild != null)
+            if (negativeChild != null)
                 yield return new KeyValuePair<object, ValidationResultTreeNode>(-1, negativeChild);
-            for(var i = 0; i < children.Count; ++i)
+            for (var i = 0; i < children.Count; ++i)
             {
                 var child = children[i];
-                if(child != null)
+                if (child != null)
                     yield return new KeyValuePair<object, ValidationResultTreeNode>(i, child);
             }
         }
@@ -324,12 +335,12 @@ namespace GrobExp.Mutators
             var listType = typeof(List<ValidationResultTreeNode>);
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new[] {listType, typeof(int)}, typeof(string), true);
             var ensureCapacityMethod = listType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic);
-            if(ensureCapacityMethod == null)
+            if (ensureCapacityMethod == null)
                 throw new InvalidOperationException("Method 'List<>.EnsureCapacity' is missing");
             var _sizeField = listType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic);
-            if(_sizeField == null)
+            if (_sizeField == null)
                 throw new InvalidOperationException("The field 'List<>._size' is not found");
-            using(var il = new GroboIL(method))
+            using (var il = new GroboIL(method))
             {
                 il.Ldarg(0); // stack: [list]
                 il.Ldarg(1); // stack: [list, size]
@@ -339,6 +350,7 @@ namespace GrobExp.Mutators
                 il.Stfld(_sizeField); // list._size = size; stack: []
                 il.Ret();
             }
+
             return (Action<List<ValidationResultTreeNode>, int>)method.CreateDelegate(typeof(Action<List<ValidationResultTreeNode>, int>));
         }
 
@@ -352,8 +364,6 @@ namespace GrobExp.Mutators
 
     public abstract class ValidationResultTreeNode : IEnumerable<FormattedValidationResult>
     {
-        private readonly ValidationResultTreeNode parent;
-
         protected ValidationResultTreeNode(ValidationResultTreeNode parent)
         {
             this.parent = parent;
@@ -363,10 +373,10 @@ namespace GrobExp.Mutators
         public ValidationResultTreeNode Traverse<T, TV>(Expression<Func<T, TV>> path)
         {
             var shards = path.Body.SmashToSmithereens();
-            if(shards[0].NodeType != ExpressionType.Parameter)
+            if (shards[0].NodeType != ExpressionType.Parameter)
                 throw new InvalidOperationException("Expected parameter but was '" + shards[0].NodeType + "'");
             var node = this;
-            for(int i = 1; i < shards.Length && node != null; ++i)
+            for (int i = 1; i < shards.Length && node != null; ++i)
                 node = node.TraverseEdge(shards[i]);
             return node;
         }
@@ -416,7 +426,7 @@ namespace GrobExp.Mutators
         {
             ValidationResults.Add(validationResult);
             var node = this;
-            while(node != null)
+            while (node != null)
             {
                 ++node.Count;
                 node = node.parent;
@@ -433,7 +443,7 @@ namespace GrobExp.Mutators
 
         private void AppendLine(int margin, string value, StringBuilder result)
         {
-            for(var i = 0; i < margin; ++i)
+            for (var i = 0; i < margin; ++i)
                 result.Append(' ');
             result.AppendLine(value);
         }
@@ -442,9 +452,9 @@ namespace GrobExp.Mutators
         {
             AppendLine(margin, name, result);
             margin += 4;
-            foreach(var validationResult in ValidationResults)
+            foreach (var validationResult in ValidationResults)
                 AppendLine(margin, string.Format("Result: '{0}', Priority: '{1}', Text: '{2}'", validationResult.Type, validationResult.Priority, validationResult.Message.GetText("RU")), result);
-            foreach(var child in GetChildren())
+            foreach (var child in GetChildren())
                 child.Value.Print("<" + child.Key + ">", margin, result);
         }
 
@@ -460,9 +470,9 @@ namespace GrobExp.Mutators
 
         private static bool Eq(object x, object y)
         {
-            if(x is string && y is string)
+            if (x is string && y is string)
                 return (string)x == (string)y;
-            if(x is int && y is int)
+            if (x is int && y is int)
                 return (int)x == (int)y;
             return false;
         }
@@ -472,13 +482,15 @@ namespace GrobExp.Mutators
             return new ValidationResultTreeNodeEnumerator(this, returnFirst);
         }
 
+        private readonly ValidationResultTreeNode parent;
+
         private class ZzzComparer : IComparer<object>
         {
             public int Compare(object x, object y)
             {
-                if(x is string && y is string)
+                if (x is string && y is string)
                     return string.Compare(((string)x), (string)y, StringComparison.Ordinal);
-                if(x is int && y is int)
+                if (x is int && y is int)
                     return ((int)x).CompareTo((int)y);
                 throw new InvalidOperationException("Incompatible types");
             }
@@ -492,8 +504,8 @@ namespace GrobExp.Mutators
                 var orderedValidationResults = node.ValidationResults.OrderBy(result => result).ToList();
                 var priority = orderedValidationResults.Count == 0 ? 0 : orderedValidationResults[0].Priority;
                 validationResultsEnumerator = returnAll
-                    ? orderedValidationResults.GetEnumerator()
-                    : orderedValidationResults.Where(result => result.Priority == priority).ToList().GetEnumerator();
+                                                  ? orderedValidationResults.GetEnumerator()
+                                                  : orderedValidationResults.Where(result => result.Priority == priority).ToList().GetEnumerator();
                 childrenEnumerator = node.GetChildren().OrderBy(pair => pair.Key, new ZzzComparer()).ToList().GetEnumerator();
                 Reset();
             }
@@ -504,9 +516,9 @@ namespace GrobExp.Mutators
 
             public bool MoveNext()
             {
-                if(currentEnumerator.MoveNext())
+                if (currentEnumerator.MoveNext())
                     return true;
-                if(!childrenEnumerator.MoveNext())
+                if (!childrenEnumerator.MoveNext())
                     return false;
                 var child = (KeyValuePair<object, ValidationResultTreeNode>)childrenEnumerator.Current;
                 currentEnumerator = child.Value.GetEnumerator(returnAll || (child.Key is int && (int)child.Key == -1));

@@ -12,36 +12,38 @@ namespace GrobExp.Mutators
         public static object GetDefaultValue(this Type type)
         {
             var result = defaultValues[type];
-            if(result == null)
+            if (result == null)
             {
-                lock(defaultValuesLock)
+                lock (defaultValuesLock)
                 {
                     result = defaultValues[type];
-                    if(result == null)
+                    if (result == null)
                     {
                         result = getDefaultValueMethod.MakeGenericMethod(type).Invoke(null, null) ?? nullDefault;
                         defaultValues[type] = result;
                     }
                 }
             }
+
             return result == nullDefault ? null : result;
         }
 
         public static Type TryGetItemType(this Type type)
         {
-            if(type == typeof(Hashtable))
+            if (type == typeof(Hashtable))
                 return typeof(DictionaryEntry);
-            if(type.IsArray) return type.GetElementType();
-            if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            if (type.IsArray) return type.GetElementType();
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return type.GetGenericArguments().Single();
-            foreach(var t in type.GetInterfaces())
+            foreach (var t in type.GetInterfaces())
             {
-                if(t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     return t.GetGenericArguments().Single();
             }
-            if(type == typeof(IEnumerable))
+
+            if (type == typeof(IEnumerable))
                 return typeof(object);
-            if(type.GetInterfaces().Any(t => t == typeof(IEnumerable)))
+            if (type.GetInterfaces().Any(t => t == typeof(IEnumerable)))
                 return typeof(object);
             return null;
         }
@@ -49,7 +51,7 @@ namespace GrobExp.Mutators
         public static Type GetItemType(this Type type)
         {
             var result = type.TryGetItemType();
-            if(result == null)
+            if (result == null)
                 throw new ArgumentException("Unable to extract item type of '" + type + "'");
             return result;
         }
@@ -61,7 +63,7 @@ namespace GrobExp.Mutators
 
         public static bool IsTuple(this Type type)
         {
-            if(!type.IsGenericType) return false;
+            if (!type.IsGenericType) return false;
             type = type.GetGenericTypeDefinition();
             return type == typeof(Tuple<>)
                    || type == typeof(Tuple<,>)
@@ -78,24 +80,25 @@ namespace GrobExp.Mutators
             GetProperties(type, flags, result);
             result.Sort((first, second) =>
                 {
-                    if(first.Module != second.Module)
+                    if (first.Module != second.Module)
                         return string.Compare(first.Module.FullyQualifiedName, second.Module.FullyQualifiedName, StringComparison.InvariantCulture);
                     return first.MetadataToken - second.MetadataToken;
                 });
             var unique = new List<PropertyInfo>();
-            if(result.Count > 0)
+            if (result.Count > 0)
                 unique.Add(result[0]);
-            for(var i = 1; i < result.Count; ++i)
+            for (var i = 1; i < result.Count; ++i)
             {
-                if(result[i - 1].Module != result[i].Module || result[i - 1].MetadataToken != result[i].MetadataToken)
+                if (result[i - 1].Module != result[i].Module || result[i - 1].MetadataToken != result[i].MetadataToken)
                     unique.Add(result[i]);
             }
+
             return unique.ToArray();
         }
 
         private static void GetProperties(Type type, BindingFlags flags, List<PropertyInfo> list)
         {
-            if(type == null || type == typeof(object))
+            if (type == null || type == typeof(object))
                 return;
             list.AddRange(type.GetProperties(flags | BindingFlags.DeclaredOnly));
             GetProperties(type.BaseType, flags, list);

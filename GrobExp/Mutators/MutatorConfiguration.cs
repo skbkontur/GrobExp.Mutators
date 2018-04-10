@@ -26,20 +26,21 @@ namespace GrobExp.Mutators
 
         protected static LambdaExpression Prepare(LambdaExpression expression)
         {
-            if(expression == null) return null;
+            if (expression == null) return null;
 //            if(expression.Body.NodeType == ExpressionType.Convert)
-  //              expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
+            //              expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
             return (LambdaExpression)new IsNullOrEmptyExtender().Visit(expression.Simplify().RemoveLinqFirstAndSingle().ResolveInterfaceMembers());
         }
 
         protected static Expression PrepareForAssign(Expression path)
         {
-            if(path.NodeType == ExpressionType.ArrayIndex)
+            if (path.NodeType == ExpressionType.ArrayIndex)
             {
                 var binaryExpression = (BinaryExpression)path;
                 return Expression.ArrayAccess(binaryExpression.Left, binaryExpression.Right);
             }
-            if(path.NodeType == ExpressionType.Convert)
+
+            if (path.NodeType == ExpressionType.Convert)
                 return ((UnaryExpression)path).Operand;
             return path;
         }
@@ -52,7 +53,7 @@ namespace GrobExp.Mutators
 
         protected static LambdaExpression Resolve(Expression path, CompositionPerformer performer, LambdaExpression lambda)
         {
-            if(lambda == null) return null;
+            if (lambda == null) return null;
             var body = performer.Perform(ExpressionExtensions.ResolveAbstractPath(Expression.Lambda(path, path.ExtractParameters()), lambda).Body).CanonizeParameters();
             return body == null ? null : Expression.Lambda(body, body.ExtractParameters());
         }

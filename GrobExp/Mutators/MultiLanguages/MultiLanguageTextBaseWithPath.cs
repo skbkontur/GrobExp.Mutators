@@ -9,7 +9,7 @@
             get { return value; }
             set
             {
-                if(!valueInitialized)
+                if (!valueInitialized)
                 {
                     valueInitialized = true;
                     this.value = value;

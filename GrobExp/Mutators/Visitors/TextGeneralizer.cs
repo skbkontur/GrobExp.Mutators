@@ -22,7 +22,7 @@ namespace GrobExp.Mutators.Visitors
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if(node.Expression != null && node.Expression.Type == type)
+            if (node.Expression != null && node.Expression.Type == type)
                 return Expression.MakeMemberAccess(convertedParameter, node.Member);
             return base.VisitMember(node);
         }

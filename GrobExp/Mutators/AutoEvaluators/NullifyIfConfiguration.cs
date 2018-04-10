@@ -55,11 +55,11 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
-            if(Condition == null) return null;
+            if (Condition == null) return null;
             var infoToLog = new AssignLogInfo(path, Expression.Constant(ToString(), typeof(string)));
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             path = PrepareForAssign(path);
-            if(MutatorsAssignRecorder.IsRecording())
+            if (MutatorsAssignRecorder.IsRecording())
                 MutatorsAssignRecorder.RecordCompilingExpression(infoToLog);
             return Expression.Block(
                 Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)),

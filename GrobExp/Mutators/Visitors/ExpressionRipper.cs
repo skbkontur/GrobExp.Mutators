@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            if(!node.IsLinkOfChain(rootOnlyParameter, hard) || node.IsStringLengthPropertyAccess() || localParameters.Contains((ParameterExpression)node.SmashToSmithereens()[0]))
+            if (!node.IsLinkOfChain(rootOnlyParameter, hard) || node.IsStringLengthPropertyAccess() || localParameters.Contains((ParameterExpression)node.SmashToSmithereens()[0]))
                 return base.Visit(node);
             chains.Add(node);
             return node;

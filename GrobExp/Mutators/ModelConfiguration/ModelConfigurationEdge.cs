@@ -14,11 +14,11 @@ namespace GrobExp.Mutators.ModelConfiguration
             Value = value;
         }
 
-        public bool IsArrayIndex { get { return Value is int; } }
-        public bool IsMemberAccess { get { return Value is PropertyInfo || Value is FieldInfo; } }
-        public bool IsEachMethod { get { return ReferenceEquals(Value, MutatorsHelperFunctions.EachMethod); } }
-        public bool IsConvertation { get { return Value is Type; } }
-        public bool IsIndexerParams { get { return Value is object[]; } }
+        public bool IsArrayIndex => Value is int;
+        public bool IsMemberAccess => Value is PropertyInfo || Value is FieldInfo;
+        public bool IsEachMethod => ReferenceEquals(Value, MutatorsHelperFunctions.EachMethod);
+        public bool IsConvertation => Value is Type;
+        public bool IsIndexerParams => Value is object[];
 
         public override int GetHashCode()
         {

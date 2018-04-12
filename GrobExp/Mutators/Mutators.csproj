@@ -124,11 +124,6 @@
     <Compile Include="PathFormatterAttribute.cs" />
     <Compile Include="PathFormatterCollection.cs" />
     <Compile Include="PathFormatterWrapper.cs" />
-    <Compile Include="ReadonlyCollections\IReadonlyHashtable.cs" />
-    <Compile Include="ReadonlyCollections\IReadonlySet.cs" />
-    <Compile Include="ReadonlyCollections\ReadonlyHashtable.cs" />
-    <Compile Include="ReadonlyCollections\ReadonlySet.cs" />
-    <Compile Include="ReadonlyCollections\TinyHashtable.cs" />
     <Compile Include="MutatorsTree.cs" />
     <Compile Include="ConverterConfigurator.cs" />
     <Compile Include="ConverterConfiguratorExtensions.cs" />

@@ -1,8 +1,11 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Mutators.Visitors;
+
+using JetBrains.Annotations;
 
 namespace GrobExp.Mutators
 {
@@ -13,48 +16,107 @@ namespace GrobExp.Mutators
     {
         public static bool IsLinkOfChain(this Expression node, bool restrictConstants, bool recursive)
         {
-            return node != null &&
-                   (node.NodeType == ExpressionType.Parameter
-                    || (node.NodeType == ExpressionType.Constant && !restrictConstants)
-                    || IsLinkOfChain(node as MemberExpression, restrictConstants, recursive)
-                    || IsLinkOfChain(node as BinaryExpression, restrictConstants, recursive)
-                    || IsLinkOfChain(node as UnaryExpression, restrictConstants, recursive)
-                    || IsLinkOfChain(node as MethodCallExpression, restrictConstants, recursive));
+            return new LinkOfChainChecker(restrictConstants, recursive).IsLinkOfChain(node);
         }
 
-        private static bool IsLinkOfChain(UnaryExpression node, bool restrictConstants, bool recursive)
+        private class LinkOfChainChecker
         {
-            if (recursive)
-                return node != null && node.NodeType == ExpressionType.Convert && IsLinkOfChain(node.Operand, restrictConstants, true);
-            return node != null && node.NodeType == ExpressionType.Convert;
-        }
+            public LinkOfChainChecker(bool restrictConstants, bool recursive)
+            {
+                this.restrictConstants = restrictConstants;
+                this.recursive = recursive;
+            }
 
-        private static bool IsLinkOfChain(MemberExpression node, bool restrictConstants, bool recursive)
-        {
-            if (recursive)
-                return node != null && IsLinkOfChain(node.Expression, restrictConstants, true);
-            return node != null && node.Expression != null;
-        }
+            public bool IsLinkOfChain([CanBeNull] Expression node)
+            {
+                switch (node)
+                {
+                case ParameterExpression parameterNode:
+                    return IsLinkOfChain(parameterNode);
 
-        private static bool IsLinkOfChain(MethodCallExpression node, bool restrictConstants, bool recursive)
-        {
-            if (node == null || !IsAllowedMethod(node.Method))
+                case ConstantExpression constantNode:
+                    return IsLinkOfChain(constantNode);
+
+                case MemberExpression memberNode:
+                    return IsLinkOfChain(memberNode);
+
+                case BinaryExpression binaryNode:
+                    return IsLinkOfChain(binaryNode);
+
+                case UnaryExpression unaryNode:
+                    return IsLinkOfChain(unaryNode);
+
+                case MethodCallExpression methodCallNode:
+                    return IsLinkOfChain(methodCallNode);
+
+                default:
+                    return false;
+                }
+            }
+
+            private bool IsLinkOfChain([NotNull] ConstantExpression node)
+            {
+                return !restrictConstants;
+            }
+
+            private bool IsLinkOfChain([NotNull] ParameterExpression node)
+            {
+                return true;
+            }
+
+            private bool IsLinkOfChain([NotNull] UnaryExpression node)
+            {
+                if (node.NodeType != ExpressionType.Convert)
+                    return false;
+
+                return IfRecursive(() => IsLinkOfChain(node.Operand));
+            }
+
+            private bool IsLinkOfChain([NotNull] MemberExpression node)
+            {
+                if (node.Expression == null)
+                    return false;
+                return IfRecursive(() => IsLinkOfChain(node.Expression));
+            }
+
+            private bool IsLinkOfChain([NotNull] MethodCallExpression node)
+            {
+                if (!IsAllowedMethod(node.Method))
+                    return false;
+
+                if (node.Object != null)
+                    return IfRecursive(() => IsLinkOfChain(node.Object));
+
+                if (node.Method.IsExtension())
+                    return IfRecursive(() => IsLinkOfChain(node.Arguments[0]));
+
                 return false;
-            if (recursive)
-                return (node.Object != null && IsLinkOfChain(node.Object, restrictConstants, true)) || (node.Method.IsExtension() && IsLinkOfChain(node.Arguments[0], restrictConstants, true));
-            return node.Object != null || node.Method.IsExtension();
-        }
+            }
 
-        private static bool IsLinkOfChain(BinaryExpression node, bool restrictConstants, bool recursive)
-        {
-            if (recursive)
-                return node != null && node.NodeType == ExpressionType.ArrayIndex && IsLinkOfChain(node.Left, restrictConstants, true);
-            return node != null && node.NodeType == ExpressionType.ArrayIndex;
-        }
+            private bool IsLinkOfChain([NotNull] BinaryExpression node)
+            {
+                if (node.NodeType != ExpressionType.ArrayIndex)
+                    return false;
 
-        private static bool IsAllowedMethod(MethodInfo method)
-        {
-            return method.DeclaringType == typeof(MutatorsHelperFunctions) || method.DeclaringType == typeof(DependenciesExtractorHelper) || method.DeclaringType == typeof(Enumerable) || method.IsIndexerGetter() || method.IsArrayIndexer();
+                return IfRecursive(() => IsLinkOfChain(node.Left));
+            }
+
+            private static bool IsAllowedMethod([NotNull] MethodInfo method)
+            {
+                return method.DeclaringType == typeof(MutatorsHelperFunctions)
+                       || method.DeclaringType == typeof(DependenciesExtractorHelper)
+                       || method.DeclaringType == typeof(Enumerable)
+                       || method.IsIndexerGetter()
+                       || method.IsArrayIndexer();
+            }
+
+            private bool IfRecursive([NotNull] Func<bool> recursiveCheck)
+            {
+                return !recursive || recursiveCheck();
+            }
+
+            private readonly bool restrictConstants;
+            private readonly bool recursive;
         }
     }
 }

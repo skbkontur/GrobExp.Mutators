@@ -50,10 +50,6 @@
     <Reference Include="JetBrains.Annotations">
       <HintPath>..\..\Assemblies\JetBrains.Annotations.dll</HintPath>
     </Reference>
-    <Reference Include="Mono.Reflection, Version=1.1.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
-      <HintPath>..\packages\Mono.Reflection.Core.1.1.1\lib\net45\Mono.Reflection.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>

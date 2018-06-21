@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.Visitors;
@@ -32,11 +29,6 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSource, TSource, TDest, TDest, TValue>(root, source => source, dest => dest, pathToValue, Condition);
         }
 
-        public ConverterConfigurator<TSource, TSource, TDest, TDest, TValue> Targets<TValue>()
-        {
-            return new ConverterConfigurator<TSource, TSource, TDest, TDest, TValue>(root, source => source, dest => dest, CollectTargets<TValue>(), Condition);
-        }
-
         public ConverterConfigurator<TSource, TSource, TDest, TChild, TChild> GoTo<TChild>(Expression<Func<TDest, TChild>> pathToChild)
         {
             return new ConverterConfigurator<TSource, TSource, TDest, TChild, TChild>(root, source => source, pathToChild, pathToChild, Condition);
@@ -62,37 +54,11 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
         }
 
-        public LambdaExpression Condition { get; private set; }
+        public LambdaExpression Condition { get; }
 
         internal ModelConfigurationNode GetTree()
         {
             return root;
-        }
-
-        private static Expression<Func<TDest, TValue>>[] CollectTargets<TValue>()
-        {
-            var root = Expression.Parameter(typeof(TDest), "root");
-            var targets = new List<Expression>();
-            CollectTargets<TValue>(root, targets);
-            return targets.Select(target => Expression.Lambda<Func<TDest, TValue>>(target, root)).ToArray();
-        }
-
-        private static void CollectTargets<TValue>(Expression path, List<Expression> targets)
-        {
-            if (path.Type == typeof(TValue))
-            {
-                targets.Add(path);
-                return;
-            }
-
-            var properties = path.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var property in properties)
-            {
-                Expression nextPath = Expression.MakeMemberAccess(path, property);
-                if (property.PropertyType.IsArray)
-                    nextPath = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(property.PropertyType.GetElementType()), nextPath);
-                CollectTargets<TValue>(nextPath, targets);
-            }
         }
 
         private readonly ModelConfigurationNode root;
@@ -109,26 +75,12 @@ namespace GrobExp.Mutators
             Condition = condition;
         }
 
-        public ConverterConfigurator(ModelConfigurationNode root, Expression<Func<TSourceRoot, TSourceChild>> pathToSourceChild, Expression<Func<TDestRoot, TDestChild>> pathToChild, Expression<Func<TDestRoot, TDestValue>>[] pathsToValue, LambdaExpression condition)
-        {
-            this.root = root;
-            PathToSourceChild = pathToSourceChild;
-            PathToChild = pathToChild;
-            PathsToValue = pathsToValue;
-            Condition = condition;
-        }
-
         public void SetMutator(MutatorConfiguration mutator)
         {
-            MutatorConfiguration rootMutator = GetRootMutator(mutator);
+            var rootMutator = GetRootMutator(mutator);
 
             if (PathToValue != null)
                 root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
-            else
-            {
-                foreach (var pathToValue in PathsToValue)
-                    root.AddMutatorSmart(pathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
-            }
         }
 
         /// <summary>
@@ -180,11 +132,10 @@ namespace GrobExp.Mutators
             return new ConverterConfigurator<TSourceRoot, TDestRoot>(root, Condition);
         }
 
-        public Expression<Func<TSourceRoot, TSourceChild>> PathToSourceChild { get; private set; }
-        public Expression<Func<TDestRoot, TDestChild>> PathToChild { get; private set; }
-        public Expression<Func<TDestRoot, TDestValue>> PathToValue { get; private set; }
-        public Expression<Func<TDestRoot, TDestValue>>[] PathsToValue { get; private set; }
-        public LambdaExpression Condition { get; private set; }
+        public Expression<Func<TSourceRoot, TSourceChild>> PathToSourceChild { get; }
+        public Expression<Func<TDestRoot, TDestChild>> PathToChild { get; }
+        public Expression<Func<TDestRoot, TDestValue>> PathToValue { get; }
+        public LambdaExpression Condition { get; }
         private readonly ModelConfigurationNode root;
     }
 }

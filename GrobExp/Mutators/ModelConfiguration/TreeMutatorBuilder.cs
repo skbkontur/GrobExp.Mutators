@@ -9,47 +9,52 @@ using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.Visitors;
 
+using JetBrains.Annotations;
+
 namespace GrobExp.Mutators.ModelConfiguration
 {
     public static class TreeMutatorBuilder
     {
         public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node)
         {
-            return node.BuildTreeMutator(new List<ParameterExpression> {node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name)});
+            var destParameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
+            return node.BuildTreeMutator(destParameter, sourceParameter : null);
         }
 
-        public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, Type type)
+        public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, Type sourceType)
         {
-            return node.BuildTreeMutator(new List<ParameterExpression>
-                {
-                    node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name),
-                    Expression.Parameter(type, type.Name)
-                });
+            var destParameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
+            var sourceParameter = Expression.Parameter(sourceType, sourceType.Name);
+            return node.BuildTreeMutator(destParameter, sourceParameter);
         }
 
         /// <summary>
         ///     Строит жирный Expression, содержаший все мутации или валидации.
         ///     Все, что нужно после этого - скомпилировать.
         /// </summary>
-        /// <param name="parameters">Параметры Expression'а (для конвертации - target и source)</param>
-        private static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, List<ParameterExpression> parameters)
+        private static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, [NotNull] ParameterExpression destParameter, [CanBeNull] ParameterExpression sourceParameter)
         {
             var visitedNodes = new HashSet<ModelConfigurationNode>();
             var processedNodes = new HashSet<ModelConfigurationNode>();
             var mutatorExpressions = new List<Expression>();
+            var parameters = new List<ParameterExpression> {destParameter};
 
             //Добавляем алиас для случая, когда билдим жиромутатор для поддерева, чтобы заменить путь до корня на реальный параметр выражения
-            var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameters[0], node.Path)};
+            var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(destParameter, node.Path)};
             var invariantParameters = new List<ParameterExpression>();
-            if (parameters.Count > 1)
-                invariantParameters.Add(parameters[1]);
+            if (sourceParameter != null)
+            {
+                parameters.Add(sourceParameter);
+                invariantParameters.Add(sourceParameter);
+            }
+
             node.BuildTreeMutator(null, node, aliases, mutatorExpressions, visitedNodes, processedNodes, mutatorExpressions, invariantParameters);
 
             //Оптимизации
             mutatorExpressions = mutatorExpressions.SplitToBatches(parameters.ToArray());
             mutatorExpressions.Add(Expression.Empty());
             Expression body = Expression.Block(mutatorExpressions);
-            body = LoopInvariantFatExpressionsExtractor.ExtractLoopInvariantFatExpressions(body, invariantParameters, expression => expression);
+            body = body.ExtractLoopInvariantFatExpressions(invariantParameters, expression => expression);
 
             //Далее параметры мутаторов подменяются на параметры итогового выражения
             foreach (var actualParameter in body.ExtractParameters())
@@ -356,11 +361,10 @@ namespace GrobExp.Mutators.ModelConfiguration
                 var selfDependent = false;
                 foreach (var dependency in mutator.Value.Dependencies ?? new LambdaExpression[0])
                 {
-                    ModelConfigurationNode child;
                     // Спускаемся из глобального корня по найденной зависимости.
                     // Важно, чтобы путь проходил через корень поддерва, для которого мы изначально запустили BuildTreeMutator.
                     // Иначе есть какая-то внешняя зависимость, и ничего работать не будет.
-                    if (!node.Root.Traverse(dependency.Body, root, out child, false))
+                    if (!node.Root.Traverse(dependency.Body, root, out var child, false))
                         throw new FoundExternalDependencyException("Unable to build mutator for the subtree '" + node.Path + "' due to the external dependency '" + dependency + "'");
 
                     if (child == null)

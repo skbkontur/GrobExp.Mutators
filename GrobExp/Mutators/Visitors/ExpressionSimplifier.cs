@@ -19,7 +19,7 @@ namespace GrobExp.Mutators.Visitors
 
         /// <summary>
         ///     Игнорируем Expression-ы, помеченные Dynamic().
-        ///     Expression-ы, которые считаются "константными" в особом мутаторном смысле компилируются в функции и заменяются на константный Expression.
+        ///     Expression-ы, которые считаются "константными" в особом мутаторном смысле, компилируются в функции и заменяются на Expression.Constant.
         /// </summary>
         /// <param name="exp"></param>
         /// <returns></returns>

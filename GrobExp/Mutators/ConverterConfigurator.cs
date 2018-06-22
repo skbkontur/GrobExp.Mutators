@@ -41,25 +41,17 @@ namespace GrobExp.Mutators
 
         public ConverterConfigurator<TSource, TDest> If(LambdaExpression condition)
         {
-            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+            var preparedCondition = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition);
+            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso(preparedCondition));
         }
 
-        public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, bool?>> condition)
-        {
-            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
-        }
+        public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, bool?>> condition) => If((LambdaExpression)condition);
 
-        public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, TDest, bool?>> condition)
-        {
-            return new ConverterConfigurator<TSource, TDest>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
-        }
+        public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, TDest, bool?>> condition) => If((LambdaExpression)condition);
 
         public LambdaExpression Condition { get; }
 
-        internal ModelConfigurationNode GetTree()
-        {
-            return root;
-        }
+        internal ModelConfigurationNode GetTree() => root;
 
         private readonly ModelConfigurationNode root;
     }
@@ -78,7 +70,6 @@ namespace GrobExp.Mutators
         public void SetMutator(MutatorConfiguration mutator)
         {
             var rootMutator = GetRootMutator(mutator);
-
             if (PathToValue != null)
                 root.AddMutatorSmart(PathToValue.ResolveInterfaceMembers(), Condition == null ? rootMutator : rootMutator.If(Condition));
         }

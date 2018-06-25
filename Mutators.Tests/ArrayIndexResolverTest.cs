@@ -244,7 +244,7 @@ namespace Mutators.Tests
             return false;
         }
 
-        [Test, Ignore]
+        [Test, Ignore("")]
         public void Test()
         {
             var counts = new[] {300, 181, 240, 175, 44};

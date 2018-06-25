@@ -21,7 +21,7 @@ namespace Mutators.Tests
             Console.WriteLine(mutatorsTree);
             var o = new TestData {A = new A {S = "zzz"}, S = "qxx"};
             mutator(o);
-            Assert.IsNullOrEmpty(o.S);
+            Assert.That(o.S, Is.Null.Or.Empty);
             o = new TestData {S = "qxx"};
             mutator(o);
             Assert.AreEqual("qxx", o.S);
@@ -103,10 +103,10 @@ namespace Mutators.Tests
                         }
                 };
             mutator(o);
-            Assert.IsNullOrEmpty(o.A.B[0].C.D[0].S);
+            Assert.That(o.A.B[0].C.D[0].S, Is.Null.Or.Empty);
             Assert.AreEqual("zzz01", o.A.B[0].C.D[1].S);
             Assert.AreEqual("zzz10", o.A.B[1].C.D[0].S);
-            Assert.IsNullOrEmpty(o.A.B[1].C.D[1].S);
+            Assert.That(o.A.B[1].C.D[1].S, Is.Null.Or.Empty);
             Assert.AreEqual("zzz20", o.A.B[2].C.D[0].S);
             Assert.AreEqual("zzz21", o.A.B[2].C.D[1].S);
             Action<A> subMutator = mutatorsTree.GetTreeMutator(data => data.A);
@@ -153,10 +153,10 @@ namespace Mutators.Tests
                         }
                 };
             subMutator(a);
-            Assert.IsNullOrEmpty(a.B[0].C.D[0].S);
+            Assert.That(a.B[0].C.D[0].S, Is.Null.Or.Empty);
             Assert.AreEqual("zzz01", a.B[0].C.D[1].S);
             Assert.AreEqual("zzz10", a.B[1].C.D[0].S);
-            Assert.IsNullOrEmpty(a.B[1].C.D[1].S);
+            Assert.That(a.B[1].C.D[1].S, Is.Null.Or.Empty);
             Assert.AreEqual("zzz20", a.B[2].C.D[0].S);
             Assert.AreEqual("zzz21", a.B[2].C.D[1].S);
         }
@@ -173,14 +173,14 @@ namespace Mutators.Tests
             Assert.AreEqual(3, o.A.B[2].Z);
         }
 
-        [Test, ExpectedException(typeof(FoundExternalDependencyException))]
+        [Test]
         public void TestExternalDependency()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).NullifyIf(data => data.A.S == data.A.B.Each().S));
-            collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A.B.Each());
+            Assert.Throws<FoundExternalDependencyException>(() => collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A.B.Each()));
         }
 
-        [Test, ExpectedException(typeof(FoundCyclicDependencyException))]
+        [Test]
         public void TestCyclicDependency()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
@@ -189,7 +189,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.Qxx.A1).NullifyIf(data => data.Qxx.A2 < data.Qxx.A3);
                     configurator.Target(data => data.Qxx.A2).NullifyIf(data => data.Qxx.A3 < data.Qxx.A0);
                 });
-            collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
+            Assert.Throws<FoundCyclicDependencyException>(() => collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator());
         }
 
         [Test]
@@ -330,7 +330,7 @@ namespace Mutators.Tests
             var o = new TestData();
             mutator(o);
             string id = o.S;
-            Assert.IsNotNullOrEmpty(id);
+            Assert.That(id, Is.Not.Null.And.Not.Empty);
             mutator(o);
             Assert.AreNotEqual(id, o.S);
         }
@@ -344,8 +344,8 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {B = new[] {new B(), new B()}}};
             mutator(o);
-            Assert.IsNotNullOrEmpty(o.A.B[0].S);
-            Assert.IsNotNullOrEmpty(o.A.B[1].S);
+            Assert.That(o.A.B[0].S, Is.Not.Null.And.Not.Empty);
+            Assert.That(o.A.B[1].S, Is.Not.Null.And.Not.Empty);
             Assert.AreNotEqual(o.A.B[0].S, o.A.B[1].S);
         }
 
@@ -565,7 +565,7 @@ namespace Mutators.Tests
             return x;
         }
 
-        [Test, Ignore]
+        [Test, Ignore("")]
         public void TestConvertArrayCycleRightPartMissingghhflhkjlhkj()
         {
 //            Expression<Func<MyClassQxx, string>> qxx = x => Identity(x).Data.Where(z => Math.Sqrt(z.Length) > 0).Current();

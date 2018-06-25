@@ -2,7 +2,7 @@
 
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Debug");
-var slnPath = "./GrobExp/GrobExp.sln";
+var slnPath = "./GrobExp.Mutators.sln";
 
 Task("Default")
     .Does(() =>
@@ -18,7 +18,7 @@ Task("Default")
 Task("Restore-NuGet-Packages")
     .Does(() =>
 {
-    var solutions = GetFiles("./GrobExp/*.sln");
+    var solutions = GetFiles("./*.sln");
     foreach(var solution in solutions)
     {
         Information("Restoring {0}", solution);
@@ -41,7 +41,7 @@ Task("Rebuild")
 
     Information("Copying build results to output directory");
     EnsureDirectoryExists("./Output/bin/");
-    CopyDirectory($"./GrobExp/Mutators/bin/{configuration}/", "./Output/bin/");
+    CopyDirectory($"./Mutators/bin/{configuration}/", "./Output/bin/");
 });
 
 Task("Run-Tests")
@@ -71,5 +71,5 @@ private void RunTests(bool excludeKnownFailing){
     };
     if(excludeKnownFailing)
         settings.Exclude = "Failing";
-    NUnit($"./GrobExp/Mutators.Tests/bin/{configuration}/*.Tests.dll", settings);
+    NUnit($"./Mutators.Tests/bin/{configuration}/*.Tests.dll", settings);
 }

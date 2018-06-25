@@ -160,7 +160,7 @@ namespace Mutators.Tests
             validator(new TestData {D = new D {E = new E {Empty = new Empty()}}}).AssertEquivalent(new ValidationResultTreeNode<TestData>());
         }
 
-        [Test, ExpectedException(typeof(FoundExternalDependencyException))]
+        [Test]
         public void TestExternalDependency1()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator =>
@@ -168,14 +168,14 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == null, data => null);
                     configurator.Target(data => data.A.B.Each().S).DisabledIf(data => data.A.S == null);
                 });
-            collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator(data => data.A.B.Each());
+            Assert.Throws<FoundExternalDependencyException>(() => collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator(data => data.A.B.Each()));
         }
 
-        [Test, ExpectedException(typeof(FoundExternalDependencyException))]
+        [Test]
         public void TestExternalDependency2()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.S == data.A.B.Each().S, data => null));
-            collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator(data => data.A.B.Each());
+            Assert.Throws<FoundExternalDependencyException>(() => collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator(data => data.A.B.Each()));
         }
 
         [Test]

@@ -573,7 +573,7 @@ namespace Mutators.Tests
             var withoutLinq = EliminateLinq(exp);
         }
 
-        [Test, Ignore]
+        [Test, Ignore("")]
         public void TestPerformance()
         {
             var list = new List<int>();

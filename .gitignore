@@ -6,11 +6,6 @@ obj
 *.suo
 .vs/
 _ReSharper.*
-/GrobExp/packages
-Assemblies/GrobExp.Compiler.dll
-Assemblies/GrobExp.Compiler.pdb
-Assemblies/GrobExp.Mutators.dll
-Assemblies/GrobExp.Mutators.pdb
 Output/
 .cake/*
 !.cake/packages.config

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,15 +13,24 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
+using Vostok.Logging.Abstractions;
+using Vostok.Logging.Abstractions.Extensions;
 
 namespace GrobExp.Mutators
 {
     public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
     {
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
+        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter, ILog logger)
         {
             this.pathFormatterCollection = pathFormatterCollection;
             this.stringConverter = stringConverter;
+            this.logger = logger;
+        }
+
+        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
+            : this(pathFormatterCollection, stringConverter, new SilentLog())
+        {
+
         }
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
@@ -95,7 +104,9 @@ namespace GrobExp.Mutators
                         var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
                         var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
+                        logger.Info($"Started compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName} with context: {key}");
                         var compiledTreeMutator = LambdaCompiler.Compile(treeMutator, CompilerOptions.All);
+                        logger.Info($"Finished compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName}");
                         slot = new HashtableSlot
                             {
                                 ConverterTree = tree,
@@ -479,6 +490,7 @@ namespace GrobExp.Mutators
 
         private readonly IPathFormatterCollection pathFormatterCollection;
         private readonly IStringConverter stringConverter;
+        private readonly ILog logger;
 
         private readonly object lockObject = new object();
 

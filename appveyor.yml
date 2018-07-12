@@ -1,0 +1,14 @@
+image: Visual Studio 2017
+
+init:
+  - cmd: git config --global core.autocrlf false
+
+before_build:
+  - cmd: dotnet --info
+  - cmd: dotnet restore ./GrobExp.Mutators.sln --verbosity minimal
+
+build_script:
+  - cmd: dotnet build --configuration Release ./GrobExp.Mutators.sln
+
+test_script:
+  - cmd: dotnet test --no-build --verbosity normal --configuration Release ./Mutators.Tests/Mutators.Tests.csproj

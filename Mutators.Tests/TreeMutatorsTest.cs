@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
@@ -10,6 +12,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Serializable]
     public class TreeMutatorsTest : TestBase
     {
         [Test]
@@ -427,6 +430,152 @@ namespace Mutators.Tests
             converter(from, to);
             var expected = new TestData {S = "zzz", F = "zzz"};
             to.AssertEqualsToUsingGrobuf(expected);
+        }
+
+        [Test]
+        public void IntContextTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.IntContextTest();
+
+            AppDomain.Unload(appDomain);
+        }
+
+        [Test]
+        public void StringContextTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.StringContextTest();
+
+            AppDomain.Unload(appDomain);
+        }
+
+        [Test]
+        public void EnumContextTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.EnumContextTest();
+
+            AppDomain.Unload(appDomain);
+        }
+
+        [Test]
+        public void ClassContextTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.ClassContextTest();
+
+            AppDomain.Unload(appDomain);
+        }
+
+        [Test]
+        public void GetTreeMutatorFromDllTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.DllCreationTest(false);
+
+            AppDomain.Unload(appDomain);
+
+            DllContainsMutatorsTest(false);
+        }
+
+        [Test]
+        public void GetSeveralTreeMutatorsFromDllTest()
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.DllCreationTest(true);
+
+            AppDomain.Unload(appDomain);
+
+            DllContainsMutatorsTest(true);
+        }
+
+        private void DllContainsMutatorsTest(bool forSeveralContexts)
+        {
+            var appDomainSetup = new AppDomainSetup
+            {
+                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+                DisallowCodeDownload = true,
+                DisallowBindingRedirects = false,
+
+                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+            };
+            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+
+            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+
+            assemblyEditor.MutatorExistanceTest(forSeveralContexts);
+
+            AppDomain.Unload(appDomain);
+
+            File.Delete("Converters.dll");
         }
 
         [Category("Failing")]
@@ -1193,7 +1342,7 @@ namespace Mutators.Tests
                 return Guid.NewGuid().ToString();
             }
         }
-
+        
         private class TestMutatorsContext : MutatorsContext
         {
             public override string GetKey()

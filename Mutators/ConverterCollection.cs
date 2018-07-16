@@ -111,7 +111,7 @@ namespace GrobExp.Mutators
 
         private Action<TDest, TSource> GetCompiledTreeConverterFromAssembly(MutatorsContext context)
         {
-            var converterClassType = convertersAssembly.GetType($"{typeof(TSource)}To{typeof(TDest)}Converter");
+            var converterClassType = convertersAssembly.GetType(GetType().Name);
             if (converterClassType == null)
                 return null;
 

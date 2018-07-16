@@ -17,7 +17,7 @@ namespace Mutators.Tests
         public void MutatorExistanceTest(bool forSeveralContexts)
         {
             var assembly = Assembly.LoadFrom($"{AppDomain.CurrentDomain.BaseDirectory}Converters.dll");
-            var mutatorType = assembly.GetType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter");
+            var mutatorType = assembly.GetType(typeof(TestConverterCollection<TestDataSource, TestDataDest>).Name);
 
             Assert.IsNotNull(mutatorType);
             Assert.IsNotNull(mutatorType.GetMethod("someGoodKey"));
@@ -45,7 +45,7 @@ namespace Mutators.Tests
             var assemblyName = "Converters";
             var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
             var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter", TypeAttributes.Public | TypeAttributes.Class);
+            var tb = mb.DefineType(testConfigurator.GetType().Name, TypeAttributes.Public | TypeAttributes.Class);
 
             AddMutator(testConfigurator, contexts, tb);
             tb.CreateType();
@@ -127,7 +127,7 @@ namespace Mutators.Tests
             var assemblyName = "Converters";
             var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
             var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter", TypeAttributes.Public | TypeAttributes.Class);
+            var tb = mb.DefineType(testConfigurator.GetType().Name, TypeAttributes.Public | TypeAttributes.Class);
 
             Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
         }
@@ -148,7 +148,7 @@ namespace Mutators.Tests
             var assemblyName = "Converters";
             var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
             var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter", TypeAttributes.Public | TypeAttributes.Class);
+            var tb = mb.DefineType(testConfigurator.GetType().Name, TypeAttributes.Public | TypeAttributes.Class);
 
             Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
         }
@@ -169,19 +169,18 @@ namespace Mutators.Tests
             var assemblyName = "Converters";
             var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
             var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter", TypeAttributes.Public | TypeAttributes.Class);
+            var tb = mb.DefineType(testConfigurator.GetType().Name, TypeAttributes.Public | TypeAttributes.Class);
 
             Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
         }
 
         public void ClassContextTest()
         {
-            var z = new ZzzConverter();
             var pathFormatterCollection = new PathFormatterCollection();
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
                 configurator =>
                 {
-                    configurator.Target(x => x.C).Set(x => z.Convert(x.A));
+                    configurator.Target(x => x.C).Set(x => ZzzConverter.Convert(x.A));
                     configurator.Target(x => x.D).Set(x => x.B);
                 });
             var context = new ClassContext() { Key = "someGoodKey" };
@@ -191,9 +190,10 @@ namespace Mutators.Tests
             var assemblyName = "Converters";
             var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
             var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType($"{typeof(TestDataSource)}To{typeof(TestDataDest)}Converter", TypeAttributes.Public | TypeAttributes.Class);
+            var tb = mb.DefineType(testConfigurator.GetType().Name, TypeAttributes.Public | TypeAttributes.Class);
 
             Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
+            var w = testConfigurator.GetConverter(context)(new TestDataSource());
         }
 
         private void AddMutator(TestConverterCollection<TestDataSource, TestDataDest> testConfigurator, List<ValidatorsTest.TestMutatorsContext> contexts, TypeBuilder tb)
@@ -202,7 +202,22 @@ namespace Mutators.Tests
                 testConfigurator.AddConverterWithContext(tb, c);
         }
 
-        public class ZzzConverter
+        public static class ZzzConverter
+        {
+            public static MyClass W {  get;  } = new MyClass();
+        
+
+            public static T Convert<T>(T s)
+            {
+                var q = W;
+                var z = W;
+                if(!ReferenceEquals(q, z))
+                    throw new Exception();
+                return W.Convert(s);
+            }
+        }
+
+        public class MyClass
         {
             public T Convert<T>(T s)
             {

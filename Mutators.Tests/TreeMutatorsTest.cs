@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
+using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 
@@ -377,6 +378,7 @@ namespace Mutators.Tests
         [Test]
         public void TestConvert1()
         {
+            LambdaCompiler.DebugOutputDirectory = "C:\\temp";
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.S));
             Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
@@ -487,7 +489,7 @@ namespace Mutators.Tests
             var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
             var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
-            assemblyEditor.EnumContextTest();
+            assemblyEditor.ClassContextTest();
 
             AppDomain.Unload(appDomain);
         }
@@ -495,21 +497,26 @@ namespace Mutators.Tests
         [Test]
         public void ClassContextTest()
         {
-            var appDomainSetup = new AppDomainSetup
-            {
-                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
-                DisallowCodeDownload = true,
-                DisallowBindingRedirects = false,
-
-                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
-            };
-            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
-            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
-
-            assemblyEditor.ClassContextTest();
-
-            AppDomain.Unload(appDomain);
+//            var appDomainSetup = new AppDomainSetup
+//            {
+//                ApplicationBase = AppDomain.CurrentDomain.BaseDirectory,
+//                DisallowCodeDownload = true,
+//                DisallowBindingRedirects = false,
+//
+//                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
+//            };
+//            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
+//            var assemblyEditorType = typeof(TestConvertersAssemblyEditor);
+//            var assemblyEditor = (TestConvertersAssemblyEditor)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            LambdaCompiler.DebugOutputDirectory = "C:\\temp";
+            var pathFormatterCollection = new PathFormatterCollection();
+            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => TestConvertersAssemblyEditor.ZzzConverter.Convert(x.A));
+                                                                                                 });
+            testConfigurator.GetConverter(MutatorsContext.Empty)(new TestDataSource());
+            //AppDomain.Unload(appDomain);
         }
 
         [Test]

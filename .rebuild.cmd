@@ -1,2 +1,2 @@
-dotnet build --force --no-incremental --configuration Release ./Mutators/Mutators.csproj
+dotnet build --force --no-incremental --configuration Release ./GrobExp.Mutators.sln
 pause

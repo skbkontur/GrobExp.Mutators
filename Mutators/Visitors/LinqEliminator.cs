@@ -185,8 +185,8 @@ namespace GrobExp.Mutators.Visitors
 
             var result = resultType == typeof(void) ? null : CreateParameter(resultType, "result");
             var found = lastMethod.Name == "First" || lastMethod.Name == "FirstOrDefault"
-                                                   || lastMethod.Name == "Single" || lastMethod.Name == "SingleOrDefault"
-                                                   || lastMethod.Name == "Aggregate" // Aggregate(func) throws InvalidOperationException if the collection is empty
+                        || lastMethod.Name == "Single" || lastMethod.Name == "SingleOrDefault"
+                        || lastMethod.Name == "Aggregate" // Aggregate(func) throws InvalidOperationException if the collection is empty
                             ? CreateParameter(typeof(bool), "found")
                             : null;
             var indexesCopy = needGlobalIndexes && (lastMethod.Name == "Single" || lastMethod.Name == "SingleOrDefault")
@@ -615,7 +615,7 @@ namespace GrobExp.Mutators.Visitors
                         // Aggregate(func)
                         var func = (LambdaExpression)methodCallExpression.Arguments[1];
                         func = Expression.Lambda(new ParameterReplacer(func.Parameters[0], context.result).Visit(
-                                                     new ParameterReplacer(func.Parameters[1], current).Visit(func.Body)), context.result, current);
+                            new ParameterReplacer(func.Parameters[1], current).Visit(func.Body)), context.result, current);
                         expressions.Add(Expression.Assign(context.result,
                                                           Expression.Condition(context.found, Visit(func.Body), current)));
                         expressions.Add(Expression.Assign(context.found, Expression.Constant(true)));
@@ -626,7 +626,7 @@ namespace GrobExp.Mutators.Visitors
                         var seed = Visit(methodCallExpression.Arguments[1]);
                         var func = (LambdaExpression)methodCallExpression.Arguments[2];
                         func = Expression.Lambda(new ParameterReplacer(func.Parameters[0], context.result).Visit(
-                                                     new ParameterReplacer(func.Parameters[1], current).Visit(func.Body)), context.result, current);
+                            new ParameterReplacer(func.Parameters[1], current).Visit(func.Body)), context.result, current);
                         expressions.Add(Expression.IfThen(Expression.Not(context.found), Expression.Assign(context.result, seed)));
                         expressions.Add(Expression.Assign(context.result, Visit(func.Body)));
                         expressions.Add(Expression.Assign(context.found, Expression.Constant(true)));

@@ -77,10 +77,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                   .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
-                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                   .Select(grouping => grouping.First())
-                   .ToArray();
+                .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
         }
 
 //        protected override Expression[] GetChains()

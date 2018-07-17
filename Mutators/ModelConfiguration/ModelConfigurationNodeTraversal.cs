@@ -89,7 +89,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                                 arrayAliases.Add(new KeyValuePair<Expression, Expression>(
                                                      Expression.ArrayIndex(array, binaryExpression.Right),
                                                      array.MakeEachCall())
-                                );
+                                    );
                             }
                         }
 
@@ -128,7 +128,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                                     arrayAliases.Add(new KeyValuePair<Expression, Expression>(
                                                          Expression.ArrayIndex(array, methodCallExpression.Arguments[0]),
                                                          array.MakeEachCall())
-                                    );
+                                        );
                                 }
                             }
 
@@ -160,7 +160,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                                         arrayAliases.Add(new KeyValuePair<Expression, Expression>(
                                                              Expression.Call(array, array.Type.GetProperty("Item", BindingFlags.Public | BindingFlags.Instance).GetGetMethod(), methodCallExpression.Arguments),
                                                              Expression.Property(array.MakeEachCall(), "Value"))
-                                        );
+                                            );
                                     }
                                 }
                             }

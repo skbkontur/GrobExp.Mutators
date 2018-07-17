@@ -104,10 +104,10 @@ namespace GrobExp.Mutators.Validators
         {
             var condition = GetFullCondition();
             return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
-                   .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                   .Select(grouping => grouping.First())
-                   .ToArray();
+                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
         }
 
         private static string PreparePattern(string pattern)

@@ -24,8 +24,8 @@ namespace GrobExp.Mutators
         private void Register(string language)
         {
             Register(language, () =>
-                         string.Join(Environment.NewLine, (ValidationResults ?? new FormattedValidationResult[0]).Select(
-                                         result => result.Path == null ? result.Message.GetText(language) : "(" + result.Path.GetText(language) + ") " + result.Message.GetText(language)) /*.OrderBy(s => s)*/));
+                               string.Join(Environment.NewLine, (ValidationResults ?? new FormattedValidationResult[0]).Select(
+                                   result => result.Path == null ? result.Message.GetText(language) : "(" + result.Path.GetText(language) + ") " + result.Message.GetText(language)) /*.OrderBy(s => s)*/));
         }
     }
 }

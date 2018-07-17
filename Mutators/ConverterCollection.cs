@@ -13,6 +13,7 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
+
 using Vostok.Logging.Abstractions;
 using Vostok.Logging.Abstractions.Extensions;
 
@@ -30,7 +31,6 @@ namespace GrobExp.Mutators
         protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
             : this(pathFormatterCollection, stringConverter, new SilentLog())
         {
-
         }
 
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
@@ -112,19 +112,19 @@ namespace GrobExp.Mutators
                                 ConverterTree = tree,
                                 ValidationsTree = validationsTree,
                                 Converter = (source =>
-                                                    {
-                                                        var dest = new TDest();
-                                                        BeforeConvert(source);
-                                                        compiledTreeMutator(dest, source);
-                                                        AfterConvert(dest, source);
-                                                        return dest;
-                                                    }),
+                                    {
+                                        var dest = new TDest();
+                                        BeforeConvert(source);
+                                        compiledTreeMutator(dest, source);
+                                        AfterConvert(dest, source);
+                                        return dest;
+                                    }),
                                 Merger = ((source, dest) =>
-                                                 {
-                                                     BeforeConvert(source);
-                                                     compiledTreeMutator(dest, source);
-                                                     AfterConvert(dest, source);
-                                                 }),
+                                    {
+                                        BeforeConvert(source);
+                                        compiledTreeMutator(dest, source);
+                                        AfterConvert(dest, source);
+                                    }),
                                 ValidationMutatorsTrees = new Hashtable()
                             };
                         //if(!MutatorsAssignRecorder.IsRecording())

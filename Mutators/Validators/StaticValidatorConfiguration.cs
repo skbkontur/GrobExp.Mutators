@@ -96,10 +96,10 @@ namespace GrobExp.Mutators.Validators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                   .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())
-                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                   .Select(grouping => grouping.First())
-                   .ToArray();
+                .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
         }
 
         private readonly LambdaExpression validatorFromRoot;

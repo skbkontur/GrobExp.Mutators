@@ -299,8 +299,8 @@ namespace GrobExp.Mutators.Visitors
                 method = method.GetGenericMethodDefinition();
             return method.DeclaringType == typeof(Enumerable)
                    && (method.Name == "First" || method.Name == "FirstOrDefault"
-                                              || method.Name == "Single" || method.Name == "SingleOrDefault"
-                                              || method.Name == "Aggregate");
+                       || method.Name == "Single" || method.Name == "SingleOrDefault"
+                       || method.Name == "Aggregate");
         }
 
         private static bool BadNode(Expression node)

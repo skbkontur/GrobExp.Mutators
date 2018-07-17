@@ -597,14 +597,14 @@ namespace Mutators.Tests
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
                                                                               configurator => configurator
-                                                                                              .GoTo(data => data.A.B.Each(),
-                                                                                                    data2 => data2.T.R.SelectMany(r => r.Чужь ?? new string[1], (x, y) => new {x, y}).Current())
-                                                                                              .BatchSet((x, y) => new Batch
-                                                                                                  {
-                                                                                                      {x.S, y.x.S},
-                                                                                                      {x.Arr[0], y.y}
-                                                                                                  })
-            );
+                                                                                                  .GoTo(data => data.A.B.Each(),
+                                                                                                        data2 => data2.T.R.SelectMany(r => r.Чужь ?? new string[1], (x, y) => new {x, y}).Current())
+                                                                                                  .BatchSet((x, y) => new Batch
+                                                                                                      {
+                                                                                                          {x.S, y.x.S},
+                                                                                                          {x.Arr[0], y.y}
+                                                                                                      })
+                );
             var converter = collection.GetMerger(MutatorsContext.Empty);
             var to = new TestData();
             var from = new TestData2 {T = new T {R = new[] {new R {S = "zzz"}}}};
@@ -843,7 +843,7 @@ namespace Mutators.Tests
                 {
                     T = new T
                         {
-                            R = new[] {new R { }, new R { }, new R { },}
+                            R = new[] {new R {}, new R {}, new R {},}
                         }
                 };
             converter(from, to);
@@ -915,7 +915,7 @@ namespace Mutators.Tests
                     T = new T()
                 };
             converter(from, to);
-            var expected = new TestData { };
+            var expected = new TestData {};
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
@@ -976,7 +976,7 @@ namespace Mutators.Tests
         {
             numberOfCalls = 0;
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
-                                                                                  configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S + Format(data2.T.S)));
+                                                                                                       configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S + Format(data2.T.S)));
             var converter = collection.GetConverter(MutatorsContext.Empty);
 
             converter(new TestData2 {T = new T {R = new[] {new R(), new R(), new R(),}}});

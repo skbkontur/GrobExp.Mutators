@@ -204,7 +204,7 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                                                                                               configurator.Target(data => data.Items.Each().S).Required();
                                                                                           }
-            );
+                );
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
@@ -224,13 +224,13 @@ namespace Mutators.Tests
                                 },
                         }
                 }).AssertEquivalent(
-                new ValidationResultTreeNode<WebData>
-                    {
-                        {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.S.Value"}}, 0)},
-                        {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.StrArr.Value[1]"}}, 0)},
-                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
-                    }
-            );
+                    new ValidationResultTreeNode<WebData>
+                        {
+                            {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.S.Value"}}, 0)},
+                            {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.StrArr.Value[1]"}}, 0)},
+                            {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
+                        }
+                );
         }
 
         [Test]
@@ -244,7 +244,7 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                                                                                               configurator.Target(data => data.Items.Each().S).Required();
                                                                                           }
-            );
+                );
             var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
@@ -272,7 +272,7 @@ namespace Mutators.Tests
                         {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.StrArr.Value[1]"}}, 0)},
                         {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
                     }
-            );
+                );
         }
 
         [Test]
@@ -288,7 +288,7 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.Sum).Set(data => data.DecimalArr.Sum());
                                                                                               configurator.Target(data => data.ComplexArrSum).Set(data => data.ComplexArr.Sum(x => x.Y));
                                                                                           }
-            );
+                );
             var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
@@ -343,7 +343,7 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.X).Set(data => data.Y + data.Z);
                                                                                               configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
                                                                                           }
-            );
+                );
             var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));

@@ -134,7 +134,7 @@ namespace Mutators.Tests
         {
             Expression<Func<TestData, bool>> exp = data => data.Strings.Contains("zzz");
             var withoutLinq = EliminateLinq(exp);
-            Assert.IsFalse(withoutLinq(new TestData { }));
+            Assert.IsFalse(withoutLinq(new TestData {}));
             Assert.IsFalse(withoutLinq(new TestData {Strings = new[] {"qxx"}}));
             Assert.IsTrue(withoutLinq(new TestData {Strings = new[] {"zzz"}}));
         }

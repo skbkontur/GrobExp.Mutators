@@ -64,7 +64,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return Expression.Block(
                 Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)),
                 Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)))
-            );
+                );
         }
 
         public LambdaExpression Condition { get; private set; }

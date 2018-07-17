@@ -488,16 +488,16 @@ namespace Mutators.Tests
                     });
             path = new SimplePathFormatterText {Paths = new[] {"T.R[1].U.ArrayV[0].S"}};
             validator(new TestData2
-                    {
-                        T = new T
-                            {
-                                R = new[]
-                                    {
-                                        new R {U = new U {ArrayV = new[] {new V {S = "qxx"}, new V {S = "qzz"},}}},
-                                        new R {U = new U {ArrayV = new[] {new V {S = "zzz"},}}}
-                                    }
-                            }
-                    })
+                {
+                    T = new T
+                        {
+                            R = new[]
+                                {
+                                    new R {U = new U {ArrayV = new[] {new V {S = "qxx"}, new V {S = "qzz"},}}},
+                                    new R {U = new U {ArrayV = new[] {new V {S = "zzz"},}}}
+                                }
+                        }
+                })
                 .AssertEquivalent(new ValidationResultTreeNode<TestData2>
                     {
                         {
@@ -544,7 +544,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S);
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
-                                                                                                    configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().Arr.Any(s => s != null && s != "zzz"), data => null));
+                                                                                                                                                                                        configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().Arr.Any(s => s != null && s != "zzz"), data => null));
             var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
@@ -594,9 +594,9 @@ namespace Mutators.Tests
                                 }
                         }
                 }).AssertEquivalent(new ValidationResultTreeNode<TestData2>
-                {
-                    {"T.R.2.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[2].U.S"}}, 0)},
-                });
+                    {
+                        {"T.R.2.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[2].U.S"}}, 0)},
+                    });
         }
 
         [Test]

@@ -23,16 +23,16 @@ namespace GrobExp.Mutators.ModelConfiguration
             var arrays = new Dictionary<Type, List<Expression>>();
             node.GetArrays(node.Path, arrays);
             return arrays
-                   .Where(pair => pair.Value.Count > 0)
-                   .ToDictionary(pair => pair.Key,
-                                 pair => pair.Value
-                                             .GroupBy(expression => new ExpressionWrapper(expression, strictly : false))
-                                             .Select(grouping =>
-                                                 {
-                                                     var exp = grouping.First();
-                                                     return exp.NodeType == ExpressionType.Call ? ((MethodCallExpression)exp).Arguments[0] : exp;
-                                                 })
-                                             .FirstOrDefault());
+                .Where(pair => pair.Value.Count > 0)
+                .ToDictionary(pair => pair.Key,
+                              pair => pair.Value
+                                          .GroupBy(expression => new ExpressionWrapper(expression, strictly : false))
+                                          .Select(grouping =>
+                                              {
+                                                  var exp = grouping.First();
+                                                  return exp.NodeType == ExpressionType.Call ? ((MethodCallExpression)exp).Arguments[0] : exp;
+                                              })
+                                          .FirstOrDefault());
         }
 
         /// <summary>

@@ -73,10 +73,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                   .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
-                   .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                   .Select(grouping => grouping.First())
-                   .ToArray();
+                .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
         }
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 1))).Body).Method;

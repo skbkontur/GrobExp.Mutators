@@ -23,82 +23,82 @@ namespace Mutators.Tests.ExpressionExtensionsTests
         public void TestMemberAccess()
         {
             TestSmash(a => a.C,
-                   Path(a => a),
-                   Path(a => a.C)
-            );
+                      Path(a => a),
+                      Path(a => a.C)
+                );
         }
 
         [Test]
         public void TestArrayIndex()
         {
             TestSmash(a => a.Bs[2],
-                   Path(a => a),
-                   Path(a => a.Bs),
-                   Path(a => a.Bs[2])
-            );
+                      Path(a => a),
+                      Path(a => a.Bs),
+                      Path(a => a.Bs[2])
+                );
         }
 
         [Test]
         public void TestArrayLength()
         {
             TestSmash(a => a.Bs.Length,
-                   Path(a => a),
-                   Path(a => a.Bs),
-                   Path(a => a.Bs.Length)
-            );
+                      Path(a => a),
+                      Path(a => a.Bs),
+                      Path(a => a.Bs.Length)
+                );
         }
 
         [Test]
         public void TestConvert()
         {
             TestSmash(a => (long)a.C.Int,
-                   Path(a => a),
-                   Path(a => a.C),
-                   Path(a => a.C.Int),
-                   Path(a => (long)a.C.Int)
-            );
+                      Path(a => a),
+                      Path(a => a.C),
+                      Path(a => a.C.Int),
+                      Path(a => (long)a.C.Int)
+                );
         }
 
         [Test]
         public void TestCoalesce()
         {
             TestSmash(a => a.Bs[0].String ?? "Grobas",
-                   Path(a => a),
-                   Path(a => a.Bs),
-                   Path(a => a.Bs[0]),
-                   Path(a => a.Bs[0].String),
-                   Path(a => a.Bs[0].String ?? "Grobas")
-            );
+                      Path(a => a),
+                      Path(a => a.Bs),
+                      Path(a => a.Bs[0]),
+                      Path(a => a.Bs[0].String),
+                      Path(a => a.Bs[0].String ?? "Grobas")
+                );
         }
 
         [Test]
         public void TestStaticMethod()
         {
             TestSmash(a => StaticMethod(a.C).Int,
-                   Path(a => StaticMethod(a.C)),
-                   Path(a => StaticMethod(a.C).Int)
-            );
+                      Path(a => StaticMethod(a.C)),
+                      Path(a => StaticMethod(a.C).Int)
+                );
         }
 
         [Test]
         public void TestInstanceMethod()
         {
             TestSmash(a => a.C.Add(3),
-                   Path(a => a),
-                   Path(a => a.C),
-                   Path(a => a.C.Add(3))
-            );
+                      Path(a => a),
+                      Path(a => a.C),
+                      Path(a => a.C.Add(3))
+                );
         }
 
         [Test]
         public void TestExtensionMethod()
         {
             TestSmash(a => a.C.Int.Multiply(5),
-                   Path(a => a),
-                   Path(a => a.C),
-                   Path(a => a.C.Int),
-                   Path(a => a.C.Int.Multiply(5))
-            );
+                      Path(a => a),
+                      Path(a => a.C),
+                      Path(a => a.C.Int),
+                      Path(a => a.C.Int.Multiply(5))
+                );
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Bs),
                       Path(a => a.Bs.Each()),
                       Path(a => a.Bs.Each().String)
-            );
+                );
         }
 
         [Test]
@@ -120,24 +120,24 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Bs),
                       Path(a => a.Bs.Current()),
                       Path(a => a.Bs.Current().String)
-            );
+                );
         }
 
         [Test]
         public void TestDictionaryGetItem()
         {
             TestSmash(a => a.Dictionary["zzz"].Length,
-                Path(a => a),
-                Path(a => a.Dictionary),
-                Path(a => a.Dictionary["zzz"]),
-                Path(a => a.Dictionary["zzz"].Length)
+                      Path(a => a),
+                      Path(a => a.Dictionary),
+                      Path(a => a.Dictionary["zzz"]),
+                      Path(a => a.Dictionary["zzz"].Length)
                 );
         }
 
         [Test]
         public void TestNotSmashingNewArray()
         {
-            TestNotSmashingExpression(a => new []{a});
+            TestNotSmashingExpression(a => new[] {a});
         }
 
         [Test]

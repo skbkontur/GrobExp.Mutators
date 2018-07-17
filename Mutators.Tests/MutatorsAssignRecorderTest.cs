@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -229,7 +229,7 @@ namespace Mutators.Tests
 
         [Category("Failing")]
         [Test]
-        [Description("При включенном рекордере кэш конверторов не используется")]
+        [Description("При включенном рекордере кэш конверторов не должен использоваться")]
         public void TestCacheConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,

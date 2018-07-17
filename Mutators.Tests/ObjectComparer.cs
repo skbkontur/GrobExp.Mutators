@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -41,17 +41,19 @@ namespace Mutators.Tests
             Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
         }
 
-        public static void AssertEquivalentExpressions(this Expression actual, Expression expected, bool strictly, bool distinguishEachAndCurrent)
+        public static void AssertEquivalentExpressions(this Expression actual, Expression expected)
         {
-            var equivalent = ExpressionEquivalenceChecker.Equivalent(actual, expected, false, true);
+            var equivalent = ExpressionEquivalenceChecker.Equivalent(actual, expected, strictly : false, distinguishEachAndCurrent : true);
             var expectedDebugView = ExpressionCompiler.DebugViewGetter(expected.Simplify());
             var actualDebugView = ExpressionCompiler.DebugViewGetter(actual.Simplify());
-            Assert.IsTrue(equivalent, string.Format("Expressions are not equivalent.\nExpected:\n{0}\nActual:\n{1}", expectedDebugView, actualDebugView));
+            Assert.IsTrue(equivalent, $"Expressions are not equivalent.\nExpected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
         }
 
         public static void AssertEqualsExpression<T>(this Expression<T> actual, Expression<T> expected)
         {
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
+            var expectedDebugView = ExpressionCompiler.DebugViewGetter(expected.Simplify());
+            var actualDebugView = ExpressionCompiler.DebugViewGetter(actual.Simplify());
+            Assert.AreEqual(expectedDebugView, actualDebugView, $"Expected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
         }
 
         private static readonly ISerializer serializer = new Serializer(new AllFieldsExtractor(), new TestGroBufCustomSerializerCollection());

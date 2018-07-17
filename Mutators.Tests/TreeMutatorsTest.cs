@@ -429,16 +429,15 @@ namespace Mutators.Tests
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
-        [Category("Failing")]
         [Test(Description = "Group by is not supported by DependenciesExtractor")]
-        public void TestConvertZzz()
+        public void TestConvert_GroupByIsNotSupported()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
                 {
                     var subConfigurator = configurator.GoTo(x => x.A.B.Each(), x => GroupZzz(x.T.R.Where(r => r.U.S == "zzz").Select(r => r.U.V.X).FirstOrDefault()).Current());
                     subConfigurator.Target(b => b.X).Set(xs => xs.Sum(x => x.W.Z ?? 0));
                 });
-            Action<TestData2, TestData> converter = collection.GetMerger(MutatorsContext.Empty);
+            Assert.Throws<NotSupportedException>(() => collection.GetMerger(MutatorsContext.Empty));
         }
 
         private X[][] GroupZzz(IEnumerable<X> enumerable)

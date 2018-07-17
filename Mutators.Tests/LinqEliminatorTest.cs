@@ -280,13 +280,12 @@ namespace Mutators.Tests
             var func = EliminateLinq(exp);
         }
 
-        [Category("Failing")]
         [Test(Description = "Linq method Concat is not supported")]
-        public void TestSelectManyWithResultSelectorConcat()
+        public void TestSelectManyWithResultSelectorConcat_IsNotSupported()
         {
             LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             Expression<Func<TestData, string>> exp = data => data.A.SelectMany(a => a.B.Concat(a.B), (a, b) => a.S + b.S).FirstOrDefault(s => s.Length > 3);
-            var func = EliminateLinq(exp);
+            Assert.Throws<NotSupportedException>(() => EliminateLinq(exp));
         }
 
         [Test]

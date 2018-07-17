@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -62,17 +62,17 @@ namespace Mutators.Tests
             var mutatorWithPath = migratedTree.GetAllMutatorsWithPathsForWeb(x => x).Single();
 
             Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x => (AEnum)(x.As.Each().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
-            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify(), strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify());
             Expression<Func<TargetTestData, object>> expectedPathToNode = x => x.As.Each().CustomFields["EnumCustomField"].Value;
-            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body, strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body);
 
             var requiredIfConfiguration = (RequiredIfConfiguration)mutatorWithPath.Mutator;
             Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(x.As.Current().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
-            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify(), strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify());
             Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Each().IsRemoved != true;
-            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition);
             Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Each().Info};
-            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage);
         }
 
         [Test]
@@ -97,17 +97,17 @@ namespace Mutators.Tests
             var mutatorWithPath = migratedTree.GetAllMutatorsWithPathsForWeb(x => x).Single();
 
             Expression<Func<TargetTestData, int>> expectedPathToMutator = x => (int)(x.As.Each().CustomFields["CustomPrimitiveField"].Value ?? 0);
-            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify(), strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify());
             Expression<Func<TargetTestData, object>> expectedPathToNode = x => x.As.Each().CustomFields["CustomPrimitiveField"].Value;
-            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body, strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body);
 
             var requiredIfConfiguration = (RequiredIfConfiguration)mutatorWithPath.Mutator;
             Expression<Func<TargetTestData, int>> expectedMutatorPath = x => (int)(x.As.Current().CustomFields["CustomPrimitiveField"].Value ?? 0);
-            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify(), strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify());
             Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Each().IsRemoved != true;
-            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition);
             Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Each().Info};
-            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage);
         }
 
         [Test]
@@ -133,17 +133,17 @@ namespace Mutators.Tests
             var mutatorWithPath = migratedTree.GetAllMutatorsWithPathsForWeb(x => x).Single();
 
             Expression<Func<TargetTestData, string>> expectedPathToMutator = x => x.As.Current().SomethingNormal;
-            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body, strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body);
             Expression<Func<TargetTestData, object>> expectedPathToNode = x => x.As.Each().SomethingNormal;
-            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body, strictly : false, distinguishEachAndCurrent : true);
+            mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body);
 
             var requiredIfConfiguration = (RequiredIfConfiguration)mutatorWithPath.Mutator;
             Expression<Func<TargetTestData, string>> expectedMutatorPath = x => x.As.Current().SomethingNormal;
-            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath);
             Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Current().IsRemoved != true;
-            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition);
             Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Current().Info};
-            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage, strictly : false, distinguishEachAndCurrent : true);
+            requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage);
         }
 
         protected override void SetUp()

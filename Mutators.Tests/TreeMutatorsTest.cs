@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -548,47 +548,6 @@ namespace Mutators.Tests
             converter(from, to);
             expected = new TestData {A = new A {B = new[] {new B {S = "qzz"}, new B {S = "qxx"},}}};
             to.AssertEqualsToUsingGrobuf(expected);
-        }
-
-        interface IZzz
-        {
-            string Trololo { get; }
-        }
-
-        private bool IsFucked(string x)
-        {
-            return string.IsNullOrEmpty(x);
-        }
-
-        public T Identity<T>(T x)
-        {
-            return x;
-        }
-
-        [Test, Ignore("")]
-        public void TestConvertArrayCycleRightPartMissingghhflhkjlhkj()
-        {
-//            Expression<Func<MyClassQxx, string>> qxx = x => Identity(x).Data.Where(z => Math.Sqrt(z.Length) > 0).Current();
-//            Assert.That(qxx.Body.IsLinkOfChain(false, recursive : false), Is.True);
-//            return;
-            var collection = new TestConverterCollection<TestData2, MyClassQxx>(pathFormatterCollection, configurator =>
-                {
-                    configurator.Target(data => data.Data.Select(x => x).Each().Current()).Set(data2 => data2.Чужь.Current().Current());
-//                configurator.Target(data => data.Data.Where(x => x.EndsWith("GRobas")).Select(x => x.ToArray()).Where(x => x.Length > 0).Each().Current()).Set(data2 => data2.Чужь.Current().Current());
-                    //configurator.Target(data => data.Data.Where(x => IsFucked(x)).Select(x => x.ToString()).Each()).Set(data2 => data2.Чужь.Current());
-                });
-            var converter = collection.GetMerger(MutatorsContext.Empty);
-            Console.Out.WriteLine(converter);
-//            var to = new TestData();
-//            var from = new TestData2 { T = new T { S = "qzz" }, S = "zzz" };
-//            converter(from, to);
-//            var expected = new TestData { A = new A { B = new[] { new B { S = "qxx" }, new B { S = "qzz" }, } } };
-//            to.AssertEqualsToUsingGrobuf(expected);
-//            to = new TestData();
-//            from = new TestData2 { T = new T { S = "zzz" }, S = "qzz" };
-//            converter(from, to);
-//            expected = new TestData { A = new A { B = new[] { new B { S = "qzz" }, new B { S = "qxx" }, } } };
-//            to.AssertEqualsToUsingGrobuf(expected);
         }
 
         [Category("Failing")]
@@ -1174,34 +1133,12 @@ namespace Mutators.Tests
         private Random random;
         private IPathFormatterCollection pathFormatterCollection;
 
-        private class Zzz : IZzz
-        {
-            public string Trololo { get; private set; }
-        }
-
-        class MyClassQxx
-        {
-            public string this[int x] { get { return Data[x]; } }
-
-            public string[] Data;
-        }
-
         public class IdGenerator
         {
             public string GetId()
             {
                 return Guid.NewGuid().ToString();
             }
-        }
-
-        private class TestMutatorsContext : MutatorsContext
-        {
-            public override string GetKey()
-            {
-                return Key;
-            }
-
-            public string Key { get; set; }
         }
 
         public class TestData

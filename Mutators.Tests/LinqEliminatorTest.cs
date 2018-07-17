@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -573,7 +573,7 @@ namespace Mutators.Tests
             var withoutLinq = EliminateLinq(exp);
         }
 
-        [Test, Ignore("")]
+        [Test, Ignore("Perf test")]
         public void TestPerformance()
         {
             var list = new List<int>();

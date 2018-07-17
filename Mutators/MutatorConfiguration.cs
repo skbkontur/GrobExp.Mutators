@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators.Visitors;
@@ -28,7 +28,7 @@ namespace GrobExp.Mutators
         {
             if (expression == null) return null;
 //            if(expression.Body.NodeType == ExpressionType.Convert)
-            //              expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
+//              expression = Expression.Lambda(((UnaryExpression)expression.Body).Operand, expression.Parameters);
             return (LambdaExpression)new IsNullOrEmptyExtender().Visit(expression.Simplify().RemoveLinqFirstAndSingle().ResolveInterfaceMembers());
         }
 
@@ -57,8 +57,6 @@ namespace GrobExp.Mutators
             var body = performer.Perform(ExpressionExtensions.ResolveAbstractPath(Expression.Lambda(path, path.ExtractParameters()), lambda).Body).CanonizeParameters();
             return body == null ? null : Expression.Lambda(body, body.ExtractParameters());
         }
-
-        private Expression lcp;
 
         private LambdaExpression[] dependencies;
     }

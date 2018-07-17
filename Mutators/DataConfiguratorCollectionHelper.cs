@@ -1,11 +1,16 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 using GrEmit;
+
+using GrobExp.Mutators;
+
+[assembly : InternalsVisibleTo(DataConfiguratorCollectionHelper.AssemblyName)]
 
 namespace GrobExp.Mutators
 {

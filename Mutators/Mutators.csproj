@@ -10,7 +10,7 @@
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <Authors>Igor Chevdar, Michael Samoylenko, Anton Chaplygin</Authors>
     <PackageTags>expression tree code generation</PackageTags>
-    <Description>Code generation mechanics for documents convertation and validation</Description>
+    <Description>Code generation mechanics for documents conversion and validation</Description>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/skbkontur/grobexp-mutators</RepositoryUrl>
     <PackageProjectUrl>$(RepositoryUrl)</PackageProjectUrl>

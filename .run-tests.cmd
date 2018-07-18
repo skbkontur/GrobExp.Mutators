@@ -1,2 +1,2 @@
-@echo off
-call %~dp0.rebuild.cmd Run-Tests Release PauseOnExit
+dotnet test --verbosity normal --configuration Release ./Mutators.Tests/Mutators.Tests.csproj
+pause

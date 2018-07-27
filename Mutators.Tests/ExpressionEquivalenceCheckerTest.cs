@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -137,12 +139,10 @@ namespace Mutators.Tests
                 TestEquivalent(unaryArithmeticOperation(parameter), unaryArithmeticOperation(parameter));
                 TestNotEquivalent(unaryArithmeticOperation(parameter), unaryArithmeticOperation(otherParameter));
             }
-            for (var i = 0; i < unaryOperations.Length; ++i)
+
+            foreach (var (first, second) in AllPairs(unaryOperations))
             {
-                for (var j = 0; j < i; ++j)
-                {
-                    TestNotEquivalent(unaryOperations[i](parameter), unaryOperations[j](parameter));
-                }
+                TestNotEquivalent(first(parameter), second(parameter));
             }
         }
 
@@ -321,6 +321,215 @@ namespace Mutators.Tests
             TestNotEquivalent(Expression.Condition(condition, ifTrue, Expression.Constant("qxx")), Expression.Condition(condition, ifTrue, ifFalse));
         }
 
+        [Test]
+        public void TestBlock()
+        {
+            var firstVariable = Expression.Variable(typeof(int));
+            var secondVariable = Expression.Variable(typeof(object));
+
+            var parameter = Expression.Parameter(typeof(int));
+
+            TestEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}),
+                           Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}));
+
+            TestEquivalent(Expression.Block(typeof(void), variables : null, expressions : new Expression[] {parameter}),
+                           Expression.Block(typeof(void), variables : null, expressions : new Expression[] {parameter}));
+
+            TestEquivalent(Expression.Block(typeof(void), variables : new[] {secondVariable, firstVariable}, expressions : new Expression[] {parameter}),
+                           Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}));
+
+            TestNotEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable}, expressions : new Expression[] {parameter}),
+                              Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}));
+
+            TestNotEquivalent(Expression.Block(typeof(int), variables : new[] {secondVariable, firstVariable}, expressions : new Expression[] {parameter}),
+                              Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}));
+
+            TestNotEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
+                {
+                    Expression.Assign(firstVariable, Expression.Constant(2)),
+                    Expression.AddAssign(parameter, firstVariable),
+                }),
+                              Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
+                                  {
+                                      parameter
+                                  })
+                );
+
+            TestNotEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
+                {
+                    Expression.Assign(firstVariable, Expression.Constant(2)),
+                    Expression.AddAssign(parameter, firstVariable),
+                }),
+                              Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
+                                  {
+                                      Expression.Assign(firstVariable, Expression.Constant(3)),
+                                      Expression.AddAssign(parameter, firstVariable),
+                                  })
+                );
+        }
+
+        [Test]
+        public void TestNotSupportedExpressions()
+        {
+            TestThrows<NotImplementedException>(() => Expression.ArrayAccess(Expression.Parameter(typeof(int[,])), Expression.Constant(0), Expression.Constant(0)));
+            TestThrows<NotImplementedException>(() => Expression.TypeIs(Expression.Parameter(typeof(object)), typeof(string)));
+            TestThrows<NotImplementedException>(() => Expression.TypeEqual(Expression.Parameter(typeof(object)), typeof(string)));
+            TestThrows<NotImplementedException>(() => Expression.TryCatch(Expression.Parameter(typeof(object)), Expression.Catch(typeof(Exception), Expression.Parameter(typeof(object)))));
+            TestThrows<NotImplementedException>(() => Expression.Switch(Expression.Parameter(typeof(char)), Expression.SwitchCase(Expression.Block(typeof(void), Expression.Constant(42)), Expression.Constant('a'))));
+            TestThrows<NotImplementedException>(() => Expression.RuntimeVariables(Expression.Parameter(typeof(object))));
+            //TestThrows<NotImplementedException>(() => Expression.Dynamic());
+            //TestThrows<NotImplementedException>(() => Expression.DebugInfo());
+        }
+
+        [Test]
+        public void TestDefault()
+        {
+            TestEquivalent(Expression.Default(typeof(int)), Expression.Default(typeof(int)));
+            TestNotEquivalent(Expression.Default(typeof(int)), Expression.Default(typeof(long)));
+        }
+
+        [Test]
+        public void TestGoto()
+        {
+            var gotoVoidCreators = new Func<LabelTarget, GotoExpression>[]
+                {
+                    Expression.Goto,
+                    Expression.Return,
+                    Expression.Break,
+                    Expression.Continue
+                };
+
+            foreach (var gotoVoidCreator in gotoVoidCreators)
+                TestEquivalent(gotoVoidCreator(Expression.Label(typeof(void))), gotoVoidCreator(Expression.Label(typeof(void))));
+
+            foreach (var (first, second) in AllPairs(gotoVoidCreators))
+                TestNotEquivalent(first(Expression.Label(typeof(void))), second(Expression.Label(typeof(void))));
+
+            var gotoWithValueCreators = new Func<LabelTarget, Expression, GotoExpression>[]
+                {
+                    Expression.Goto,
+                    Expression.Return,
+                    Expression.Break,
+                };
+
+            var intParameter = Expression.Parameter(typeof(int));
+
+            foreach (var gotoWithValueCreator in gotoWithValueCreators)
+                TestEquivalent(gotoWithValueCreator(Expression.Label(typeof(int)), intParameter), gotoWithValueCreator(Expression.Label(typeof(int)), intParameter));
+
+            foreach (var (first, second) in AllPairs(gotoWithValueCreators))
+                TestNotEquivalent(first(Expression.Label(typeof(int)), intParameter), second(Expression.Label(typeof(int)), Expression.Parameter(typeof(int))));
+        }
+
+        [Test]
+        public void TestGotoLabelMapping()
+        {
+            var firstLabel = Expression.Label(typeof(void));
+            var secondLabel = Expression.Label(typeof(void));
+
+            TestEquivalent(Expression.Block(new Expression[]
+                {
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                }),
+                           Expression.Block(new Expression[]
+                               {
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                               }));
+
+            TestEquivalent(Expression.Block(new Expression[]
+                {
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                }),
+                           Expression.Block(new Expression[]
+                               {
+                                   Expression.Goto(secondLabel),
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                                   Expression.Goto(firstLabel),
+                               }));
+
+            TestNotEquivalent(Expression.Block(new Expression[]
+                {
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                    Expression.Goto(firstLabel),
+                    Expression.Goto(secondLabel),
+                }),
+                              Expression.Block(new Expression[]
+                                  {
+                                      Expression.Goto(firstLabel),
+                                      Expression.Goto(secondLabel),
+                                      Expression.Goto(secondLabel),
+                                      Expression.Goto(firstLabel),
+                                  }));
+        }
+
+        [Test]
+        public void TestParameterMapping()
+        {
+            var firstParameter = Expression.Parameter(typeof(int));
+            var secondParameter = Expression.Parameter(typeof(int));
+
+            TestEquivalent(Expression.Block(new Expression[]
+                {
+                    firstParameter,
+                    secondParameter,
+                    firstParameter,
+                    secondParameter,
+                }),
+                           Expression.Block(new Expression[]
+                               {
+                                   firstParameter,
+                                   secondParameter,
+                                   firstParameter,
+                                   secondParameter,
+                               }), strictly : false);
+
+            TestEquivalent(Expression.Block(new Expression[]
+                {
+                    firstParameter,
+                    secondParameter,
+                    firstParameter,
+                    secondParameter,
+                }),
+                           Expression.Block(new Expression[]
+                               {
+                                   secondParameter,
+                                   firstParameter,
+                                   secondParameter,
+                                   firstParameter,
+                               }), strictly : false);
+
+            TestNotEquivalent(Expression.Block(new Expression[]
+                {
+                    firstParameter,
+                    secondParameter,
+                    firstParameter,
+                    secondParameter,
+                }),
+                              Expression.Block(new Expression[]
+                                  {
+                                      firstParameter,
+                                      secondParameter,
+                                      secondParameter,
+                                      firstParameter,
+                                  }), strictly : false);
+        }
+
+        private void TestThrows<TException>(Func<Expression> expressionCreationFunc) where TException : Exception
+        {
+            Assert.Throws<TException>(() => ExpressionEquivalenceChecker.Equivalent(expressionCreationFunc(), expressionCreationFunc(), strictly : false, distinguishEachAndCurrent : false));
+        }
+
         private void TestBinaryOperations(Expression firstParameter, Expression secondParameter, params Func<Expression, Expression, BinaryExpression>[] binaryOperations)
         {
             foreach (var binaryOperation in binaryOperations)
@@ -331,12 +540,9 @@ namespace Mutators.Tests
                 TestNotEquivalent(binaryOperation(secondParameter, secondParameter), binaryOperation(firstParameter, secondParameter), strictly : true);
             }
 
-            for (var i = 0; i < binaryOperations.Length; ++i)
+            foreach (var (first, second) in AllPairs(binaryOperations))
             {
-                for (var j = 0; j < i; ++j)
-                {
-                    TestNotEquivalent(binaryOperations[i](firstParameter, secondParameter), binaryOperations[j](firstParameter, secondParameter));
-                }
+                TestNotEquivalent(first(firstParameter, secondParameter), second(firstParameter, secondParameter));
             }
         }
 
@@ -360,6 +566,16 @@ namespace Mutators.Tests
         {
             Assert.That(ExpressionEquivalenceChecker.Equivalent(first, second, strictly, distinguishEachAndCurrent), Is.False);
             Assert.That(ExpressionEquivalenceChecker.Equivalent(second, first, strictly, distinguishEachAndCurrent), Is.False);
+        }
+
+        private static IEnumerable<(TValue, TValue)> AllPairs<TValue>(IEnumerable<TValue> values)
+        {
+            var array = values.ToArray();
+            for (var i = 0; i < array.Length; ++i)
+            {
+                for (var j = 0; j < i; ++j)
+                    yield return (array[i], array[j]);
+            }
         }
 
         private class ObjectWithEqualsMethod

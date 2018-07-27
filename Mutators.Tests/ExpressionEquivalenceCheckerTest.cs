@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.Visitors;
@@ -389,6 +391,17 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestLabel()
+        {
+            TestEquivalent(Expression.Label(Expression.Label()), Expression.Label(Expression.Label()));
+            TestEquivalent(Expression.Label(Expression.Label(typeof(void))), Expression.Label(Expression.Label(typeof(void))));
+            TestEquivalent(Expression.Label(Expression.Label(typeof(void), "first")), Expression.Label(Expression.Label(typeof(void), "second")));
+
+            TestNotEquivalent(Expression.Label(Expression.Label(typeof(int)), Expression.Constant(15)), Expression.Label(Expression.Label(typeof(long)), Expression.Constant(15L)));
+            TestNotEquivalent(Expression.Label(Expression.Label(typeof(int)), Expression.Constant(15)), Expression.Label(Expression.Label(typeof(int)), Expression.Constant(16)));
+        }
+
+        [Test]
         public void TestGoto()
         {
             var gotoVoidCreators = new Func<LabelTarget, GotoExpression>[]
@@ -422,7 +435,7 @@ namespace Mutators.Tests
         }
 
         [Test]
-        public void TestGotoLabelMapping()
+        public void TestLabelMapping()
         {
             var firstLabel = Expression.Label(typeof(void));
             var secondLabel = Expression.Label(typeof(void));
@@ -523,6 +536,115 @@ namespace Mutators.Tests
                                       secondParameter,
                                       firstParameter,
                                   }), strictly : false);
+        }
+
+        [Test]
+        public void TestLambda()
+        {
+            TestEquivalent((Expression<Func<int, int, int>>)((x, y) => x + y), (Expression<Func<int, int, int>>)((x, y) => x + y));
+
+            TestNotEquivalent((Expression<Func<object, object>>)(x => x), (Expression<Func<object, object, object>>)((x, y) => x));
+
+            TestNotEquivalent((Expression<Func<int, int, int>>)((x, y) => x + y), (Expression<Func<int, int, int>>)((x, y) => y + x));
+        }
+
+        [Test]
+        public void TestInvoke()
+        {
+            Expression<Func<int, int, int>> lambda = (x, y) => x + y;
+
+            var firstParameter = Expression.Constant(4);
+            var secondParameter = Expression.Constant(8);
+
+            TestEquivalent(Expression.Invoke(lambda, firstParameter, secondParameter), Expression.Invoke(lambda, firstParameter, secondParameter));
+
+            TestNotEquivalent(Expression.Invoke(lambda, firstParameter, secondParameter), Expression.Invoke(lambda, firstParameter, firstParameter));
+            TestNotEquivalent(Expression.Invoke(lambda, firstParameter, secondParameter), Expression.Invoke(lambda, secondParameter, secondParameter));
+            TestNotEquivalent(Expression.Invoke(lambda, firstParameter, secondParameter), Expression.Invoke(lambda, secondParameter, firstParameter));
+
+            Expression<Func<int, int, int>> otherLambda = (x, y) => y + x;
+            TestNotEquivalent(Expression.Invoke(lambda, firstParameter, secondParameter), Expression.Invoke(otherLambda, firstParameter, secondParameter));
+        }
+
+        [Test]
+        public void TestNew()
+        {
+            var firstConstructor = typeof(StringBuilder).GetConstructor(new[] {typeof(string)});
+            var secondConstructor = typeof(FileInfo).GetConstructor(new[] {typeof(string)});
+            Assert.That(firstConstructor, Is.Not.Null);
+            Assert.That(secondConstructor, Is.Not.Null);
+
+            var parameter = Expression.Parameter(typeof(string));
+            TestEquivalent(Expression.New(firstConstructor, parameter), Expression.New(firstConstructor, parameter));
+            TestNotEquivalent(Expression.New(firstConstructor, parameter), Expression.New(secondConstructor, parameter));
+            TestNotEquivalent(Expression.New(firstConstructor, parameter), Expression.New(firstConstructor, Expression.Constant("zzz")));
+
+            var constructor = typeof(string).GetConstructor(new[] {typeof(char), typeof(int)});
+            Assert.That(constructor, Is.Not.Null);
+            TestEquivalent(Expression.New(constructor, Expression.Constant('a'), Expression.Constant(2)), Expression.New(constructor, Expression.Constant('a'), Expression.Constant(2)));
+            TestNotEquivalent(Expression.New(constructor, Expression.Constant('a'), Expression.Constant(2)), Expression.New(constructor, Expression.Constant('a'), Expression.Constant(3)));
+            TestNotEquivalent(Expression.New(constructor, Expression.Constant('a'), Expression.Constant(2)), Expression.New(constructor, Expression.Constant('b'), Expression.Constant(2)));
+        }
+
+        [Test]
+        public void TestNewArray()
+        {
+            TestEquivalent(Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(8)),
+                           Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(8)));
+
+            TestNotEquivalent(Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(8)),
+                              Expression.NewArrayInit(typeof(int), Expression.Constant(15), Expression.Constant(8)));
+
+            TestNotEquivalent(Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(8)),
+                              Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(16)));
+
+            TestNotEquivalent(Expression.NewArrayInit(typeof(int), Expression.Constant(4), Expression.Constant(8)),
+                              Expression.NewArrayInit(typeof(int), Expression.Constant(23), Expression.Constant(42)));
+        }
+
+        [Test]
+        public void TestMemberAccess()
+        {
+            var parameter = Expression.Parameter(typeof(int[]));
+            TestEquivalent(Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")),
+                           Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+
+            TestNotEquivalent(Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Rank")),
+                              Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+
+            TestNotEquivalent(Expression.MakeMemberAccess(Expression.Constant(new[] {2, 3}), parameter.Type.GetProperty("Length")),
+                              Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+        }
+
+        [Test]
+        public void TestLoop()
+        {
+            var firstLabel = Expression.Label();
+            var secondLabel = Expression.Label();
+
+            var body = Expression.Parameter(typeof(int));
+
+            TestEquivalent(Expression.Loop(body), Expression.Loop(body));
+            TestNotEquivalent(Expression.Loop(Expression.Constant(2)), Expression.Loop(body));
+
+            TestEquivalent(Expression.Loop(body, firstLabel), Expression.Loop(body, firstLabel));
+            TestNotEquivalent(Expression.Loop(Expression.Constant(2), firstLabel), Expression.Loop(body, firstLabel));
+
+            TestEquivalent(Expression.Loop(body, firstLabel, secondLabel), Expression.Loop(body, firstLabel, secondLabel));
+            TestNotEquivalent(Expression.Loop(Expression.Constant(2), firstLabel, secondLabel), Expression.Loop(body, firstLabel, secondLabel));
+
+            var complexBody = Expression.Block(Expression.Label(firstLabel), Expression.Label(secondLabel));
+            TestEquivalent(Expression.Loop(complexBody, firstLabel, secondLabel),
+                           Expression.Loop(complexBody, firstLabel, secondLabel));
+            TestNotEquivalent(Expression.Loop(complexBody, firstLabel, secondLabel),
+                              Expression.Loop(complexBody, secondLabel, firstLabel));
+        }
+
+        [Test]
+        public void TestListInit()
+        {
+            //TODO
+            //var listInit = Expression.ListInit(Expression.New(typeof(List<int>).GetConstructor(Type.EmptyTypes)), Expression.ElementInit());
         }
 
         private void TestThrows<TException>(Func<Expression> expressionCreationFunc) where TException : Exception

@@ -700,7 +700,9 @@ namespace Mutators.Tests
             }
         }
 
+#pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
         private class ObjectWithEqualsMethod
+#pragma warning restore CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
         {
             public int Field { get; set; }
 
@@ -712,7 +714,9 @@ namespace Mutators.Tests
             }
         }
 
+#pragma warning disable 660,661
         private class ObjectWithEqualityOperator
+#pragma warning restore 660,661
         {
             public int Field { get; set; }
 

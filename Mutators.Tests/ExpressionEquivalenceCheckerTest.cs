@@ -103,6 +103,33 @@ namespace Mutators.Tests
                 );
         }
 
+        [Test]
+        public void TestUnaryUnbox()
+        {
+            var parameter = Expression.Parameter(typeof(object));
+            TestEquivalent(Expression.Unbox(parameter, typeof(int)), Expression.Unbox(parameter, typeof(int)));
+            TestNotEquivalent(Expression.Unbox(parameter, typeof(int)), Expression.Unbox(parameter, typeof(long)));
+            TestNotEquivalent(Expression.Unbox(parameter, typeof(int)), Expression.Unbox(Expression.Constant(2, typeof(object)), typeof(int)));
+        }
+
+        [Test]
+        public void TestUnaryQuote()
+        {
+            var parameter = Expression.Parameter(typeof(int));
+            var firstLambda = Expression.Lambda(parameter, parameter);
+            var secondLambda = Expression.Lambda(Expression.Add(parameter, Expression.Constant(2)), parameter);
+            TestEquivalent(Expression.Quote(firstLambda), Expression.Quote(firstLambda));
+            TestNotEquivalent(Expression.Quote(firstLambda), Expression.Quote(secondLambda));
+        }
+
+        [Test]
+        public void TestUnaryThrow()
+        {
+            var parameter = Expression.Constant(new Exception());
+            TestEquivalent(Expression.Throw(parameter), Expression.Throw(parameter));
+            TestNotEquivalent(Expression.Throw(parameter), Expression.Throw(Expression.Parameter(typeof(Expression))));
+        }
+
         private void TestUnaryExpressions(Expression parameter, Expression otherParameter, params Func<Expression, UnaryExpression>[] unaryOperations)
         {
             foreach (var unaryArithmeticOperation in unaryOperations)

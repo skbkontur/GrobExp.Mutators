@@ -624,15 +624,21 @@ namespace Mutators.Tests
         [Test]
         public void TestMemberAccess()
         {
+            var lengthProperty = typeof(int[]).GetProperty("Length");
+            Assert.That(lengthProperty, Is.Not.Null);
+
+            var rankProperty = typeof(int[]).GetProperty("Rank");
+            Assert.That(rankProperty, Is.Not.Null);
+
             var parameter = Expression.Parameter(typeof(int[]));
-            TestEquivalent(Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")),
-                           Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+            TestEquivalent(Expression.MakeMemberAccess(parameter, lengthProperty),
+                           Expression.MakeMemberAccess(parameter, lengthProperty));
 
-            TestNotEquivalent(Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Rank")),
-                              Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+            TestNotEquivalent(Expression.MakeMemberAccess(parameter, rankProperty),
+                              Expression.MakeMemberAccess(parameter, lengthProperty));
 
-            TestNotEquivalent(Expression.MakeMemberAccess(Expression.Constant(new[] {2, 3}), parameter.Type.GetProperty("Length")),
-                              Expression.MakeMemberAccess(parameter, parameter.Type.GetProperty("Length")));
+            TestNotEquivalent(Expression.MakeMemberAccess(Expression.Constant(new[] {2, 3}), lengthProperty),
+                              Expression.MakeMemberAccess(parameter, lengthProperty));
         }
 
         [Test]

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -59,12 +59,13 @@ namespace GrobExp.Mutators.AutoEvaluators
             var infoToLog = new AssignLogInfo(path, Expression.Constant(ToString(), typeof(string)));
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             path = PrepareForAssign(path);
+            var applyResult = Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)));
             if (MutatorsAssignRecorder.IsRecording())
+            {
                 MutatorsAssignRecorder.RecordCompilingExpression(infoToLog);
-            return Expression.Block(
-                Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)),
-                Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)))
-                );
+                return Expression.Block(Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)), applyResult);
+            }
+            return applyResult;
         }
 
         public LambdaExpression Condition { get; private set; }

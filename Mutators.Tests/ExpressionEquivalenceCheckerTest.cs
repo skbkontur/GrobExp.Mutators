@@ -57,10 +57,10 @@ namespace Mutators.Tests
         {
             void DoTestUnaryConvert(Func<Expression, Type, UnaryExpression> unaryConvertOperation)
             {
-                var parameter = Expression.Parameter(typeof(B));
-                TestEquivalent(unaryConvertOperation(parameter, typeof(A)), unaryConvertOperation(parameter, typeof(A)));
-                TestNotEquivalent(unaryConvertOperation(parameter, typeof(object)), unaryConvertOperation(parameter, typeof(A)));
-                TestNotEquivalent(unaryConvertOperation(parameter, typeof(object)), unaryConvertOperation(Expression.Constant(new B()), typeof(object)));
+                var parameter = Expression.Parameter(typeof(SubclassWithProperty));
+                TestEquivalent(unaryConvertOperation(parameter, typeof(ClassWithProperties)), unaryConvertOperation(parameter, typeof(ClassWithProperties)));
+                TestNotEquivalent(unaryConvertOperation(parameter, typeof(object)), unaryConvertOperation(parameter, typeof(SubclassWithProperty)));
+                TestNotEquivalent(unaryConvertOperation(parameter, typeof(object)), unaryConvertOperation(Expression.Constant(new SubclassWithProperty()), typeof(object)));
 
                 var intParameter = Expression.Parameter(typeof(int));
                 TestNotEquivalent(unaryConvertOperation(intParameter, typeof(object)), Expression.Negate(intParameter));
@@ -603,6 +603,25 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestNewArrayBounds()
+        {
+            TestEquivalent(Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)),
+                           Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)));
+
+            TestNotEquivalent(Expression.NewArrayBounds(typeof(string), Expression.Constant(2), Expression.Constant(3)),
+                              Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)));
+
+            TestNotEquivalent(Expression.NewArrayBounds(typeof(int), Expression.Constant(12), Expression.Constant(3)),
+                              Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)));
+
+            TestNotEquivalent(Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(33)),
+                              Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)));
+
+            TestNotEquivalent(Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(3)),
+                              Expression.NewArrayBounds(typeof(int), Expression.Constant(3), Expression.Constant(2)));
+        }
+
+        [Test]
         public void TestMemberAccess()
         {
             var parameter = Expression.Parameter(typeof(int[]));
@@ -643,8 +662,164 @@ namespace Mutators.Tests
         [Test]
         public void TestListInit()
         {
-            //TODO
-            //var listInit = Expression.ListInit(Expression.New(typeof(List<int>).GetConstructor(Type.EmptyTypes)), Expression.ElementInit());
+            var constructor = typeof(List<int>).GetConstructor(Type.EmptyTypes);
+            Assert.That(constructor, Is.Not.Null);
+
+            var listAddMethod = typeof(List<int>).GetMethod("Add");
+            Assert.That(constructor, Is.Not.Null);
+
+            TestEquivalent(Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)),
+                           Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)));
+
+            TestNotEquivalent(Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)),
+                              Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(5), Expression.Constant(8)));
+
+            TestNotEquivalent(Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)),
+                              Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(10)));
+
+            TestNotEquivalent(Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)),
+                              Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(8), Expression.Constant(4)));
+
+            var otherConstructor = typeof(List<int>).GetConstructor(new[] {typeof(int)});
+            Assert.That(otherConstructor, Is.Not.Null);
+
+            TestNotEquivalent(Expression.ListInit(Expression.New(constructor), listAddMethod, Expression.Constant(4), Expression.Constant(8)),
+                              Expression.ListInit(Expression.New(otherConstructor, Expression.Parameter(typeof(int))), listAddMethod, Expression.Constant(4), Expression.Constant(8)));
+        }
+
+        [Test]
+        public void TestMemberInitBind()
+        {
+            var constructor = typeof(ClassWithProperties).GetConstructor(Type.EmptyTypes);
+            Assert.That(constructor, Is.Not.Null);
+
+            var intPropertyInfo = typeof(ClassWithProperties).GetProperty("IntProperty");
+            Assert.That(intPropertyInfo, Is.Not.Null);
+
+            TestEquivalent(Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5))),
+                           Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5)))
+                );
+
+            var otherConstructor = typeof(ClassWithProperties).GetConstructor(new[] {typeof(int)});
+            Assert.That(otherConstructor, Is.Not.Null);
+
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5))),
+                              Expression.MemberInit(Expression.New(otherConstructor, Expression.Parameter(typeof(int))), Expression.Bind(intPropertyInfo, Expression.Constant(5)))
+                );
+
+            var stringPropertyInfo = typeof(ClassWithProperties).GetProperty("StringProperty");
+            Assert.That(stringPropertyInfo, Is.Not.Null);
+
+            TestEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.Bind(intPropertyInfo, Expression.Constant(5)),
+                                                 Expression.Bind(stringPropertyInfo, Expression.Constant("zzz"))),
+                           Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.Bind(intPropertyInfo, Expression.Constant(5)),
+                                                 Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
+                );
+
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.Bind(intPropertyInfo, Expression.Constant(5))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.Bind(intPropertyInfo, Expression.Constant(5)),
+                                                    Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
+                );
+
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")),
+                                                    Expression.Bind(intPropertyInfo, Expression.Constant(5))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.Bind(intPropertyInfo, Expression.Constant(5)),
+                                                    Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
+                );
+        }
+
+        [Test]
+        public void TestMemberInitRecursive()
+        {
+            var constructor = typeof(ClassWithProperties).GetConstructor(Type.EmptyTypes);
+            Assert.That(constructor, Is.Not.Null);
+
+            var subclassProperty = typeof(ClassWithProperties).GetProperty("SubclassProperty");
+            Assert.That(subclassProperty, Is.Not.Null);
+
+            var subclassWithPropertyProperty = typeof(SubclassWithProperty).GetProperty("Property");
+            Assert.That(subclassWithPropertyProperty, Is.Not.Null);
+
+            TestEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5)))),
+                           Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5))))
+                );
+
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5)))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.Bind(subclassProperty, Expression.Constant(new SubclassWithProperty())))
+                );
+        }
+
+        [Test]
+        public void TestMemberInitListInit()
+        {
+            var constructor = typeof(ClassWithProperties).GetConstructor(Type.EmptyTypes);
+            Assert.That(constructor, Is.Not.Null);
+
+            var intListProperty = typeof(ClassWithProperties).GetProperty("IntListProperty");
+            Assert.That(intListProperty, Is.Not.Null);
+
+            var listAddMethod = typeof(List<int>).GetMethod("Add");
+            Assert.That(listAddMethod, Is.Not.Null);
+
+            TestEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.ListBind(intListProperty,
+                                                                     Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                     Expression.ElementInit(listAddMethod, Expression.Constant(4)))),
+                           Expression.MemberInit(Expression.New(constructor),
+                                                 Expression.ListBind(intListProperty,
+                                                                     Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                     Expression.ElementInit(listAddMethod, Expression.Constant(4))))
+                );
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4))))
+                );
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4)))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(5))))
+                );
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(92)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4)))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4))))
+                );
+
+            var otherIntListProperty = typeof(ClassWithProperties).GetProperty("OtherListProperty");
+            Assert.That(otherIntListProperty, Is.Not.Null);
+
+            TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(intListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4)))),
+                              Expression.MemberInit(Expression.New(constructor),
+                                                    Expression.ListBind(otherIntListProperty,
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(2)),
+                                                                        Expression.ElementInit(listAddMethod, Expression.Constant(4))))
+                );
         }
 
         private void TestThrows<TException>(Func<Expression> expressionCreationFunc) where TException : Exception
@@ -731,12 +906,31 @@ namespace Mutators.Tests
             }
         }
 
-        private class A
+        private class ClassWithProperties
         {
+            public ClassWithProperties()
+            {
+            }
+
+            public ClassWithProperties(int value)
+            {
+                IntProperty = value;
+            }
+
+            public int IntProperty { get; set; }
+
+            public string StringProperty { get; set; }
+
+            public SubclassWithProperty SubclassProperty { get; set; }
+
+            public List<int> IntListProperty { get; set; }
+
+            public List<int> OtherListProperty { get; set; }
         }
 
-        private class B : A
+        private class SubclassWithProperty : ClassWithProperties
         {
+            public int Property { get; set; }
         }
     }
 }

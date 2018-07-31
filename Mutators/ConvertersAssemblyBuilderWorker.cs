@@ -8,13 +8,13 @@ using GrEmit;
 
 namespace GrobExp.Mutators
 {
-    public class ConvertersAssemblyCreator : MarshalByRefObject
+    public class ConvertersAssemblyBuilderWorker : MarshalByRefObject
     {
         private readonly AssemblyBuilder assemblyBuilder;
         private readonly ModuleBuilder moduleBuilder;
         private readonly List<TypeBuilder> typeBuilders;
 
-        public ConvertersAssemblyCreator()
+        public ConvertersAssemblyBuilderWorker()
         {
             var assemblyName = "Converters";
             assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
@@ -22,15 +22,22 @@ namespace GrobExp.Mutators
             typeBuilders = new List<TypeBuilder>();
         }
 
-        public TypeBuilder CreateConverterType(Type converterType)
+        public TypeBuilder CreateClass(string className)
         {
-            var converterTypeName = CreateConverterTypeName(converterType);
-            var typeBuilder = moduleBuilder.DefineType(converterTypeName, TypeAttributes.Public | TypeAttributes.Class);
+            var typeBuilder = moduleBuilder.DefineType(className, TypeAttributes.Public | TypeAttributes.Class);
             typeBuilders.Add(typeBuilder);
             return typeBuilder;
         }
 
-        public string CreateConverterTypeName(Type converterType)
+        public TypeBuilder CreateConverterClass(Type converterClass)
+        {
+            var converterClassName = CreateConverterTypeName(converterClass);
+            var typeBuilder = moduleBuilder.DefineType(converterClassName, TypeAttributes.Public | TypeAttributes.Class);
+            typeBuilders.Add(typeBuilder);
+            return typeBuilder;
+        }
+
+        public static string CreateConverterTypeName(Type converterType)
         {
             var converterTypeName = converterType.Name;
             if (converterType.IsGenericType)
@@ -40,7 +47,6 @@ namespace GrobExp.Mutators
 
         public void SaveAssembly(string assemblySavePath)
         {
-            Environment.CurrentDirectory = assemblySavePath;
             foreach(var typeBuilder in typeBuilders)
                 typeBuilder.CreateType();
             assemblyBuilder.Save($"{assemblyBuilder.GetName().Name}.dll");

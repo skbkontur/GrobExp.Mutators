@@ -89,10 +89,7 @@ namespace GrobExp.Mutators
             if (MutatorsAssignRecorder.IsRecording())
                 MutatorsAssignRecorder.StopRecordingConverter();
         }
-
-        //сюда должен передаваться TypeBuilder класса с названием {typeof(TSource)}To{typeof(TDest)}Converter
-        //из модуля Converters из сборки Converters из файла Converters.dll
-        //☺
+        
         public void AddConverterWithContext(TypeBuilder typeBuilder, MutatorsContext context)
         {
             var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));

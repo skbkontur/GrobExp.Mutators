@@ -45,7 +45,7 @@ namespace GrobExp.Mutators
             return converterTypeName;
         }
 
-        public void SaveAssembly(string assemblySavePath)
+        public void SaveAssembly()
         {
             foreach(var typeBuilder in typeBuilders)
                 typeBuilder.CreateType();

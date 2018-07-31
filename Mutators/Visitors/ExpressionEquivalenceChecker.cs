@@ -370,19 +370,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentListInit(ListInitExpression first, ListInitExpression second, Context context)
         {
-            if (!Equivalent(first.NewExpression, second.NewExpression, context))
-                return false;
-            if (first.Initializers.Count != second.Initializers.Count)
-                return false;
-            for (int i = 0; i < first.Initializers.Count; ++i)
-            {
-                if (!EquivalentMethods(first.Initializers[i].AddMethod, second.Initializers[i].AddMethod, context))
-                    return false;
-                if (!Equivalent(first.Initializers[i].Arguments, second.Initializers[i].Arguments, context))
-                    return false;
-            }
-
-            return true;
+            return Equivalent(first.NewExpression, second.NewExpression, context) && EquivalentElementInits(first.Initializers, second.Initializers, context);
         }
 
         private static bool EquivalentLoop(LoopExpression first, LoopExpression second, Context context)
@@ -404,20 +392,57 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentMemberInit(MemberInitExpression first, MemberInitExpression second, Context context)
         {
-            if (!EquivalentNew(first.NewExpression, second.NewExpression, context))
+            return EquivalentNew(first.NewExpression, second.NewExpression, context) && EquivalentMemberBindings(first.Bindings, second.Bindings, context);
+        }
+
+        private static bool EquivalentMemberBindings(IList<MemberBinding> first, IList<MemberBinding> second, Context context)
+        {
+            if (first.Count != second.Count)
                 return false;
-            if (first.Bindings.Count != second.Bindings.Count)
-                return false;
-            for (int i = 0; i < first.Bindings.Count; ++i)
+            for (var i = 0; i < first.Count; ++i)
             {
-                var firstAssignment = (MemberAssignment)first.Bindings[i];
-                var secondAssignment = (MemberAssignment)second.Bindings[i];
-                if (firstAssignment.BindingType != secondAssignment.BindingType
-                    || !MembersEqual(firstAssignment.Member, secondAssignment.Member)
-                    || !Equivalent(firstAssignment.Expression, secondAssignment.Expression, context))
+                var firstBinding = first[i];
+                var secondBinding = second[i];
+                if (firstBinding.BindingType != secondBinding.BindingType ||
+                    !MembersEqual(firstBinding.Member, secondBinding.Member))
                     return false;
+                switch (firstBinding)
+                {
+                case MemberAssignment firstAssignment:
+                    var secondAssignment = (MemberAssignment)secondBinding;
+                    if (!Equivalent(firstAssignment.Expression, secondAssignment.Expression, context))
+                        return false;
+                    break;
+                case MemberMemberBinding firstMemberMemberBinding:
+                    var secondMemberMemberBinding = (MemberMemberBinding)secondBinding;
+                    if (!EquivalentMemberBindings(firstMemberMemberBinding.Bindings.ToArray(), secondMemberMemberBinding.Bindings.ToArray(), context))
+                        return false;
+                    break;
+                case MemberListBinding firstMemberListBinding:
+                    var secondMemberListBinding = (MemberListBinding)secondBinding;
+                    if (!EquivalentElementInits(firstMemberListBinding.Initializers, secondMemberListBinding.Initializers, context))
+                        return false;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(firstBinding));
+                }
             }
 
+            return true;
+        }
+
+        private static bool EquivalentElementInits(IList<ElementInit> first, IList<ElementInit> second, Context context)
+        {
+            if (first.Count != second.Count)
+                return false;
+            for (var i = 0; i < first.Count; ++i)
+            {
+                var firstElementInit = first[i];
+                var secondElementInit = second[i];
+                if (!EquivalentMethods(firstElementInit.AddMethod, secondElementInit.AddMethod, context) ||
+                    !Equivalent(firstElementInit.Arguments, secondElementInit.Arguments, context))
+                    return false;
+            }
             return true;
         }
 

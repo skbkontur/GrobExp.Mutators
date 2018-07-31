@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -15,6 +15,11 @@ namespace GrobExp.Mutators
         public static Expression MakeEachCall(this Expression expression, Type itemType)
         {
             return Expression.Call(null, MutatorsHelperFunctions.EachMethod.MakeGenericMethod(itemType), expression);
+        }
+
+        public static Expression MakeCurrentCall(this Expression expression)
+        {
+            return Expression.Call(MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(expression.Type.GetItemType()), expression);
         }
 
         public static Expression MakeCurrentIndexCall(this Expression expression, Type itemType)

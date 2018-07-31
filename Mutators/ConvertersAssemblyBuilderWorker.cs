@@ -8,7 +8,7 @@ using GrEmit;
 
 namespace GrobExp.Mutators
 {
-    public class ConvertersAssemblyBuilderWorker : MarshalByRefObject
+    public class ConvertersAssemblyBuilderWorker
     {
         private readonly AssemblyBuilder assemblyBuilder;
         private readonly ModuleBuilder moduleBuilder;

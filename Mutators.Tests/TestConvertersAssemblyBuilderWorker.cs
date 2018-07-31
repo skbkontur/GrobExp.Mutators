@@ -10,65 +10,38 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
-    public class TestConvertersAssemblyBuilderWorker : ConvertersAssemblyBuilderWorker
+    public class TestConvertersAssemblyBuilderWorker : MarshalByRefObject
     {
-        public TestConvertersAssemblyBuilderWorker()
-            : base()
-        {
-        }
-
-        public void MutatorExistanceTest(bool forSeveralContexts)
-        {
-            var assembly = Assembly.LoadFrom($"{AppDomain.CurrentDomain.BaseDirectory}Converters.dll");
-            var name = CreateConverterTypeName(typeof(TestConverterCollection<TestDataSource, TestDataDest>));
-            var mutatorType = assembly.GetType(name);
-
-            Assert.IsNotNull(mutatorType);
-            Assert.IsNotNull(mutatorType.GetMethod("someGoodKey"));
-            if (forSeveralContexts)
-                Assert.IsNotNull(mutatorType.GetMethod("someGoodKey1"));
-        }
-
         public void DllCreationTest(bool forSeveralContexts)
         {
-            var pathFormatterCollection = new PathFormatterCollection();
-            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                             configurator =>
-                                                                                                 {
-                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
-                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
-                                                                                                 });
             var contexts = new List<ValidatorsTest.TestMutatorsContext>();
             var context = new ValidatorsTest.TestMutatorsContext() {Key = "someGoodKey"};
             contexts.Add(context);
             if (forSeveralContexts)
                 contexts.Add(new ValidatorsTest.TestMutatorsContext() {Key = "someGoodKey1"});
 
-            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var tb = assemblyBuilderWorker.CreateConverterClass(defaultTestConfigurator.GetType());
 
-            var assemblyName = "Converters";
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
-            var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var name = CreateConverterTypeName(testConfigurator.GetType());
-            var tb = mb.DefineType(name, TypeAttributes.Public | TypeAttributes.Class);
+            AddConverters(defaultTestConfigurator, contexts, tb);
 
-            AddMutator(testConfigurator, contexts, tb);
-            tb.CreateType();
+            assemblyBuilderWorker.SaveAssembly();
 
-            ab.Save("Converters.dll");
-
-            testConfigurator.LoadConvertersAssembly($"{AppDomain.CurrentDomain.BaseDirectory}Converters.dll");
+            Assert.IsTrue(File.Exists($"{Environment.CurrentDirectory}\\Converters.dll"));
+            var convertersAssembly = Assembly.LoadFrom($"{Environment.CurrentDirectory}\\Converters.dll");
 
             foreach (var c in contexts)
             {
-                var converter = testConfigurator.GetConverter(c);
+                var converterType = convertersAssembly.GetType(ConvertersAssemblyBuilderWorker.CreateConverterTypeName(defaultTestConfigurator.GetType()));
+                Assert.NotNull(converterType);
+                var converter = converterType.GetMethod(c.GetKey());
+                Assert.NotNull(converter);
 
                 var testDataSource = new TestDataSource();
-                var actualData = converter(testDataSource);
+                var actualData = new TestDataDest();
+                converter.Invoke(null, new object[] {actualData, testDataSource });
 
                 Assert.AreEqual(12, actualData.C);
                 Assert.AreEqual(13, actualData.D);
-                Assert.IsTrue(File.Exists("Converters.dll"));
             }
         }
 
@@ -81,94 +54,89 @@ namespace Mutators.Tests
 
         public void IntContextTest()
         {
-            var pathFormatterCollection = new PathFormatterCollection();
-            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                             configurator =>
-                                                                                                 {
-                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
-                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
-                                                                                                 });
             var context = new IntContext() {Key = "someGoodKey"};
 
-            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var tb = assemblyBuilderWorker.CreateConverterClass(defaultTestConfigurator.GetType());
 
-            var assemblyName = "Converters";
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
-            var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType(CreateConverterTypeName(testConfigurator.GetType()), TypeAttributes.Public | TypeAttributes.Class);
-
-            Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
+            Assert.DoesNotThrow(() => defaultTestConfigurator.AddConverterWithContext(tb, context));
         }
 
         public void StringContextTest()
         {
-            var pathFormatterCollection = new PathFormatterCollection();
-            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                             configurator =>
-                                                                                                 {
-                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
-                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
-                                                                                                 });
             var context = new StringContext() {Key = "someGoodKey"};
 
-            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var tb = assemblyBuilderWorker.CreateConverterClass(defaultTestConfigurator.GetType());
 
-            var assemblyName = "Converters";
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
-            var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType(CreateConverterTypeName(testConfigurator.GetType()), TypeAttributes.Public | TypeAttributes.Class);
-
-            Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
+            Assert.DoesNotThrow(() => defaultTestConfigurator.AddConverterWithContext(tb, context));
         }
 
         public void EnumContextTest()
         {
-            var pathFormatterCollection = new PathFormatterCollection();
-            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                             configurator =>
-                                                                                                 {
-                                                                                                     configurator.Target(x => x.C).Set(x => x.A);
-                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
-                                                                                                 });
             var context = new EnumContext() {Key = "someGoodKey"};
 
-            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var tb = assemblyBuilderWorker.CreateConverterClass(defaultTestConfigurator.GetType());
 
-            var assemblyName = "Converters";
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
-            var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType(CreateConverterTypeName(testConfigurator.GetType()), TypeAttributes.Public | TypeAttributes.Class);
-
-            Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
+            Assert.DoesNotThrow(() => defaultTestConfigurator.AddConverterWithContext(tb, context));
         }
 
         public void ClassContextTest()
         {
-            var pathFormatterCollection = new PathFormatterCollection();
-            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+            var context = new ClassContext() { Key = "someGoodKey" };
+
+
+            var tb = assemblyBuilderWorker.CreateConverterClass(defaultTestConfigurator.GetType());
+
+            Assert.DoesNotThrow(() => defaultTestConfigurator.AddConverterWithContext(tb, context));
+        }
+
+        public void InstanceConfigurationTest()
+        {
+            var w = new MyClass();
+            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(new PathFormatterCollection(),
+                                                                                             configurator =>
+                                                                                                 {
+                                                                                                     configurator.Target(x => x.C).Set(x => w.Convert(x.A));
+                                                                                                     configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                 });
+            var context = new ClassContext() {Key = "someGoodKey"};
+
+
+            var tb = assemblyBuilderWorker.CreateConverterClass(testConfigurator.GetType());
+
+            Assert.Throws<InvalidOperationException>(() => testConfigurator.AddConverterWithContext(tb, context));
+        }
+
+        public void InstanceConfigurationFixTest()
+        {
+            var w = new MyClass();
+            var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(new PathFormatterCollection(),
                                                                                              configurator =>
                                                                                                  {
                                                                                                      configurator.Target(x => x.C).Set(x => ZzzConverter.Convert(x.A));
                                                                                                      configurator.Target(x => x.D).Set(x => x.B);
                                                                                                  });
-            var context = new ClassContext() {Key = "someGoodKey"};
+            var context = new ClassContext() { Key = "someGoodKey" };
 
-            Environment.CurrentDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            var assemblyName = "Converters";
-            var ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.Save);
-            var mb = ab.DefineDynamicModule(assemblyName, assemblyName + ".dll");
-            var tb = mb.DefineType(CreateConverterTypeName(testConfigurator.GetType()), TypeAttributes.Public | TypeAttributes.Class);
+            var tb = assemblyBuilderWorker.CreateConverterClass(testConfigurator.GetType());
 
             Assert.DoesNotThrow(() => testConfigurator.AddConverterWithContext(tb, context));
-            var w = testConfigurator.GetConverter(context)(new TestDataSource());
         }
 
-        private void AddMutator(TestConverterCollection<TestDataSource, TestDataDest> testConfigurator, List<ValidatorsTest.TestMutatorsContext> contexts, TypeBuilder tb)
+        private void AddConverters(TestConverterCollection<TestDataSource, TestDataDest> testConfigurator, List<ValidatorsTest.TestMutatorsContext> contexts, TypeBuilder tb)
         {
             foreach (var c in contexts)
                 testConfigurator.AddConverterWithContext(tb, c);
         }
+
+        private readonly ConvertersAssemblyBuilderWorker assemblyBuilderWorker = new ConvertersAssemblyBuilderWorker();
+
+        private TestConverterCollection<TestDataSource, TestDataDest> defaultTestConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(new PathFormatterCollection(),
+                                                                                                                                                          configurator =>
+                                                                                                                                                           {
+                                                                                                                                                               configurator.Target(x => x.C).Set(x => x.A);
+                                                                                                                                                               configurator.Target(x => x.D).Set(x => x.B);
+                                                                                                                                                           });
 
         public class IntContext : ValidatorsTest.TestMutatorsContext
         {
@@ -216,10 +184,6 @@ namespace Mutators.Tests
 
             public static T Convert<T>(T s)
             {
-                var q = W;
-                var z = W;
-                if (!ReferenceEquals(q, z))
-                    throw new Exception();
                 return W.Convert(s);
             }
         }

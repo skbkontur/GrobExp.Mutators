@@ -10,9 +10,9 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
-    public class TestConvertersAssemblyCreator : ConvertersAssemblyCreator
+    public class TestConvertersAssemblyBuilderWorker : ConvertersAssemblyBuilderWorker
     {
-        public TestConvertersAssemblyCreator()
+        public TestConvertersAssemblyBuilderWorker()
             : base()
         {
         }

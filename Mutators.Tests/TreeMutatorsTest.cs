@@ -473,8 +473,8 @@ namespace Mutators.Tests
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.IntContextTest();
 
@@ -492,8 +492,8 @@ namespace Mutators.Tests
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.StringContextTest();
 
@@ -511,8 +511,8 @@ namespace Mutators.Tests
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.ClassContextTest();
 
@@ -531,12 +531,12 @@ namespace Mutators.Tests
 //                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
 //            };
 //            var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-//            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-//            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+//            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+//            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
             LambdaCompiler.DebugOutputDirectory = "C:\\temp";
             var pathFormatterCollection = new PathFormatterCollection();
             var testConfigurator = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                             configurator => { configurator.Target(x => x.C).Set(x => TestConvertersAssemblyCreator.ZzzConverter.Convert(x.A)); });
+                                                                                             configurator => { configurator.Target(x => x.C).Set(x => TestConvertersAssemblyBuilderWorker.ZzzConverter.Convert(x.A)); });
             testConfigurator.GetConverter(MutatorsContext.Empty)(new TestDataSource());
             //AppDomain.Unload(appDomain);
         }
@@ -552,8 +552,8 @@ namespace Mutators.Tests
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.DllCreationTest(false);
             Console.WriteLine($"{appDomain.BaseDirectory}\r\n" +
@@ -576,8 +576,8 @@ namespace Mutators.Tests
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.DllCreationTest(true);
 
@@ -597,8 +597,8 @@ namespace Mutators.Tests
                 };
             var appDomain = AppDomain.CreateDomain("TestDomain", null, appDomainSetup);
 
-            var assemblyEditorType = typeof(TestConvertersAssemblyCreator);
-            var assemblyEditor = (TestConvertersAssemblyCreator)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
+            var assemblyEditorType = typeof(TestConvertersAssemblyBuilderWorker);
+            var assemblyEditor = (TestConvertersAssemblyBuilderWorker)appDomain.CreateInstanceFromAndUnwrap(assemblyEditorType.Assembly.Location, assemblyEditorType.FullName);
 
             assemblyEditor.MutatorExistanceTest(forSeveralContexts);
 

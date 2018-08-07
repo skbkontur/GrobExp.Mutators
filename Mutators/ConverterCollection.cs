@@ -89,40 +89,6 @@ namespace GrobExp.Mutators
             if (MutatorsAssignRecorder.IsRecording())
                 MutatorsAssignRecorder.StopRecordingConverter();
         }
-        
-        public void AddConverterWithContext(TypeBuilder typeBuilder, MutatorsContext context)
-        {
-            var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
-            ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
-            var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-
-            var methodBuilder = typeBuilder.DefineMethod($"{context.GetKey()}", MethodAttributes.Public | MethodAttributes.Static, typeof(void), new[] {typeof(TDest), typeof(TSource)});
-            LambdaCompiler.CompileToMethod(treeConverter, methodBuilder, CompilerOptions.All);
-        }
-
-        public void LoadConvertersAssembly(string filePath)
-        {
-            if (File.Exists(filePath))
-                convertersAssembly = Assembly.LoadFrom(filePath);
-        }
-
-        private Action<TDest, TSource> GetCompiledTreeConverterFromAssembly(MutatorsContext context)
-        {
-            var type = GetType();
-            var typeName = type.Name;
-            if (type.IsGenericType)
-                typeName = $"{typeName.Substring(0, typeName.Length - 2)}<{string.Join(" ", type.GenericTypeArguments.Select(x => x.Name))}>";
-
-            var converterClassType = convertersAssembly.GetType(typeName);
-            if (converterClassType == null)
-                return null;
-
-            var converterMethod = converterClassType?.GetMethod($"{context.GetKey()}");
-            if (converterMethod == null)
-                return null;
-
-            return (dest, source) => converterMethod?.Invoke(null, new object[] {dest, source});
-        }
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)
         {
@@ -143,28 +109,13 @@ namespace GrobExp.Mutators
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
                         var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
-                        //var treeMutator = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
 
                         #endregion
 
-                        Action<TDest, TSource> compiledTreeConverter = null;
-
-                        var converterInDll = true;
-                        if (convertersAssembly != null)
-                        {
-                            compiledTreeConverter = GetCompiledTreeConverterFromAssembly(context);
-                            converterInDll = compiledTreeConverter != null;
-                        }
-                        else
-                            converterInDll = false;
-
-                        if (!converterInDll)
-                        {
-                            var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-                            logger.Info($"Started compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName} with context: {key}");
-                            compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
-                            logger.Info($"Finished compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName}");
-                        }
+                        var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
+                        logger.Info($"Started compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName} with context: {key}");
+                        var compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
+                        logger.Info($"Finished compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName}");
 
                         slot = new HashtableSlot
                             {
@@ -480,13 +431,6 @@ namespace GrobExp.Mutators
             return Expression.Convert(value, type);
         }
 
-        private static bool IsPrimitive(Type type)
-        {
-            if (type.IsNullable())
-                return IsPrimitive(type.GetGenericArguments()[0]);
-            return type.IsPrimitive || type == typeof(decimal);
-        }
-
         private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
         {
             var sourceParameter = Expression.Parameter(typeof(TSource));
@@ -541,7 +485,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private void ConfigureInternal(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator)
+        protected void ConfigureInternal(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator)
         {
             Configure(context, configurator);
             ConfigureCustomFields(configurator);
@@ -553,7 +497,6 @@ namespace GrobExp.Mutators
 
         private readonly object lockObject = new object();
 
-        private Assembly convertersAssembly;
         private readonly Hashtable hashtable = new Hashtable();
         private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>(null)).GetGenericMethodDefinition();
         private readonly MethodInfo convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();

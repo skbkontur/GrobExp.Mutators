@@ -1,10 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using GrobExp.Mutators.Aggregators;
 using GrobExp.Mutators.ModelConfiguration;
@@ -127,13 +125,6 @@ namespace GrobExp.Mutators
 
         public abstract MutatorsTreeBase<TData> Merge(MutatorsTreeBase<TData> other);
 
-        public void SetValidatorsAssembly()
-        {
-            if (File.Exists("Validators.dll"))
-                validatorsAssembly = Assembly.LoadFrom("Validators.dll");
-        }
-
-        //TODO: прикрутить чтение из dll, как и в компиляторах
         internal Action<TChild, ValidationResultTreeNode> GetValidatorInternal<TChild>(Expression<Func<TData, TChild>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
@@ -279,7 +270,6 @@ namespace GrobExp.Mutators
             return nodeInfo;
         }
 
-        private Assembly validatorsAssembly;
         private readonly Hashtable hashtable = new Hashtable();
         private readonly object lockObject = new object();
 

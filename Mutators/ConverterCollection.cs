@@ -1,11 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
 
 using GrEmit.Utils;
 
@@ -17,7 +16,6 @@ using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
 using Vostok.Logging.Abstractions;
-using Vostok.Logging.Abstractions.Extensions;
 
 namespace GrobExp.Mutators
 {
@@ -101,21 +99,20 @@ namespace GrobExp.Mutators
                     slot = (HashtableSlot)hashtable[key];
                     if (slot == null /* || MutatorsAssignRecorder.IsRecording()*/)
                     {
-                        //TODO: выпилить этот регион(или нет...)
-
-                        #region
-
                         var tree = ModelConfigurationNode.CreateRoot(typeof(TDest));
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
                         var validationsTree = ModelConfigurationNode.CreateRoot(typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
 
-                        #endregion
-
                         var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-                        logger.Info($"Started compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName} with context: {key}");
+                        var sw = Stopwatch.StartNew();
                         var compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
-                        logger.Info($"Finished compiling converter from {typeof(TSource).FullName} to {typeof(TDest).FullName}");
+                        var compilationTime = sw.ElapsedMilliseconds;
+
+                        var typeName = GetType().Name;
+                        var properties = GetLogProperties(context, typeName, compilationTime);
+
+                        logger.Log(new LogEvent(LogLevel.Info, DateTimeOffset.Now, $"{typeName} was compiled in {compilationTime} ms", properties));
 
                         slot = new HashtableSlot
                             {
@@ -144,6 +141,18 @@ namespace GrobExp.Mutators
             }
 
             return slot;
+        }
+
+        private static Dictionary<string, object> GetLogProperties(MutatorsContext context, string typeName, long compilationTime)
+        {
+            var properties = new Dictionary<string, object>
+                {
+                    {"ConverterName", typeName},
+                    {"CompilationTime", compilationTime}
+                };
+            foreach (var propertyPair in context.GetProperties())
+                properties.Add($"Context.{propertyPair.Key}", propertyPair.Value);
+            return properties;
         }
 
         private HashtableSlot CreateHashtableSlot(MutatorsContext context)

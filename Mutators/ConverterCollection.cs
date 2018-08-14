@@ -147,7 +147,7 @@ namespace GrobExp.Mutators
         {
             var properties = new Dictionary<string, object>
                 {
-                    {"ConverterName", typeName},
+                    {"ConverterCollectionName", typeName},
                     {"CompilationTime", compilationTime}
                 };
             foreach (var propertyPair in context.GetProperties())

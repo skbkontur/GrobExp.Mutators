@@ -157,7 +157,7 @@ namespace GrobExp.Mutators
             var mutatorsContextTypeName = context.GetType().Name;
             foreach (var propertyInfo in context.GetType().GetProperties())
                 logProperties.Add($"{mutatorsContextTypeName}.{propertyInfo.Name}", propertyInfo.GetValue(context));
-            logger.Log(new LogEvent(LogLevel.Info, DateTimeOffset.UtcNow, "{ConverterCollectionName} was compiled in {CompilationTimeMilliseconds} ms", logProperties));
+            logger.Info("{ConverterCollectionName} was compiled in {CompilationTimeMilliseconds} ms", logProperties);
         }
 
         private static TypeCode GetTypeCode(Type type)

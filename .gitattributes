@@ -8,4 +8,9 @@
 *.DotSettings text
 *.yml         text
 *.cmd         text
+*.sh          text
 *.md          text
+*.json        text
+*.config      text
+*.props       text
+*.targets     text

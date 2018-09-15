@@ -37,7 +37,7 @@ namespace Mutators.Tests.Visitors
         [Test]
         public void NewObject()
         {
-            IsConstant(() => new { });
+            IsConstant(() => new {});
             IsConstant(() => new object());
         }
 

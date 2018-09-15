@@ -31,6 +31,7 @@ using System;
 // ReSharper disable InconsistentNaming
 
 // ReSharper disable once CheckNamespace
+
 namespace JetBrains.Annotations
 {
     /// <summary>

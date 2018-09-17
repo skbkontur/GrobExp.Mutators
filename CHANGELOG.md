@@ -6,5 +6,5 @@
 - Use [Vostok.Logging.Abstractions](https://github.com/vostok/logging.abstractions) as a logging framework facade.
 - Use [Nerdbank.GitVersioning](https://github.com/AArnott/Nerdbank.GitVersioning) to automate generation of assembly 
   and nuget package versions.
-- Update [GroBuf](https://github.com/skbkontur/GroBuf) dependency to v1.4.2.
-- Update [GrobExp.Compiler](https://github.com/skbkontur/GrobExp.Compiler) dependency to v1.2.1.
+- Update [GroBuf](https://github.com/skbkontur/GroBuf) dependency to v1.4.
+- Update [GrobExp.Compiler](https://github.com/skbkontur/GrobExp.Compiler) dependency to v1.2.

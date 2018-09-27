@@ -1,52 +1,34 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
     public class ValidationRecordCollection
     {
-        public ValidationRecordCollection()
+        public void AddValidatorToRecord(Type validatorType)
         {
-            errorValidationRecords = new List<RecordNode>();
+            errorValidations.TryAdd(validatorType, new RecordNode(validatorType.ToString(), ""));
         }
 
-        public void AddValidatorToRecord(string validatorName)
+        public void RecordCompilingValidation(Type validatorType, ValidationLogInfo validationInfo)
         {
-            AddValidatorToRecord(errorValidationRecords, ref currentErrorValidator, validatorName);
+            if (errorValidations.TryGetValue(validatorType, out var errorValidator))
+                errorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
         }
 
-        private void AddValidatorToRecord(List<RecordNode> records, ref RecordNode validator, string validatorName)
+        public void RecordExecutingValidation(Type validatorType, ValidationLogInfo validationInfo, string validationResult)
         {
-            validator = records.FirstOrDefault(v => v.Name == validatorName);
-            if (validator != null)
-                return;
-            validator = new RecordNode(validatorName, "");
-            records.Add(validator);
-        }
-
-        public void ResetCurrentValidator()
-        {
-            currentErrorValidator = null;
-        }
-
-        public void RecordCompilingValidation(ValidationLogInfo validationInfo)
-        {
-            if (currentErrorValidator != null)
-                currentErrorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
-        }
-
-        public void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)
-        {
-            if (currentErrorValidator != null && validationResult == "Error")
-                currentErrorValidator.RecordExecutingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, validationResult);
+            if (errorValidations.TryGetValue(validatorType, out var errorValidator) && validationResult == "Error")
+                errorValidator.RecordExecutingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, validationResult);
         }
 
         public List<RecordNode> GetErrorRecords()
         {
-            return errorValidationRecords;
+            return errorValidations.Select(x => x.Value).ToList();
         }
 
-        private readonly List<RecordNode> errorValidationRecords;
-        private RecordNode currentErrorValidator;
+        private readonly ConcurrentDictionary<Type, RecordNode> errorValidations = new ConcurrentDictionary<Type, RecordNode>();
     }
 }

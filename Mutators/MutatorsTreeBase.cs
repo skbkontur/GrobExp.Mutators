@@ -42,7 +42,7 @@ namespace GrobExp.Mutators
         public Func<TData, ValidationResultTreeNode> GetValidator()
         {
             if (MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.AddValidatorToRecord(GetType().ToString());
+                MutatorsValidationRecorder.AddValidatorToRecord(GetType());
             return GetValidator(data => data);
         }
 

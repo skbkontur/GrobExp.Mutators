@@ -1,87 +1,75 @@
-﻿using System;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 
 namespace GrobExp.Mutators.MutatorsRecording
 {
     public class RecordNode
     {
-        public RecordNode(string name, string parentFullName, bool isExcludedFromCovreage = false)
+        public RecordNode(string name, string parentFullName, int isExcludedFromCovreage = 0)
         {
             Name = name;
-            Records = new List<RecordNode>();
-            CompiledCount = 1;
+            compiledCount = 1;
             FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
-            IsExcludedFromCoverage = isExcludedFromCovreage;
+            excludedFromCoverage = isExcludedFromCovreage;
         }
 
-        public List<RecordNode> Records { get; private set; }
-        public int CompiledCount { get; private set; }
-        public int ExecutedCount { get; private set; }
-        public string Name { get; private set; }
-        public string FullName { get; private set; }
-        public bool IsExcludedFromCoverage { get; set; }
-
-        private bool ContainsRecord(string recordName)
+        public RecordNode RecordCompilingExpression(List<string> pathComponents, string value, int isExcludedFromCoverage = 0)
         {
-            return Records.Any(node => node.Name == recordName);
-        }
-
-        private RecordNode GetRecordByName(string recordName)
-        {
-            return Records.FirstOrDefault(record => record.Name == recordName);
-        }
-
-        public void RecordCompilingExpression(List<string> pathComponents, string value, bool isExcludedFromCoverage = false)
-        {
-            CompiledCount++;
-            IsExcludedFromCoverage &= isExcludedFromCoverage;
+            Interlocked.Increment(ref compiledCount);
+            Interlocked.CompareExchange(ref excludedFromCoverage, isExcludedFromCoverage, 0);
 
             var recordName = pathComponents[0];
-            RecordNode node;
-            if (ContainsRecord(recordName))
-                node = GetRecordByName(recordName);
-            else
-            {
-                node = new RecordNode(recordName, FullName, isExcludedFromCoverage);
-                Records.Add(node);
-            }
-
+            var node = Records.GetOrAdd(recordName, name => new RecordNode(name, FullName, isExcludedFromCoverage));
             if (pathComponents.Count == 1)
                 node.RecordCompilingExpression(value, isExcludedFromCoverage);
             else
                 node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
+            return node;
         }
 
-        private void RecordCompilingExpression(string value, bool isExcludedFromCoverage = false)
+        private RecordNode GetCompilingExpression(string value, int isExcludedFromCoverage = 0)
         {
-            CompiledCount++;
-            IsExcludedFromCoverage &= isExcludedFromCoverage;
-            if (!ContainsRecord(value))
-                Records.Add(new RecordNode(value, FullName, isExcludedFromCoverage));
+            Interlocked.Increment(ref compiledCount);
+            Interlocked.CompareExchange(ref excludedFromCoverage, isExcludedFromCoverage, 0);
+            return new RecordNode(value, FullName, isExcludedFromCoverage);
+        }
+
+        private void RecordCompilingExpression(string value, int isExcludedFromCoverage = 0)
+        {
+            var record = GetCompilingExpression(value, isExcludedFromCoverage);
+            Records.TryAdd(value, record);
         }
 
         private void RecordExecutingExpression(string value)
         {
-            ExecutedCount++;
-            if (!ContainsRecord(value))
-                RecordCompilingExpression(value);
-            GetRecordByName(value).ExecutedCount++;
+            Interlocked.Increment(ref executedCount);
+            var node = Records.GetOrAdd(value, name => GetCompilingExpression(name));
+            Interlocked.Increment(ref node.executedCount);
         }
 
         public void RecordExecutingExpression(List<string> pathComponents, string value, Lazy<bool> isExcludedFromCoverage = null)
         {
-            ExecutedCount++;
+            Interlocked.Increment(ref executedCount);
 
             var recordName = pathComponents[0];
-            if (!ContainsRecord(recordName))
-                RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage == null ? false : isExcludedFromCoverage.Value);
-
-            var node = GetRecordByName(recordName);
+            var node = Records.GetOrAdd(recordName, name => RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage?.Value ?? false ? 1 : 0));
             if (pathComponents.Count == 1)
                 node.RecordExecutingExpression(value);
             else
                 node.RecordExecutingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
         }
+
+        public ConcurrentDictionary<string, RecordNode> Records { get; } = new ConcurrentDictionary<string, RecordNode>();
+        public int CompiledCount => compiledCount;
+        public int ExecutedCount => executedCount;
+        public string Name { get; }
+        public string FullName { get; }
+        public bool IsExcludedFromCoverage => excludedFromCoverage != 0;
+
+        private int compiledCount;
+        private int executedCount;
+        private int excludedFromCoverage;
     }
 }

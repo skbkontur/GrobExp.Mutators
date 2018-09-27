@@ -36,7 +36,7 @@ namespace GrobExp.Mutators
         public Func<TSource, TDest> GetConverter(MutatorsContext context)
         {
             if (MutatorsAssignRecorder.IsRecording())
-                MutatorsAssignRecorder.RecordConverter(GetType().Name);
+                MutatorsAssignRecorder.RecordConverter(GetType());
             return GetOrCreateHashtableSlot(context).Converter;
         }
 
@@ -79,7 +79,7 @@ namespace GrobExp.Mutators
         protected virtual void BeforeConvert(TSource source)
         {
             if (MutatorsAssignRecorder.IsRecording())
-                MutatorsAssignRecorder.RecordConverter(GetType().Name);
+                MutatorsAssignRecorder.RecordConverter(GetType());
         }
 
         protected virtual void AfterConvert(TDest dest, TSource source)

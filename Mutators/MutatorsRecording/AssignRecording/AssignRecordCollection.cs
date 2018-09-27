@@ -7,24 +7,25 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public class AssignRecordCollection
     {
-        public void AddConverterToRecord(string converterName)
+        public void AddConverterToRecord(Type converterType)
         {
-            converterRecords.GetOrAdd(converterName, name => new RecordNode(name, ""));
+            converterRecords.TryAdd(converterType, new RecordNode(converterType.Name, ""));
         }
 
         public void ResetCurrentConvertor()
         {
-            currentConverterRecord = null;
         }
 
-        public void RecordCompilingExpression(string path, string value, bool isExcludedFromCoverage = false)
+        public void RecordCompilingExpression(Type converterType, string path, string value, bool isExcludedFromCoverage = false)
         {
-            currentConverterRecord?.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
+            if (converterRecords.TryGetValue(converterType, out var converterRecord))
+                converterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage ? 1 : 0);
         }
 
-        public void RecordExecutingExpression(string path, string value, Lazy<bool> isExcludedFromCoverage = null)
+        public void RecordExecutingExpression(Type converterType, string path, string value, Lazy<bool> isExcludedFromCoverage = null)
         {
-            currentConverterRecord?.RecordExecutingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
+            if (converterRecords.TryGetValue(converterType, out var converterRecord))
+                converterRecord.RecordExecutingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public List<RecordNode> GetRecords()
@@ -32,8 +33,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return converterRecords.Select(x => x.Value).ToList();
         }
 
-        //private readonly List<RecordNode> converterRecords;
-        private RecordNode currentConverterRecord;
-        private readonly ConcurrentDictionary<string, RecordNode> converterRecords = new ConcurrentDictionary<string, RecordNode>();
+        private readonly ConcurrentDictionary<Type, RecordNode> converterRecords = new ConcurrentDictionary<Type, RecordNode>();
     }
 }

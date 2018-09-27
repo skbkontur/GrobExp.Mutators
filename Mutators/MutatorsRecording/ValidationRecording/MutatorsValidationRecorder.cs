@@ -27,18 +27,18 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 
         public static void RecordCompilingValidation(Type converterType, ValidationLogInfo validationInfo)
         {
-            instance.recordsCollection.RecordCompilingValidation(validationInfo);
+            instance.recordsCollection.RecordCompilingValidation(converterType, validationInfo);
         }
 
         public static void RecordExecutingValidation(Type converterType, ValidationLogInfo validationInfo, string validationResult)
         {
             if (IsRecording())
-                instance.recordsCollection.RecordExecutingValidation(validationInfo, validationResult);
+                instance.recordsCollection.RecordExecutingValidation(converterType, validationInfo, validationResult);
         }
 
-        public static void AddValidatorToRecord(string validatorName)
+        public static void AddValidatorToRecord(Type validatorType)
         {
-            instance.recordsCollection.AddValidatorToRecord(validatorName);
+            instance.recordsCollection.AddValidatorToRecord(validatorType);
         }
 
         public static bool IsRecording()

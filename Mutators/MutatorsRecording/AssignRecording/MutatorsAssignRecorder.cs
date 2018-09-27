@@ -35,7 +35,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
         public static void RecordCompilingExpression(Type converterType, AssignLogInfo toLog)
         {
             var isExcluded = IsExcludedFromCoverage(toLog);
-            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+            instance.recordsCollection.RecordCompilingExpression(converterType, toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
         }
 
         private static bool IsExcludedFromCoverage(AssignLogInfo toLog)
@@ -49,7 +49,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             if (IsRecording())
             {
                 var isExcluded = new Lazy<bool>(() => IsExcludedFromCoverage(toLog));
-                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+                instance.recordsCollection.RecordExecutingExpression(converterType, toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
             }
         }
 
@@ -65,9 +65,9 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
                 RecordExecutingExpression(converterType, toLog);
         }
 
-        public static void RecordConverter(string converter)
+        public static void RecordConverter(Type converterType)
         {
-            instance.recordsCollection.AddConverterToRecord(converter);
+            instance.recordsCollection.AddConverterToRecord(converterType);
         }
 
         public static bool IsRecording()

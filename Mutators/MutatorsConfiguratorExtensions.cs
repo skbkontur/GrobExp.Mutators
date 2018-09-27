@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -509,7 +509,7 @@ namespace GrobExp.Mutators
             this MutatorsConfigurator<TRoot, TChild, TValue> configurator,
             Expression<Func<TChild, bool?>> condition)
         {
-            configurator.SetMutator(NullifyIfConfiguration.Create(condition));
+            configurator.SetMutator(NullifyIfConfiguration.Create(configurator.Root.ConverterType, condition));
             return configurator;
         }
 
@@ -533,7 +533,7 @@ namespace GrobExp.Mutators
             this MutatorsConfigurator<TRoot, TChild, TValue> configurator,
             Expression<Func<TChild, TValue>> value)
         {
-            configurator.SetMutator(EqualsToConfiguration.Create(typeof(TChild), value, null));
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConverterType, typeof(TChild), value, null));
             return configurator;
         }
 
@@ -550,13 +550,13 @@ namespace GrobExp.Mutators
             Expression<Func<TChild, bool?>> condition,
             Expression<Func<TChild, TValue>> value)
         {
-            configurator.SetMutator(EqualsToIfConfiguration.Create(typeof(TChild), condition, value, null));
+            configurator.SetMutator(EqualsToIfConfiguration.Create(configurator.Root.ConverterType, typeof(TChild), condition, value, null));
             return configurator;
         }
 
         public static MutatorsConfigurator<TRoot, TChild, TValue[]> SetArrayLength<TRoot, TChild, TValue>(this MutatorsConfigurator<TRoot, TChild, TValue[]> configurator, Expression<Func<TChild, int>> length)
         {
-            configurator.SetMutator(SetArrayLengthConfiguration.Create(null, configurator.PathToChild.Merge(length)));
+            configurator.SetMutator(SetArrayLengthConfiguration.Create(configurator.Root.ConverterType, null, configurator.PathToChild.Merge(length)));
             return configurator;
         }
 

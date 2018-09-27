@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,8 +11,8 @@ namespace GrobExp.Mutators.AutoEvaluators
 {
     public class EqualsToIfConfiguration : EqualsToConfiguration
     {
-        public EqualsToIfConfiguration(Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
-            : base(type, value, validator)
+        public EqualsToIfConfiguration(Type converterType, Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
+            : base(converterType, type, value, validator)
         {
             Condition = condition;
         }
@@ -29,15 +29,15 @@ namespace GrobExp.Mutators.AutoEvaluators
             return Condition == null ? value : "if (" + Condition + ") " + value;
         }
 
-        public static EqualsToIfConfiguration Create(Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
+        public static EqualsToIfConfiguration Create(Type converterType, Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
         {
-            return new EqualsToIfConfiguration(type, Prepare(condition), Prepare(value), validator);
+            return new EqualsToIfConfiguration(converterType, type, Prepare(condition), Prepare(value), validator);
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
-            return new EqualsToIfConfiguration(path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Value), Validator);
+            return new EqualsToIfConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Value), Validator);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
@@ -45,17 +45,17 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             if (Validator != null)
                 throw new NotSupportedException();
-            return new EqualsToIfConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Value), Validator);
+            return new EqualsToIfConfiguration(ConverterType, to, Resolve(path, performer, Condition), Resolve(path, performer, Value), Validator);
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new EqualsToIfConfiguration(Type, Prepare(condition).AndAlso(Condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
+            return new EqualsToIfConfiguration(ConverterType, Type, Prepare(condition).AndAlso(Condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
         public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new EqualsToIfConfiguration(Type, resolver.Resolve(Condition), resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
+            return new EqualsToIfConfiguration(ConverterType, Type, resolver.Resolve(Condition), resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
 
         public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
@@ -64,7 +64,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             var infoToLog = new AssignLogInfo(path, Value.Body);
             path = PrepareForAssign(path);
             var value = Convert(Value.Body.ResolveAliases(aliases), path.Type);
-            var assignment = path.Assign(value, infoToLog);
+            var assignment = path.Assign(ConverterType, value, infoToLog);
             if (Condition == null)
                 return assignment;
             var condition = Condition.Body;

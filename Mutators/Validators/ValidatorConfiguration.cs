@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -21,7 +21,7 @@ namespace GrobExp.Mutators.Validators
             Priority = priority;
         }
 
-        public abstract Expression Apply(List<KeyValuePair<Expression, Expression>> aliases);
+        public abstract Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases);
         public MutatorsCreator Creator { get; set; }
         public int Priority { get; private set; }
     }

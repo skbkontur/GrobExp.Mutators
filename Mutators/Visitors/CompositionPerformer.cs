@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -380,7 +380,7 @@ namespace GrobExp.Mutators.Visitors
             bool wasUnconditionalSetter = false;
             for (int index = setters.Length - 1; index >= 0; --index)
             {
-                var mutator = setters[index];
+                var mutator = (EqualsToConfiguration)setters[index];
                 LambdaExpression value;
                 Expression condition;
                 StaticValidatorConfiguration validator;
@@ -390,7 +390,7 @@ namespace GrobExp.Mutators.Visitors
                     if (wasUnconditionalSetter)
                         continue;
                     wasUnconditionalSetter = true;
-                    var equalsToConfiguration = (EqualsToConfiguration)mutator;
+                    var equalsToConfiguration = mutator;
                     value = equalsToConfiguration.Value;
                     condition = null;
                     validator = equalsToConfiguration.Validator;
@@ -406,7 +406,7 @@ namespace GrobExp.Mutators.Visitors
                 {
                     if (arrayAliases != null)
                     {
-                        var validationResult = validator.Apply(arrayAliases);
+                        var validationResult = validator.Apply(mutator.ConverterType, arrayAliases);
                         if (validationResult != null)
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));

@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.MutatorsRecording;
 using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -58,7 +59,7 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(Message);
         }
 
-        public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)
+        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -68,8 +69,8 @@ namespace GrobExp.Mutators.Validators
             var assign = Expression.IfThenElse(condition, Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
             var toLog = new ValidationLogInfo("invalidIf", condition.ToString());
             if (MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+                MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }

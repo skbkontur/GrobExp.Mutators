@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -27,7 +27,7 @@ namespace GrobExp.Mutators
 
         internal override MutatorsTreeBase<T> Migrate<T>(ModelConfigurationNode converterTree)
         {
-            var migratedTree = ModelConfigurationNode.CreateRoot(typeof(T));
+            var migratedTree = ModelConfigurationNode.CreateRoot(converterTree.ConverterType, typeof(T));
             tree.Migrate(typeof(T), migratedTree, converterTree);
             return new MutatorsTree<T>(migratedTree, pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection, priority);
         }

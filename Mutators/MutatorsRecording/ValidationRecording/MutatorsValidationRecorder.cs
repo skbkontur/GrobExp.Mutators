@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
@@ -25,12 +25,12 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             return instance ?? (instance = new MutatorsValidationRecorder());
         }
 
-        public static void RecordCompilingValidation(ValidationLogInfo validationInfo)
+        public static void RecordCompilingValidation(Type converterType, ValidationLogInfo validationInfo)
         {
             instance.recordsCollection.RecordCompilingValidation(validationInfo);
         }
 
-        public static void RecordExecutingValidation(ValidationLogInfo validationInfo, string validationResult)
+        public static void RecordExecutingValidation(Type converterType, ValidationLogInfo validationInfo, string validationResult)
         {
             if (IsRecording())
                 instance.recordsCollection.RecordExecutingValidation(validationInfo, validationResult);

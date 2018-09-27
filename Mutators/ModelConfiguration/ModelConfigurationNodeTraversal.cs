@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -262,7 +262,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                     path = node.Path.MakeIndexerCall((object[])edge.Value, node.NodeType);
                 else throw new InvalidOperationException();
 
-                child = new ModelConfigurationNode(node.RootType, childType, node.Root, node, edge, path);
+                child = new ModelConfigurationNode(node.ConverterType, node.RootType, childType, node.Root, node, edge, path);
                 node.children.Add(edge, child);
             }
 

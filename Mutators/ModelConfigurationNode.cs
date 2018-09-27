@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -8,8 +8,9 @@ namespace GrobExp.Mutators
 {
     public class ModelConfigurationNode
     {
-        internal ModelConfigurationNode(Type rootType, Type nodeType, ModelConfigurationNode root, ModelConfigurationNode parent, ModelConfigurationEdge edge, Expression path)
+        internal ModelConfigurationNode(Type converterType, Type rootType, Type nodeType, ModelConfigurationNode root, ModelConfigurationNode parent, ModelConfigurationEdge edge, Expression path)
         {
+            ConverterType = converterType;
             RootType = rootType;
             NodeType = nodeType;
             Root = root ?? this;
@@ -20,9 +21,9 @@ namespace GrobExp.Mutators
             children = new Dictionary<ModelConfigurationEdge, ModelConfigurationNode>();
         }
 
-        public static ModelConfigurationNode CreateRoot(Type type)
+        public static ModelConfigurationNode CreateRoot(Type converterType, Type type)
         {
-            return new ModelConfigurationNode(type, type, null, null, null, Expression.Parameter(type, type.Name));
+            return new ModelConfigurationNode(converterType, type, type, null, null, null, Expression.Parameter(type, type.Name));
         }
 
         public override string ToString()
@@ -33,6 +34,7 @@ namespace GrobExp.Mutators
         public Expression Path { get; }
         internal IEnumerable<ModelConfigurationNode> Children => children.Values;
         internal ICollection<KeyValuePair<Expression, MutatorConfiguration>> Mutators => mutators;
+        public Type ConverterType { get; }
         public Type NodeType { get; }
         internal Type RootType { get; }
         internal ModelConfigurationNode Root { get; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,6 +8,7 @@ using GrEmit.Utils;
 
 using GrobExp.Compiler;
 using GrobExp.Mutators.MultiLanguages;
+using GrobExp.Mutators.MutatorsRecording;
 using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -107,7 +108,7 @@ namespace GrobExp.Mutators.Validators
             return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
-        public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)
+        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             var condition = GetFullCondition().Body.ResolveAliases(aliases);
             var message = Message == null ? Expression.Constant(null, typeof(MultiLanguageTextBase)) : Message.Body.ResolveAliases(aliases);
@@ -116,8 +117,8 @@ namespace GrobExp.Mutators.Validators
             var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
             var toLog = new ValidationLogInfo("required", condition.ToString());
             if (MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+                MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -266,7 +266,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 foreach (var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
-                    var appliedValidator = validator.Apply(aliases).EliminateLinq();
+                    var appliedValidator = validator.Apply(root.ConverterType, aliases).EliminateLinq();
                     if (appliedValidator == null) continue;
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if (validator.Priority < 0)

@@ -12,32 +12,33 @@ namespace GrobExp.Mutators.MutatorsRecording
             Name = name;
             compiledCount = 1;
             FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
-            excludedFromCoverage = isExcludedFromCovreage ? 1 : 0;
+            IsExcludedFromCoverage = isExcludedFromCovreage;
         }
 
         public RecordNode RecordCompilingExpression(List<string> pathComponents, string value, bool isExcludedFromCoverage = false)
         {
-            var excluded = isExcludedFromCoverage ? 1 : 0;
             Interlocked.Increment(ref compiledCount);
-            Interlocked.CompareExchange(ref excludedFromCoverage, excluded, 0);
+            if (!isExcludedFromCoverage)
+                IsExcludedFromCoverage = false;
 
             var recordName = pathComponents[0];
             var node = Records.GetOrAdd(recordName, name => new RecordNode(name, FullName, isExcludedFromCoverage));
             if (pathComponents.Count == 1)
-                node.RecordCompilingExpression(value, excluded);
+                node.RecordCompilingExpression(value, isExcludedFromCoverage);
             else
                 node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
             return node;
         }
 
-        private RecordNode GetCompilingExpression(string value, int isExcludedFromCoverage = 0)
+        private RecordNode GetCompilingExpression(string value, bool isExcludedFromCoverage = false)
         {
             Interlocked.Increment(ref compiledCount);
-            Interlocked.CompareExchange(ref excludedFromCoverage, isExcludedFromCoverage, 0);
-            return new RecordNode(value, FullName, isExcludedFromCoverage == 1);
+            if (!isExcludedFromCoverage)
+                IsExcludedFromCoverage = false;
+            return new RecordNode(value, FullName, isExcludedFromCoverage);
         }
 
-        private void RecordCompilingExpression(string value, int isExcludedFromCoverage = 0)
+        private void RecordCompilingExpression(string value, bool isExcludedFromCoverage = false)
         {
             var record = GetCompilingExpression(value, isExcludedFromCoverage);
             Records.TryAdd(value, record);
@@ -67,10 +68,9 @@ namespace GrobExp.Mutators.MutatorsRecording
         public int ExecutedCount => executedCount;
         public string Name { get; }
         public string FullName { get; }
-        public bool IsExcludedFromCoverage => excludedFromCoverage != 0;
+        public bool IsExcludedFromCoverage { get; private set; }
 
         private int compiledCount;
         private int executedCount;
-        private int excludedFromCoverage;
     }
 }

@@ -27,7 +27,7 @@ namespace GrobExp.Mutators
 
         internal override MutatorsTreeBase<T> Migrate<T>(ModelConfigurationNode converterTree)
         {
-            var migratedTree = ModelConfigurationNode.CreateRoot(converterTree.ConverterType, typeof(T));
+            var migratedTree = ModelConfigurationNode.CreateRoot(converterTree.ConfiguratorType, typeof(T));
             tree.Migrate(typeof(T), migratedTree, converterTree);
             return new MutatorsTree<T>(migratedTree, pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection, priority);
         }

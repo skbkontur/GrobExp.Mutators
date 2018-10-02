@@ -266,7 +266,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 foreach (var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
-                    var appliedValidator = validator.Apply(root.ConverterType, aliases).EliminateLinq();
+                    var appliedValidator = validator.Apply(root.ConfiguratorType, aliases).EliminateLinq();
                     if (appliedValidator == null) continue;
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if (validator.Priority < 0)

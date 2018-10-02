@@ -265,7 +265,7 @@ namespace GrobExp.Mutators
             LambdaExpression pathToDestCustomFieldsContainer;
             var destCustomFieldsContainer = FindCustomFieldsContainer(destChildType, out pathToDestCustomFieldsContainer);
             var destCustomFields = FindCustomFields(destChildType, destCustomFieldFits, pathToDestChild);
-            var converterType = configurator.Root.ConverterType;
+            var converterType = configurator.Root.ConfiguratorType;
             if (sourceCustomFields.Length > 0)
             {
                 if (destCustomFields.Length > 0 || sourceCustomFieldsContainer != null)
@@ -305,7 +305,7 @@ namespace GrobExp.Mutators
                         var pathToArray = path.Substring(0, delimiterIndex);
                         var pathToLeaf = path.Substring(delimiterIndex + 1, path.Length - delimiterIndex - 1);
                         var pathToTarget = pathToDestChild.Merge(Expression.Lambda(Expression.Call(pathToDestCustomFieldsContainer.Body, indexerGetter, Expression.Constant(pathToArray)), destParameter)).Body;
-                        configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(GetType(), Expression.Lambda(Expression.Constant(TypeCode.Object))));
+                        configurator.SetMutator(Expression.Property(pathToTarget, "TypeCode"), EqualsToConfiguration.Create<TDest>(converterType, Expression.Lambda(Expression.Constant(TypeCode.Object))));
                         configurator.SetMutator(Expression.Property(pathToTarget, "IsArray"), EqualsToConfiguration.Create<TDest>(converterType, Expression.Lambda(Expression.Constant(true))));
 
                         var pathToDestArrayItem = Expression.Convert(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(typeof(object)), Expression.Convert(Expression.Property(pathToTarget, "Value"), typeof(object[]))), typeof(Hashtable));

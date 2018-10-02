@@ -32,7 +32,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
                 if (ok)
                 {
-                    var current = validator.Apply(node.ConverterType, new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.Path)});
+                    var current = validator.Apply(node.ConfiguratorType, new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(parameter, node.Path)});
                     if (current != null)
                         validationResults.Add(Expression.Call(result, listAddValidationResultMethod, current));
                 }

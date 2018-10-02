@@ -204,8 +204,8 @@ namespace GrobExp.Mutators.ModelConfiguration
                 resizeIfNeeded = Expression.IfThen(
                     lengthsAreDifferent,
                     Expression.IfThenElse(destArrayIsNull,
-                                          path.Assign(child.ConverterType, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
-                                          Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(child.ConverterType, temp))
+                                          path.Assign(child.ConfiguratorType, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
+                                          Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(child.ConfiguratorType, temp))
                         ));
             }
             else if (path.Type.IsGenericType && path.Type.GetGenericTypeDefinition() == typeof(List<>))

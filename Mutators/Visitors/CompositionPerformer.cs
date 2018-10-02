@@ -330,7 +330,7 @@ namespace GrobExp.Mutators.Visitors
             var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
             if (convertationNode == null) return null;
             var resolver = new AliasesResolver(arrayAliases);
-            var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
+            var setters = convertationNode.GetMutators().OfType<EqualsToConfiguration>().ToArray();
             if (setters.Length == 0)
             {
                 onlyLeavesAreConvertible = true;
@@ -380,7 +380,7 @@ namespace GrobExp.Mutators.Visitors
             bool wasUnconditionalSetter = false;
             for (int index = setters.Length - 1; index >= 0; --index)
             {
-                var mutator = (EqualsToConfiguration)setters[index];
+                var mutator = setters[index];
                 LambdaExpression value;
                 Expression condition;
                 StaticValidatorConfiguration validator;
@@ -390,10 +390,9 @@ namespace GrobExp.Mutators.Visitors
                     if (wasUnconditionalSetter)
                         continue;
                     wasUnconditionalSetter = true;
-                    var equalsToConfiguration = mutator;
-                    value = equalsToConfiguration.Value;
+                    value = mutator.Value;
                     condition = null;
-                    validator = equalsToConfiguration.Validator;
+                    validator = mutator.Validator;
                 }
                 else
                 {

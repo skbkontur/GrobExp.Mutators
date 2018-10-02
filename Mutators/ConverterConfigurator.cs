@@ -50,7 +50,7 @@ namespace GrobExp.Mutators
         public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, TDest, bool?>> condition) => If((LambdaExpression)condition);
 
         public LambdaExpression Condition { get; }
-        public ModelConfigurationNode Root { get; }
+        internal ModelConfigurationNode Root { get; }
     }
 
     public class ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>
@@ -124,6 +124,6 @@ namespace GrobExp.Mutators
         public Expression<Func<TDestRoot, TDestChild>> PathToChild { get; }
         public Expression<Func<TDestRoot, TDestValue>> PathToValue { get; }
         public LambdaExpression Condition { get; }
-        public ModelConfigurationNode Root { get; }
+        internal ModelConfigurationNode Root { get; }
     }
 }

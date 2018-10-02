@@ -7,23 +7,24 @@ namespace GrobExp.Mutators.MutatorsRecording
 {
     public class RecordNode
     {
-        public RecordNode(string name, string parentFullName, int isExcludedFromCovreage = 0)
+        public RecordNode(string name, string parentFullName, bool isExcludedFromCovreage = false)
         {
             Name = name;
             compiledCount = 1;
             FullName = string.IsNullOrEmpty(parentFullName) ? name : parentFullName + "." + name;
-            excludedFromCoverage = isExcludedFromCovreage;
+            excludedFromCoverage = isExcludedFromCovreage ? 1 : 0;
         }
 
-        public RecordNode RecordCompilingExpression(List<string> pathComponents, string value, int isExcludedFromCoverage = 0)
+        public RecordNode RecordCompilingExpression(List<string> pathComponents, string value, bool isExcludedFromCoverage = false)
         {
+            var excluded = isExcludedFromCoverage ? 1 : 0;
             Interlocked.Increment(ref compiledCount);
-            Interlocked.CompareExchange(ref excludedFromCoverage, isExcludedFromCoverage, 0);
+            Interlocked.CompareExchange(ref excludedFromCoverage, excluded, 0);
 
             var recordName = pathComponents[0];
             var node = Records.GetOrAdd(recordName, name => new RecordNode(name, FullName, isExcludedFromCoverage));
             if (pathComponents.Count == 1)
-                node.RecordCompilingExpression(value, isExcludedFromCoverage);
+                node.RecordCompilingExpression(value, excluded);
             else
                 node.RecordCompilingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
             return node;
@@ -33,7 +34,7 @@ namespace GrobExp.Mutators.MutatorsRecording
         {
             Interlocked.Increment(ref compiledCount);
             Interlocked.CompareExchange(ref excludedFromCoverage, isExcludedFromCoverage, 0);
-            return new RecordNode(value, FullName, isExcludedFromCoverage);
+            return new RecordNode(value, FullName, isExcludedFromCoverage == 1);
         }
 
         private void RecordCompilingExpression(string value, int isExcludedFromCoverage = 0)
@@ -54,7 +55,7 @@ namespace GrobExp.Mutators.MutatorsRecording
             Interlocked.Increment(ref executedCount);
 
             var recordName = pathComponents[0];
-            var node = Records.GetOrAdd(recordName, name => RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage?.Value ?? false ? 1 : 0));
+            var node = Records.GetOrAdd(recordName, name => RecordCompilingExpression(pathComponents, value, isExcludedFromCoverage?.Value ?? false));
             if (pathComponents.Count == 1)
                 node.RecordExecutingExpression(value);
             else

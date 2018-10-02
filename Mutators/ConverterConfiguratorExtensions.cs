@@ -29,7 +29,7 @@ namespace GrobExp.Mutators
                                              ? null
                                              : StaticValidatorConfiguration.Create(MutatorsCreator.Sharp, "SetWithValidator", priority,
                                                                                    null, nodeFromRoot, valueFromRoot, validator);
-            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConverterType, typeof(TDestRoot), convertedValue, validatorConfiguration));
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), convertedValue, validatorConfiguration));
             return configurator;
         }
 
@@ -74,7 +74,7 @@ namespace GrobExp.Mutators
             var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
             var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)methodReplacer.Visit(configurator.PathToChild);
             LambdaExpression valueFromRoot = new ExpressionMerger(pathToSourceChild, pathToChild).Merge(value);
-            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConverterType, typeof(TDestRoot), valueFromRoot, null));
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
             return configurator;
         }
 
@@ -85,7 +85,7 @@ namespace GrobExp.Mutators
             var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
             var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
             LambdaExpression valueFromRoot = pathToSourceChild.Merge(value);
-            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConverterType, typeof(TDestRoot), valueFromRoot, null));
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
             return configurator;
         }
 
@@ -98,7 +98,7 @@ namespace GrobExp.Mutators
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> configurator,
             Expression<Func<TDestChild, bool?>> condition)
         {
-            configurator.SetMutator(NullifyIfConfiguration.Create(configurator.Root.ConverterType, condition));
+            configurator.SetMutator(NullifyIfConfiguration.Create(configurator.Root.ConfiguratorType, condition));
             return configurator;
         }
 
@@ -132,7 +132,7 @@ namespace GrobExp.Mutators
                 if (dest.NodeType == ExpressionType.Convert)
                     dest = ((UnaryExpression)dest).Operand;
                 dest = pathToChild.Merge(Expression.Lambda(dest, batch.Parameters[0])).Body;
-                configurator.ToRoot().SetMutator(dest, EqualsToConfiguration.Create(configurator.Root.ConverterType, typeof(TDestRoot), value, null));
+                configurator.ToRoot().SetMutator(dest, EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), value, null));
                 //configurator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), value, null));
             }
 
@@ -148,7 +148,7 @@ namespace GrobExp.Mutators
                 if (dest.NodeType == ExpressionType.Convert)
                     dest = ((UnaryExpression)dest).Operand;
                 dest = pathToChild.Merge(Expression.Lambda(dest, batch.Parameters[0])).Body;
-                configurator.ToRoot().SetMutator(dest, NullifyIfConfiguration.Create(configurator.Root.ConverterType, condition));
+                configurator.ToRoot().SetMutator(dest, NullifyIfConfiguration.Create(configurator.Root.ConfiguratorType, condition));
 
                 //configurator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(NullifyIfConfiguration.Create(condition));
             }

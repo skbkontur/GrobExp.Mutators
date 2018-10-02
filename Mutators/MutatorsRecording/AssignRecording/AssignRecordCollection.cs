@@ -19,7 +19,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
         public void RecordCompilingExpression(Type converterType, string path, string value, bool isExcludedFromCoverage = false)
         {
             if (converterRecords.TryGetValue(converterType, out var converterRecord))
-                converterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage ? 1 : 0);
+                converterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public void RecordExecutingExpression(Type converterType, string path, string value, Lazy<bool> isExcludedFromCoverage = null)

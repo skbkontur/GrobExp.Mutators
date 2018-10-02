@@ -122,6 +122,6 @@ namespace GrobExp.Mutators
         public Expression<Func<TRoot, TValue>> PathToValue { get; }
         public LambdaExpression Condition { get; }
         public MultiLanguageTextBase Title { get; }
-        public ModelConfigurationNode Root { get; }
+        internal ModelConfigurationNode Root { get; }
     }
 }

@@ -147,8 +147,8 @@ namespace Mutators.Tests
             var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(1, converterNode.ExecutedCount);
-            // Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
-            // Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
+            Assert.AreEqual(1, converterNode.Records["TestDataDest"].Records["C"].ExecutedCount);
+            Assert.AreEqual(0, converterNode.Records["TestDataDest"].Records["D"].ExecutedCount);
         }
 
         [Test]

@@ -84,8 +84,6 @@ namespace GrobExp.Mutators
 
         protected virtual void AfterConvert(TDest dest, TSource source)
         {
-            if (MutatorsAssignRecorder.IsRecording())
-                MutatorsAssignRecorder.StopRecordingConverter();
         }
 
         private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)

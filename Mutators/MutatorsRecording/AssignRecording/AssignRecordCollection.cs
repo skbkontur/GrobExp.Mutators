@@ -12,10 +12,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             converterRecords.TryAdd(converterType, new RecordNode(converterType.Name, ""));
         }
 
-        public void ResetCurrentConvertor()
-        {
-        }
-
         public void RecordCompilingExpression(Type converterType, string path, string value, bool isExcludedFromCoverage = false)
         {
             if (converterRecords.TryGetValue(converterType, out var converterRecord))

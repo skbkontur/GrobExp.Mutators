@@ -75,11 +75,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return instance != null;
         }
 
-        public static void StopRecordingConverter()
-        {
-            instance.recordsCollection.ResetCurrentConvertor();
-        }
-
         [ThreadStatic]
         private static MutatorsAssignRecorder instance;
 

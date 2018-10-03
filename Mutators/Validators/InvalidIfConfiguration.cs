@@ -70,7 +70,7 @@ namespace GrobExp.Mutators.Validators
             var toLog = new ValidationLogInfo("invalidIf", condition.ToString());
             if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public LambdaExpression Condition { get; private set; }

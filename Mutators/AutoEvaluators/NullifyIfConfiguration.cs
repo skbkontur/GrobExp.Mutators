@@ -65,7 +65,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             if (MutatorsAssignRecorder.IsRecording())
             {
                 MutatorsAssignRecorder.RecordCompilingExpression(ConverterType, infoToLog);
-                return Expression.Block(Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(ConverterType), Expression.Constant(infoToLog)), applyResult);
+                return Expression.Block(Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(ConverterType, typeof(Type)), Expression.Constant(infoToLog)), applyResult);
             }
             return applyResult;
         }

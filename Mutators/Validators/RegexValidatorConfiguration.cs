@@ -93,7 +93,7 @@ namespace GrobExp.Mutators.Validators
 
             if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
-            return Expression.Block(new[] {result}, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
+            return Expression.Block(new[] {result}, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
         }
 
         public LambdaExpression Path { get; private set; }

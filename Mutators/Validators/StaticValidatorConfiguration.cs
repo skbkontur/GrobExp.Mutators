@@ -86,7 +86,7 @@ namespace GrobExp.Mutators.Validators
             var assign = Expression.Assign(result, condition);
             if (MutatorsValidationRecorder.IsRecording())
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public string Name { get; set; }

@@ -94,12 +94,12 @@ namespace GrobExp.Mutators
 
             if (value.Type.IsNullable())
             {
-                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithNullableValueCheckGenericMethodInfo.MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(converterType), Expression.Constant(toLog), value);
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithNullableValueCheckGenericMethodInfo.MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), value);
             }
             else if (value.Type.IsValueType)
-                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(converterType), Expression.Constant(toLog));
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog));
             else
-                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithValueObjectCheck, Expression.Constant(converterType), Expression.Constant(toLog), value);
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithValueObjectCheck, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), value);
 
             return Expression.Block(new[] {temp},
                                     Expression.Assign(temp, value),

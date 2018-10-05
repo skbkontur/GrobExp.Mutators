@@ -556,7 +556,7 @@ namespace GrobExp.Mutators
 
         public static MutatorsConfigurator<TRoot, TChild, TValue[]> SetArrayLength<TRoot, TChild, TValue>(this MutatorsConfigurator<TRoot, TChild, TValue[]> configurator, Expression<Func<TChild, int>> length)
         {
-            configurator.SetMutator(SetArrayLengthConfiguration.Create(configurator.Root.ConfiguratorType, null, configurator.PathToChild.Merge(length)));
+            configurator.SetMutator(SetArrayLengthConfiguration.Create(null, configurator.PathToChild.Merge(length)));
             return configurator;
         }
 

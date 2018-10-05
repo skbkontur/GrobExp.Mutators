@@ -46,7 +46,6 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
             return instance != null;
         }
 
-        [ThreadStatic]
         private static MutatorsValidationRecorder instance;
 
         private readonly ValidationRecordCollection recordsCollection;

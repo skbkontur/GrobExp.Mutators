@@ -75,7 +75,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return instance != null;
         }
 
-        [ThreadStatic]
         private static MutatorsAssignRecorder instance;
 
         private readonly AssignRecordCollection recordsCollection;

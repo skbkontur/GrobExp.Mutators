@@ -1,7 +1,7 @@
 # Changelog
 
 ## v1.1 - 2018.10.03
-- Support concurrent mutators recording
+- Support concurrent validation and convertation recording
 
 ## v1.0 - 2018.09.15
 - Set TargetFramework to net472.

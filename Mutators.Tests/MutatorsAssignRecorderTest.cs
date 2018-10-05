@@ -152,9 +152,10 @@ namespace Mutators.Tests
         }
 
         [Test]
-        [Description("Для каждого потока отдельный лог")]
+        [Description("Один лог для всех потоков")]
         public void MultithreadingTest()
         {
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var actualDataList = new ConcurrentBag<TestDataDest>();
             var threads = new ConcurrentBag<Thread>();
             for (var i = 0; i < 10; i++)
@@ -164,22 +165,9 @@ namespace Mutators.Tests
                         while (!start)
                         {
                         }
-
-                        try
-                        {
-                            var recorder = AssignRecorderInitializer.StartAssignRecorder();
-                            var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                                      configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
-                            actualDataList.Add(converter(new TestDataSource()));
-                            recorder.Stop();
-                            Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
-                            Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
-                        }
-                        catch (Exception e)
-                        {
-                            lastException = e;
-                            Console.WriteLine(e);
-                        }
+                        var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                                                                                                  configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
+                        actualDataList.Add(converter(new TestDataSource()));
                     });
                 thread.Start();
                 threads.Add(thread);
@@ -192,6 +180,8 @@ namespace Mutators.Tests
                 thread.Join();
             }
 
+            Assert.AreEqual(11, recorder.GetRecords()[0].CompiledCount);
+            Assert.AreEqual(10, recorder.GetRecords()[0].ExecutedCount);
             Assert.AreEqual(10, actualDataList.Count);
             foreach (var data in actualDataList)
             {

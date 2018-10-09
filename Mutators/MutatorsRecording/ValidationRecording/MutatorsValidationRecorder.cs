@@ -36,11 +36,6 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
                 instance.recordsCollection.RecordExecutingValidation(converterType, validationInfo, validationResult);
         }
 
-        public static void AddValidatorToRecord(Type validatorType)
-        {
-            instance.recordsCollection.AddValidatorToRecord(validatorType);
-        }
-
         public static bool IsRecording()
         {
             return instance != null;

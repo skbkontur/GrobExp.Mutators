@@ -65,11 +65,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
                 RecordExecutingExpression(converterType, toLog);
         }
 
-        public static void RecordConverter(Type converterType)
-        {
-            instance.recordsCollection.AddConverterToRecord(converterType);
-        }
-
         public static bool IsRecording()
         {
             return instance != null;

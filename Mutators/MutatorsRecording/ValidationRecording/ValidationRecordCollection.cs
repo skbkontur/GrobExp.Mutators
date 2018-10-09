@@ -7,21 +7,14 @@ namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
     public class ValidationRecordCollection
     {
-        public void AddValidatorToRecord(Type validatorType)
-        {
-            errorValidations.TryAdd(validatorType, new RecordNode(validatorType.ToString(), ""));
-        }
-
         public void RecordCompilingValidation(Type validatorType, ValidationLogInfo validationInfo)
         {
-            if (errorValidations.TryGetValue(validatorType, out var errorValidator))
-                errorValidator.RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
+            errorValidations.GetOrAdd(validatorType, RecordNode.Create).RecordCompilingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, "Error");
         }
 
         public void RecordExecutingValidation(Type validatorType, ValidationLogInfo validationInfo, string validationResult)
         {
-            if (errorValidations.TryGetValue(validatorType, out var errorValidator) && validationResult == "Error")
-                errorValidator.RecordExecutingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, validationResult);
+            errorValidations.GetOrAdd(validatorType, RecordNode.Create).RecordExecutingExpression(new List<string> {validationInfo.Name, validationInfo.Condition}, validationResult);
         }
 
         public List<RecordNode> GetErrorRecords()

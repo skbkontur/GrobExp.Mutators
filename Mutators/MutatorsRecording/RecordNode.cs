@@ -63,6 +63,8 @@ namespace GrobExp.Mutators.MutatorsRecording
                 node.RecordExecutingExpression(pathComponents.GetRange(1, pathComponents.Count - 1), value, isExcludedFromCoverage);
         }
 
+        public static RecordNode Create(Type type) => new RecordNode(type.Name, "");
+
         public ConcurrentDictionary<string, RecordNode> Records { get; } = new ConcurrentDictionary<string, RecordNode>();
         public int CompiledCount => compiledCount;
         public int ExecutedCount => executedCount;

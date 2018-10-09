@@ -7,21 +7,14 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
     public class AssignRecordCollection
     {
-        public void AddConverterToRecord(Type converterType)
-        {
-            converterRecords.TryAdd(converterType, new RecordNode(converterType.Name, ""));
-        }
-
         public void RecordCompilingExpression(Type converterType, string path, string value, bool isExcludedFromCoverage = false)
         {
-            if (converterRecords.TryGetValue(converterType, out var converterRecord))
-                converterRecord.RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
+            converterRecords.GetOrAdd(converterType, RecordNode.Create).RecordCompilingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public void RecordExecutingExpression(Type converterType, string path, string value, Lazy<bool> isExcludedFromCoverage = null)
         {
-            if (converterRecords.TryGetValue(converterType, out var converterRecord))
-                converterRecord.RecordExecutingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
+            converterRecords.GetOrAdd(converterType, RecordNode.Create).RecordExecutingExpression(path.Split('.').ToList(), value, isExcludedFromCoverage);
         }
 
         public List<RecordNode> GetRecords()

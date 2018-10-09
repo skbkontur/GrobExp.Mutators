@@ -187,9 +187,6 @@ namespace Mutators.Tests
             {
                 Assert.AreEqual(12, data.C);
             }
-
-            if (lastException != null)
-                throw lastException;
         }
 
         [Test]
@@ -404,7 +401,6 @@ namespace Mutators.Tests
             Assert.AreEqual(expectedExecutedCount, records[0].ExecutedCount);
         }
 
-        private volatile Exception lastException;
         private IPathFormatterCollection pathFormatterCollection;
         private volatile bool start;
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -330,7 +330,7 @@ namespace GrobExp.Mutators.Visitors
             var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
             if (convertationNode == null) return null;
             var resolver = new AliasesResolver(arrayAliases);
-            var setters = convertationNode.GetMutators().Where(mutator => mutator is EqualsToConfiguration).ToArray();
+            var setters = convertationNode.GetMutators().OfType<EqualsToConfiguration>().ToArray();
             if (setters.Length == 0)
             {
                 onlyLeavesAreConvertible = true;
@@ -390,10 +390,9 @@ namespace GrobExp.Mutators.Visitors
                     if (wasUnconditionalSetter)
                         continue;
                     wasUnconditionalSetter = true;
-                    var equalsToConfiguration = (EqualsToConfiguration)mutator;
-                    value = equalsToConfiguration.Value;
+                    value = mutator.Value;
                     condition = null;
-                    validator = equalsToConfiguration.Validator;
+                    validator = mutator.Validator;
                 }
                 else
                 {
@@ -406,7 +405,7 @@ namespace GrobExp.Mutators.Visitors
                 {
                     if (arrayAliases != null)
                     {
-                        var validationResult = validator.Apply(arrayAliases);
+                        var validationResult = validator.Apply(mutator.ConverterType, arrayAliases);
                         if (validationResult != null)
                         {
                             validationResult = Expression.Coalesce(validationResult, Expression.Constant(ValidationResult.Ok));

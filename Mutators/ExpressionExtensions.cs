@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 
 using GrobExp.Compiler;
+using GrobExp.Mutators.MutatorsRecording;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -83,26 +84,26 @@ namespace GrobExp.Mutators
             return expression == null ? null : new LinqEliminator().Eliminate(expression);
         }
 
-        public static Expression Assign(this Expression path, Expression value, AssignLogInfo toLog = null)
+        public static Expression Assign(this Expression path, Type converterType, Expression value, AssignLogInfo toLog = null)
         {
             if (!MutatorsAssignRecorder.IsRecording() || toLog == null)
-                return InternalAssign(path, value);
-            MutatorsAssignRecorder.RecordCompilingExpression(toLog);
+                return path.InternalAssign(converterType, value);
+            MutatorsAssignRecorder.RecordCompilingExpression(converterType, toLog);
             MethodCallExpression recordingExpression;
             var temp = Expression.Variable(value.Type, "temp");
 
             if (value.Type.IsNullable())
             {
-                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithNullableValueCheck").MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(toLog), value);
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithNullableValueCheckGenericMethodInfo.MakeGenericMethod(Nullable.GetUnderlyingType(value.Type)), Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), value);
             }
             else if (value.Type.IsValueType)
-                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(toLog));
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog));
             else
-                recordingExpression = Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpressionWithValueObjectCheck"), Expression.Constant(toLog), value);
+                recordingExpression = Expression.Call(RecordingMethods.RecordExecutingExpressionWithValueObjectCheck, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), value);
 
             return Expression.Block(new[] {temp},
                                     Expression.Assign(temp, value),
-                                    InternalAssign(path, temp),
+                                    path.InternalAssign(converterType, temp),
                                     recordingExpression,
                                     temp);
         }
@@ -438,7 +439,7 @@ namespace GrobExp.Mutators
             }
         }
 
-        private static Expression InternalAssign(this Expression path, Expression value)
+        private static Expression InternalAssign(this Expression path, Type converterType, Expression value)
         {
             if (path.NodeType == ExpressionType.Convert)
                 path = ((UnaryExpression)path).Operand;
@@ -483,7 +484,7 @@ namespace GrobExp.Mutators
 
                     return Expression.Block(new[] {temp},
                                             Expression.Assign(temp, methodCallExpression.Object),
-                                            Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(Expression.New(temp.Type)), temp.Type))),
+                                            Expression.IfThen(Expression.Equal(temp, Expression.Constant(null, temp.Type)), Expression.Assign(temp, Expression.Convert(methodCallExpression.Object.Assign(converterType, Expression.New(temp.Type)), temp.Type))),
                                             assignment);
                 }
 

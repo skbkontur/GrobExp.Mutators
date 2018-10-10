@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 
@@ -91,7 +91,7 @@ namespace GrobExp.Mutators
                     slot = (HashtableSlot)hashtable[key];
                     if (slot == null)
                     {
-                        var root = ModelConfigurationNode.CreateRoot(typeof(TData));
+                        var root = ModelConfigurationNode.CreateRoot(GetType(), typeof(TData));
                         Configure(context, new MutatorsConfigurator<TData>(root));
                         hashtable[key] = slot = new HashtableSlot
                             {

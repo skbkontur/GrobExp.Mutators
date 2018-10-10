@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Mutators.MutatorsRecording;
 using GrobExp.Mutators.MutatorsRecording.AssignRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -10,9 +11,10 @@ namespace GrobExp.Mutators.AutoEvaluators
 {
     public class NullifyIfConfiguration : AutoEvaluatorConfiguration
     {
-        public NullifyIfConfiguration(Type type, LambdaExpression condition)
+        public NullifyIfConfiguration(Type converterType, Type type, LambdaExpression condition)
             : base(type)
         {
+            ConverterType = converterType;
             Condition = condition;
         }
 
@@ -21,31 +23,31 @@ namespace GrobExp.Mutators.AutoEvaluators
             return "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public static NullifyIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
+        public static NullifyIfConfiguration Create<TData>(Type converterType, Expression<Func<TData, bool?>> condition)
         {
-            return new NullifyIfConfiguration(typeof(TData), Prepare(condition));
+            return new NullifyIfConfiguration(converterType, typeof(TData), Prepare(condition));
         }
 
         public override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
-            return new NullifyIfConfiguration(path.Parameters.Single().Type, path.Merge(Condition));
+            return new NullifyIfConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Condition));
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
         public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
-            return new NullifyIfConfiguration(to, Resolve(path, performer, Condition));
+            return new NullifyIfConfiguration(ConverterType, to, Resolve(path, performer, Condition));
         }
 
         public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new NullifyIfConfiguration(Type, resolver.Resolve(Condition));
+            return new NullifyIfConfiguration(ConverterType, Type, resolver.Resolve(Condition));
         }
 
         public override MutatorConfiguration If(LambdaExpression condition)
         {
-            return new NullifyIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
+            return new NullifyIfConfiguration(ConverterType, Type, Prepare(condition).AndAlso(Condition));
         }
 
         public override void GetArrays(ArraysExtractor arraysExtractor)
@@ -62,12 +64,13 @@ namespace GrobExp.Mutators.AutoEvaluators
             var applyResult = Expression.IfThen(condition, Expression.Assign(path, Expression.Constant(path.Type.GetDefaultValue(), path.Type)));
             if (MutatorsAssignRecorder.IsRecording())
             {
-                MutatorsAssignRecorder.RecordCompilingExpression(infoToLog);
-                return Expression.Block(Expression.Call(typeof(MutatorsAssignRecorder).GetMethod("RecordExecutingExpression"), Expression.Constant(infoToLog)), applyResult);
+                MutatorsAssignRecorder.RecordCompilingExpression(ConverterType, infoToLog);
+                return Expression.Block(Expression.Call(RecordingMethods.RecordExecutingExpressionMethodInfo, Expression.Constant(ConverterType, typeof(Type)), Expression.Constant(infoToLog)), applyResult);
             }
             return applyResult;
         }
 
+        public Type ConverterType { get; }
         public LambdaExpression Condition { get; private set; }
 
         protected override LambdaExpression[] GetDependencies()

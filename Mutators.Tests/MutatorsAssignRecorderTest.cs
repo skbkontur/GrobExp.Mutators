@@ -41,19 +41,19 @@ namespace Mutators.Tests
             Assert.AreEqual(1, converterNode.Records.Count);
             Assert.AreEqual("TestConverterCollection`2", converterNode.Name);
 
-            var objectTypeNode = converterNode.Records[0];
+            var objectTypeNode = converterNode.Records["TestDataDest"];
             Assert.AreEqual(2, objectTypeNode.Records.Count);
             Assert.AreEqual("TestDataDest", objectTypeNode.Name);
 
-            var dataCNode = objectTypeNode.Records[0];
+            var dataCNode = objectTypeNode.Records["C"];
             Assert.AreEqual("C", dataCNode.Name);
             Assert.AreEqual(1, dataCNode.Records.Count);
-            Assert.AreEqual("source.A", dataCNode.Records[0].Name);
+            Assert.AreEqual("source.A", dataCNode.Records["source.A"].Name);
 
-            var dataDNode = objectTypeNode.Records[1];
+            var dataDNode = objectTypeNode.Records["D"];
             Assert.AreEqual("D", dataDNode.Name);
             Assert.AreEqual(1, dataDNode.Records.Count);
-            Assert.AreEqual("source.B", dataDNode.Records[0].Name);
+            Assert.AreEqual("source.B", dataDNode.Records["source.B"].Name);
         }
 
         [Test]
@@ -147,14 +147,15 @@ namespace Mutators.Tests
             var converterNode = recorder.GetRecords()[0];
             Assert.AreEqual(3, converterNode.CompiledCount);
             Assert.AreEqual(1, converterNode.ExecutedCount);
-            Assert.AreEqual(1, converterNode.Records[0].Records[0].ExecutedCount);
-            Assert.AreEqual(0, converterNode.Records[0].Records[1].ExecutedCount);
+            Assert.AreEqual(1, converterNode.Records["TestDataDest"].Records["C"].ExecutedCount);
+            Assert.AreEqual(0, converterNode.Records["TestDataDest"].Records["D"].ExecutedCount);
         }
 
         [Test]
-        [Description("Для каждого потока отдельный лог")]
+        [Description("Один лог для всех потоков")]
         public void MultithreadingTest()
         {
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var actualDataList = new ConcurrentBag<TestDataDest>();
             var threads = new ConcurrentBag<Thread>();
             for (var i = 0; i < 10; i++)
@@ -164,22 +165,9 @@ namespace Mutators.Tests
                         while (!start)
                         {
                         }
-
-                        try
-                        {
-                            var recorder = AssignRecorderInitializer.StartAssignRecorder();
-                            var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
-                                                                                                      configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
-                            actualDataList.Add(converter(new TestDataSource()));
-                            recorder.Stop();
-                            Assert.AreEqual(2, recorder.GetRecords()[0].CompiledCount);
-                            Assert.AreEqual(1, recorder.GetRecords()[0].ExecutedCount);
-                        }
-                        catch (Exception e)
-                        {
-                            lastException = e;
-                            Console.WriteLine(e);
-                        }
+                        var converter = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
+                                                                                                  configurator => { configurator.Target(x => x.C).Set(x => x.A); }).GetConverter(MutatorsContext.Empty);
+                        actualDataList.Add(converter(new TestDataSource()));
                     });
                 thread.Start();
                 threads.Add(thread);
@@ -192,14 +180,13 @@ namespace Mutators.Tests
                 thread.Join();
             }
 
+            Assert.AreEqual(11, recorder.GetRecords()[0].CompiledCount);
+            Assert.AreEqual(10, recorder.GetRecords()[0].ExecutedCount);
             Assert.AreEqual(10, actualDataList.Count);
             foreach (var data in actualDataList)
             {
                 Assert.AreEqual(12, data.C);
             }
-
-            if (lastException != null)
-                throw lastException;
         }
 
         [Test]
@@ -362,36 +349,43 @@ namespace Mutators.Tests
             recorder.Stop();
 
             var records = recorder.GetRecords()[0].Records;
-            Assert.AreEqual("TestComplexDataDest", records[0].Name);
-            Assert.IsFalse(records[0].IsExcludedFromCoverage);
+            var record = records["TestComplexDataDest"];
+            Assert.AreEqual("TestComplexDataDest", record.Name);
+            Assert.IsFalse(record.IsExcludedFromCoverage);
 
-            records = records[0].Records;
-            Assert.AreEqual("FieldC", records[0].Name);
-            Assert.IsTrue(records[0].IsExcludedFromCoverage);
-            Assert.AreEqual("A", records[0].Records[0].Name);
-            Assert.IsTrue(records[0].Records[0].IsExcludedFromCoverage);
-            Assert.AreEqual("B", records[0].Records[1].Name);
-            Assert.IsTrue(records[0].Records[1].IsExcludedFromCoverage);
+            records = record.Records;
+            record = records["FieldC"];
 
-            Assert.AreEqual("FieldD", records[1].Name);
-            Assert.IsFalse(records[1].IsExcludedFromCoverage);
-            Assert.AreEqual("StrB", records[1].Records[0].Name);
-            Assert.IsFalse(records[1].Records[0].IsExcludedFromCoverage);
-            Assert.AreEqual("StrA", records[1].Records[1].Name);
-            Assert.IsFalse(records[1].Records[1].IsExcludedFromCoverage);
+            Assert.AreEqual("FieldC", record.Name);
+            Assert.IsTrue(record.IsExcludedFromCoverage);
+            Assert.AreEqual("A", record.Records["A"].Name);
+            Assert.IsTrue(record.Records["A"].IsExcludedFromCoverage);
+            Assert.AreEqual("B", record.Records["B"].Name);
+            Assert.IsTrue(record.Records["B"].IsExcludedFromCoverage);
 
-            Assert.AreEqual("FieldY", records[2].Name);
-            Assert.IsTrue(records[2].IsExcludedFromCoverage);
+            record = records["FieldD"];
+            Assert.AreEqual("FieldD", record.Name);
+            Assert.IsFalse(record.IsExcludedFromCoverage);
+            Assert.AreEqual("StrB", record.Records["StrB"].Name);
+            Assert.IsFalse(record.Records["StrB"].IsExcludedFromCoverage);
+            Assert.AreEqual("StrA", record.Records["StrA"].Name);
+            Assert.IsFalse(record.Records["StrA"].IsExcludedFromCoverage);
 
-            Assert.AreEqual("IntField", records[3].Name);
-            Assert.IsFalse(records[3].IsExcludedFromCoverage);
-            Assert.AreEqual("IntA", records[3].Records[0].Name);
-            Assert.IsTrue(records[3].Records[0].IsExcludedFromCoverage);
-            Assert.AreEqual("IntB", records[3].Records[1].Name);
-            Assert.IsFalse(records[3].Records[1].IsExcludedFromCoverage);
+            record = records["FieldY"];
+            Assert.AreEqual("FieldY", record.Name);
+            Assert.IsTrue(record.IsExcludedFromCoverage);
 
-            Assert.AreEqual("TestProperty", records[4].Name);
-            Assert.IsTrue(records[4].IsExcludedFromCoverage);
+            record = records["IntField"];
+            Assert.AreEqual("IntField", record.Name);
+            Assert.IsFalse(record.IsExcludedFromCoverage);
+            Assert.AreEqual("IntA", record.Records["IntA"].Name);
+            Assert.IsTrue(record.Records["IntA"].IsExcludedFromCoverage);
+            Assert.AreEqual("IntB", record.Records["IntB"].Name);
+            Assert.IsFalse(record.Records["IntB"].IsExcludedFromCoverage);
+
+            record = records["TestProperty"];
+            Assert.AreEqual("TestProperty", record.Name);
+            Assert.IsTrue(record.IsExcludedFromCoverage);
         }
 
         private static void DoTestSetNull<TSource, TDest>(TestConverterCollection<TSource, TDest> converterCollection, TSource source, int expectedCompiledCount, int expectedExecutedCount) where TDest : new()
@@ -407,7 +401,6 @@ namespace Mutators.Tests
             Assert.AreEqual(expectedExecutedCount, records[0].ExecutedCount);
         }
 
-        private volatile Exception lastException;
         private IPathFormatterCollection pathFormatterCollection;
         private volatile bool start;
     }

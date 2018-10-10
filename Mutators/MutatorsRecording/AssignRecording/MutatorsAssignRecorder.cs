@@ -32,10 +32,10 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return instance ?? (instance = new MutatorsAssignRecorder());
         }
 
-        public static void RecordCompilingExpression(AssignLogInfo toLog)
+        public static void RecordCompilingExpression(Type converterType, AssignLogInfo toLog)
         {
             var isExcluded = IsExcludedFromCoverage(toLog);
-            instance.recordsCollection.RecordCompilingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+            instance.recordsCollection.RecordCompilingExpression(converterType, toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
         }
 
         private static bool IsExcludedFromCoverage(AssignLogInfo toLog)
@@ -44,30 +44,25 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
                         .Any(exp => instance.excludeCriteria.Any(criterion => criterion(exp)));
         }
 
-        public static void RecordExecutingExpression(AssignLogInfo toLog)
+        public static void RecordExecutingExpression(Type converterType, AssignLogInfo toLog)
         {
             if (IsRecording())
             {
                 var isExcluded = new Lazy<bool>(() => IsExcludedFromCoverage(toLog));
-                instance.recordsCollection.RecordExecutingExpression(toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
+                instance.recordsCollection.RecordExecutingExpression(converterType, toLog.Path.ToString(), toLog.Value.ToString(), isExcluded);
             }
         }
 
-        public static void RecordExecutingExpressionWithValueObjectCheck(AssignLogInfo toLog, object executedValue)
+        public static void RecordExecutingExpressionWithValueObjectCheck(Type converterType, AssignLogInfo toLog, object executedValue)
         {
             if (executedValue != null)
-                RecordExecutingExpression(toLog);
+                RecordExecutingExpression(converterType, toLog);
         }
 
-        public static void RecordExecutingExpressionWithNullableValueCheck<T>(AssignLogInfo toLog, T? executedValue) where T : struct
+        public static void RecordExecutingExpressionWithNullableValueCheck<T>(Type converterType, AssignLogInfo toLog, T? executedValue) where T : struct
         {
             if (executedValue != null || toLog.Value.NodeType == ExpressionType.Constant && toLog.Value.ToConstant().Value == null)
-                RecordExecutingExpression(toLog);
-        }
-
-        public static void RecordConverter(string converter)
-        {
-            instance.recordsCollection.AddConverterToRecord(converter);
+                RecordExecutingExpression(converterType, toLog);
         }
 
         public static bool IsRecording()
@@ -75,12 +70,6 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             return instance != null;
         }
 
-        public static void StopRecordingConverter()
-        {
-            instance.recordsCollection.ResetCurrentConvertor();
-        }
-
-        [ThreadStatic]
         private static MutatorsAssignRecorder instance;
 
         private readonly AssignRecordCollection recordsCollection;

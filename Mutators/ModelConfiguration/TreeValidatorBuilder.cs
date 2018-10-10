@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -39,7 +39,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             root = GetArrays(node.RootType, node.Path, new MutatorConfiguration[0]).Aggregate(root, (current, array) => current.Traverse(array));
 
             var validationResults = new List<Expression>();
-            root.BuildValidator(pathFormatter, node == node.Root ? null : node, aliases, new Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths>(), result, treeRootType, priority, validationResults);
+            root.BuildValidator(pathFormatter, node, aliases, new Dictionary<ParameterExpression, ExpressionPathsBuilder.SinglePaths>(), result, treeRootType, priority, validationResults);
 
             //validationResults = validationResults.Select(exp => ExtractLoopInvariantFatExpressions(exp, new []{parameter}, expression => expression)).ToList();
             validationResults = validationResults.SplitToBatches(parameter, result, priority);
@@ -111,7 +111,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 
         private static void CheckDependencies(ModelConfigurationNode root, MutatorConfiguration mutator)
         {
-            if (root == null || mutator == null || mutator.Dependencies == null)
+            if (root == null || root.Root == root || mutator == null || mutator.Dependencies == null)
                 return;
             foreach (var dependency in mutator.Dependencies)
             {
@@ -266,7 +266,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 foreach (var validator in mutators.Where(mutator => mutator is ValidatorConfiguration).Cast<ValidatorConfiguration>())
                 {
                     CheckDependencies(root, validator);
-                    var appliedValidator = validator.Apply(aliases).EliminateLinq();
+                    var appliedValidator = validator.Apply(root.ConfiguratorType, aliases).EliminateLinq();
                     if (appliedValidator == null) continue;
                     var currentValidationResult = Expression.Variable(typeof(ValidationResult));
                     if (validator.Priority < 0)

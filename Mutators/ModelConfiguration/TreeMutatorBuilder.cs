@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -204,8 +204,8 @@ namespace GrobExp.Mutators.ModelConfiguration
                 resizeIfNeeded = Expression.IfThen(
                     lengthsAreDifferent,
                     Expression.IfThenElse(destArrayIsNull,
-                                          path.Assign(Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
-                                          Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(temp))
+                                          path.Assign(child.ConfiguratorType, Expression.NewArrayBounds(child.NodeType, Expression.ArrayLength(arrayParameter))),
+                                          Expression.Block(new[] {temp}, Expression.Assign(temp, path), Expression.Call(arrayResizeMethod.MakeGenericMethod(child.NodeType), temp, Expression.ArrayLength(arrayParameter)), path.Assign(child.ConfiguratorType, temp))
                         ));
             }
             else if (path.Type.IsGenericType && path.Type.GetGenericTypeDefinition() == typeof(List<>))

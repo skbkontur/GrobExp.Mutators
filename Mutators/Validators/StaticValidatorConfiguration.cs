@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
+using GrobExp.Mutators.MutatorsRecording;
 using GrobExp.Mutators.MutatorsRecording.ValidationRecording;
 using GrobExp.Mutators.Visitors;
 
@@ -74,7 +75,7 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(validatorFromRoot);
         }
 
-        public override Expression Apply(List<KeyValuePair<Expression, Expression>> aliases)
+        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null)
                 return validatorFromRoot.Body.ResolveAliases(aliases);
@@ -84,8 +85,8 @@ namespace GrobExp.Mutators.Validators
             condition = Expression.Condition(condition, validatorFromRoot.Body.ResolveAliases(aliases), Expression.Constant(ValidationResult.Ok));
             var assign = Expression.Assign(result, condition);
             if (MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.RecordCompilingValidation(toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(typeof(MutatorsValidationRecorder).GetMethod("RecordExecutingValidation"), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+                MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
         public string Name { get; set; }

@@ -142,15 +142,16 @@ namespace GrobExp.Mutators
 
         private void LogConverterCompilation(MutatorsContext context, Stopwatch sw)
         {
+            var converterCollectionTypeName = GetType().Name;
             var logProperties = new Dictionary<string, object>
                 {
-                    {"ConverterCollectionName", GetType().Name},
+                    {"ConverterCollectionName", converterCollectionTypeName},
                     {"CompilationTimeMilliseconds", sw.ElapsedMilliseconds}
                 };
             var mutatorsContextTypeName = context.GetType().Name;
             foreach (var propertyInfo in context.GetType().GetProperties())
                 logProperties.Add($"{mutatorsContextTypeName}.{propertyInfo.Name}", propertyInfo.GetValue(context));
-            logger.Info("{ConverterCollectionName} was compiled in {CompilationTimeMilliseconds} ms", logProperties);
+            logger.Info($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms", logProperties);
         }
 
         private static TypeCode GetTypeCode(Type type)

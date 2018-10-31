@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
 
 using GrEmit.Utils;
 
@@ -143,15 +144,14 @@ namespace GrobExp.Mutators
         private void LogConverterCompilation(MutatorsContext context, Stopwatch sw)
         {
             var converterCollectionTypeName = GetType().Name;
-            var logProperties = new Dictionary<string, object>
-                {
-                    {"ConverterCollectionName", converterCollectionTypeName},
-                    {"CompilationTimeMilliseconds", sw.ElapsedMilliseconds}
-                };
+            var message = new StringBuilder($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms");
+            message.AppendLine($"ConverterCollectionName: {converterCollectionTypeName}");
+            message.AppendLine($"CompilationTimeMilliseconds: {sw.ElapsedMilliseconds}");
+
             var mutatorsContextTypeName = context.GetType().Name;
             foreach (var propertyInfo in context.GetType().GetProperties())
-                logProperties.Add($"{mutatorsContextTypeName}.{propertyInfo.Name}", propertyInfo.GetValue(context));
-            logger.Info($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms", logProperties);
+                message.AppendLine($"{mutatorsContextTypeName}.{propertyInfo.Name}: {propertyInfo.GetValue(context)}");
+            logger.Info(message.ToString());
         }
 
         private static TypeCode GetTypeCode(Type type)

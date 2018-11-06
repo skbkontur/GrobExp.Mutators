@@ -145,9 +145,8 @@ namespace GrobExp.Mutators
         {
             var converterCollectionTypeName = GetType().Name;
             var message = new StringBuilder($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms");
-            message.AppendLine($"ConverterCollectionName: {converterCollectionTypeName}");
-            message.AppendLine($"CompilationTimeMilliseconds: {sw.ElapsedMilliseconds}");
 
+            message.AppendLine("Converter was compiled with following context:\r\n");
             var mutatorsContextTypeName = context.GetType().Name;
             foreach (var propertyInfo in context.GetType().GetProperties())
                 message.AppendLine($"{mutatorsContextTypeName}.{propertyInfo.Name}: {propertyInfo.GetValue(context)}");

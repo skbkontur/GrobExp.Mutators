@@ -144,7 +144,7 @@ namespace GrobExp.Mutators
         private void LogConverterCompilation(MutatorsContext context, Stopwatch sw)
         {
             var converterCollectionTypeName = GetType().Name;
-            var message = new StringBuilder($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms");
+            var message = new StringBuilder($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms\r\n");
 
             message.AppendLine("Converter was compiled with following context:\r\n");
             var mutatorsContextTypeName = context.GetType().Name;

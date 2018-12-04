@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 using GrEmit.Utils;
 
@@ -98,7 +99,7 @@ namespace GrobExp.Mutators
                         var validationsTree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
 
-                        var lazyCompiledConverter = new Lazy<Action<TDest, TSource>>(() => CompileTree(tree, context));
+                        var lazyCompiledConverter = new Lazy<Action<TDest, TSource>>(() => CompileTree(tree, context), LazyThreadSafetyMode.ExecutionAndPublication);
 
                         slot = new HashtableSlot
                             {

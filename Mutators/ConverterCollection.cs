@@ -6,6 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 using GrEmit.Utils;
 
@@ -98,19 +99,7 @@ namespace GrobExp.Mutators
                         var validationsTree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TSource));
                         tree.ExtractValidationsFromConverters(validationsTree);
 
-                        var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-
-                        Action<TDest, TSource> compiledTreeConverter;
-                        var sw = Stopwatch.StartNew();
-                        try
-                        {
-                            compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
-                        }
-                        finally
-                        {
-                            sw.Stop();
-                            LogConverterCompilation(context, sw);
-                        }
+                        var lazyCompiledConverter = new Lazy<Action<TDest, TSource>>(() => CompileTree(tree, context), LazyThreadSafetyMode.ExecutionAndPublication);
 
                         slot = new HashtableSlot
                             {
@@ -120,14 +109,14 @@ namespace GrobExp.Mutators
                                     {
                                         var dest = new TDest();
                                         BeforeConvert(source);
-                                        compiledTreeConverter(dest, source);
+                                        lazyCompiledConverter.Value(dest, source);
                                         AfterConvert(dest, source);
                                         return dest;
                                     },
                                 Merger = (source, dest) =>
                                     {
                                         BeforeConvert(source);
-                                        compiledTreeConverter(dest, source);
+                                        lazyCompiledConverter.Value(dest, source);
                                         AfterConvert(dest, source);
                                     },
                                 ValidationMutatorsTrees = new Hashtable()
@@ -139,6 +128,24 @@ namespace GrobExp.Mutators
             }
 
             return slot;
+        }
+
+        private Action<TDest, TSource> CompileTree(ModelConfigurationNode tree, MutatorsContext context)
+        {
+            var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
+
+            Action<TDest, TSource> compiledTreeConverter;
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
+            }
+            finally
+            {
+                sw.Stop();
+                LogConverterCompilation(context, sw);
+            }
+            return compiledTreeConverter;
         }
 
         private void LogConverterCompilation(MutatorsContext context, Stopwatch sw)

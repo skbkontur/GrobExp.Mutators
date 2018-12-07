@@ -1,7 +1,18 @@
-﻿using System;
+using System;
 
 namespace GrobExp.Mutators
 {
+    public interface IConverterCollection<TSource, TDest, TContext>
+    {
+        Func<TSource, TContext, TDest> GetConverter();
+
+        Action<TSource, TContext, TDest> GetMerger();
+
+//        MutatorsTreeBase<TSource> Migrate(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context);
+//        MutatorsTreeBase<TSource> GetValidationsTree(MutatorsContext context, int priority);
+//        MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context);
+    }
+
     public interface IConverterCollection<TSource, TDest>
     {
         /// <returns>

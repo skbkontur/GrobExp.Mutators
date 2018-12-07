@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -46,6 +46,28 @@ namespace Mutators.Tests
 
         private static readonly Dictionary<string, TestCustomFields.TestEnum> beautifulNameToEnum;
         private static readonly Dictionary<TestCustomFields.TestEnum, string> enumToBeautifulName;
+    }
+
+
+    public class TestConverterCollection<TSource, TDest, TContext> : ConverterCollection<TSource, TDest, TContext> where TDest : new()
+    {
+        public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest, TContext>> action)
+            : this(pathFormatterCollection, action, new TestStringConverter())
+        {
+        }
+
+        public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest, TContext>> action, IStringConverter stringConverter)
+            : base(pathFormatterCollection, stringConverter)
+        {
+            this.action = action;
+        }
+
+        protected override void Configure(ConverterConfigurator<TSource, TDest, TContext> configurator)
+        {
+            action(configurator);
+        }
+
+        private readonly Action<ConverterConfigurator<TSource, TDest, TContext>> action;
     }
 
     public class TestConverterCollection<TSource, TDest> : ConverterCollection<TSource, TDest> where TDest : new()

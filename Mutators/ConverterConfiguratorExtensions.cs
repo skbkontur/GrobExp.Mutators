@@ -76,11 +76,35 @@ namespace GrobExp.Mutators
             return configurator;
         }
 
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> Set<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext>(
+            this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> configurator,
+            Expression<Func<TSourceChild, TDestChild, TContext, TTarget>> value)
+        {
+            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
+            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)methodReplacer.Visit(configurator.PathToChild);
+            Expression<Func<TContext, TContext>> pathInContext = x => x;
+            LambdaExpression valueFromRoot = new ExpressionMerger(pathToSourceChild, pathToChild, pathInContext).Merge(value);
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
+            return configurator;
+        }
+
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget> Set<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget>(
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget> configurator,
             Expression<Func<TSourceChild, TTarget>> value)
         {
             var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)configurator.PathToSourceChild.ReplaceEachWithCurrent();
+            LambdaExpression valueFromRoot = pathToSourceChild.Merge(value);
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
+            return configurator;
+        }
+
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> Set<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext>(
+            this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> configurator,
+            Expression<Func<TSourceChild, TTarget>> value)
+        {
+            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
             LambdaExpression valueFromRoot = pathToSourceChild.Merge(value);
             configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
             return configurator;

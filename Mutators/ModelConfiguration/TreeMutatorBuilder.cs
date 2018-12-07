@@ -18,21 +18,29 @@ namespace GrobExp.Mutators.ModelConfiguration
         public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node)
         {
             var destParameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
-            return node.BuildTreeMutator(destParameter, sourceParameter : null);
+            return node.BuildTreeMutator(destParameter, sourceParameter : null, contextParameter : null);
         }
 
         public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, Type sourceType)
         {
             var destParameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
             var sourceParameter = Expression.Parameter(sourceType, sourceType.Name);
-            return node.BuildTreeMutator(destParameter, sourceParameter);
+            return node.BuildTreeMutator(destParameter, sourceParameter, contextParameter : null);
+        }
+
+        public static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, Type sourceType, Type contextType)
+        {
+            var destParameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
+            var sourceParameter = Expression.Parameter(sourceType, sourceType.Name);
+            var contextParameter = Expression.Parameter(contextType, contextType.Name);
+            return node.BuildTreeMutator(destParameter, sourceParameter, contextParameter);
         }
 
         /// <summary>
         ///     Строит жирный Expression, содержаший все мутации или валидации.
         ///     Все, что нужно после этого - скомпилировать.
         /// </summary>
-        private static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, [NotNull] ParameterExpression destParameter, [CanBeNull] ParameterExpression sourceParameter)
+        private static LambdaExpression BuildTreeMutator(this ModelConfigurationNode node, [NotNull] ParameterExpression destParameter, [CanBeNull] ParameterExpression sourceParameter, [CanBeNull] ParameterExpression contextParameter)
         {
             var visitedNodes = new HashSet<ModelConfigurationNode>();
             var processedNodes = new HashSet<ModelConfigurationNode>();
@@ -42,6 +50,12 @@ namespace GrobExp.Mutators.ModelConfiguration
             //Добавляем алиас для случая, когда билдим жиромутатор для поддерева, чтобы заменить путь до корня на реальный параметр выражения
             var aliases = new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(destParameter, node.Path)};
             var invariantParameters = new List<ParameterExpression>();
+            if (contextParameter != null)
+            {
+                parameters.Add(contextParameter);
+                invariantParameters.Add(contextParameter);
+            }
+
             if (sourceParameter != null)
             {
                 parameters.Add(sourceParameter);

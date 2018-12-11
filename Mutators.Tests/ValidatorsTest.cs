@@ -36,6 +36,25 @@ namespace Mutators.Tests
     public class ValidatorsTest : TestBase
     {
         [Test]
+        public void TestConverterWithValidator()
+        {
+            var converterCollection = new TestConverterCollection<TestData, TestData2, MyContext>(pathFormatterCollection, configurator =>
+                {
+                    configurator.Target(data2 => data2.S).Set((data, data2, context) => context.StringConverter.Convert(data.S));
+                    configurator.Target(data2 => data2.T.S).Set(data => data.F, x => x, s => ValidationResult.Error(new SimplePathFormatterText()));
+                });
+
+            var converter = converterCollection.GetConverter();
+            var testData = new TestData {S = "zzz", F = "qxx"};
+            var result = converter(testData, new MyContext {StringConverter = new MyStringConverter()});
+            Assert.That(result.S, Is.EqualTo("zzzzzz"));
+            Assert.That(result.T.S, Is.EqualTo("qxx"));
+            var validator = converterCollection.GetValidationsTree(0).GetValidator();
+            var validationResultTreeNode = validator(testData);
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>{{"F", FormattedValidationResult.Error(new SimplePathFormatterText(), "qxx", new SimplePathFormatterText{Paths = new []{"F"}})}});
+        }
+
+        [Test]
         public void TestProperty()
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.A.S != null, data => null));

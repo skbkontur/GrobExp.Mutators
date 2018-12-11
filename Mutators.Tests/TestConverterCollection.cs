@@ -49,7 +49,7 @@ namespace Mutators.Tests
     }
 
 
-    public class TestConverterCollection<TSource, TDest, TContext> : ConverterCollection<TSource, TDest, TContext> where TDest : new()
+    public class TestConverterCollection<TSource, TDest, TContext> : NewConverterCollection<TSource, TDest, TContext> where TDest : new()
     {
         public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest, TContext>> action)
             : this(pathFormatterCollection, action, new TestStringConverter())

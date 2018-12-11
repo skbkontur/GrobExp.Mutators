@@ -6,7 +6,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 using GrEmit.Utils;
 
@@ -20,38 +19,38 @@ using Vostok.Logging.Abstractions;
 
 namespace GrobExp.Mutators
 {
-    public abstract class ConverterCollection<TSource, TDest> : IConverterCollection<TSource, TDest> where TDest : new()
+    public abstract class NewConverterCollection<TSource, TDest, TContext> : IConverterCollection<TSource, TDest, TContext> where TDest : new()
     {
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter, ILog logger)
+        protected NewConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter, ILog logger)
         {
             this.pathFormatterCollection = pathFormatterCollection;
             this.stringConverter = stringConverter;
-            this.logger = logger.ForContext("Mutators");
+            this.logger = logger;
         }
 
-        protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
+        protected NewConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)
             : this(pathFormatterCollection, stringConverter, new SilentLog())
         {
         }
 
-        public Func<TSource, TDest> GetConverter(MutatorsContext context)
+        public Func<TSource, TContext, TDest> GetConverter()
         {
-            return GetOrCreateHashtableSlot(context).Converter;
+            return GetOrCreateHashtableSlot().Converter;
         }
 
-        public Action<TSource, TDest> GetMerger(MutatorsContext context)
+        public Action<TSource, TContext, TDest> GetMerger()
         {
-            return GetOrCreateHashtableSlot(context).Merger;
+            return GetOrCreateHashtableSlot().Merger;
         }
 
-        public MutatorsTreeBase<TSource> Migrate(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
+        public MutatorsTreeBase<TSource> Migrate(MutatorsTreeBase<TDest> mutatorsTree)
         {
-            return mutatorsTree?.Migrate<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
+            return mutatorsTree?.Migrate<TSource>(GetOrCreateHashtableSlot().ConverterTree);
         }
 
-        public MutatorsTreeBase<TSource> GetValidationsTree(MutatorsContext context, int priority)
+        public MutatorsTreeBase<TSource> GetValidationsTree(int priority)
         {
-            var slot = GetOrCreateHashtableSlot(context);
+            var slot = GetOrCreateHashtableSlot();
             var result = (MutatorsTreeBase<TSource>)slot.ValidationMutatorsTrees[priority];
             if (result == null)
             {
@@ -68,12 +67,12 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
-        {
-            return mutatorsTree?.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
-        }
+//        public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
+//        {
+//            return mutatorsTree?.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
+//        }
 
-        protected abstract void Configure(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator);
+        protected abstract void Configure(ConverterConfigurator<TSource, TDest, TContext> configurator);
 
         protected virtual void BeforeConvert(TSource source)
         {
@@ -83,80 +82,60 @@ namespace GrobExp.Mutators
         {
         }
 
-        private HashtableSlot GetOrCreateHashtableSlot(MutatorsContext context)
+        private HashtableSlot GetOrCreateHashtableSlot()
         {
-            var key = context.GetKey();
-            var slot = (HashtableSlot)hashtable[key];
-            if (slot == null)
+            if (slot != null)
+                return slot;
+            lock (lockObject)
             {
-                lock (lockObject)
+                if (slot != null)
+                    return slot;
+                var tree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TDest));
+                ConfigureInternal(new ConverterConfigurator<TSource, TDest, TContext>(tree));
+                var validationsTree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TSource));
+                tree.ExtractValidationsFromConverters(validationsTree);
+
+                var treeConverter = (Expression<Action<TDest, TContext, TSource>>)tree.BuildTreeMutator(typeof(TSource), typeof(TContext));
+
+                Action<TDest, TContext, TSource> compiledTreeConverter;
+                var sw = Stopwatch.StartNew();
+                try
                 {
-                    slot = (HashtableSlot)hashtable[key];
-                    if (slot == null)
-                    {
-                        var tree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TDest));
-                        ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));
-                        var validationsTree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TSource));
-                        tree.ExtractValidationsFromConverters(validationsTree);
-
-                        var lazyCompiledConverter = new Lazy<Action<TDest, TSource>>(() => CompileTree(tree, context), LazyThreadSafetyMode.ExecutionAndPublication);
-
-                        slot = new HashtableSlot
-                            {
-                                ConverterTree = tree,
-                                ValidationsTree = validationsTree,
-                                Converter = source =>
-                                    {
-                                        var dest = new TDest();
-                                        BeforeConvert(source);
-                                        lazyCompiledConverter.Value(dest, source);
-                                        AfterConvert(dest, source);
-                                        return dest;
-                                    },
-                                Merger = (source, dest) =>
-                                    {
-                                        BeforeConvert(source);
-                                        lazyCompiledConverter.Value(dest, source);
-                                        AfterConvert(dest, source);
-                                    },
-                                ValidationMutatorsTrees = new Hashtable()
-                            };
-                        //if(!MutatorsAssignRecorder.IsRecording())
-                        hashtable[key] = slot;
-                    }
+                    compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
                 }
-            }
+                finally
+                {
+                    sw.Stop();
+                    LogConverterCompilation(sw);
+                }
 
-            return slot;
+                return slot = new HashtableSlot
+                    {
+                        ConverterTree = tree,
+                        ValidationsTree = validationsTree,
+                        Converter = (source, context) =>
+                            {
+                                var dest = new TDest();
+                                BeforeConvert(source);
+                                compiledTreeConverter(dest, context, source);
+                                AfterConvert(dest, source);
+                                return dest;
+                            },
+                        Merger = (source, context, dest) =>
+                            {
+                                BeforeConvert(source);
+                                compiledTreeConverter(dest, context, source);
+                                AfterConvert(dest, source);
+                            },
+                        ValidationMutatorsTrees = new Hashtable()
+                    };
+            }
         }
 
-        private Action<TDest, TSource> CompileTree(ModelConfigurationNode tree, MutatorsContext context)
-        {
-            var treeConverter = (Expression<Action<TDest, TSource>>)tree.BuildTreeMutator(typeof(TSource));
-
-            Action<TDest, TSource> compiledTreeConverter;
-            var sw = Stopwatch.StartNew();
-            try
-            {
-                compiledTreeConverter = LambdaCompiler.Compile(treeConverter, CompilerOptions.All);
-            }
-            finally
-            {
-                sw.Stop();
-                LogConverterCompilation(context, sw);
-            }
-            return compiledTreeConverter;
-        }
-
-        private void LogConverterCompilation(MutatorsContext context, Stopwatch sw)
+        private void LogConverterCompilation(Stopwatch sw)
         {
             var converterCollectionTypeName = GetType().Name;
             var message = new StringBuilder($"{converterCollectionTypeName} was compiled in {sw.ElapsedMilliseconds} ms\n");
-
-            message.AppendLine("Context:\n");
-            var mutatorsContextTypeName = context.GetType().Name;
-            foreach (var propertyInfo in context.GetType().GetProperties())
-                message.AppendLine($"\t{mutatorsContextTypeName}.{propertyInfo.Name}: {propertyInfo.GetValue(context)}");
             logger.Info(message.ToString());
         }
 
@@ -183,9 +162,6 @@ namespace GrobExp.Mutators
             var properties = type.GetOrderedProperties();
             foreach (var property in properties)
             {
-                if (property.GetGetMethod().GetParameters().Length != 0)
-                    continue;
-
                 var next = Expression.Property(current, property);
                 if (property.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any())
                 {
@@ -258,15 +234,13 @@ namespace GrobExp.Mutators
             return customFields.Select(info => new CustomFieldInfoZ(info.Path, info.RootProperty, info.TitleType, Expression.Lambda(info.Value, parameter))).ToArray();
         }
 
-        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
+        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest, TContext> configurator, LambdaExpression pathToSourceChild, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
         {
             var sourceChildType = pathToSourceChild.Body.Type;
             var destChildType = pathToDestChild.Body.Type;
-            LambdaExpression pathToSourceCustomFieldsContainer;
-            var sourceCustomFieldsContainer = FindCustomFieldsContainer(sourceChildType, out pathToSourceCustomFieldsContainer);
+            var sourceCustomFieldsContainer = FindCustomFieldsContainer(sourceChildType, out var pathToSourceCustomFieldsContainer);
             var sourceCustomFields = FindCustomFields(sourceChildType, sourceCustomFieldFits, pathToSourceChild);
-            LambdaExpression pathToDestCustomFieldsContainer;
-            var destCustomFieldsContainer = FindCustomFieldsContainer(destChildType, out pathToDestCustomFieldsContainer);
+            var destCustomFieldsContainer = FindCustomFieldsContainer(destChildType, out var pathToDestCustomFieldsContainer);
             var destCustomFields = FindCustomFields(destChildType, destCustomFieldFits, pathToDestChild);
             var converterType = configurator.Root.ConfiguratorType;
             if (sourceCustomFields.Length > 0)
@@ -420,7 +394,7 @@ namespace GrobExp.Mutators
             return Expression.Convert(value, type);
         }
 
-        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest> configurator)
+        private void ConfigureCustomFields(ConverterConfigurator<TSource, TDest, TContext> configurator)
         {
             var sourceParameter = Expression.Parameter(typeof(TSource));
             var destParameter = Expression.Parameter(typeof(TDest));
@@ -445,7 +419,7 @@ namespace GrobExp.Mutators
             ConfigureCustomFieldsForArrays(configurator, typeof(TDest), Expression.Lambda(destParameter, destParameter), sourceCustomFieldFits, destCustomFieldFits);
         }
 
-        private void ConfigureCustomFieldsForArrays(ConverterConfigurator<TSource, TDest> configurator, Type type, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
+        private void ConfigureCustomFieldsForArrays(ConverterConfigurator<TSource, TDest, TContext> configurator, Type type, LambdaExpression pathToDestChild, Func<Expression, bool> sourceCustomFieldFits, Func<Expression, bool> destCustomFieldFits)
         {
             if (type == null || IsALeaf(type))
                 return;
@@ -454,9 +428,6 @@ namespace GrobExp.Mutators
             var parameter = Expression.Parameter(type);
             foreach (var property in properties)
             {
-                if (property.GetGetMethod().GetParameters().Length != 0)
-                    continue;
-                
                 var pathToNextDestChild = pathToDestChild.Merge(Expression.Lambda(Expression.Property(parameter, property), parameter));
                 if (!property.PropertyType.IsArray)
                     ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild, sourceCustomFieldFits, destCustomFieldFits);
@@ -476,9 +447,9 @@ namespace GrobExp.Mutators
             }
         }
 
-        protected void ConfigureInternal(MutatorsContext context, ConverterConfigurator<TSource, TDest> configurator)
+        protected void ConfigureInternal(ConverterConfigurator<TSource, TDest, TContext> configurator)
         {
-            Configure(context, configurator);
+            Configure(configurator);
             ConfigureCustomFields(configurator);
         }
 
@@ -488,7 +459,8 @@ namespace GrobExp.Mutators
 
         private readonly object lockObject = new object();
 
-        private readonly Hashtable hashtable = new Hashtable();
+        private volatile HashtableSlot slot;
+
         private readonly MethodInfo convertToStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertToString<int>(null)).GetGenericMethodDefinition();
         private readonly MethodInfo convertFromStringMethod = HackHelpers.GetMethodDefinition<IStringConverter>(x => x.ConvertFromString<int>("")).GetGenericMethodDefinition();
         private readonly MethodInfo castMethod = HackHelpers.GetMethodDefinition<int[]>(x => x.Cast<object>()).GetGenericMethodDefinition();
@@ -530,8 +502,8 @@ namespace GrobExp.Mutators
         {
             public ModelConfigurationNode ConverterTree { get; set; }
             public ModelConfigurationNode ValidationsTree { get; set; }
-            public Func<TSource, TDest> Converter { get; set; }
-            public Action<TSource, TDest> Merger { get; set; }
+            public Func<TSource, TContext, TDest> Converter { get; set; }
+            public Action<TSource, TContext, TDest> Merger { get; set; }
 
             public Hashtable ValidationMutatorsTrees { get; set; }
         }

@@ -81,6 +81,14 @@ namespace GrobExp.Mutators
             return configurator.Set(value, converter, null, 0);
         }
 
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue, TContext> Set<TSourceRoot, TSourceChild, TSourceValue, TDestRoot, TDestChild, TDestValue, TContext>(
+            this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue, TContext> configurator,
+            Expression<Func<TSourceChild, TSourceValue>> value,
+            Expression<Func<TSourceValue, TDestValue>> converter)
+        {
+            return configurator.Set(value, converter, null, 0);
+        }
+
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> Set<TSourceRoot, TSourceChild, TSourceValue, TDestRoot, TDestChild, TDestValue>(
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> configurator,
             Expression<Func<TSourceChild, TSourceValue>> value,
@@ -124,6 +132,18 @@ namespace GrobExp.Mutators
 
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> Set<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext>(
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> configurator,
+            Expression<Func<TSourceChild, TDestChild, TTarget>> value)
+        {
+            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
+            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)methodReplacer.Visit(configurator.PathToChild);
+            LambdaExpression valueFromRoot = new ExpressionMerger(pathToSourceChild, pathToChild).Merge(value);
+            configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
+            return configurator;
+        }
+
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> Set<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext>(
+            this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget, TContext> configurator,
             Expression<Func<TSourceChild, TDestChild, TContext, TTarget>> value)
         {
             var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
@@ -157,6 +177,11 @@ namespace GrobExp.Mutators
         }
 
         public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TValue> Set<TSourceRoot, TSourceChild, TValue, TDestRoot, TDestChild>(this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TValue> configurator, TValue value)
+        {
+            return configurator.Set(child => value);
+        }
+
+        public static ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TValue, TContext> Set<TSourceRoot, TSourceChild, TValue, TDestRoot, TDestChild, TContext>(this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TValue, TContext> configurator, TValue value)
         {
             return configurator.Set(child => value);
         }

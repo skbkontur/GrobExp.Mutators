@@ -19,7 +19,7 @@ using Vostok.Logging.Abstractions;
 
 namespace GrobExp.Mutators
 {
-    public abstract class NewConverterCollection<TSource, TDest, TContext> : IConverterCollection<TSource, TDest, TContext> where TDest : new()
+    public abstract class NewConverterCollection<TSource, TDest, TContext> : INewConverterCollection<TSource, TDest, TContext> where TDest : new()
     {
         protected NewConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter, ILog logger)
         {
@@ -33,7 +33,7 @@ namespace GrobExp.Mutators
         {
         }
 
-        public Func<TSource, TContext, TDest> GetConverter()
+        public virtual Func<TSource, TContext, TDest> GetConverter()
         {
             return GetOrCreateHashtableSlot().Converter;
         }
@@ -67,10 +67,10 @@ namespace GrobExp.Mutators
             return result;
         }
 
-//        public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree, MutatorsContext context)
-//        {
-//            return mutatorsTree?.MigratePaths<TSource>(GetOrCreateHashtableSlot(context).ConverterTree);
-//        }
+        public MutatorsTreeBase<TDest> MigratePaths(MutatorsTreeBase<TDest> mutatorsTree)
+        {
+            return mutatorsTree?.MigratePaths<TSource>(GetOrCreateHashtableSlot().ConverterTree);
+        }
 
         protected abstract void Configure(ConverterConfigurator<TSource, TDest, TContext> configurator);
 
@@ -476,10 +476,10 @@ namespace GrobExp.Mutators
                 Value = value;
             }
 
-            public string Path { get; private set; }
-            public PropertyInfo RootProperty { get; private set; }
-            public Type TitleType { get; private set; }
-            public LambdaExpression Value { get; private set; }
+            public string Path { get; }
+            public PropertyInfo RootProperty { get; }
+            public Type TitleType { get; }
+            public LambdaExpression Value { get; }
         }
 
         private class CustomFieldInfo
@@ -492,10 +492,10 @@ namespace GrobExp.Mutators
                 Value = value;
             }
 
-            public string Path { get; private set; }
-            public PropertyInfo RootProperty { get; private set; }
-            public Type TitleType { get; private set; }
-            public Expression Value { get; private set; }
+            public string Path { get; }
+            public PropertyInfo RootProperty { get; }
+            public Type TitleType { get; }
+            public Expression Value { get; }
         }
 
         private class HashtableSlot

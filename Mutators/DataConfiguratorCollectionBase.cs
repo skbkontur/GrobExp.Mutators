@@ -45,7 +45,8 @@ namespace GrobExp.Mutators
                 throw new ArgumentException("Incorrect number of mutators contexts", "mutatorsContexts");
             if (converterContexts.Length != n)
                 throw new ArgumentException("Incorrect number of converter contexts", "converterContexts");
-            var key = string.Join("@", path.Select(type => type.FullName));
+            var contextTypes = converterContexts.Select(x => x.GetType()).ToArray();
+            var key = string.Join("@", path.Concat(contextTypes).Select(type => type.FullName));
             var slot2 = (HashtableSlot2)hashtable[key];
             if (slot2 == null)
             {
@@ -56,7 +57,7 @@ namespace GrobExp.Mutators
                     {
                         hashtable[key] = slot2 = new HashtableSlot2
                             {
-                                MutatorsTreeCreator = DataConfiguratorCollectionHelper.GetOrCreateMutatorsTreeCreator<TData>(path),
+                                MutatorsTreeCreator = DataConfiguratorCollectionHelper.GetOrCreateMutatorsTreeCreator<TData>(path, contextTypes),
                                 MutatorsTrees = new Hashtable()
                             };
                     }

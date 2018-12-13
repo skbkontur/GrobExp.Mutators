@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 
 using GrobExp.Mutators;
@@ -14,6 +14,11 @@ namespace Mutators.Tests
             if (converterCollection == null)
                 throw new InvalidOperationException("Converter collection from '" + typeof(TSource) + "' to '" + typeof(TDest) + "' is not registered");
             return converterCollection;
+        }
+
+        public INewConverterCollection<TSource, TDest, TContext> Get<TSource, TDest, TContext>()
+        {
+            throw new NotImplementedException();
         }
 
         public void Register<TSource, TDest>(IConverterCollection<TSource, TDest> collection)

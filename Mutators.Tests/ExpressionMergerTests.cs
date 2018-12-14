@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators;
@@ -47,13 +47,14 @@ namespace Mutators.Tests
             merged1.AssertEqualsExpression(a => a.B.C.TemplateIndex().D.E.TemplateIndex().X);
         }
 
-        [Category("Failing")]
         [Test(Description = "А как правильно должно работать: объединять параметры одного типа в один или нет?")]
         public void TestMergeTwoParameters()
         {
             Expression<Func<D, E, string>> exp = (d, e) => d.E[0].F + e.Z;
             Expression<Func<A, string>> merged = exp.Merge<A, D, E, string>(a => a.B.C[1].D, a => a.B.C[13].D.E[23]);
-            merged.AssertEqualsExpression(a => a.B.C[1].D.E[0].F + a.B.C[13].D.E[23].Z);
+            Expression<Func<A, string>> expected = a => a.B.C[1].D.E[0].F + a.B.C[13].D.E[23].Z;
+            merged.Body.AssertEqualsExpression(expected.Body);
+            Assert.That(merged.Parameters.Count, Is.Not.EqualTo(expected.Parameters.Count));
         }
 
         private class A

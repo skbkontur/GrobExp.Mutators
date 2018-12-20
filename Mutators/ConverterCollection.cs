@@ -87,12 +87,12 @@ namespace GrobExp.Mutators
         {
             var key = context.GetKey();
             var slot = (HashtableSlot)hashtable[key];
-            if (slot == null /* || MutatorsAssignRecorder.IsRecording()*/)
+            if (slot == null)
             {
                 lock (lockObject)
                 {
                     slot = (HashtableSlot)hashtable[key];
-                    if (slot == null /* || MutatorsAssignRecorder.IsRecording()*/)
+                    if (slot == null)
                     {
                         var tree = ModelConfigurationNode.CreateRoot(GetType(), typeof(TDest));
                         ConfigureInternal(context, new ConverterConfigurator<TSource, TDest>(tree));

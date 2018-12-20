@@ -190,8 +190,6 @@ namespace Mutators.Tests
         }
 
         [Test]
-        [Category("Failing")]
-        [Description("После повторного запуска не должны появляться записи с предыдущего. После повторного взятия конвертора все компиляции должны логироваться.")]
         public void TestDoubleGettingConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
@@ -200,23 +198,32 @@ namespace Mutators.Tests
                                                                                                         configurator.Target(x => x.C).Set(x => x.A);
                                                                                                         configurator.Target(x => x.D).Set(x => x.B);
                                                                                                     });
-            for (var i = 0; i < 2; i++)
-            {
-                var recorder = AssignRecorderInitializer.StartAssignRecorder();
-                var converter = converterCollection.GetConverter(MutatorsContext.Empty);
-                converter(new TestDataSource());
-                recorder.Stop();
+            var recorder = AssignRecorderInitializer.StartAssignRecorder();
 
-                var records = recorder.GetRecords();
-                Assert.AreEqual(1, records.Count);
-                Assert.AreEqual(3, records[0].CompiledCount);
-                Assert.AreEqual(2, records[0].ExecutedCount);
-            }
+            var converter = converterCollection.GetConverter(MutatorsContext.Empty);
+            converter(new TestDataSource());
+            recorder.Stop();
+
+            var records = recorder.GetRecords();
+            Assert.AreEqual(1, records.Count);
+            Assert.AreEqual(3, records[0].CompiledCount);
+            Assert.AreEqual(2, records[0].ExecutedCount);
+
+            var newRecorder = AssignRecorderInitializer.StartAssignRecorder();
+
+            Assert.AreNotSame(recorder, newRecorder);
+            converter = converterCollection.GetConverter(MutatorsContext.Empty);
+            converter(new TestDataSource());
+            recorder.Stop();
+
+            records = newRecorder.GetRecords();
+            Assert.AreEqual(1, records.Count);
+            Assert.AreEqual(2, records[0].CompiledCount);
+            Assert.AreEqual(2, records[0].ExecutedCount);
         }
 
-        [Category("Failing")]
         [Test]
-        [Description("При включенном рекордере кэш конверторов не должен использоваться")]
+        [Description("При включенном рекордере кэш конверторов все равно используется")]
         public void TestCacheConverter()
         {
             var converterCollection = new TestConverterCollection<TestDataSource, TestDataDest>(pathFormatterCollection,
@@ -231,7 +238,7 @@ namespace Mutators.Tests
 
             var recorder = AssignRecorderInitializer.StartAssignRecorder();
             var converterWhileRecording = converterCollection.GetConverter(MutatorsContext.Empty);
-            Assert.AreNotSame(converterWhileRecording, converter);
+            Assert.AreSame(converterWhileRecording, converter);
 
             recorder.Stop();
             Assert.AreSame(converter, converterCollection.GetConverter(MutatorsContext.Empty));

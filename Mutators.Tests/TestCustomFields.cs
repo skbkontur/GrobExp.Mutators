@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +52,6 @@ namespace Mutators.Tests
         [SetUp]
         public void SetUp()
         {
-            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             converterCollectionFactory = new TestConverterCollectionFactory();
             pathFormatterCollection = new PathFormatterCollection();
             var webDataToDataConverterCollection = new TestConverterCollection<WebData, Data>(pathFormatterCollection, configurator => { configurator.Target(data => data.Items.Each().Id).Set(data => data.Items.Current().Id); });
@@ -278,7 +277,6 @@ namespace Mutators.Tests
         [Test]
         public void TestWebDataMutator()
         {
-            LambdaCompiler.DebugOutputDirectory = @"c:\temp";
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var dataConfiguratorCollection = new TestDataConfiguratorCollection<Data>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
                                                                                       configurator =>

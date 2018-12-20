@@ -580,8 +580,7 @@ namespace Mutators.Tests
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
-        [Category("Failing")]
-        [Test(Description = "Unstable, GroboCompiler sporadically fails when run together with all the other tests in the solution")]
+        [Test(Description = "Test fails when run along with test that generates debug symbols via LambdaCompiler.DebugOutputDirectory")]
         public void TestConvertWithComplexSelectMany()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,

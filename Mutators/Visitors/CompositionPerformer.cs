@@ -444,32 +444,13 @@ namespace GrobExp.Mutators.Visitors
             return result;
         }
 
-        private static bool IsSimpleLinkOfChain(MethodCallExpression node, out Type type)
+        private static bool IsSimpleLinkOfChain([CanBeNull] Expression node, [CanBeNull] out Type type)
         {
-            type = null;
-            return node != null && ((node.Method.IsCurrentMethod() || node.Method.IsEachMethod() || node.Method.IsTemplateIndexMethod() || node.Method.IsWhereMethod()) && IsSimpleLinkOfChain(node.Arguments.First(), out type)
-                                    || (node.Method.IsIndexerGetter() && IsSimpleLinkOfChain(node.Object, out type)));
+            return IsSimpleLinkOfChainChecker.IsSimpleLinkOfChain(node, out type);
         }
 
-        private static bool IsSimpleLinkOfChain(MemberExpression node, out Type type)
-        {
-            type = null;
-            return node != null && node.Member != stringLengthProperty && IsSimpleLinkOfChain(node.Expression, out type);
-        }
-
-        private static bool IsSimpleLinkOfChain(Expression node, out Type type)
-        {
-            type = null;
-            if (node != null && node.NodeType == ExpressionType.Parameter)
-                type = node.Type;
-            return node != null && (node.NodeType == ExpressionType.Parameter
-                                    || IsSimpleLinkOfChain(node as MemberExpression, out type)
-                                    || (node.NodeType == ExpressionType.ArrayIndex && IsSimpleLinkOfChain(((BinaryExpression)node).Left, out type))
-                                    || IsSimpleLinkOfChain(node as MethodCallExpression, out type));
-        }
-
-        private Type From { get; set; }
-        private Type To { get; set; }
+        private Type From { get; }
+        private Type To { get; }
 
         private readonly LambdaExpression lambda;
 

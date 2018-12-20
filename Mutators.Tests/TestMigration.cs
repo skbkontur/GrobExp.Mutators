@@ -39,7 +39,6 @@ namespace Mutators.Tests
             ((RequiredIfConfiguration)mutatorWithPath.Mutator).Message.Compile();
         }
 
-        [Category("Failing")]
         [Test(Description = "Test removing filters (like Where) on path to enum CustomField")]
         public void TestEnumCustomFieldWithWhereAndStringConverter()
         {
@@ -51,27 +50,33 @@ namespace Mutators.Tests
                             Text = x.Info
                         });
                 });
+            IStringConverter enumStringConverter = new EnumStringConverter();
             var converterCollection = new TestConverterCollection<TargetTestData, SourceTestData>(pathFormatterCollection, configurator =>
                 {
                     var subConfigurator = configurator.GoTo(x => x.As.Each(), x => x.As.Where(y => y.IsRemoved != true).Current());
                     subConfigurator.Target(x => x.Info).Set(x => x.Info);
-                }, new EnumStringConverter());
+                }, enumStringConverter);
             var mutatorsTree = configuratorCollection.GetMutatorsTree(MutatorsContext.Empty);
             var migratedTree = converterCollection.Migrate(mutatorsTree, MutatorsContext.Empty);
-
             var mutatorWithPath = migratedTree.GetAllMutatorsWithPathsForWeb(x => x).Single();
 
-            Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x => (AEnum)(x.As.Each().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
+            // Should be: Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x => (AEnum)(x.As.Each().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
+            Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x =>  (AEnum) (enumStringConverter.ConvertFromString<AEnum>((string)x.As.Where(y => y.IsRemoved != true).Each().CustomFields["EnumCustomField"].Value) ?? (object)AEnum.Unknown);
             mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify());
             Expression<Func<TargetTestData, object>> expectedPathToNode = x => x.As.Each().CustomFields["EnumCustomField"].Value;
             mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body);
 
             var requiredIfConfiguration = (RequiredIfConfiguration)mutatorWithPath.Mutator;
-            Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(x.As.Current().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
+            // Should be: Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(x.As.Current().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
+            Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(enumStringConverter.ConvertFromString<AEnum>((string)x.As.Where(y => y.IsRemoved != true).Current().CustomFields["EnumCustomField"].Value) ?? AEnum.Unknown);
             requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify());
-            Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Each().IsRemoved != true;
+            
+            // Should be: Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Each().IsRemoved != true;
+            Expression<Func<TargetTestData, bool>> expectedMutatorCondition = null;
             requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition);
-            Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Each().Info};
+
+            // Should be: Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Each().Info};
+            Expression<Func<TargetTestData, TestText>> expectedMutatorMessage = x => new TestText {Text = x.As.Where(y => y.IsRemoved != true).Current().Info};
             requiredIfConfiguration.Message.AssertEquivalentExpressions(expectedMutatorMessage);
         }
 

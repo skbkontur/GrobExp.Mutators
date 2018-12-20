@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
@@ -12,18 +11,17 @@ namespace GrobExp.Mutators.Visitors
     ///     Inlines given expressions (paths) into an expression
     ///     <code>
     /// paths = [x => x.a, y => y.b]
-    /// Merge(a, b => a + b) -> 
-    /// x, y => x.a + y.b </code>
+    /// Merge((a, b) => a + b)) -> 
+    /// (x, y) => x.a + y.b </code>
     /// </summary>
     public class ExpressionMerger : ExpressionVisitor
     {
         public ExpressionMerger(params LambdaExpression[] paths)
         {
-            // todo ich: избавиться бы от HashSet-а..
             if (paths == null)
-                throw new ArgumentNullException("paths");
+                throw new ArgumentNullException(nameof(paths));
             this.paths = paths.Select(path => path.Body).ToArray();
-            parameters = new HashSet<ParameterExpression>(paths.SelectMany(lambda => lambda.Parameters)).ToArray();
+            parameters = paths.SelectMany(x => x.Parameters).DistinctPreserveOrder().ToArray();
         }
 
         public Expression<TDelegate> Merge<TDelegate>(LambdaExpression expression)
@@ -45,11 +43,11 @@ namespace GrobExp.Mutators.Visitors
         private Expression MergeInternal(LambdaExpression expression)
         {
             if (expression == null)
-                throw new ArgumentNullException("expression");
+                throw new ArgumentNullException(nameof(expression));
             if (expression.Parameters.Count == 0)
                 return expression.Body;
             if (expression.Parameters.Count != paths.Length)
-                throw new ArgumentException("Expected lambda with exactly " + paths.Length + " parameters", "expression");
+                throw new ArgumentException("Expected lambda with exactly " + paths.Length + " parameters", nameof(expression));
             for (var i = 0; i < paths.Length; ++i)
             {
                 if (paths[i].Type != expression.Parameters[i].Type)

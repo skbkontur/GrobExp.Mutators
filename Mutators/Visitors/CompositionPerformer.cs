@@ -277,59 +277,20 @@ namespace GrobExp.Mutators.Visitors
         private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node, out bool onlyLeavesAreConvertible)
         {
             onlyLeavesAreConvertible = false;
-            List<KeyValuePair<Expression, Expression>> arrayAliases;
-            var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
-            if (convertationNode == null) return null;
-            var resolver = new AliasesResolver(arrayAliases);
+            var convertationNode = convertationTree.Traverse(node, false, out var arrayAliases);
+            if (convertationNode == null)
+                return null;
             var setters = convertationNode.GetMutators().OfType<EqualsToConfiguration>().ToArray();
             if (setters.Length == 0)
             {
                 onlyLeavesAreConvertible = true;
-                if (node.Type.IsArray /* || node.Type.IsDictionary()*/)
-                {
-                    var arrays = convertationNode.GetArrays();
-                    Expression array;
-                    if (arrays.TryGetValue(To, out array) && array != null)
-                    {
-                        var arrayItemConvertationNode = convertationNode.GotoEachArrayElement(false);
-                        if (arrayItemConvertationNode != null)
-                        {
-                            var setter = (EqualsToConfiguration)arrayItemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
-                            if (setter != null)
-                            {
-                                var convertedArray = ConvertArray(array, setter.Value.Body);
-                                return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(convertedArray, null)};
-                            }
-                        }
-
-                        return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(array, null)};
-                    }
-                }
-
-                var children = new List<ModelConfigurationNode>();
-                convertationNode.FindSubNodes(children);
-                children = children.Where(child => child.GetMutators().Any(mutator => mutator is EqualsToConfiguration)).ToList();
-                if (children.Count > 0)
-                {
-                    var leaves = new List<KeyValuePair<Expression, Expression>>();
-                    foreach (var child in children)
-                    {
-                        var leaf = Perform(child.Path);
-                        if (leaf != null)
-                            leaves.Add(new KeyValuePair<Expression, Expression>(child.Path, leaf));
-                    }
-
-                    var constructedByLeaves = ConstructByLeaves(node, leaves);
-                    if (constructedByLeaves == null) return null;
-                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(constructedByLeaves, null)};
-                }
-
-                return null;
+                return GetConditionalSettersByLeaves(node, convertationNode);
             }
+            var resolver = new AliasesResolver(arrayAliases);
 
             var result = new List<KeyValuePair<Expression, Expression>>();
-            bool wasUnconditionalSetter = false;
-            for (int index = setters.Length - 1; index >= 0; --index)
+            var wasUnconditionalSetter = false;
+            for (var index = setters.Length - 1; index >= 0; --index)
             {
                 var mutator = setters[index];
                 LambdaExpression value;
@@ -370,6 +331,50 @@ namespace GrobExp.Mutators.Visitors
             }
 
             return result;
+        }
+
+        [CanBeNull]
+        private List<KeyValuePair<Expression, Expression>> GetConditionalSettersByLeaves(Expression node, [NotNull] ModelConfigurationNode convertationNode)
+        {
+            if (node.Type.IsArray)
+            {
+                var arrays = convertationNode.GetArrays();
+                if (arrays.TryGetValue(To, out var array) && array != null)
+                {
+                    var arrayItemConvertationNode = convertationNode.GotoEachArrayElement(false);
+                    if (arrayItemConvertationNode != null)
+                    {
+                        var setter = (EqualsToConfiguration)arrayItemConvertationNode.GetMutators().SingleOrDefault(mutator => mutator is EqualsToConfiguration);
+                        if (setter != null)
+                        {
+                            var convertedArray = ConvertArray(array, setter.Value.Body);
+                            return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(convertedArray, null) };
+                        }
+                    }
+
+                    return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(array, null) };
+                }
+            }
+
+            var children = new List<ModelConfigurationNode>();
+            convertationNode.FindSubNodes(children);
+            children = children.Where(child => child.GetMutators().Any(mutator => mutator is EqualsToConfiguration)).ToList();
+            if (children.Count > 0)
+            {
+                var leaves = new List<KeyValuePair<Expression, Expression>>();
+                foreach (var child in children)
+                {
+                    var leaf = Perform(child.Path);
+                    if (leaf != null)
+                        leaves.Add(new KeyValuePair<Expression, Expression>(child.Path, leaf));
+                }
+
+                var constructedByLeaves = ConstructByLeaves(node, leaves);
+                if (constructedByLeaves == null) return null;
+                return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(constructedByLeaves, null) };
+            }
+
+            return null;
         }
 
         private static Expression ConvertArray(Expression array, Expression expression)

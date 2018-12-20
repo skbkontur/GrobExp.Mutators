@@ -9,6 +9,9 @@ using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.ModelConfiguration;
 using GrobExp.Mutators.ModelConfiguration.Traverse;
 using GrobExp.Mutators.Validators;
+using GrobExp.Mutators.Visitors.CompositionPerforming;
+
+using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.Visitors
 {
@@ -30,14 +33,13 @@ namespace GrobExp.Mutators.Visitors
             return resolved ? result : null;
         }
 
-        internal List<KeyValuePair<Expression, Expression>> GetConditionalSetters(Expression node)
+        internal List<KeyValuePair<Expression, Expression>> GetConditionalSetters([CanBeNull] Expression node)
         {
             if (!IsSimpleLinkOfChain(node, out var type))
                 return null;
             if (type != From) return null;
 
-            var filters = new List<LambdaExpression>();
-            node = CleanFilters(node, filters);
+            node = node.CleanFilters(out var filters);
 
             var shards = node.SmashToSmithereens();
             for (var i = shards.Length - 1; i >= 0; --i)
@@ -132,55 +134,7 @@ namespace GrobExp.Mutators.Visitors
             return Expression.Call(method.MakeGenericMethod(new[] {visitedObj.Type.GetItemType()}.Concat(node.Method.GetGenericArguments().Skip(1)).ToArray()), new[] {visitedObj}.Concat(visitedArguments));
         }
 
-        private static Expression CleanFilters(Expression node, List<LambdaExpression> filters)
-        {
-            var shards = node.SmashToSmithereens();
-            Expression result = shards[0];
-            int i = 0;
-            while (i + 1 < shards.Length)
-            {
-                ++i;
-                var shard = shards[i];
-                switch (shard.NodeType)
-                {
-                case ExpressionType.MemberAccess:
-                    result = Expression.MakeMemberAccess(result, ((MemberExpression)shard).Member);
-                    break;
-                case ExpressionType.ArrayIndex:
-                    result = Expression.ArrayIndex(result, ((BinaryExpression)shard).Right);
-                    break;
-                case ExpressionType.Call:
-                    var methodCallExpression = (MethodCallExpression)shard;
-                    if (methodCallExpression.Method.IsWhereMethod() && (i + 1 == shards.Length || (i + 1 < shards.Length && shards[i + 1].NodeType == ExpressionType.Call && (((MethodCallExpression)shards[i + 1]).Method.IsCurrentMethod() || ((MethodCallExpression)shards[i + 1]).Method.IsEachMethod()))))
-                    {
-                        if (i + 1 == shards.Length)
-                            filters.Add(Expression.Lambda(Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(result.Type.GetItemType()), result), (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
-                        else
-                        {
-                            result = Expression.Call(((MethodCallExpression)shards[i + 1]).Method, result);
-                            filters.Add(Expression.Lambda(result, (ParameterExpression)shards[0]).Merge((LambdaExpression)methodCallExpression.Arguments[1]));
-                            ++i;
-                        }
-                    }
-                    else
-                    {
-                        if (methodCallExpression.Method.IsCurrentMethod() || methodCallExpression.Method.IsEachMethod())
-                            filters.Add(null);
-                        result = methodCallExpression.Method.IsStatic
-                                     ? Expression.Call(methodCallExpression.Method, new[] {result}.Concat(methodCallExpression.Arguments.Skip(1)))
-                                     : Expression.Call(result, methodCallExpression.Method, methodCallExpression.Arguments);
-                    }
-
-                    break;
-                default:
-                    throw new NotSupportedException("Node type '" + shard.NodeType + "' is not supported");
-                }
-            }
-
-            return result;
-        }
-
-        private Expression ApplyFilters(Expression node, List<LambdaExpression> filters)
+        private Expression ApplyFilters(Expression node, LambdaExpression[] filters)
         {
             if (filters.All(exp => exp == null))
                 return node;
@@ -224,7 +178,7 @@ namespace GrobExp.Mutators.Visitors
                 }
             }
 
-            if (index < filters.Count)
+            if (index < filters.Length)
             {
                 var filter = filters[index++];
                 var performedFilter = Perform(filter.Body);
@@ -234,7 +188,7 @@ namespace GrobExp.Mutators.Visitors
                 result = Expression.Call(whereMethod.MakeGenericMethod(result.Type.GetItemType()), result, Expression.Lambda(resolvedPerformedFilter, parameter));
             }
 
-            if (index < filters.Count)
+            if (index < filters.Length)
                 throw new InvalidOperationException("Too many filters to apply");
             return result;
         }

@@ -34,7 +34,7 @@ build_script:
   - cmd: dotnet pack --no-build --configuration Release ./GrobExp.Mutators.sln
 
 test_script:
-  - cmd: dotnet test --no-build --verbosity normal --configuration Release --filter TestCategory!=Failing ./Mutators.Tests/Mutators.Tests.csproj
+  - cmd: dotnet test --no-build --verbosity normal --configuration Release ./Mutators.Tests/Mutators.Tests.csproj
 
 artifacts:
   - path: './Mutators/bin/Release/*.nupkg'

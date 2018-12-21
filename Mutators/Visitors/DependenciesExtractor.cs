@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -36,10 +36,8 @@ namespace GrobExp.Mutators.Visitors
 
         public LambdaExpression[] Extract(out LambdaExpression[] primaryDependencies, out LambdaExpression[] additionalDependencies)
         {
-            var bodyWithoutCurrent = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, DependenciesExtractorHelper.ExternalCurrentMethod).Visit(lambda.Body);
-            var bodyWithoutEach = new MethodReplacer(MutatorsHelperFunctions.EachMethod, DependenciesExtractorHelper.ExternalCurrentMethod).Visit(bodyWithoutCurrent);
-            var body = Visit(bodyWithoutEach);
-            var replacer = new MethodReplacer(DependenciesExtractorHelper.ExternalCurrentMethod, MutatorsHelperFunctions.CurrentMethod);
+            var body = Visit(eachAndCurrentToExternalCurrentMethodReplacer.Visit(lambda.Body));
+            Func<Expression, Expression> replacer = exp => externalCurrentToCurrentMethodReplacer.Visit(exp);
             if (body == null)
                 primaryDependencies = new LambdaExpression[0];
             else
@@ -57,7 +55,7 @@ namespace GrobExp.Mutators.Visitors
                     }
                 }
 
-                primaryDependencies = primaryDependenciez.Select(replacer.Visit).Cast<LambdaExpression>()
+                primaryDependencies = primaryDependenciez.Select(replacer).Cast<LambdaExpression>()
                                                          .GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             }
 
@@ -65,7 +63,7 @@ namespace GrobExp.Mutators.Visitors
                 {
                     var root = dependency.Body.SmashToSmithereens()[0];
                     return root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root);
-                }).Select(replacer.Visit).Cast<LambdaExpression>().GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+                }).Select(replacer).Cast<LambdaExpression>().GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
             var result = new List<LambdaExpression>(additionalDependencies);
             foreach (var primaryDependency in primaryDependencies)
                 Extract(primaryDependency.Body, result);
@@ -539,8 +537,9 @@ namespace GrobExp.Mutators.Visitors
 
         private static Expression GotoEach(Expression node)
         {
-            node = IsEnumerable(node.Type) && node.NodeType != ExpressionType.NewArrayInit ? Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node) : node;
-            return new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod).Visit(node);
+            if (IsEnumerable(node.Type) && node.NodeType != ExpressionType.NewArrayInit)
+                node = Expression.Call(MutatorsHelperFunctions.EachMethod.MakeGenericMethod(node.Type.GetItemType()), node);
+            return node.ReplaceCurrentWithEach();
         }
 
         private static Expression GotoCurrent(Expression node)
@@ -741,14 +740,18 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<LambdaExpression> dependencies = new List<LambdaExpression>();
         private readonly LambdaExpression lambda;
 
+        private static readonly MethodReplacer eachAndCurrentToExternalCurrentMethodReplacer = new MethodReplacer((From: MutatorsHelperFunctions.EachMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod),
+                                                                                                                  (From: MutatorsHelperFunctions.CurrentMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod));
+
+        private static readonly MethodReplacer externalCurrentToCurrentMethodReplacer = new MethodReplacer((From: DependenciesExtractorHelper.ExternalCurrentMethod, To: MutatorsHelperFunctions.CurrentMethod));
+
         private class CurrentDependencies
         {
             public void ReplaceCurrentWithEach()
             {
-                var replacer = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod);
                 for (var i = 0; i < AdditionalDependencies.Count; ++i)
-                    AdditionalDependencies[i] = (LambdaExpression)replacer.Visit(AdditionalDependencies[i]);
-                Prefix = replacer.Visit(Prefix);
+                    AdditionalDependencies[i] = (LambdaExpression)AdditionalDependencies[i].ReplaceCurrentWithEach();
+                Prefix = Prefix.ReplaceCurrentWithEach();
             }
 
             public void AddSubDependencies(LambdaExpression prefix, LambdaExpression[] subDependencies)

@@ -71,7 +71,6 @@ namespace GrobExp.Mutators.ModelConfiguration
             foreach (var mutator in mutators)
                 mutator.GetArrays(arraysExtractor);
             var result = new List<Expression>();
-            var replacer = new MethodReplacer(MutatorsHelperFunctions.CurrentMethod, MutatorsHelperFunctions.EachMethod);
             for (var i = 1; i < arrays.Count; ++i)
             {
                 var dict = arrays[i];
@@ -80,7 +79,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 List<Expression> list;
                 if (!dict.TryGetValue(rootType, out list))
                     throw new InvalidOperationException("Invalid root type");
-                var arraysOfCurrentLevel = list.GroupBy(exp => new ExpressionWrapper(replacer.Visit(exp), false)).Select(grouping => grouping.First()).ToArray();
+                var arraysOfCurrentLevel = list.GroupBy(exp => new ExpressionWrapper(exp.ReplaceCurrentWithEach(), false)).Select(grouping => grouping.First()).ToArray();
                 if (arraysOfCurrentLevel.Length > 1)
                     throw new NotSupportedException("Iteration over more than one array is not supported");
                 result.Add(arraysOfCurrentLevel[0]);

@@ -308,11 +308,12 @@ namespace GrobExp.Mutators
 
         public static Expression RemoveLinqFirstAndSingle(this Expression expression)
         {
-            expression = new MethodReplacer(firstWithoutParametersMethod, firstOrDefaultWithoutParametersMethod).Visit(expression);
-            expression = new MethodReplacer(firstWithParametersMethod, firstOrDefaultWithParametersMethod).Visit(expression);
-            expression = new MethodReplacer(singleWithoutParametersMethod, singleOrDefaultWithoutParametersMethod).Visit(expression);
-            expression = new MethodReplacer(singleWithParametersMethod, singleOrDefaultWithParametersMethod).Visit(expression);
-            return expression;
+            return new MethodReplacer(
+                (From: firstWithoutParametersMethod, To: firstOrDefaultWithoutParametersMethod),
+                (From: firstWithParametersMethod, To: firstOrDefaultWithParametersMethod),
+                (From: singleWithoutParametersMethod, To: singleOrDefaultWithoutParametersMethod),
+                (From: singleWithParametersMethod, To: singleOrDefaultWithParametersMethod)
+                ).Visit(expression);
         }
 
         public static LambdaExpression ResolveInterfaceMembers(this LambdaExpression lambda)
@@ -327,7 +328,17 @@ namespace GrobExp.Mutators
 
         public static Expression ReplaceMethod(this Expression expression, MethodInfo from, MethodInfo to)
         {
-            return new MethodReplacer(from, to).Visit(expression);
+            return new MethodReplacer((From: from, To: to)).Visit(expression);
+        }
+
+        public static Expression ReplaceEachWithCurrent(this Expression expression)
+        {
+            return eachToCurrentReplacer.Visit(expression);
+        }
+
+        public static Expression ReplaceCurrentWithEach(this Expression expression)
+        {
+            return currentToEachReplacer.Visit(expression);
         }
 
         public static LambdaExpression ResolveAbstractPath(LambdaExpression path, LambdaExpression abstractPath)
@@ -556,6 +567,9 @@ namespace GrobExp.Mutators
         }
 
         private const int maxNumberOfExpressionsInBatch = 1000;
+
+        private static readonly MethodReplacer eachToCurrentReplacer = new MethodReplacer((From: MutatorsHelperFunctions.EachMethod, To: MutatorsHelperFunctions.CurrentMethod));
+        private static readonly MethodReplacer currentToEachReplacer = new MethodReplacer((From: MutatorsHelperFunctions.CurrentMethod, To: MutatorsHelperFunctions.EachMethod));
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(arr => Resize(arr, 0))).Body).Method.GetGenericMethodDefinition();

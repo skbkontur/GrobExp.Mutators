@@ -1,28 +1,33 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+
+using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.Visitors
 {
     public class MethodReplacer : ExpressionVisitor
     {
-        public MethodReplacer(MethodInfo from, MethodInfo to)
+        public MethodReplacer([NotNull] params (MethodInfo From, MethodInfo To)[] replacements)
         {
-            this.from = from;
-            this.to = to;
+            foreach (var (from, to) in replacements)
+                methodReplacements[from] = to;
         }
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var method = node.Method;
-            if (method == from)
-                return Expression.Call(Visit(node.Object), to, node.Arguments.Select(Visit));
-            if (method.IsGenericMethod && method.GetGenericMethodDefinition() == from)
-                return Expression.Call(Visit(node.Object), to.MakeGenericMethod(method.GetGenericArguments()), node.Arguments.Select(Visit));
+
+            if (methodReplacements.TryGetValue(method, out var replacement))
+                return Expression.Call(Visit(node.Object), replacement, node.Arguments.Select(Visit));
+
+            if (method.IsGenericMethod && methodReplacements.TryGetValue(method.GetGenericMethodDefinition(), out replacement))
+                return Expression.Call(Visit(node.Object), replacement.MakeGenericMethod(method.GetGenericArguments()), node.Arguments.Select(Visit));
+
             return base.VisitMethodCall(node);
         }
 
-        private readonly MethodInfo from;
-        private readonly MethodInfo to;
+        private readonly Dictionary<MethodInfo, MethodInfo> methodReplacements = new Dictionary<MethodInfo, MethodInfo>();
     }
 }

@@ -20,9 +20,9 @@ namespace GrobExp.Mutators.Validators
             : base(type, creator, priority)
         {
             Condition = condition;
-            Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
+            Path = (LambdaExpression)path.ReplaceEachWithCurrent();
             if (Path.Body.NodeType == ExpressionType.Constant)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             Message = message;
             this.validationResultType = validationResultType;
         }

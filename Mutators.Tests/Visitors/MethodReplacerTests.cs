@@ -126,6 +126,16 @@ namespace Mutators.Tests.Visitors
             Assert.Throws<ArgumentException>(() => source.ReplaceMethod(methodWithTwoGenericParametersMethodInfo, firstGenericMethodInfo));
         }
 
+        [Test]
+        public void ReplaceMultipleMethods()
+        {
+            var replacer = new MethodReplacer((From: firstMethodInfo, To: secondMethodInfo), (From: firstGenericMethodInfo, To: secondGenericMethodInfo));
+            Expression<Func<A, string>> source = a => FirstMethod(a.S) + FirstMethod<string>(a.B.S) + SecondMethod(a.B.S) + SecondMethod<string>(a.S);
+            Expression<Func<A, string>> replaced = a => SecondMethod(a.S) + SecondMethod<string>(a.B.S) + SecondMethod(a.B.S) + SecondMethod<string>(a.S);
+
+            DoTest(replacer.Visit(source), replaced);
+        }
+
         private void DoTest([NotNull] Expression actual, [NotNull] Expression expected)
         {
             Assert.That(ExpressionEquivalenceChecker.Equivalent(actual, expected, strictly : false, distinguishEachAndCurrent : true),

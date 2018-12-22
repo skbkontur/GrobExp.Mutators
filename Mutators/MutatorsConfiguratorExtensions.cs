@@ -9,7 +9,6 @@ using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Validators;
 using GrobExp.Mutators.Validators.Texts;
-using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
@@ -21,9 +20,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RequiredIfConfiguration.Create(MutatorsCreator.Sharp, priority, null, pathToValue, pathToChild.Merge(message), type));
             return configurator;
         }
@@ -34,9 +32,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RequiredIfConfiguration.Create(MutatorsCreator.Sharp, priority, null, pathToValue, message.Merge(pathToChild, pathToValue), type));
             return configurator;
         }
@@ -65,9 +62,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RequiredIfConfiguration.Create(MutatorsCreator.Sharp, priority, pathToChild.Merge(condition), pathToValue, pathToChild.Merge(message), type));
             return configurator;
         }
@@ -79,9 +75,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RequiredIfConfiguration.Create(MutatorsCreator.Sharp, priority, pathToChild.Merge(condition), pathToValue, message.Merge(pathToChild, pathToValue), type));
             return configurator;
         }
@@ -112,9 +107,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, string>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RegexValidatorConfiguration.Create(MutatorsCreator.Sharp, priority, pathToValue, null, pathToChild.Merge(message), pattern, type));
             return configurator;
         }
@@ -126,9 +120,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, string>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(RegexValidatorConfiguration.Create(MutatorsCreator.Sharp, priority, pathToValue, null, message.Merge(pathToChild, pathToValue), pattern, type));
             return configurator;
         }
@@ -196,9 +189,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, pathToChild.Merge(condition), message.Merge(pathToChild, pathToValue), type));
             return configurator;
         }
@@ -221,9 +213,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var condition = Expression.Convert(Expression.NotEqual(pathToValue.ReplaceParameter(pathToChild.Parameters[0]).Body, pathToChild.Merge(expectedValue).Body), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToChild.Parameters), pathToChild.Merge(message), type));
             return configurator;
@@ -236,9 +227,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var rootParameter = pathToChild.Parameters[0];
             var root = Expression.Lambda<Func<TRoot, TRoot>>(rootParameter, rootParameter);
             var condition = Expression.Convert(Expression.NotEqual(pathToValue.ReplaceParameter(rootParameter).Body, expectedValue.Merge(root, pathToChild).Body), typeof(bool?));
@@ -253,9 +243,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
-            var pathToValue = ((Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue)).ReplaceParameter(pathToChild.Parameters[0]).Body;
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
+            var pathToValue = ((Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent()).ReplaceParameter(pathToChild.Parameters[0]).Body;
             var equal = comparer == null
                             ? (Expression)Expression.Equal(pathToValue, pathToChild.Merge(expectedValue).Body)
                             : Expression.Call(Expression.Constant(comparer, typeof(IEqualityComparer<TValue>)), "Equals", Type.EmptyTypes, pathToValue, pathToChild.Merge(expectedValue).Body);
@@ -284,9 +273,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var pathToExpectedValue = pathToChild.Merge(expectedValue);
             var condition = Expression.Convert(Expression.NotEqual(pathToValue.ReplaceParameter(pathToChild.Parameters[0]).Body, pathToExpectedValue.Body), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToChild.Parameters), message.Merge(pathToChild, pathToValue, pathToExpectedValue), type));
@@ -300,9 +288,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var pathToExpectedValue = pathToChild.Merge(expectedValue);
             var condition = Expression.Convert(Expression.NotEqual(pathToValue.ReplaceParameter(pathToChild.Parameters[0]).Body, pathToExpectedValue.Body), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToChild.Parameters), message.Merge(pathToValue, pathToExpectedValue), type));
@@ -346,9 +333,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var contains = Expression.Call(containsMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body);
             var condition = Expression.Convert(Expression.Not(contains), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), pathToChild.Merge(message), type));
@@ -362,9 +348,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             Expression contains = comparer == null
                                       ? Expression.Call(containsMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body)
                                       : Expression.Call(containsWithComparerMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body, Expression.Constant(comparer));
@@ -383,9 +368,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var contains = Expression.Call(containsMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body);
             var condition = Expression.Convert(Expression.Not(contains), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), message.Merge(pathToChild, pathToValue), type));
@@ -399,9 +383,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var contains = Expression.Call(containsMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body);
             var condition = Expression.Convert(Expression.AndAlso(Expression.NotEqual(pathToValue.Body, Expression.Constant(null, typeof(TValue))), Expression.Not(contains)), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), pathToChild.Merge(message), type));
@@ -415,9 +398,8 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, TValue>>)methodReplacer.Visit(configurator.PathToValue);
-            var pathToChild = (Expression<Func<TRoot, TChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToValue = (Expression<Func<TRoot, TValue>>)configurator.PathToValue.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TRoot, TChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var contains = Expression.Call(containsMethod.MakeGenericMethod(typeof(TValue)), Expression.Constant(values), pathToValue.Body);
             var condition = Expression.Convert(Expression.AndAlso(Expression.NotEqual(pathToValue.Body, Expression.Constant(null, typeof(TValue))), Expression.Not(contains)), typeof(bool?));
             configurator.SetMutator(InvalidIfConfiguration.Create(MutatorsCreator.Sharp, priority, Expression.Lambda<Func<TRoot, bool?>>(condition, pathToValue.Parameters), message.Merge(pathToChild, pathToValue), type));
@@ -431,8 +413,7 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
+            var pathToValue = (Expression<Func<TRoot, string>>)configurator.PathToValue.ReplaceEachWithCurrent();
             var condition = Expression.Convert(Expression.GreaterThan(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(length)), typeof(bool?));
             var message = Expression.Lambda<Func<TRoot, MultiLanguageTextBase>>(Expression.MemberInit(
                 Expression.New(typeof(LengthOutOfRangeText)),
@@ -459,8 +440,7 @@ namespace GrobExp.Mutators
             int priority = 0,
             ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
+            var pathToValue = (Expression<Func<TRoot, string>>)configurator.PathToValue.ReplaceEachWithCurrent();
             var leftExpression = Expression.LessThan(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(fromLength));
             var rigthExpression = Expression.GreaterThan(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(toLength));
 
@@ -486,8 +466,7 @@ namespace GrobExp.Mutators
                                                                                                int priority = 0,
                                                                                                ValidationResultType type = ValidationResultType.Error)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToValue = (Expression<Func<TRoot, string>>)methodReplacer.Visit(configurator.PathToValue);
+            var pathToValue = (Expression<Func<TRoot, string>>)configurator.PathToValue.ReplaceEachWithCurrent();
             var condition = Expression.Convert(Expression.NotEqual(Expression.MakeMemberAccess(pathToValue.Body, stringLengthProperty), Expression.Constant(length)), typeof(bool?));
             var message = Expression.Lambda<Func<TRoot, MultiLanguageTextBase>>(Expression.MemberInit(
                 Expression.New(typeof(LengthNotExactlyEqualsText)),

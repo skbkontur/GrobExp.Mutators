@@ -20,8 +20,7 @@ namespace GrobExp.Mutators
             Expression<Func<TSourceNode, ValidationResult>> validator,
             int priority = 0)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)configurator.PathToSourceChild.ReplaceEachWithCurrent();
             var nodeFromRoot = pathToSourceChild.Merge(node);
             var valueFromRoot = nodeFromRoot.Merge(value);
             var convertedValue = converter == null ? (LambdaExpression)valueFromRoot : valueFromRoot.Merge(converter);
@@ -70,9 +69,8 @@ namespace GrobExp.Mutators
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget> configurator,
             Expression<Func<TSourceChild, TDestChild, TTarget>> value)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
-            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)configurator.PathToSourceChild.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             LambdaExpression valueFromRoot = new ExpressionMerger(pathToSourceChild, pathToChild).Merge(value);
             configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
             return configurator;
@@ -82,8 +80,7 @@ namespace GrobExp.Mutators
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TTarget> configurator,
             Expression<Func<TSourceChild, TTarget>> value)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)configurator.PathToSourceChild.ReplaceEachWithCurrent();
             LambdaExpression valueFromRoot = pathToSourceChild.Merge(value);
             configurator.SetMutator(EqualsToConfiguration.Create(configurator.Root.ConfiguratorType, typeof(TDestRoot), valueFromRoot, null));
             return configurator;
@@ -106,9 +103,8 @@ namespace GrobExp.Mutators
             this ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue> configurator,
             Expression<Func<TDestValue, TSourceChild, Batch>> batch)
         {
-            var methodReplacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)methodReplacer.Visit(configurator.PathToSourceChild);
-            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)methodReplacer.Visit(configurator.PathToChild);
+            var pathToSourceChild = (Expression<Func<TSourceRoot, TSourceChild>>)configurator.PathToSourceChild.ReplaceEachWithCurrent();
+            var pathToChild = (Expression<Func<TDestRoot, TDestChild>>)configurator.PathToChild.ReplaceEachWithCurrent();
             var merger = new ExpressionMerger(pathToSourceChild);
             var initializers = ((ListInitExpression)batch.Body).Initializers;
             Expression primaryKeyIsEmpty = null;
@@ -125,7 +121,7 @@ namespace GrobExp.Mutators
                 dest = clearedDest ?? dest;
                 if (dest.Type != typeof(object))
                     dest = Expression.Convert(dest, typeof(object));
-                Expression source = methodReplacer.Visit(initializer.Arguments[1]);
+                Expression source = initializer.Arguments[1].ReplaceEachWithCurrent();
 //                if(source.Type != typeof(object))
 //                    source = Expression.Convert(source, typeof(object));
                 LambdaExpression value = merger.Merge(Expression.Lambda(source, batch.Parameters[1]));
@@ -137,7 +133,7 @@ namespace GrobExp.Mutators
             }
 
             if (primaryKeyIsEmpty == null) return;
-            var condition = (Expression<Func<TDestRoot, bool?>>)pathToChild.Merge(Expression.Lambda(Expression.Convert(methodReplacer.Visit(primaryKeyIsEmpty), typeof(bool?)), batch.Parameters[0]));
+            var condition = (Expression<Func<TDestRoot, bool?>>)pathToChild.Merge(Expression.Lambda(Expression.Convert(primaryKeyIsEmpty.ReplaceEachWithCurrent(), typeof(bool?)), batch.Parameters[0]));
             foreach (var initializer in initializers)
             {
                 Expression dest = initializer.Arguments[0];

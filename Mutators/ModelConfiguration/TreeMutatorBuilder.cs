@@ -128,7 +128,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             // Find a source array to take values from
             // todo ich: почему только первый?
             var arrays = node.GetArrays();
-            var canonizedFullPath = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(node.Path);
+            var canonizedFullPath = node.Path.ReplaceEachWithCurrent();
             var array = arrays.FirstOrDefault(pair => !new ExpressionWrapper(pair.Value, false).Equals(new ExpressionWrapper(canonizedFullPath, false))).Value;
 
             ParameterExpression arrayParameter = null;

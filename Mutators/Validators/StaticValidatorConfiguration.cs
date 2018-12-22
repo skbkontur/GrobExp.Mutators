@@ -17,9 +17,8 @@ namespace GrobExp.Mutators.Validators
         {
             Name = name;
             Condition = condition;
-            var replacer = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod);
-            PathToNode = (LambdaExpression)replacer.Visit(pathToNode);
-            PathToValue = (LambdaExpression)replacer.Visit(pathToValue);
+            PathToNode = (LambdaExpression)pathToNode.ReplaceEachWithCurrent();
+            PathToValue = (LambdaExpression)pathToValue.ReplaceEachWithCurrent();
             validator = Prepare(validator);
             this.validator = validator;
             validatorFromRoot = pathToNode.Merge(validator);

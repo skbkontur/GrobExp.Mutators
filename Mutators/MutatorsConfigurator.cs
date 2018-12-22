@@ -42,12 +42,12 @@ namespace GrobExp.Mutators
 
         public MutatorsConfigurator<TRoot> If(LambdaExpression condition)
         {
-            return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+            return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)condition.ReplaceEachWithCurrent()));
         }
 
         public MutatorsConfigurator<TRoot> If(Expression<Func<TRoot, bool?>> condition)
         {
-            return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)));
+            return new MutatorsConfigurator<TRoot>(root, Condition.AndAlso((LambdaExpression)condition.ReplaceEachWithCurrent()));
         }
 
         public LambdaExpression Condition { get; }
@@ -73,7 +73,7 @@ namespace GrobExp.Mutators
                 rootMutator = mutator;
             else
             {
-                var pathToChild = new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(PathToChild).ResolveInterfaceMembers();
+                var pathToChild = PathToChild.ReplaceEachWithCurrent().ResolveInterfaceMembers();
                 rootMutator = mutator.ToRoot((Expression<Func<TRoot, TChild>>)pathToChild);
             }
 
@@ -109,12 +109,12 @@ namespace GrobExp.Mutators
 
         public MutatorsConfigurator<TRoot, TChild, TValue> If(Expression<Func<TChild, bool?>> condition)
         {
-            return new MutatorsConfigurator<TRoot, TChild, TValue>(Root, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(PathToChild.Merge(condition))), Title);
+            return new MutatorsConfigurator<TRoot, TChild, TValue>(Root, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)PathToChild.Merge(condition).ReplaceEachWithCurrent()), Title);
         }
 
         public MutatorsConfigurator<TRoot, TChild, TValue> IfFromRoot(Expression<Func<TRoot, bool?>> condition)
         {
-            return new MutatorsConfigurator<TRoot, TChild, TValue>(Root, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(condition)), Title);
+            return new MutatorsConfigurator<TRoot, TChild, TValue>(Root, PathToChild, PathToValue, Condition.AndAlso((LambdaExpression)condition.ReplaceEachWithCurrent()), Title);
         }
 
         public Expression<Func<TRoot, TChild>> PathToChild { get; }

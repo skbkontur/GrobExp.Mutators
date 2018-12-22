@@ -19,7 +19,7 @@ namespace GrobExp.Mutators.Validators
         {
             this.regex = regex;
             this.validationResultType = validationResultType;
-            Path = (LambdaExpression)new MethodReplacer(MutatorsHelperFunctions.EachMethod, MutatorsHelperFunctions.CurrentMethod).Visit(path);
+            Path = (LambdaExpression)path.ReplaceEachWithCurrent();
             Condition = condition;
             Message = message;
             Pattern = pattern;

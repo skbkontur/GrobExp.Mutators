@@ -15,6 +15,11 @@ namespace GrobExp.Mutators.Visitors
                 methodReplacements[from] = to;
         }
 
+        public MethodReplacer([NotNull] MethodInfo from, [NotNull] MethodInfo to)
+            : this((From: from, To: to))
+        {
+        }
+
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             var method = node.Method;

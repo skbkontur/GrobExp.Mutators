@@ -743,7 +743,7 @@ namespace GrobExp.Mutators.Visitors
         private static readonly MethodReplacer eachAndCurrentToExternalCurrentMethodReplacer = new MethodReplacer((From: MutatorsHelperFunctions.EachMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod),
                                                                                                                   (From: MutatorsHelperFunctions.CurrentMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod));
 
-        private static readonly MethodReplacer externalCurrentToCurrentMethodReplacer = new MethodReplacer((From: DependenciesExtractorHelper.ExternalCurrentMethod, To: MutatorsHelperFunctions.CurrentMethod));
+        private static readonly MethodReplacer externalCurrentToCurrentMethodReplacer = new MethodReplacer(from : DependenciesExtractorHelper.ExternalCurrentMethod, to : MutatorsHelperFunctions.CurrentMethod);
 
         private class CurrentDependencies
         {

@@ -328,7 +328,7 @@ namespace GrobExp.Mutators
 
         public static Expression ReplaceMethod(this Expression expression, MethodInfo from, MethodInfo to)
         {
-            return new MethodReplacer((From: from, To: to)).Visit(expression);
+            return new MethodReplacer(from : from, to : to).Visit(expression);
         }
 
         public static Expression ReplaceEachWithCurrent(this Expression expression)
@@ -568,8 +568,8 @@ namespace GrobExp.Mutators
 
         private const int maxNumberOfExpressionsInBatch = 1000;
 
-        private static readonly MethodReplacer eachToCurrentReplacer = new MethodReplacer((From: MutatorsHelperFunctions.EachMethod, To: MutatorsHelperFunctions.CurrentMethod));
-        private static readonly MethodReplacer currentToEachReplacer = new MethodReplacer((From: MutatorsHelperFunctions.CurrentMethod, To: MutatorsHelperFunctions.EachMethod));
+        private static readonly MethodReplacer eachToCurrentReplacer = new MethodReplacer(from : MutatorsHelperFunctions.EachMethod, to : MutatorsHelperFunctions.CurrentMethod);
+        private static readonly MethodReplacer currentToEachReplacer = new MethodReplacer(from : MutatorsHelperFunctions.CurrentMethod, to : MutatorsHelperFunctions.EachMethod);
 
         private static readonly MethodInfo arrayResizeMethod = ((MethodCallExpression)((Expression<Action<int[]>>)(arr => Array.Resize(ref arr, 0))).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo listResizeMethod = ((MethodCallExpression)((Expression<Action<List<int>>>)(arr => Resize(arr, 0))).Body).Method.GetGenericMethodDefinition();

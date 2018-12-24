@@ -11,31 +11,51 @@ namespace Mutators.Tests.Visitors
     public class InterfaceMemberResolverTest
     {
         [Test]
-        public void ResolvePropertyCastedToInterfaceCallRemovesCast()
+        public void ResolveImplementationCastedToInterfaceRemovesCast()
         {
-            Expression<Func<A, string>> exp = a => ((IInterface)a.B).S;
+            Expression<Func<A, string>> source = a => ((IInterfaceB)a.B).S;
 
-            var expression = interfaceMemberResolver.Visit(exp.Body);
+            var resolved = interfaceMemberResolver.Visit(source.Body);
             Expression<Func<A, string>> expected = a => a.B.S;
-            DoTest(expression, expected.Body);
+            DoTest(resolved, expected.Body);
+        }
+
+        [Test]
+        public void ResolveInterfaceCastedToInterfaceRemovesCast()
+        {
+            Expression<Func<A, string>> source = a => ((IInterfaceB)a.InterfaceB).S;
+
+            var resolved = interfaceMemberResolver.Visit(source.Body);
+            Expression<Func<A, string>> expected = a => a.InterfaceB.S;
+            DoTest(resolved, expected.Body);
+        }
+
+        [Test]
+        public void TwoPropertiesCastedInterfaces()
+        {
+            Expression<Func<A, string>> source = a => ((IInterfaceB)((IInterfaceA)a).B).S;
+
+            var resolved = interfaceMemberResolver.Visit(source.Body);
+            Expression<Func<A, string>> expected = a => a.B.S;
+            DoTest(resolved, expected.Body);
         }
 
         [Test]
         public void ResolveInterfacePropertyReturnsTheSameExpression()
         {
-            Expression<Func<A, string>> exp = a => a.Interface.S;
+            Expression<Func<A, string>> source = a => a.InterfaceB.S;
 
-            var expression = interfaceMemberResolver.Visit(exp.Body);
-            DoTest(expression, exp.Body);
+            var expression = interfaceMemberResolver.Visit(source.Body);
+            DoTest(expression, source.Body);
         }
 
         [Test]
         public void ResolvePropertyCastedToInterfaceMethodDoesNothing()
         {
-            Expression<Action<A>> exp = a => ((IInterface)a.B).Method();
+            Expression<Func<A, string>> source = a => ((IInterfaceB)a.B).Method();
 
-            var expression = interfaceMemberResolver.Visit(exp.Body);
-            DoTest(expression, exp.Body);
+            var expression = interfaceMemberResolver.Visit(source.Body);
+            DoTest(expression, source.Body);
         }
 
         private static void DoTest(Expression expression, Expression expected)
@@ -44,28 +64,34 @@ namespace Mutators.Tests.Visitors
                         () => $"Expected:\n{expected}\nBut was:\n{expression}");
         }
 
-        private interface IInterface
+        private interface IInterfaceA
+        {
+            B B { get; }
+        }
+
+        private interface IInterfaceB
         {
             string S { get; }
 
-            void Method();
+            string Method();
         }
 
         private static readonly InterfaceMemberResolver interfaceMemberResolver = new InterfaceMemberResolver();
 
-        private class A
+        private class A : IInterfaceA
         {
             public B B { get; set; }
 
-            public IInterface Interface { get; set; }
+            public IInterfaceB InterfaceB { get; set; }
         }
 
-        private class B : IInterface
+        private class B : IInterfaceB
         {
             public string S { get; set; }
 
-            public void Method()
+            public string Method()
             {
+                return string.Empty;
             }
         }
     }

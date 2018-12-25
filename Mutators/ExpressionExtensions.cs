@@ -125,7 +125,8 @@ namespace GrobExp.Mutators
             return new SelectManyCollectionSelectorExtender().Visit(expression);
         }
 
-        public static Expression CanonizeParameters(this Expression expression)
+        [NotNull]
+        public static Expression CanonizeParameters([NotNull] this Expression expression)
         {
             return new ParameterCanonizer().Canonize(expression);
         }

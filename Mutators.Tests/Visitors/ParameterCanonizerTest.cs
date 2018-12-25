@@ -80,13 +80,12 @@ namespace Mutators.Tests.Visitors
             var secondParameter = Expression.Parameter(typeof(int));
 
             var lambdaParameter = Expression.Variable(typeof(int));
-            var assign = Expression.Assign(lambdaParameter, Expression.Constant(5));
 
-            var sourceSum = Expression.Add(Expression.Add(lambdaParameter, firstParameter), secondParameter);
-            var expectedSum = Expression.Add(Expression.Add(lambdaParameter, firstParameter), firstParameter);
+            var sourceBody = Expression.Multiply(Expression.Add(lambdaParameter, firstParameter), secondParameter);
+            var expectedBody = Expression.Multiply(Expression.Add(lambdaParameter, firstParameter), firstParameter);
 
-            DoTest(source : Expression.Lambda(Expression.Block(typeof(int), expressions : new Expression[] {assign, sourceSum}), lambdaParameter),
-                   expected : Expression.Lambda(Expression.Block(typeof(int), expressions : new Expression[] {assign, expectedSum}), lambdaParameter));
+            DoTest(source : Expression.Lambda(sourceBody, lambdaParameter),
+                   expected : Expression.Lambda(expectedBody, lambdaParameter));
         }
 
         private void DoTest(Expression source, Expression expected)

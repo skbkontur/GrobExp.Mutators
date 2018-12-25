@@ -1,19 +1,23 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+
+using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.Visitors
 {
     public class ParameterCanonizer : ExpressionVisitor
     {
-        public Expression Canonize(Expression expression)
+        [NotNull]
+        public Expression Canonize([NotNull] Expression expression)
         {
             parameters.Clear();
             localParameters.Clear();
             return Visit(expression);
         }
 
-        protected override Expression VisitLambda<T>(Expression<T> lambda)
+        [NotNull]
+        protected override Expression VisitLambda<T>([NotNull] Expression<T> lambda)
         {
             foreach (var parameter in lambda.Parameters)
                 localParameters.Add(parameter);
@@ -23,7 +27,8 @@ namespace GrobExp.Mutators.Visitors
             return res;
         }
 
-        protected override Expression VisitBlock(BlockExpression node)
+        [NotNull]
+        protected override Expression VisitBlock([NotNull] BlockExpression node)
         {
             foreach (var variable in node.Variables)
                 localParameters.Add(variable);
@@ -33,12 +38,12 @@ namespace GrobExp.Mutators.Visitors
             return res;
         }
 
-        protected override Expression VisitParameter(ParameterExpression node)
+        [NotNull]
+        protected override Expression VisitParameter([NotNull] ParameterExpression node)
         {
             if (localParameters.Contains(node))
                 return node;
-            ParameterExpression parameter;
-            if (parameters.TryGetValue(node.Type, out parameter))
+            if (parameters.TryGetValue(node.Type, out var parameter))
                 return parameter;
             parameters.Add(node.Type, node);
             return node;

@@ -14,7 +14,9 @@ namespace GrobExp.Mutators.Aggregators
             SourceArray = sourceArray;
         }
 
-        public static SetSourceArrayConfiguration Create(LambdaExpression sourceArray)
+        public LambdaExpression SourceArray { get; }
+        
+        internal static SetSourceArrayConfiguration Create(LambdaExpression sourceArray)
         {
             return new SetSourceArrayConfiguration(sourceArray.Parameters.Single().Type, Prepare(sourceArray));
         }
@@ -43,8 +45,6 @@ namespace GrobExp.Mutators.Aggregators
         {
             arraysExtractor.GetArrays(SourceArray);
         }
-
-        public LambdaExpression SourceArray { get; set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

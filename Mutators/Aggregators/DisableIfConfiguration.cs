@@ -15,17 +15,19 @@ namespace GrobExp.Mutators.Aggregators
             Condition = condition;
         }
 
+        public LambdaExpression Condition { get; }
+
         public override string ToString()
         {
             return "disabledIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public static DisableIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
+        internal static DisableIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
         {
             return new DisableIfConfiguration(typeof(TData), Prepare(condition));
         }
 
-        public Expression GetCondition(List<KeyValuePair<Expression, Expression>> aliases)
+        internal Expression GetCondition(List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             return Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -57,8 +59,6 @@ namespace GrobExp.Mutators.Aggregators
         {
             arraysExtractor.GetArrays(Condition);
         }
-
-        public LambdaExpression Condition { get; private set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

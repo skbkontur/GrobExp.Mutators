@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             Length = length;
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(Length);
@@ -33,24 +33,24 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new SetArrayLengthConfiguration(typeof(TData), Prepare(condition), Prepare(length));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new SetArrayLengthConfiguration(path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Length));
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new SetArrayLengthConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Length));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new SetArrayLengthConfiguration(Type, resolver.Resolve(Condition), Length);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new SetArrayLengthConfiguration(Type, Prepare(condition).AndAlso(Condition), Length);
         }

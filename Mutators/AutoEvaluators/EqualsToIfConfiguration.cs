@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             Condition = condition;
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             base.GetArrays(arraysExtractor);
             arraysExtractor.GetArrays(Condition);
@@ -34,26 +34,26 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(converterType, type, Prepare(condition), Prepare(value), validator);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new EqualsToIfConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Value), Validator);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             if (Validator != null)
                 throw new NotSupportedException();
             return new EqualsToIfConfiguration(ConverterType, to, Resolve(path, performer, Condition), Resolve(path, performer, Value), Validator);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new EqualsToIfConfiguration(ConverterType, Type, Prepare(condition).AndAlso(Condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new EqualsToIfConfiguration(ConverterType, Type, resolver.Resolve(Condition), resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
@@ -72,7 +72,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return Expression.IfThen(condition, assignment);
         }
 
-        public LambdaExpression Condition { get; private set; }
+        public LambdaExpression Condition { get; }
 
         protected override LambdaExpression[] GetDependencies()
         {

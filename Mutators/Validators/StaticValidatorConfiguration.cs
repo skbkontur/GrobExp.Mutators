@@ -44,31 +44,31 @@ namespace GrobExp.Mutators.Validators
                                                     Prepare(condition), Prepare(pathToNode), Prepare(pathToValue), validator);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new StaticValidatorConfiguration(path.Parameters.Single().Type, Creator, Name, Priority,
                                                     path.Merge(Condition), path.Merge(PathToNode), path.Merge(PathToValue), validator);
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new StaticValidatorConfiguration(to, Creator, Name, Priority,
                                                     Resolve(path, performer, Condition), Resolve(path, performer, PathToNode),
                                                     Resolve(path, performer, PathToValue), validator);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new StaticValidatorConfiguration(Type, Creator, Name, Priority, resolver.Resolve(Condition), resolver.Resolve(PathToNode), resolver.Resolve(PathToValue), validator);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new StaticValidatorConfiguration(Type, Creator, Name, Priority,
                                                     Prepare(condition).AndAlso(Condition), PathToNode, PathToValue, validator);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(validatorFromRoot);

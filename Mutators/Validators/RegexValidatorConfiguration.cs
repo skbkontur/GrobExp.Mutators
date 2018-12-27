@@ -35,29 +35,29 @@ namespace GrobExp.Mutators.Validators
             return new RegexValidatorConfiguration(typeof(TData), creator, priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new RegexValidatorConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Path), path.Merge(Condition), path.Merge(Message), Pattern, regex, validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new RegexValidatorConfiguration(to, Creator, Priority, Resolve(path, performer, Path), Resolve(path, performer, Condition), Resolve(path, performer, Message), Pattern, regex, validationResultType);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new RegexValidatorConfiguration(Type, Creator, Priority, Path, resolver.Resolve(Condition), resolver.Resolve(Message), Pattern, regex, validationResultType);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new RegexValidatorConfiguration(Type, Creator, Priority, Path, Prepare(condition).AndAlso(Condition), Message, Pattern, regex, validationResultType);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(Path);

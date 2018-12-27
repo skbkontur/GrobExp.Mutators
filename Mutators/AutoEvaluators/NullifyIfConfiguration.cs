@@ -28,29 +28,29 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new NullifyIfConfiguration(converterType, typeof(TData), Prepare(condition));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new NullifyIfConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Condition));
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new NullifyIfConfiguration(ConverterType, to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new NullifyIfConfiguration(ConverterType, Type, resolver.Resolve(Condition));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new NullifyIfConfiguration(ConverterType, Type, Prepare(condition).AndAlso(Condition));
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
         }

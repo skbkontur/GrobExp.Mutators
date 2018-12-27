@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -31,29 +31,29 @@ namespace GrobExp.Mutators.Aggregators
             return Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
 // ReSharper disable ConvertClosureToMethodGroup
             return new DisableIfConfiguration(path.Parameters.Single().Type, path.Merge(Condition));
 // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new DisableIfConfiguration(to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new DisableIfConfiguration(Type, resolver.Resolve(Condition));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new DisableIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
         }

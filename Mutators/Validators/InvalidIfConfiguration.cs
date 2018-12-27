@@ -31,29 +31,29 @@ namespace GrobExp.Mutators.Validators
             return new InvalidIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(message), validationResultType);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new InvalidIfConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Condition), path.Merge(Message), validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new InvalidIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Message), validationResultType);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new InvalidIfConfiguration(Type, Creator, Priority, resolver.Resolve(Condition), resolver.Resolve(Message), validationResultType);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new InvalidIfConfiguration(Type, Creator, Priority, Prepare(condition).AndAlso(Condition), Message, validationResultType);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(Message);

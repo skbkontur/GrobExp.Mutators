@@ -12,15 +12,15 @@ namespace GrobExp.Mutators
             Type = type;
         }
 
-        public abstract MutatorConfiguration ToRoot(LambdaExpression path);
-        public abstract MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer);
-        public abstract MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver);
-        public abstract MutatorConfiguration If(LambdaExpression condition);
-        public abstract void GetArrays(ArraysExtractor arraysExtractor);
+        internal abstract MutatorConfiguration ToRoot(LambdaExpression path);
+        internal abstract MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer);
+        internal abstract MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver);
+        internal abstract MutatorConfiguration If(LambdaExpression condition);
+        internal abstract void GetArrays(ArraysExtractor arraysExtractor);
 
-        public Type Type { get; private set; }
+        public Type Type { get; }
 
-        public LambdaExpression[] Dependencies { get { return dependencies ?? (dependencies = GetDependencies()); } }
+        public LambdaExpression[] Dependencies => dependencies ?? (dependencies = GetDependencies());
 
         protected abstract LambdaExpression[] GetDependencies();
 

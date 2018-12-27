@@ -42,14 +42,14 @@ namespace GrobExp.Mutators.Validators
             return new RequiredIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(path), Prepare(message), validationResultType);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new RequiredIfConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Condition), path.Merge(Path), path.Merge(Message), validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             var resolvedPath = Resolve(path, performer, Path);
             if (resolvedPath.Body.NodeType == ExpressionType.Constant)
@@ -57,17 +57,17 @@ namespace GrobExp.Mutators.Validators
             return new RequiredIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), resolvedPath, Resolve(path, performer, Message), validationResultType);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new RequiredIfConfiguration(Type, Creator, Priority, resolver.Resolve(Condition), resolver.Resolve(Path), resolver.Resolve(Message), validationResultType);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new RequiredIfConfiguration(Type, Creator, Priority, Prepare(condition).AndAlso(Condition), Path, Message, validationResultType);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(Path);

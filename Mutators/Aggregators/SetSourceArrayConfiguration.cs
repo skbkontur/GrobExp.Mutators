@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -19,27 +19,27 @@ namespace GrobExp.Mutators.Aggregators
             return new SetSourceArrayConfiguration(sourceArray.Parameters.Single().Type, Prepare(sourceArray));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new SetSourceArrayConfiguration(path.Parameters.Single().Type, path.Merge(SourceArray));
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new SetSourceArrayConfiguration(to, Resolve(path, performer, SourceArray));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new SetSourceArrayConfiguration(Type, resolver.Resolve(SourceArray));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             throw new NotSupportedException();
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(SourceArray);
         }

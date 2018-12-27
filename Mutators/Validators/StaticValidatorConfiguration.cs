@@ -74,7 +74,7 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(validatorFromRoot);
         }
 
-        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null)
                 return validatorFromRoot.Body.ResolveAliases(aliases);

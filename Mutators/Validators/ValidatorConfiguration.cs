@@ -21,8 +21,10 @@ namespace GrobExp.Mutators.Validators
             Priority = priority;
         }
 
-        public abstract Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases);
-        public MutatorsCreator Creator { get; set; }
-        public int Priority { get; private set; }
+        public MutatorsCreator Creator { get; }
+
+        internal abstract Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases);
+
+        internal int Priority { get; }
     }
 }

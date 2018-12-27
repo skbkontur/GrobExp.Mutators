@@ -21,6 +21,9 @@ namespace GrobExp.Mutators.Validators
             this.validationResultType = validationResultType;
         }
 
+        public LambdaExpression Condition { get; }
+        public LambdaExpression Message { get; }
+
         public override string ToString()
         {
             return "invalidIf" + (Condition == null ? "" : "(" + Condition + ")");
@@ -59,7 +62,7 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(Message);
         }
 
-        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -72,9 +75,6 @@ namespace GrobExp.Mutators.Validators
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
             return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
-
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression Message { get; private set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

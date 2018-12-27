@@ -82,7 +82,7 @@ namespace GrobExp.Mutators.Validators
             return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
-        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             var condition = GetFullCondition().Body.ResolveAliases(aliases);
             var message = Message == null ? Expression.Constant(null, typeof(MultiLanguageTextBase)) : Message.Body.ResolveAliases(aliases);

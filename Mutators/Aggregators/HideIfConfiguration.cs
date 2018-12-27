@@ -18,7 +18,7 @@ namespace GrobExp.Mutators.Aggregators
             return "hiddenIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public new static HideIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
+        internal new static HideIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
         {
             return new HideIfConfiguration(typeof(TData), Prepare(condition));
         }

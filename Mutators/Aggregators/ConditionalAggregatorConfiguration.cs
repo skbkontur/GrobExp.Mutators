@@ -50,10 +50,10 @@ namespace GrobExp.Mutators.Aggregators
             return new ConditionalAggregatorConfiguration(Type, resolver.Resolve(Condition), Name);
         }
 
-        public LambdaExpression Condition { get; private set; }
-        public string Name { get; private set; }
+        public LambdaExpression Condition { get; }
+        public string Name { get; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
         }

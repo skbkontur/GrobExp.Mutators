@@ -125,7 +125,7 @@ namespace GrobExp.Mutators.Validators
         public LambdaExpression Path { get; private set; }
         public LambdaExpression Message { get; private set; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             var condition = GetFullCondition();
             return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))

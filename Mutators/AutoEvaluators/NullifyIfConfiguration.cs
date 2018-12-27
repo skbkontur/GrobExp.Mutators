@@ -73,7 +73,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         public Type ConverterType { get; }
         public LambdaExpression Condition { get; private set; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
         }

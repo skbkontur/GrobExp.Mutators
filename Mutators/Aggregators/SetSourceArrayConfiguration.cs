@@ -46,7 +46,7 @@ namespace GrobExp.Mutators.Aggregators
 
         public LambdaExpression SourceArray { get; set; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return new LambdaExpression[0];
         }

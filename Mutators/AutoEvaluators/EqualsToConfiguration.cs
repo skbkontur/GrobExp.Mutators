@@ -77,7 +77,7 @@ namespace GrobExp.Mutators.AutoEvaluators
 
         public StaticValidatorConfiguration Validator { get; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type));
         }

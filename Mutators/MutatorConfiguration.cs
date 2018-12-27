@@ -7,7 +7,7 @@ namespace GrobExp.Mutators
 {
     public abstract class MutatorConfiguration
     {
-        protected MutatorConfiguration(Type type)
+        protected internal MutatorConfiguration(Type type)
         {
             Type = type;
         }
@@ -22,9 +22,9 @@ namespace GrobExp.Mutators
 
         public LambdaExpression[] Dependencies => dependencies ?? (dependencies = GetDependencies());
 
-        protected abstract LambdaExpression[] GetDependencies();
+        protected internal abstract LambdaExpression[] GetDependencies();
 
-        protected static LambdaExpression Prepare(LambdaExpression expression)
+        protected internal static LambdaExpression Prepare(LambdaExpression expression)
         {
             if (expression == null) return null;
 //            if(expression.Body.NodeType == ExpressionType.Convert)
@@ -32,7 +32,7 @@ namespace GrobExp.Mutators
             return (LambdaExpression)new IsNullOrEmptyExtender().Visit(expression.Simplify().RemoveLinqFirstAndSingle().ResolveInterfaceMembers());
         }
 
-        protected static Expression PrepareForAssign(Expression path)
+        protected internal static Expression PrepareForAssign(Expression path)
         {
             if (path.NodeType == ExpressionType.ArrayIndex)
             {
@@ -45,13 +45,13 @@ namespace GrobExp.Mutators
             return path;
         }
 
-        protected static Expression Convert(Expression value, Type type)
+        protected internal static Expression Convert(Expression value, Type type)
         {
             // note ich: обязательно надо конвертить сначала к object-у, а только потом к type-у. Иначе получим очень странное исключение из потрохов Expression-ов, видимо баг
             return value.Type == type ? value : Expression.Convert(Expression.Convert(value, typeof(object)), type);
         }
 
-        protected static LambdaExpression Resolve(Expression path, CompositionPerformer performer, LambdaExpression lambda)
+        protected internal static LambdaExpression Resolve(Expression path, CompositionPerformer performer, LambdaExpression lambda)
         {
             if (lambda == null) return null;
             var body = performer.Perform(ExpressionExtensions.ResolveAbstractPath(Expression.Lambda(path, path.ExtractParameters()), lambda).Body).CanonizeParameters();

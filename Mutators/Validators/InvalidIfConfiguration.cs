@@ -76,7 +76,7 @@ namespace GrobExp.Mutators.Validators
         public LambdaExpression Condition { get; private set; }
         public LambdaExpression Message { get; private set; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())

@@ -93,7 +93,7 @@ namespace GrobExp.Mutators.Validators
         public LambdaExpression PathToValue { get; private set; }
         public LambdaExpression PathToNode { get; private set; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())

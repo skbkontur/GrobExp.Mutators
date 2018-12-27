@@ -27,9 +27,30 @@ namespace GrobExp.Mutators.Validators
             this.validationResultType = validationResultType;
         }
 
+        public LambdaExpression Condition { get; }
+        public LambdaExpression Path { get; }
+        public LambdaExpression Message { get; }
+
         public override string ToString()
         {
             return "requiredIf" + (Condition == null ? "" : "(" + Condition + ")");
+        }
+
+        public LambdaExpression GetFullCondition()
+        {
+            if (fullCondition != null)
+                return fullCondition;
+            Expression condition = Prepare(Expression.Lambda(Expression.Convert(CheckIfEmpty(Path.Body), typeof(bool?)), Path.Parameters)).Body;
+            if (Condition != null)
+            {
+                var parameterFromPath = Path.Parameters.Single();
+                var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
+                if (parameterFromCondition != null)
+                    condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
+                condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
+            }
+
+            return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
         }
 
         public static RequiredIfConfiguration Create<TData, TValue>(MutatorsCreator creator, int priority, Expression<Func<TData, bool?>> condition, Expression<Func<TData, TValue>> path, Expression<Func<TData, MultiLanguageTextBase>> message, ValidationResultType validationResultType)
@@ -74,6 +95,29 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(Message);
         }
 
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        {
+            var condition = GetFullCondition().Body.ResolveAliases(aliases);
+            var message = Message == null ? Expression.Constant(null, typeof(MultiLanguageTextBase)) : Message.Body.ResolveAliases(aliases);
+            var result = Expression.Variable(typeof(ValidationResult));
+            var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
+            var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
+            var toLog = new ValidationLogInfo("required", condition.ToString());
+            if (MutatorsValidationRecorder.IsRecording())
+                MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
+            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
+        }
+
+        protected internal override LambdaExpression[] GetDependencies()
+        {
+            var condition = GetFullCondition();
+            return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
+                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
+                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .Select(grouping => grouping.First())
+                .ToArray();
+        }
+
         private static Expression CheckIfEmpty(Expression exp)
         {
             if (exp.Type == typeof(string))
@@ -89,50 +133,6 @@ namespace GrobExp.Mutators.Validators
             if (exp.Type.IsValueType && !exp.Type.IsNullable())
                 return Expression.Constant(false);
             return Expression.Equal(exp, Expression.Constant(null, exp.Type));
-        }
-
-        public LambdaExpression GetFullCondition()
-        {
-            if (fullCondition != null)
-                return fullCondition;
-            Expression condition = Prepare(Expression.Lambda(Expression.Convert(CheckIfEmpty(Path.Body), typeof(bool?)), Path.Parameters)).Body;
-            if (Condition != null)
-            {
-                var parameterFromPath = Path.Parameters.Single();
-                var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
-                if (parameterFromCondition != null)
-                    condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
-                condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
-            }
-
-            return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
-        }
-
-        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
-        {
-            var condition = GetFullCondition().Body.ResolveAliases(aliases);
-            var message = Message == null ? Expression.Constant(null, typeof(MultiLanguageTextBase)) : Message.Body.ResolveAliases(aliases);
-            var result = Expression.Variable(typeof(ValidationResult));
-            var invalid = Expression.New(validationResultConstructor, Expression.Constant(validationResultType), message);
-            var assign = Expression.IfThenElse(Expression.Convert(condition, typeof(bool)), Expression.Assign(result, invalid), Expression.Assign(result, Expression.Constant(ValidationResult.Ok)));
-            var toLog = new ValidationLogInfo("required", condition.ToString());
-            if (MutatorsValidationRecorder.IsRecording())
-                MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
-            return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
-        }
-
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression Path { get; private set; }
-        public LambdaExpression Message { get; private set; }
-
-        protected internal override LambdaExpression[] GetDependencies()
-        {
-            var condition = GetFullCondition();
-            return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
-                .Select(grouping => grouping.First())
-                .ToArray();
         }
 
         private LambdaExpression fullCondition;

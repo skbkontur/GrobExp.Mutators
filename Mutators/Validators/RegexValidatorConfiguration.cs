@@ -25,6 +25,29 @@ namespace GrobExp.Mutators.Validators
             Pattern = pattern;
         }
 
+        public LambdaExpression Path { get; }
+        public LambdaExpression Condition { get; }
+        public LambdaExpression Message { get; }
+        public string Pattern { get; }
+
+        public LambdaExpression GetFullCondition()
+        {
+            if (fullCondition != null)
+                return fullCondition;
+            Expression valueIsNotNull = Prepare(Expression.Lambda(Expression.NotEqual(Path.Body, Expression.Constant(null, Path.Body.Type)), Path.Parameters)).Body;
+            Expression condition = Expression.Convert(Expression.AndAlso(valueIsNotNull, Expression.Not(Expression.Call(Expression.Constant(regex), regexIsMatchMethod, Path.Body))), typeof(bool?));
+            if (Condition != null)
+            {
+                var parameterFromPath = Path.Parameters.Single();
+                var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
+                if (parameterFromCondition != null)
+                    condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
+                condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
+            }
+
+            return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
+        }
+
         public static RegexValidatorConfiguration Create<TData>(MutatorsCreator creator, int priority, Expression<Func<TData, string>> path, Expression<Func<TData, bool?>> condition, Expression<Func<TData, MultiLanguageTextBase>> message, string pattern, ValidationResultType validationResultType)
         {
             return new RegexValidatorConfiguration(typeof(TData), creator, priority, Prepare(path), Prepare(condition), Prepare(message), pattern ?? "", new Regex(PreparePattern(pattern ?? ""), RegexOptions.Compiled), validationResultType);
@@ -64,24 +87,6 @@ namespace GrobExp.Mutators.Validators
             arraysExtractor.GetArrays(Message);
         }
 
-        public LambdaExpression GetFullCondition()
-        {
-            if (fullCondition != null)
-                return fullCondition;
-            Expression valueIsNotNull = Prepare(Expression.Lambda(Expression.NotEqual(Path.Body, Expression.Constant(null, Path.Body.Type)), Path.Parameters)).Body;
-            Expression condition = Expression.Convert(Expression.AndAlso(valueIsNotNull, Expression.Not(Expression.Call(Expression.Constant(regex), regexIsMatchMethod, Path.Body))), typeof(bool?));
-            if (Condition != null)
-            {
-                var parameterFromPath = Path.Parameters.Single();
-                var parameterFromCondition = Condition.Parameters.SingleOrDefault(parameter => parameter.Type == parameterFromPath.Type);
-                if (parameterFromCondition != null)
-                    condition = new ParameterReplacer(parameterFromPath, parameterFromCondition).Visit(condition);
-                condition = Expression.AndAlso(Expression.Convert(Condition.Body, typeof(bool?)), Expression.Convert(condition, typeof(bool?)));
-            }
-
-            return fullCondition = Expression.Lambda(condition, condition.ExtractParameters());
-        }
-
         internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             var condition = GetFullCondition().Body.ResolveAliases(aliases);
@@ -95,11 +100,6 @@ namespace GrobExp.Mutators.Validators
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
             return Expression.Block(new[] {result}, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), assign, result);
         }
-
-        public LambdaExpression Path { get; private set; }
-        public LambdaExpression Condition { get; set; }
-        public LambdaExpression Message { get; private set; }
-        public string Pattern { get; private set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

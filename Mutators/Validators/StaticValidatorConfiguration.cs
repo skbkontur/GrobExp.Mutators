@@ -24,10 +24,12 @@ namespace GrobExp.Mutators.Validators
             validatorFromRoot = pathToNode.Merge(validator);
         }
 
-        public override string ToString()
-        {
-            return Name;
-        }
+        public string Name { get; }
+        public LambdaExpression Condition { get; }
+        public LambdaExpression PathToValue { get; }
+        public LambdaExpression PathToNode { get; }
+
+        public override string ToString() => Name;
 
         public static StaticValidatorConfiguration Create<TData, TChild, TValue>(MutatorsCreator creator, string name, int priority,
                                                                                  Expression<Func<TData, bool?>> condition, Expression<Func<TData, TChild>> pathToNode,
@@ -87,11 +89,6 @@ namespace GrobExp.Mutators.Validators
                 MutatorsValidationRecorder.RecordCompilingValidation(converterType, toLog);
             return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
-
-        public string Name { get; set; }
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression PathToValue { get; private set; }
-        public LambdaExpression PathToNode { get; private set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

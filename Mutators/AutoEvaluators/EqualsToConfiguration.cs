@@ -19,10 +19,13 @@ namespace GrobExp.Mutators.AutoEvaluators
             Validator = validator;
         }
 
-        public override string ToString()
-        {
-            return "equalsTo" + ("(" + Value + ")");
-        }
+        public Type ConverterType { get; }
+
+        public LambdaExpression Value { get; }
+
+        public StaticValidatorConfiguration Validator { get; }
+
+        public override string ToString() => "equalsTo" + "(" + Value + ")";
 
         public static EqualsToConfiguration Create<TData>(Type converterType, LambdaExpression value, StaticValidatorConfiguration validator = null)
         {
@@ -58,7 +61,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(ConverterType, Type, Prepare(condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Value == null) return null;
             var infoToLog = new AssignLogInfo(path, Value.Body);
@@ -71,11 +74,6 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             arraysExtractor.GetArrays(Value);
         }
-
-        public Type ConverterType { get; }
-        public LambdaExpression Value { get; }
-
-        public StaticValidatorConfiguration Validator { get; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

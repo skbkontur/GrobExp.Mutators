@@ -17,11 +17,9 @@ namespace GrobExp.Mutators.AutoEvaluators
             Length = length;
         }
 
-        internal override void GetArrays(ArraysExtractor arraysExtractor)
-        {
-            arraysExtractor.GetArrays(Condition);
-            arraysExtractor.GetArrays(Length);
-        }
+        public LambdaExpression Condition { get; }
+
+        public LambdaExpression Length { get; }
 
         public static SetArrayLengthConfiguration Create(Type type, LambdaExpression condition, LambdaExpression length)
         {
@@ -31,6 +29,12 @@ namespace GrobExp.Mutators.AutoEvaluators
         public static SetArrayLengthConfiguration Create<TData>(Expression<Func<TData, bool?>> condition, Expression<Func<TData, int>> length)
         {
             return new SetArrayLengthConfiguration(typeof(TData), Prepare(condition), Prepare(length));
+        }
+
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
+        {
+            arraysExtractor.GetArrays(Condition);
+            arraysExtractor.GetArrays(Length);
         }
 
         internal override MutatorConfiguration ToRoot(LambdaExpression path)
@@ -55,7 +59,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new SetArrayLengthConfiguration(Type, Prepare(condition).AndAlso(Condition), Length);
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             var temp = Expression.Variable(path.Type);
             var resize = Expression.Call(arrayResizeMethod, temp, Length.Body.ResolveAliases(aliases));
@@ -66,9 +70,6 @@ namespace GrobExp.Mutators.AutoEvaluators
             condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             return Expression.IfThen(condition, block);
         }
-
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression Length { get; set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

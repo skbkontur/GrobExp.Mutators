@@ -17,11 +17,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             Condition = condition;
         }
 
-        internal override void GetArrays(ArraysExtractor arraysExtractor)
-        {
-            base.GetArrays(arraysExtractor);
-            arraysExtractor.GetArrays(Condition);
-        }
+        public LambdaExpression Condition { get; }
 
         public override string ToString()
         {
@@ -32,6 +28,12 @@ namespace GrobExp.Mutators.AutoEvaluators
         public static EqualsToIfConfiguration Create(Type converterType, Type type, LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
         {
             return new EqualsToIfConfiguration(converterType, type, Prepare(condition), Prepare(value), validator);
+        }
+
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
+        {
+            base.GetArrays(arraysExtractor);
+            arraysExtractor.GetArrays(Condition);
         }
 
         internal override MutatorConfiguration ToRoot(LambdaExpression path)
@@ -58,7 +60,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToIfConfiguration(ConverterType, Type, resolver.Resolve(Condition), resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Value == null) return null;
             var infoToLog = new AssignLogInfo(path, Value.Body);
@@ -71,8 +73,6 @@ namespace GrobExp.Mutators.AutoEvaluators
             condition = Expression.Equal(Expression.Convert(condition.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
             return Expression.IfThen(condition, assignment);
         }
-
-        public LambdaExpression Condition { get; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

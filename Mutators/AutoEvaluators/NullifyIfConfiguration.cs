@@ -18,10 +18,11 @@ namespace GrobExp.Mutators.AutoEvaluators
             Condition = condition;
         }
 
-        public override string ToString()
-        {
-            return "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
-        }
+        public Type ConverterType { get; }
+
+        public LambdaExpression Condition { get; }
+
+        public override string ToString() => "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
 
         public static NullifyIfConfiguration Create<TData>(Type converterType, Expression<Func<TData, bool?>> condition)
         {
@@ -55,7 +56,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             arraysExtractor.GetArrays(Condition);
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             var infoToLog = new AssignLogInfo(path, Expression.Constant(ToString(), typeof(string)));
@@ -69,9 +70,6 @@ namespace GrobExp.Mutators.AutoEvaluators
             }
             return applyResult;
         }
-
-        public Type ConverterType { get; }
-        public LambdaExpression Condition { get; private set; }
 
         protected internal override LambdaExpression[] GetDependencies()
         {

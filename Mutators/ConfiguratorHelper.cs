@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,7 +8,7 @@ using GrobExp.Mutators.MultiLanguages;
 
 namespace GrobExp.Mutators
 {
-    public static class ConfiguratorHelper
+    internal static class ConfiguratorHelper
     {
         public static bool IsLeafType(Type type)
         {

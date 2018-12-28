@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,7 +7,7 @@ using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class InvariantCodeExtractor : ExpressionVisitor
+    internal class InvariantCodeExtractor : ExpressionVisitor
     {
         public InvariantCodeExtractor(IEnumerable<ParameterExpression> invariantParameters)
         {
@@ -129,7 +129,7 @@ namespace GrobExp.Mutators.Visitors
                 Dependencies = new HashSet<ParameterExpression>();
             }
 
-            public HashSet<ParameterExpression> Dependencies { get; private set; }
+            public HashSet<ParameterExpression> Dependencies { get; }
         }
     }
 }

@@ -10,7 +10,7 @@ namespace GrobExp.Mutators.Visitors
     /// Replaces outer scope parameters of same type by first occurence of parameter of this type.
     /// Ignores occurrences of parameters of inner lambdas and variables declared inside.
     /// </summary>
-    public class ParameterCanonizer : ExpressionVisitor
+    internal class ParameterCanonizer : ExpressionVisitor
     {
         [NotNull]
         public Expression Canonize([NotNull] Expression expression)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,7 +15,7 @@ namespace GrobExp.Mutators.Visitors
     ///     new AliasesResolver(new { (x.A, x.A) }).Visit(data => data.A) returns data => x.A (compilation will fail because of unknown parameter x)
     ///     This behaviour is actively used in some places, so it can't be easily fixed to be more clear.
     /// </summary>
-    public class AliasesResolver : ExpressionVisitor
+    internal class AliasesResolver : ExpressionVisitor
     {
         public AliasesResolver(List<KeyValuePair<Expression, Expression>> aliases)
         {

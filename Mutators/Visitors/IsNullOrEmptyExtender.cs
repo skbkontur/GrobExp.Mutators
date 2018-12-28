@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class IsNullOrEmptyExtender : ExpressionVisitor
+    internal class IsNullOrEmptyExtender : ExpressionVisitor
     {
         protected override Expression VisitBinary(BinaryExpression node)
         {
@@ -20,8 +20,7 @@ namespace GrobExp.Mutators.Visitors
                     if (leftIsNull && rightIsNull)
                         return node;
                     var exp = leftIsNull ? node.Right : node.Left;
-                    MethodInfo isNullOrEmptyMethod;
-                    if (TryGetIsNullOrEmptyMethod(exp.Type, out isNullOrEmptyMethod))
+                    if (TryGetIsNullOrEmptyMethod(exp.Type, out var isNullOrEmptyMethod))
                     {
                         Expression result = Expression.Call(null, isNullOrEmptyMethod, new[] {exp});
                         if (node.NodeType == ExpressionType.NotEqual)
@@ -94,11 +93,11 @@ namespace GrobExp.Mutators.Visitors
             return false;
         }
 
-        public static readonly MethodInfo StringIsNullOrEmptyMethod = ((MethodCallExpression)((Expression<Func<string, bool>>)(s => string.IsNullOrEmpty(s))).Body).Method;
+        private static readonly MethodInfo stringIsNullOrEmptyMethod = ((MethodCallExpression)((Expression<Func<string, bool>>)(s => string.IsNullOrEmpty(s))).Body).Method;
 
         private static readonly Dictionary<Type, MethodInfo> isNullOrEmptyMethods = new Dictionary<Type, MethodInfo>
             {
-                {typeof(string), StringIsNullOrEmptyMethod},
+                {typeof(string), stringIsNullOrEmptyMethod},
                 {typeof(string[]), MutatorsHelperFunctions.StringArrayIsNullOrEmptyMethod}
             };
     }

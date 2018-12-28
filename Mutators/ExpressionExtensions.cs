@@ -348,7 +348,7 @@ namespace GrobExp.Mutators
             return Expression.Lambda(new AbstractPathResolver(parameters, false).Resolve(abstractPath.Body), path.Parameters);
         }
 
-        public static Expression ResolveAbstractPath(this Expression expression, List<PathPrefix> pathPrefixes)
+        internal static Expression ResolveAbstractPath(this Expression expression, List<PathPrefix> pathPrefixes)
         {
             if (pathPrefixes == null || pathPrefixes.Count == 0) return expression;
             return new AbstractPathResolver(pathPrefixes, true).Resolve(expression);

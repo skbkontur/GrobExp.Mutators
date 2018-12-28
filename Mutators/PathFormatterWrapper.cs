@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -7,7 +7,7 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators
 {
-    public class PathFormatterWrapper : IPathFormatter
+    internal class PathFormatterWrapper : IPathFormatter
     {
         public PathFormatterWrapper(IPathFormatter pathFormatter, IPathFormatter basePathFormatter, ModelConfigurationNode converterTree, CompositionPerformer performer, AliasesResolver resolver)
         {

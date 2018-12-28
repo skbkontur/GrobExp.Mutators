@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class IsConstantChecker : ExpressionVisitor
+    internal class IsConstantChecker : ExpressionVisitor
     {
         /// <summary>
         ///     An expression is considered not Constant if:

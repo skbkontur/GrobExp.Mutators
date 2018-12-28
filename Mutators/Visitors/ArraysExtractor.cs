@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ArraysExtractor
+    internal class ArraysExtractor
     {
         public ArraysExtractor(List<Dictionary<Type, List<Expression>>> arrays)
         {
@@ -26,7 +26,7 @@ namespace GrobExp.Mutators.Visitors
     ///     и типу корня выражения.
     /// </summary>
     /// <returns>Максимальный уровень вложенности вызовов Each() и Current()</returns>
-    public class ArraysExtractorVisitor : ExpressionVisitor
+    internal class ArraysExtractorVisitor : ExpressionVisitor
     {
         public ArraysExtractorVisitor(List<Dictionary<Type, List<Expression>>> list, bool paramTypeMustBeUnique)
         {

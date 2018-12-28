@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionConstantsExtractor : ExpressionVisitor
+    internal class ExpressionConstantsExtractor : ExpressionVisitor
     {
         public ExpressionConstantsExtractor(Expression constantsAccessor)
         {

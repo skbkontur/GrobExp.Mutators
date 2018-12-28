@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace GrobExp.Mutators
 {
-    public class PathPrefix
+    internal class PathPrefix
     {
         public PathPrefix(Expression path, ParameterExpression parameter, ParameterExpression index = null)
         {
@@ -11,8 +11,8 @@ namespace GrobExp.Mutators
             Index = index;
         }
 
-        public Expression Path { get; private set; }
-        public ParameterExpression Parameter { get; private set; }
-        public ParameterExpression Index { get; private set; }
+        public Expression Path { get; }
+        public ParameterExpression Parameter { get; }
+        public ParameterExpression Index { get; }
     }
 }

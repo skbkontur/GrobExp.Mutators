@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class InterfaceMemberResolver : ExpressionVisitor
+    internal class InterfaceMemberResolver : ExpressionVisitor
     {
         /// <summary>
         ///     Removes redundant casts to interface in order to simplify expressions compiling

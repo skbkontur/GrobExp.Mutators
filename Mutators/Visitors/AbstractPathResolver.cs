@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class AbstractPathResolver : ExpressionVisitor
+    internal class AbstractPathResolver : ExpressionVisitor
     {
         public AbstractPathResolver(List<PathPrefix> pathPrefixes, bool takeParameter)
         {

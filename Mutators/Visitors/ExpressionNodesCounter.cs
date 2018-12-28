@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionNodesCounter : ExpressionVisitor
+    internal class ExpressionNodesCounter : ExpressionVisitor
     {
         public int Count(Expression expression)
         {

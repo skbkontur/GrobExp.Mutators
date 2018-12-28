@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators.MultiLanguages;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class TextGeneralizer : ExpressionVisitor
+    internal class TextGeneralizer : ExpressionVisitor
     {
         public TextGeneralizer(Type type)
         {

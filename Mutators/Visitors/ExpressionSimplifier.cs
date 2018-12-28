@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,7 +9,7 @@ namespace GrobExp.Mutators.Visitors
     /// <summary>
     ///     Работает за квадрат из-за того, что при обходе Expression-а внутри Visit вызывается IsConstant который точно также обходит всё поддерево.
     /// </summary>
-    public class ExpressionSimplifier : ExpressionVisitor
+    internal class ExpressionSimplifier : ExpressionVisitor
     {
         public Expression Simplify(Expression expression)
         {

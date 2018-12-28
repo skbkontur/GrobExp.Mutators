@@ -15,7 +15,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         ///         filter = qxx.Data.Current().EndsWith("GRobas") && qxx.Data.Current().ToArray().Length > 0
         /// </code>
         /// </summary>
-        internal static LambdaExpression SimplifyPath(LambdaExpression path, out LambdaExpression filter)
+        public static LambdaExpression SimplifyPath(LambdaExpression path, out LambdaExpression filter)
         {
             filter = null;
             var shards = path.Body.SmashToSmithereens();

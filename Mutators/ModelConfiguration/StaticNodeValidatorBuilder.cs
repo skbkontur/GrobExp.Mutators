@@ -10,7 +10,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class StaticNodeValidatorBuilder
     {
-        internal static LambdaExpression BuildStaticNodeValidator(this ModelConfigurationNode node)
+        public static LambdaExpression BuildStaticNodeValidator(this ModelConfigurationNode node)
         {
             var parameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
             var result = Expression.Variable(typeof(List<ValidationResult>), "result");

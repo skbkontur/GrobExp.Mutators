@@ -7,7 +7,7 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class LoopInvariantFatExpressionsExtractor
+    internal static class LoopInvariantFatExpressionsExtractor
     {
         internal static Expression ExtractLoopInvariantFatExpressions(this Expression expression, IEnumerable<ParameterExpression> invariantParameters, Func<Expression, Expression> resultSelector)
         {

@@ -8,21 +8,21 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeFormatter
     {
-        internal static string ToPrettyString(this ModelConfigurationNode node)
+        public static string ToPrettyString(this ModelConfigurationNode node)
         {
             var allMutators = new List<MutatorWithPath>();
             node.GetMutatorsWithPath(allMutators);
             return ToPrettyString(allMutators);
         }
 
-        internal static void GetMutatorsWithPath(this ModelConfigurationNode node, List<MutatorWithPath> result)
+        public static void GetMutatorsWithPath(this ModelConfigurationNode node, List<MutatorWithPath> result)
         {
             result.AddRange(node.GetMutatorsWithPath());
             foreach (var child in node.Children)
                 GetMutatorsWithPath(child, result);
         }
 
-        internal static string ToPrettyString(this IEnumerable<MutatorWithPath> mutators)
+        public static string ToPrettyString(this IEnumerable<MutatorWithPath> mutators)
         {
             var result = new StringBuilder();
             foreach (var group in mutators.GroupBy(pair => new ExpressionWrapper(pair.PathToNode, false)))

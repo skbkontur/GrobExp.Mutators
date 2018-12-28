@@ -9,7 +9,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeValidationsExtractor
     {
-        internal static void ExtractValidationsFromConverters(this ModelConfigurationNode node, ModelConfigurationNode validationsTree)
+        public static void ExtractValidationsFromConverters(this ModelConfigurationNode node, ModelConfigurationNode validationsTree)
         {
             var performer = new CompositionPerformer(node.RootType, validationsTree.RootType, node);
             node.ExtractValidationsFromConvertersInternal(validationsTree, performer);

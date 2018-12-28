@@ -8,7 +8,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeModification
     {
-        internal static void AddMutatorSmart(this ModelConfigurationNode node, LambdaExpression path, MutatorConfiguration mutator)
+        public static void AddMutatorSmart(this ModelConfigurationNode node, LambdaExpression path, MutatorConfiguration mutator)
         {
             path = (LambdaExpression)path.Simplify();
             var simplifiedPath = PathSimplifier.SimplifyPath(path, out var filter);
@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             node.Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
         }
 
-        internal static void AddMutator(this ModelConfigurationNode node, MutatorConfiguration mutator)
+        public static void AddMutator(this ModelConfigurationNode node, MutatorConfiguration mutator)
         {
             if (mutator.IsUncoditionalSetter())
             {
@@ -33,7 +33,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             node.mutators.Add(new KeyValuePair<Expression, MutatorConfiguration>(node.Path, mutator));
         }
 
-        internal static void AddMutator(this ModelConfigurationNode node, Expression path, MutatorConfiguration mutator)
+        public static void AddMutator(this ModelConfigurationNode node, Expression path, MutatorConfiguration mutator)
         {
             if (mutator.IsUncoditionalSetter())
             {

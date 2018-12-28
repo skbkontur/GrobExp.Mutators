@@ -9,7 +9,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeArraysExtraction
     {
-        internal static Expression GetAlienArray(this ModelConfigurationNode node)
+        public static Expression GetAlienArray(this ModelConfigurationNode node)
         {
             var arrays = node.GetArrays();
             if (!arrays.TryGetValue(node.RootType, out var result))
@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, node.Path, false, true) ? null : result;
         }
 
-        internal static Dictionary<Type, Expression> GetArrays(this ModelConfigurationNode node)
+        public static Dictionary<Type, Expression> GetArrays(this ModelConfigurationNode node)
         {
             var arrays = new Dictionary<Type, List<Expression>>();
             node.GetArrays(node.Path, arrays);

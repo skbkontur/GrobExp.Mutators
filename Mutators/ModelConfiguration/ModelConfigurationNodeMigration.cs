@@ -11,7 +11,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeMigration
     {
-        internal static void Migrate(this ModelConfigurationNode theNode, Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
+        public static void Migrate(this ModelConfigurationNode theNode, Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
         {
             theNode.MigrateTree(to, destTree, convertationTree, convertationTree, theNode.Parent == null ? theNode.Path : Expression.Parameter(theNode.NodeType, theNode.NodeType.Name), false);
         }

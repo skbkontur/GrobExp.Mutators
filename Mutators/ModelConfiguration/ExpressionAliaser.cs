@@ -8,7 +8,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ExpressionAliaser
     {
-        internal static LambdaAliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
+        public static LambdaAliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
         {
             var simplifiedPathShards = simplifiedPath.SmashToSmithereens();
             var pathShards = path.SmashToSmithereens();

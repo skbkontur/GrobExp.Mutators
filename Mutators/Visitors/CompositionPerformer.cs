@@ -13,7 +13,7 @@ namespace GrobExp.Mutators.Visitors
 {
     public class CompositionPerformer : ExpressionVisitor
     {
-        public CompositionPerformer(Type from, Type to, ModelConfigurationNode convertationTree)
+        internal CompositionPerformer(Type from, Type to, ModelConfigurationNode convertationTree)
         {
             From = from;
             To = to;
@@ -22,17 +22,16 @@ namespace GrobExp.Mutators.Visitors
             lambda = Expression.Lambda(parameter, parameter);
         }
 
-        public Expression Perform(Expression expression)
+        internal Expression Perform(Expression expression)
         {
             resolved = true;
             var result = Visit(expression);
             return resolved ? result : null;
         }
 
-        public List<KeyValuePair<Expression, Expression>> GetConditionalSetters(Expression node)
+        internal List<KeyValuePair<Expression, Expression>> GetConditionalSetters(Expression node)
         {
-            Type type;
-            if (!IsSimpleLinkOfChain(node, out type))
+            if (!IsSimpleLinkOfChain(node, out var type))
                 return null;
             if (type != From) return null;
 
@@ -42,8 +41,7 @@ namespace GrobExp.Mutators.Visitors
             var shards = node.SmashToSmithereens();
             for (var i = shards.Length - 1; i >= 0; --i)
             {
-                bool onlyLeavesAreConvertible;
-                var conditionalSetters = GetConditionalSettersInternal(shards[i], out onlyLeavesAreConvertible);
+                var conditionalSetters = GetConditionalSettersInternal(shards[i], out var onlyLeavesAreConvertible);
                 if (onlyLeavesAreConvertible && (i < shards.Length - 1 || !shards[i].Type.IsArray))
                     return null;
                 if (conditionalSetters == null)
@@ -60,8 +58,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            Type type;
-            if (IsSimpleLinkOfChain(node, out type))
+            if (IsSimpleLinkOfChain(node, out var type))
                 return type == From ? ResolveChain(node) : node;
             return base.Visit(node);
         }
@@ -326,8 +323,7 @@ namespace GrobExp.Mutators.Visitors
         private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node, out bool onlyLeavesAreConvertible)
         {
             onlyLeavesAreConvertible = false;
-            List<KeyValuePair<Expression, Expression>> arrayAliases;
-            var convertationNode = convertationTree.Traverse(node, false, out arrayAliases);
+            var convertationNode = convertationTree.Traverse(node, false, out var arrayAliases);
             if (convertationNode == null) return null;
             var resolver = new AliasesResolver(arrayAliases);
             var setters = convertationNode.GetMutators().OfType<EqualsToConfiguration>().ToArray();

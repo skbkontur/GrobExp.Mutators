@@ -84,7 +84,7 @@ namespace GrobExp.Mutators
             return expression == null ? null : new LinqEliminator().Eliminate(expression);
         }
 
-        public static Expression Assign(this Expression path, Type converterType, Expression value, AssignLogInfo toLog = null)
+        internal static Expression Assign(this Expression path, Type converterType, Expression value, AssignLogInfo toLog = null)
         {
             if (!MutatorsAssignRecorder.IsRecording() || toLog == null)
                 return path.InternalAssign(converterType, value);

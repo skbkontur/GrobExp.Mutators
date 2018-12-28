@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
 {
-    public class AssignLogInfo
+    internal class AssignLogInfo
     {
         public AssignLogInfo(Expression path, Expression value)
         {
@@ -10,7 +10,7 @@ namespace GrobExp.Mutators.MutatorsRecording.AssignRecording
             Value = value;
         }
 
-        public Expression Path { get; private set; }
-        public Expression Value { get; private set; }
+        public Expression Path { get; }
+        public Expression Value { get; }
     }
 }

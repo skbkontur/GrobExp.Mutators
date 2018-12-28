@@ -1,6 +1,6 @@
-﻿namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
+namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
-    public class ValidationLogInfo
+    internal class ValidationLogInfo
     {
         public ValidationLogInfo(string name, string condition)
         {
@@ -8,7 +8,7 @@
             Condition = condition;
         }
 
-        public string Name { get; private set; }
-        public string Condition { get; private set; }
+        public string Name { get; }
+        public string Condition { get; }
     }
 }

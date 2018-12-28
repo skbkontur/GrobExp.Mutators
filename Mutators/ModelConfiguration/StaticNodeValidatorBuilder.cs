@@ -8,9 +8,9 @@ using GrobExp.Mutators.Validators;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class StaticNodeValidatorBuilder
+    internal static class StaticNodeValidatorBuilder
     {
-        public static LambdaExpression BuildStaticNodeValidator(this ModelConfigurationNode node)
+        internal static LambdaExpression BuildStaticNodeValidator(this ModelConfigurationNode node)
         {
             var parameter = node.Parent == null ? (ParameterExpression)node.Path : Expression.Parameter(node.NodeType, node.NodeType.Name);
             var result = Expression.Variable(typeof(List<ValidationResult>), "result");
@@ -22,8 +22,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 var ok = true;
                 foreach (var dependency in validator.Dependencies ?? new LambdaExpression[0])
                 {
-                    ModelConfigurationNode child;
-                    if (!node.Root.Traverse(dependency.Body, node, out child, false) || child != node)
+                    if (!node.Root.Traverse(dependency.Body, node, out var child, false) || child != node)
                     {
                         ok = false;
                         break;

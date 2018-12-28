@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -6,9 +6,9 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ExpressionAliaser
+    internal static class ExpressionAliaser
     {
-        public static LambdaAliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
+        internal static LambdaAliasesResolver CreateAliasesResolver(Expression simplifiedPath, Expression path)
         {
             var simplifiedPathShards = simplifiedPath.SmashToSmithereens();
             var pathShards = path.SmashToSmithereens();

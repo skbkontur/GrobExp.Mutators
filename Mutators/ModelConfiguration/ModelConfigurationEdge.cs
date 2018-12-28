@@ -37,7 +37,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             return Compare(Value, other.Value);
         }
 
-        public object Value { get; private set; }
+        public object Value { get; }
 
         private static int GetHashCode(object value)
         {

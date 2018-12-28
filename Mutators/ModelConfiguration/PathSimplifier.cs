@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class PathSimplifier
+    internal static class PathSimplifier
     {
         /// <summary>
         ///     Выкидываем вызовы Select и Where, заменяя их на на Current.
@@ -15,7 +15,7 @@ namespace GrobExp.Mutators.ModelConfiguration
         ///         filter = qxx.Data.Current().EndsWith("GRobas") && qxx.Data.Current().ToArray().Length > 0
         /// </code>
         /// </summary>
-        public static LambdaExpression SimplifyPath(LambdaExpression path, out LambdaExpression filter)
+        internal static LambdaExpression SimplifyPath(LambdaExpression path, out LambdaExpression filter)
         {
             filter = null;
             var shards = path.Body.SmashToSmithereens();

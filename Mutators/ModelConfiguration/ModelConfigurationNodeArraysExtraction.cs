@@ -7,18 +7,17 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ModelConfigurationNodeArraysExtraction
+    internal static class ModelConfigurationNodeArraysExtraction
     {
-        public static Expression GetAlienArray(this ModelConfigurationNode node)
+        internal static Expression GetAlienArray(this ModelConfigurationNode node)
         {
             var arrays = node.GetArrays();
-            Expression result;
-            if (!arrays.TryGetValue(node.RootType, out result))
+            if (!arrays.TryGetValue(node.RootType, out var result))
                 return null;
             return ExpressionEquivalenceChecker.Equivalent(Expression.Lambda(result, result.ExtractParameters()).ExtractPrimaryDependencies()[0].Body, node.Path, false, true) ? null : result;
         }
 
-        public static Dictionary<Type, Expression> GetArrays(this ModelConfigurationNode node)
+        internal static Dictionary<Type, Expression> GetArrays(this ModelConfigurationNode node)
         {
             var arrays = new Dictionary<Type, List<Expression>>();
             node.GetArrays(node.Path, arrays);
@@ -63,8 +62,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                     var dict = list[level];
                     foreach (var pair in dict)
                     {
-                        List<Expression> lizd;
-                        if (!arrays.TryGetValue(pair.Key, out lizd))
+                        if (!arrays.TryGetValue(pair.Key, out var lizd))
                             arrays.Add(pair.Key, lizd = new List<Expression>());
                         lizd.AddRange(pair.Value);
                     }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2 - 2018.29.12
+- Lazy converter expression compilation (some public methods of `ConverterCollection` don't converter to be compiled)
+- No more failing tests
+- Some visistors covered by tests
+- [Breaking] Introduced explicit public API, some classes made internal
+
 ## v1.1 - 2018.10.03
 - Support concurrent validation and convertation recording
 

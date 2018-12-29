@@ -18,44 +18,45 @@ namespace GrobExp.Mutators.AutoEvaluators
             Condition = condition;
         }
 
-        public override string ToString()
-        {
-            return "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
-        }
+        public Type ConverterType { get; }
+
+        public LambdaExpression Condition { get; }
+
+        public override string ToString() => "nullifiedIf" + (Condition == null ? "" : "(" + Condition + ")");
 
         public static NullifyIfConfiguration Create<TData>(Type converterType, Expression<Func<TData, bool?>> condition)
         {
             return new NullifyIfConfiguration(converterType, typeof(TData), Prepare(condition));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new NullifyIfConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Condition));
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new NullifyIfConfiguration(ConverterType, to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new NullifyIfConfiguration(ConverterType, Type, resolver.Resolve(Condition));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new NullifyIfConfiguration(ConverterType, Type, Prepare(condition).AndAlso(Condition));
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             var infoToLog = new AssignLogInfo(path, Expression.Constant(ToString(), typeof(string)));
@@ -70,10 +71,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return applyResult;
         }
 
-        public Type ConverterType { get; }
-        public LambdaExpression Condition { get; private set; }
-
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
         }

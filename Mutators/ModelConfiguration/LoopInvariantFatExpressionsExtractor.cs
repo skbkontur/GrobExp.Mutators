@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,9 +7,9 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class LoopInvariantFatExpressionsExtractor
+    internal static class LoopInvariantFatExpressionsExtractor
     {
-        public static Expression ExtractLoopInvariantFatExpressions(this Expression expression, IEnumerable<ParameterExpression> invariantParameters, Func<Expression, Expression> resultSelector)
+        internal static Expression ExtractLoopInvariantFatExpressions(this Expression expression, IEnumerable<ParameterExpression> invariantParameters, Func<Expression, Expression> resultSelector)
         {
             var extractedExpressions = new InvariantCodeExtractor(invariantParameters).Extract(expression);
             if (extractedExpressions.Length == 0)

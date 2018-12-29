@@ -12,19 +12,6 @@ namespace GrobExp.Mutators
 {
     public abstract class MutatorsTreeBase<TData>
     {
-        public KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> GetRawMutators<TValue>(Expression<Func<TData, TValue>> path)
-        {
-            var nodeInfo = GetOrCreateNodeInfo(path);
-            if (nodeInfo.RawMutators == null)
-            {
-                lock (lockObject)
-                    if (nodeInfo.RawMutators == null)
-                        nodeInfo.RawMutators = BuildRawMutators(path);
-            }
-
-            return nodeInfo.RawMutators.Value;
-        }
-
         public KeyValuePair<Expression, List<MutatorConfiguration>> GetMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var nodeInfo = GetOrCreateNodeInfo(path);
@@ -110,6 +97,21 @@ namespace GrobExp.Mutators
             return result.ToArray();
         }
 
+        public abstract MutatorsTreeBase<TData> Merge(MutatorsTreeBase<TData> other);
+
+        internal KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> GetRawMutators<TValue>(Expression<Func<TData, TValue>> path)
+        {
+            var nodeInfo = GetOrCreateNodeInfo(path);
+            if (nodeInfo.RawMutators == null)
+            {
+                lock (lockObject)
+                    if (nodeInfo.RawMutators == null)
+                        nodeInfo.RawMutators = BuildRawMutators(path);
+            }
+
+            return nodeInfo.RawMutators.Value;
+        }
+
         internal MutatorsTreeBase<T> Migrate<T>(string key, ModelConfigurationNode converterTree)
         {
             return GetMigratedTrees<T>(key, converterTree).EntirelyMigrated;
@@ -119,8 +121,6 @@ namespace GrobExp.Mutators
         {
             return GetMigratedTrees<T>(key, converterTree).PathsMigrated;
         }
-
-        public abstract MutatorsTreeBase<TData> Merge(MutatorsTreeBase<TData> other);
 
         internal Action<TChild, ValidationResultTreeNode> GetValidatorInternal<TChild>(Expression<Func<TData, TChild>> path)
         {
@@ -219,13 +219,13 @@ namespace GrobExp.Mutators
             return otherConfigurations;
         }
 
-        protected abstract KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path);
-        protected abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
-        protected abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
-        protected abstract void GetAllMutators(List<MutatorWithPath> mutators);
-        protected abstract void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators);
+        protected internal abstract KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path);
+        protected internal abstract KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path);
+        protected internal abstract Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path);
+        protected internal abstract Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path);
+        protected internal abstract Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path);
+        protected internal abstract void GetAllMutators(List<MutatorWithPath> mutators);
+        protected internal abstract void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators);
 
         private MigratedTrees<T> GetMigratedTrees<T>(string key, ModelConfigurationNode converterTree)
         {

@@ -12,21 +12,38 @@ namespace GrobExp.Mutators.ModelConfiguration
     {
         public static ModelConfigurationNode Traverse(this ModelConfigurationNode node, Expression path, bool create)
         {
-            List<KeyValuePair<Expression, Expression>> arrayAliases;
-            return node.Traverse(path, create, out arrayAliases);
+            return node.Traverse(path, create, out _);
         }
 
-        public static ModelConfigurationNode Traverse(this ModelConfigurationNode node, Expression path, bool create, out List<KeyValuePair<Expression, Expression>> arrayAliases)
+        internal static ModelConfigurationNode Traverse(this ModelConfigurationNode node, Expression path, bool create, out List<KeyValuePair<Expression, Expression>> arrayAliases)
         {
-            ModelConfigurationNode result;
             arrayAliases = new List<KeyValuePair<Expression, Expression>>();
-            node.Traverse(path, null, out result, create, arrayAliases);
+            node.Traverse(path, null, out var result, create, arrayAliases);
             return result;
         }
 
         internal static bool Traverse(this ModelConfigurationNode node, Expression path, ModelConfigurationNode subRoot, out ModelConfigurationNode child, bool create)
         {
             return node.Traverse(path, subRoot, out child, create, new List<KeyValuePair<Expression, Expression>>());
+        }
+
+        internal static ModelConfigurationNode GotoEachArrayElement(this ModelConfigurationNode node, bool create)
+        {
+            return node.GetChild(ModelConfigurationEdge.Each, node.NodeType.GetItemType(), create);
+        }
+
+        internal static ModelConfigurationNode GotoMember(this ModelConfigurationNode node, MemberInfo member, bool create)
+        {
+            var edge = new ModelConfigurationEdge(member);
+            switch (member.MemberType)
+            {
+            case MemberTypes.Field:
+                return node.GetChild(edge, ((FieldInfo)member).FieldType, create);
+            case MemberTypes.Property:
+                return node.GetChild(edge, ((PropertyInfo)member).PropertyType, create);
+            default:
+                throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
+            }
         }
 
         /// <summary>
@@ -202,25 +219,6 @@ namespace GrobExp.Mutators.ModelConfiguration
             if (exp.NodeType == ExpressionType.Constant)
                 return (int)((ConstantExpression)exp).Value;
             return Expression.Lambda<Func<int>>(Expression.Convert(exp, typeof(int))).Compile()();
-        }
-
-        internal static ModelConfigurationNode GotoEachArrayElement(this ModelConfigurationNode node, bool create)
-        {
-            return node.GetChild(ModelConfigurationEdge.Each, node.NodeType.GetItemType(), create);
-        }
-
-        internal static ModelConfigurationNode GotoMember(this ModelConfigurationNode node, MemberInfo member, bool create)
-        {
-            var edge = new ModelConfigurationEdge(member);
-            switch (member.MemberType)
-            {
-            case MemberTypes.Field:
-                return node.GetChild(edge, ((FieldInfo)member).FieldType, create);
-            case MemberTypes.Property:
-                return node.GetChild(edge, ((PropertyInfo)member).PropertyType, create);
-            default:
-                throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
-            }
         }
 
         private static ModelConfigurationNode GotoConvertation(this ModelConfigurationNode node, Type type, bool create)

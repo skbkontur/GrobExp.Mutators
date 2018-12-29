@@ -6,13 +6,12 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ModelConfigurationNodeModification
+    internal static class ModelConfigurationNodeModification
     {
         public static void AddMutatorSmart(this ModelConfigurationNode node, LambdaExpression path, MutatorConfiguration mutator)
         {
             path = (LambdaExpression)path.Simplify();
-            LambdaExpression filter;
-            var simplifiedPath = PathSimplifier.SimplifyPath(path, out filter);
+            var simplifiedPath = PathSimplifier.SimplifyPath(path, out var filter);
             mutator = mutator.ResolveAliases(ExpressionAliaser.CreateAliasesResolver(simplifiedPath.Body, path.Body));
             node.Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
         }

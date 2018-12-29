@@ -39,7 +39,7 @@ namespace GrobExp.Mutators
             return new MutatorsTree<TData>(tree, new PathFormatterWrapper(pathFormatterCollection.GetPathFormatter<T>(), pathFormatterCollection.GetPathFormatter<TData>(), converterTree, performer, resolver), pathFormatterCollection, priority);
         }
 
-        protected override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
+        protected internal override KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>> BuildRawMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var node = tree.Traverse(path.Body, create : false);
             if (node == null)
@@ -57,13 +57,13 @@ namespace GrobExp.Mutators
             return new KeyValuePair<Expression, List<KeyValuePair<int, MutatorConfiguration>>>(node.Path, mutators.Select(mutator => new KeyValuePair<int, MutatorConfiguration>(priority, mutator)).ToList());
         }
 
-        protected override KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path)
+        protected internal override KeyValuePair<Expression, List<MutatorConfiguration>> BuildMutators<TValue>(Expression<Func<TData, TValue>> path)
         {
             var rawMutators = GetRawMutators(path);
             return new KeyValuePair<Expression, List<MutatorConfiguration>>(rawMutators.Key, Canonize(rawMutators.Value));
         }
 
-        protected override Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path)
+        protected internal override Action<TChild, ValidationResultTreeNode> BuildValidator<TChild>(Expression<Func<TData, TChild>> path)
         {
             Expression<Action<TChild, ValidationResultTreeNode, int>> validator = null;
             var node = tree.Traverse(path.Body, false);
@@ -75,7 +75,7 @@ namespace GrobExp.Mutators
             return (child, validationResultTree) => compiledValidator(child, validationResultTree, priority);
         }
 
-        protected override Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path)
+        protected internal override Func<TValue, bool> BuildStaticValidator<TValue>(Expression<Func<TData, TValue>> path)
         {
             Expression<Func<TValue, List<ValidationResult>>> validator = null;
             var node = tree.Traverse(path.Body, false);
@@ -87,7 +87,7 @@ namespace GrobExp.Mutators
             return value => compiledValidator(value).All(validationResult => validationResult.Type != ValidationResultType.Error);
         }
 
-        protected override Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path)
+        protected internal override Action<TChild> BuildTreeMutator<TChild>(Expression<Func<TData, TChild>> path)
         {
             Expression<Action<TChild>> mutator = null;
             var node = tree.Traverse(path.Body, false);
@@ -98,7 +98,7 @@ namespace GrobExp.Mutators
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
         }
 
-        protected override void GetAllMutators(List<MutatorWithPath> mutators)
+        protected internal override void GetAllMutators(List<MutatorWithPath> mutators)
         {
             var subNodes = new List<ModelConfigurationNode>();
             tree.FindSubNodes(subNodes);
@@ -106,7 +106,7 @@ namespace GrobExp.Mutators
                 mutators.AddRange(node.GetMutatorsWithPath());
         }
 
-        protected override void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators)
+        protected internal override void GetAllMutatorsForWeb<TValue>(Expression<Func<TData, TValue>> path, List<MutatorWithPath> mutators)
         {
             var node = tree.Traverse(path.Body, false);
             node.GetMutatorsWithPath(mutators);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,7 @@ using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class LinqEliminator : ExpressionVisitor
+    internal class LinqEliminator : ExpressionVisitor
     {
         public Expression Eliminate(Expression node)
         {

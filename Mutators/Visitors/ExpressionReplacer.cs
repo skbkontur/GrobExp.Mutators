@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionReplacer : ExpressionVisitor
+    internal class ExpressionReplacer : ExpressionVisitor
     {
         public ExpressionReplacer(Dictionary<Expression, Expression> replacements)
         {
@@ -12,8 +12,7 @@ namespace GrobExp.Mutators.Visitors
 
         public override Expression Visit(Expression node)
         {
-            Expression replacement;
-            return node != null && replacements.TryGetValue(node, out replacement) ? replacement : base.Visit(node);
+            return node != null && replacements.TryGetValue(node, out var replacement) ? replacement : base.Visit(node);
         }
 
         private readonly Dictionary<Expression, Expression> replacements;

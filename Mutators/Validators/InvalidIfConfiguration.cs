@@ -21,6 +21,9 @@ namespace GrobExp.Mutators.Validators
             this.validationResultType = validationResultType;
         }
 
+        public LambdaExpression Condition { get; }
+        public LambdaExpression Message { get; }
+
         public override string ToString()
         {
             return "invalidIf" + (Condition == null ? "" : "(" + Condition + ")");
@@ -31,35 +34,35 @@ namespace GrobExp.Mutators.Validators
             return new InvalidIfConfiguration(typeof(TData), creator, priority, Prepare(condition), Prepare(message), validationResultType);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new InvalidIfConfiguration(path.Parameters.Single().Type, Creator, Priority, path.Merge(Condition), path.Merge(Message), validationResultType);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new InvalidIfConfiguration(to, Creator, Priority, Resolve(path, performer, Condition), Resolve(path, performer, Message), validationResultType);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new InvalidIfConfiguration(Type, Creator, Priority, resolver.Resolve(Condition), resolver.Resolve(Message), validationResultType);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new InvalidIfConfiguration(Type, Creator, Priority, Prepare(condition).AndAlso(Condition), Message, validationResultType);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(Message);
         }
 
-        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null) return null;
             var condition = Expression.Equal(Expression.Convert(Condition.Body.ResolveAliases(aliases), typeof(bool?)), Expression.Constant(true, typeof(bool?)));
@@ -73,10 +76,7 @@ namespace GrobExp.Mutators.Validators
             return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression Message { get; private set; }
-
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())

@@ -16,7 +16,7 @@ namespace GrobExp.Mutators.Visitors
         public static readonly MethodInfo ExternalCurrentMethod = ((MethodCallExpression)((Expression<Func<int[], int>>)(arr => ExternalCurrent(arr))).Body).Method.GetGenericMethodDefinition();
     }
 
-    public class DependenciesExtractor : ExpressionVisitor
+    internal class DependenciesExtractor : ExpressionVisitor
     {
         public DependenciesExtractor(LambdaExpression lambda, IEnumerable<ParameterExpression> parameters)
         {

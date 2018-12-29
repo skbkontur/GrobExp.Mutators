@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExpressionRipper : ExpressionVisitor
+    internal class ExpressionRipper : ExpressionVisitor
     {
         public Expression[] Cut(Expression expression, bool rootOnlyParameter, bool hard)
         {

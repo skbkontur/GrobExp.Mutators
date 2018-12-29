@@ -24,10 +24,12 @@ namespace GrobExp.Mutators.Validators
             validatorFromRoot = pathToNode.Merge(validator);
         }
 
-        public override string ToString()
-        {
-            return Name;
-        }
+        public string Name { get; }
+        public LambdaExpression Condition { get; }
+        public LambdaExpression PathToValue { get; }
+        public LambdaExpression PathToNode { get; }
+
+        public override string ToString() => Name;
 
         public static StaticValidatorConfiguration Create<TData, TChild, TValue>(MutatorsCreator creator, string name, int priority,
                                                                                  Expression<Func<TData, bool?>> condition, Expression<Func<TData, TChild>> pathToNode,
@@ -44,37 +46,37 @@ namespace GrobExp.Mutators.Validators
                                                     Prepare(condition), Prepare(pathToNode), Prepare(pathToValue), validator);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new StaticValidatorConfiguration(path.Parameters.Single().Type, Creator, Name, Priority,
                                                     path.Merge(Condition), path.Merge(PathToNode), path.Merge(PathToValue), validator);
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new StaticValidatorConfiguration(to, Creator, Name, Priority,
                                                     Resolve(path, performer, Condition), Resolve(path, performer, PathToNode),
                                                     Resolve(path, performer, PathToValue), validator);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new StaticValidatorConfiguration(Type, Creator, Name, Priority, resolver.Resolve(Condition), resolver.Resolve(PathToNode), resolver.Resolve(PathToValue), validator);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new StaticValidatorConfiguration(Type, Creator, Name, Priority,
                                                     Prepare(condition).AndAlso(Condition), PathToNode, PathToValue, validator);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
             arraysExtractor.GetArrays(validatorFromRoot);
         }
 
-        public override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Type converterType, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Condition == null)
                 return validatorFromRoot.Body.ResolveAliases(aliases);
@@ -88,12 +90,7 @@ namespace GrobExp.Mutators.Validators
             return Expression.Block(new[] {result}, assign, Expression.Call(RecordingMethods.RecordExecutingValidationMethodInfo, Expression.Constant(converterType, typeof(Type)), Expression.Constant(toLog), Expression.Call(result, typeof(object).GetMethod("ToString"))), result);
         }
 
-        public string Name { get; set; }
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression PathToValue { get; private set; }
-        public LambdaExpression PathToNode { get; private set; }
-
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())

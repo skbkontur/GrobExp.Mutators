@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Mutators.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="GroBuf" Version="1.4.4" />
     <PackageReference Include="GrobExp.Compiler" Version="1.2.4" />
     <PackageReference Include="Vostok.Logging.Abstractions" Version="0.1.0" />

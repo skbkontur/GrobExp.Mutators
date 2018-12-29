@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -9,7 +9,7 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ModelConfigurationNodeMigration
+    internal static class ModelConfigurationNodeMigration
     {
         public static void Migrate(this ModelConfigurationNode theNode, Type to, ModelConfigurationNode destTree, ModelConfigurationNode convertationTree)
         {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -25,35 +25,35 @@ namespace GrobExp.Mutators.Aggregators
             return new ConditionalAggregatorConfiguration(typeof(TData), Prepare(condition), name);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new ConditionalAggregatorConfiguration(Type, Prepare(condition).AndAlso(Condition), Name);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Condition);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new ConditionalAggregatorConfiguration(path.Parameters.Single().Type, path.Merge(Condition), Name);
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new ConditionalAggregatorConfiguration(to, Resolve(path, performer, Condition), Name);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new ConditionalAggregatorConfiguration(Type, resolver.Resolve(Condition), Name);
         }
 
-        public LambdaExpression Condition { get; private set; }
-        public string Name { get; private set; }
+        public LambdaExpression Condition { get; }
+        public string Name { get; }
 
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type));
         }

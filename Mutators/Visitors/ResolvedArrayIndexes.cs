@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ResolvedArrayIndexes
+    internal class ResolvedArrayIndexes
     {
         public ParameterExpression indexes;
         public Expression indexesInit;

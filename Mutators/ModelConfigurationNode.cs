@@ -32,14 +32,17 @@ namespace GrobExp.Mutators
         }
 
         public Expression Path { get; }
+
+        public Type NodeType { get; }
+
         internal IEnumerable<ModelConfigurationNode> Children => children.Values;
         internal ICollection<KeyValuePair<Expression, MutatorConfiguration>> Mutators => mutators;
         internal Type ConfiguratorType { get; }
-        public Type NodeType { get; }
         internal Type RootType { get; }
         internal ModelConfigurationNode Root { get; }
         internal ModelConfigurationNode Parent { get; }
         internal ModelConfigurationEdge Edge { get; }
+
         internal readonly List<KeyValuePair<Expression, MutatorConfiguration>> mutators;
         internal readonly Dictionary<ModelConfigurationEdge, ModelConfigurationNode> children;
     }

@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class LambdaAliasesResolver
+    internal class LambdaAliasesResolver
     {
         public LambdaAliasesResolver(List<KeyValuePair<Expression, Expression>> aliases)
         {

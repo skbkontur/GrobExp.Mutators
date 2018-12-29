@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public static class ExpressionPathsBuilder
+    internal static class ExpressionPathsBuilder
     {
         public static Expression BuildPaths(Expression node, ParameterExpression[] indexes)
         {

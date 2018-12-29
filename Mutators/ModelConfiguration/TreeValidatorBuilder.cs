@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     public static class TreeValidatorBuilder
     {
-        public static LambdaExpression BuildTreeValidator(this ModelConfigurationNode node, IPathFormatter pathFormatter)
+        internal static LambdaExpression BuildTreeValidator(this ModelConfigurationNode node, IPathFormatter pathFormatter)
         {
             var allMutators = new Dictionary<ExpressionWrapper, List<MutatorConfiguration>>();
             node.GetMutators(allMutators);
@@ -76,8 +76,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 var dict = arrays[i];
                 if (dict.Count > 1)
                     throw new InvalidOperationException("Too many root types");
-                List<Expression> list;
-                if (!dict.TryGetValue(rootType, out list))
+                if (!dict.TryGetValue(rootType, out var list))
                     throw new InvalidOperationException("Invalid root type");
                 var arraysOfCurrentLevel = list.GroupBy(exp => new ExpressionWrapper(exp.ReplaceCurrentWithEach(), false)).Select(grouping => grouping.First()).ToArray();
                 if (arraysOfCurrentLevel.Length > 1)
@@ -95,8 +94,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 foreach (var pair in node.Mutators)
                 {
                     var key = new ExpressionWrapper(pair.Key, false);
-                    List<MutatorConfiguration> list;
-                    if (!result.TryGetValue(key, out list))
+                    if (!result.TryGetValue(key, out var list))
                         result.Add(key, list = new List<MutatorConfiguration>());
                     list.Add(pair.Value);
                 }
@@ -114,8 +112,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 return;
             foreach (var dependency in mutator.Dependencies)
             {
-                ModelConfigurationNode child;
-                if (!root.Root.Traverse(dependency.Body, root, out child, false))
+                if (!root.Root.Traverse(dependency.Body, root, out _, false))
                     throw new FoundExternalDependencyException("Unable to build validator for the subtree '" + root.Parent + "' due to the external dependency '" + dependency + "'");
             }
         }
@@ -127,8 +124,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             public ZzzNode Traverse(Expression exp)
             {
                 var edge = new ExpressionWrapper(exp, false);
-                ZzzNode child;
-                if (!children.TryGetValue(edge, out child))
+                if (!children.TryGetValue(edge, out var child))
                     children.Add(edge, child = new ZzzNode());
                 return child;
             }
@@ -232,11 +228,10 @@ namespace GrobExp.Mutators.ModelConfiguration
                 //var eachesResolver = new EachesResolver(new int[aliasesInTermsOfFirst.Count / 2].Select((x, i) => aliasesInTermsOfFirst[i * 2 + 1].Key).ToArray());
 
                 // Replace LINQ methods with cycles to obtain indexes
-                ParameterExpression[] currentIndexes;
                 //var resolvedPath = eachesResolver.Visit(path.ResolveAliases(firstAlias));
                 var currentPath = path.ResolveAliases(aliases);
                 var value = Expression.Parameter(typeof(object));
-                Expression valueAssignment = Expression.Assign(value, Expression.Convert(new LinqEliminator().Eliminate(currentPath, out currentIndexes), typeof(object)));
+                Expression valueAssignment = Expression.Assign(value, Expression.Convert(new LinqEliminator().Eliminate(currentPath, out var currentIndexes), typeof(object)));
                 var currentPaths = ExpressionPathsBuilder.BuildPaths(currentPath, currentIndexes, paths);
                 var resolvedArrayIndexes = currentPaths.paths.Select(p => new ResolvedArrayIndexes {path = p}).ToArray();
 
@@ -475,7 +470,7 @@ namespace GrobExp.Mutators.ModelConfiguration
             }
 
             public readonly List<KeyValuePair<Expression, List<MutatorConfiguration>>> mutators = new List<KeyValuePair<Expression, List<MutatorConfiguration>>>();
-            public readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
+            private readonly Dictionary<ExpressionWrapper, ZzzNode> children = new Dictionary<ExpressionWrapper, ZzzNode>();
             private static readonly MethodInfo selectMethod = ((MethodCallExpression)((Expression<Func<IEnumerable<int>, IEnumerable<int>>>)(enumerable => enumerable.Select(x => x))).Body).Method.GetGenericMethodDefinition();
 
             private static readonly MemberInfo pathsProperty = HackHelpers.GetProp<SimplePathFormatterText>(text => text.Paths);

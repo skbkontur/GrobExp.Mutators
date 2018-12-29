@@ -19,10 +19,13 @@ namespace GrobExp.Mutators.AutoEvaluators
             Validator = validator;
         }
 
-        public override string ToString()
-        {
-            return "equalsTo" + ("(" + Value + ")");
-        }
+        public Type ConverterType { get; }
+
+        public LambdaExpression Value { get; }
+
+        public StaticValidatorConfiguration Validator { get; }
+
+        public override string ToString() => "equalsTo" + "(" + Value + ")";
 
         public static EqualsToConfiguration Create<TData>(Type converterType, LambdaExpression value, StaticValidatorConfiguration validator = null)
         {
@@ -34,31 +37,31 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new EqualsToConfiguration(converterType, type, Prepare(value), validator);
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new EqualsToConfiguration(ConverterType, path.Parameters.Single().Type, path.Merge(Value), Validator);
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             if (Validator != null)
                 throw new NotSupportedException();
             return new EqualsToConfiguration(ConverterType, to, Resolve(path, performer, Value), Validator);
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new EqualsToConfiguration(ConverterType, Type, resolver.Resolve(Value), Validator == null ? null : (StaticValidatorConfiguration)Validator.ResolveAliases(resolver));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new EqualsToIfConfiguration(ConverterType, Type, Prepare(condition), Value, Validator == null ? null : (StaticValidatorConfiguration)Validator.If(condition));
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             if (Value == null) return null;
             var infoToLog = new AssignLogInfo(path, Value.Body);
@@ -67,17 +70,12 @@ namespace GrobExp.Mutators.AutoEvaluators
             return path.Assign(ConverterType, value, infoToLog);
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
         {
             arraysExtractor.GetArrays(Value);
         }
 
-        public Type ConverterType { get; }
-        public LambdaExpression Value { get; }
-
-        public StaticValidatorConfiguration Validator { get; }
-
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type));
         }

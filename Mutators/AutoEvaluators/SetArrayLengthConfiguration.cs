@@ -17,11 +17,9 @@ namespace GrobExp.Mutators.AutoEvaluators
             Length = length;
         }
 
-        public override void GetArrays(ArraysExtractor arraysExtractor)
-        {
-            arraysExtractor.GetArrays(Condition);
-            arraysExtractor.GetArrays(Length);
-        }
+        public LambdaExpression Condition { get; }
+
+        public LambdaExpression Length { get; }
 
         public static SetArrayLengthConfiguration Create(Type type, LambdaExpression condition, LambdaExpression length)
         {
@@ -33,29 +31,35 @@ namespace GrobExp.Mutators.AutoEvaluators
             return new SetArrayLengthConfiguration(typeof(TData), Prepare(condition), Prepare(length));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override void GetArrays(ArraysExtractor arraysExtractor)
+        {
+            arraysExtractor.GetArrays(Condition);
+            arraysExtractor.GetArrays(Length);
+        }
+
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             // ReSharper disable ConvertClosureToMethodGroup
             return new SetArrayLengthConfiguration(path.Parameters.Single().Type, path.Merge(Condition), path.Merge(Length));
             // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new SetArrayLengthConfiguration(to, Resolve(path, performer, Condition), Resolve(path, performer, Length));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new SetArrayLengthConfiguration(Type, resolver.Resolve(Condition), Length);
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new SetArrayLengthConfiguration(Type, Prepare(condition).AndAlso(Condition), Length);
         }
 
-        public override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
+        internal override Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases)
         {
             var temp = Expression.Variable(path.Type);
             var resize = Expression.Call(arrayResizeMethod, temp, Length.Body.ResolveAliases(aliases));
@@ -67,10 +71,7 @@ namespace GrobExp.Mutators.AutoEvaluators
             return Expression.IfThen(condition, block);
         }
 
-        public LambdaExpression Condition { get; private set; }
-        public LambdaExpression Length { get; set; }
-
-        protected override LambdaExpression[] GetDependencies()
+        protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))

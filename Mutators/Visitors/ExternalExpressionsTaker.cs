@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ExternalExpressionsTaker : ExpressionVisitor
+    internal class ExternalExpressionsTaker : ExpressionVisitor
     {
         public ExternalExpressionsTaker(IEnumerable<Expression> externalNodes)
         {

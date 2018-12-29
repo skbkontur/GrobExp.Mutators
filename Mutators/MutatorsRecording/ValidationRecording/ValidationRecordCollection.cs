@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace GrobExp.Mutators.MutatorsRecording.ValidationRecording
 {
-    public class ValidationRecordCollection
+    internal class ValidationRecordCollection
     {
         public void RecordCompilingValidation(Type validatorType, ValidationLogInfo validationInfo)
         {

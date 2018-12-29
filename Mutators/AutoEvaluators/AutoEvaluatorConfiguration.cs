@@ -11,6 +11,6 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
         }
 
-        public abstract Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases);
+        internal abstract Expression Apply(Expression path, List<KeyValuePair<Expression, Expression>> aliases);
     }
 }

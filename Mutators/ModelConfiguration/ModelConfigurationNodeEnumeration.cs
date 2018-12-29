@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -6,12 +6,12 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     public static class ModelConfigurationNodeEnumeration
     {
-        public static MutatorConfiguration[] GetMutators(this ModelConfigurationNode node)
+        internal static MutatorConfiguration[] GetMutators(this ModelConfigurationNode node)
         {
             return node.Mutators.Select(pair => pair.Value).ToArray();
         }
 
-        public static MutatorWithPath[] GetMutatorsWithPath(this ModelConfigurationNode node)
+        internal static MutatorWithPath[] GetMutatorsWithPath(this ModelConfigurationNode node)
         {
             return node.Mutators.Select(mutator => new MutatorWithPath
                 {
@@ -29,7 +29,7 @@ namespace GrobExp.Mutators.ModelConfiguration
                 child.FindSubNodes(result);
         }
 
-        public static ModelConfigurationNode FindKeyLeaf(this ModelConfigurationNode node)
+        internal static ModelConfigurationNode FindKeyLeaf(this ModelConfigurationNode node)
         {
             foreach (var entry in node.children)
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -18,29 +18,29 @@ namespace GrobExp.Mutators.Aggregators
             return "hiddenIf" + (Condition == null ? "" : "(" + Condition + ")");
         }
 
-        public new static HideIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
+        internal new static HideIfConfiguration Create<TData>(Expression<Func<TData, bool?>> condition)
         {
             return new HideIfConfiguration(typeof(TData), Prepare(condition));
         }
 
-        public override MutatorConfiguration ToRoot(LambdaExpression path)
+        internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
 // ReSharper disable ConvertClosureToMethodGroup
             return new HideIfConfiguration(path.Parameters.Single().Type, path.Merge(Condition));
 // ReSharper restore ConvertClosureToMethodGroup
         }
 
-        public override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
+        internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new HideIfConfiguration(to, Resolve(path, performer, Condition));
         }
 
-        public override MutatorConfiguration If(LambdaExpression condition)
+        internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new HideIfConfiguration(Type, Prepare(condition).AndAlso(Condition));
         }
 
-        public override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
+        internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
             return new HideIfConfiguration(Type, resolver.Resolve(Condition));
         }

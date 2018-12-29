@@ -7,7 +7,7 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ModelConfigurationNodeValidationsExtractor
+    internal static class ModelConfigurationNodeValidationsExtractor
     {
         public static void ExtractValidationsFromConverters(this ModelConfigurationNode node, ModelConfigurationNode validationsTree)
         {

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 using GrobExp.Compiler;
@@ -6,7 +6,7 @@ using GrobExp.Compiler;
 namespace GrobExp.Mutators.Visitors
 {
     [DebuggerDisplay("{Expression}")]
-    public class ExpressionWrapper
+    internal class ExpressionWrapper
     {
         public ExpressionWrapper(Expression expression, bool strictly)
         {

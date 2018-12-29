@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -17,7 +17,7 @@ namespace GrobExp.Mutators.Visitors
     /// Igor().IfNotNull() == "GRobas" -> // If Igor() is a 'constant' function
     /// string.IsNullOrEmpty(Igor()) || Igor() == "GRobas" </code>
     /// </summary>
-    public class IfNotNullProcessor : ExpressionVisitor
+    internal class IfNotNullProcessor : ExpressionVisitor
     {
         protected override Expression VisitBinary(BinaryExpression node)
         {

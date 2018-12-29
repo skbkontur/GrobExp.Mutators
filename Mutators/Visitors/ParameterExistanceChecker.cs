@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class ParameterExistanceChecker : ExpressionVisitor
+    internal class ParameterExistanceChecker : ExpressionVisitor
     {
         public ParameterExistanceChecker(HashSet<ParameterExpression> parameters)
         {

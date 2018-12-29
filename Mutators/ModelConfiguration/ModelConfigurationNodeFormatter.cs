@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -6,7 +6,7 @@ using GrobExp.Mutators.Visitors;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class ModelConfigurationNodeFormatter
+    internal static class ModelConfigurationNodeFormatter
     {
         public static string ToPrettyString(this ModelConfigurationNode node)
         {

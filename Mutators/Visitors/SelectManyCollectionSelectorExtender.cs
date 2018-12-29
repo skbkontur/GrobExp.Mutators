@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class SelectManyCollectionSelectorExtender : ExpressionVisitor
+    internal class SelectManyCollectionSelectorExtender : ExpressionVisitor
     {
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {

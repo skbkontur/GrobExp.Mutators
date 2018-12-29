@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -7,7 +7,7 @@ using GrobExp.Compiler;
 
 namespace GrobExp.Mutators.Visitors
 {
-    public class HackedExternalExpressionsExtractor : ExpressionVisitor
+    internal class HackedExternalExpressionsExtractor : ExpressionVisitor
     {
         public HackedExternalExpressionsExtractor(IEnumerable<ParameterExpression> internalVariables)
         {
@@ -108,7 +108,7 @@ namespace GrobExp.Mutators.Visitors
         }
     }
 
-    public class ExternalExpressionsExtractor : ExpressionVisitor
+    internal class ExternalExpressionsExtractor : ExpressionVisitor
     {
         public ExternalExpressionsExtractor(IEnumerable<ParameterExpression> internalVariables)
         {
@@ -166,7 +166,7 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<Expression> externalExpressions = new List<Expression>();
     }
 
-    public class ObjectCreationSearcher : ExpressionVisitor
+    internal class ObjectCreationSearcher : ExpressionVisitor
     {
         public bool ContainsObjectCreation(Expression expression)
         {

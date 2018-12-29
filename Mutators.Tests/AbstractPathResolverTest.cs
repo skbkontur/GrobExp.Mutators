@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 
@@ -15,7 +15,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.C[13].D.E[10].F;
             Expression<Func<A, D>> abstractPath = a => a.B.C.Current().D;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, D>> expected = a => a.B.C[13].D;
             resolved.AssertEqualsExpression(expected);
         }
@@ -25,7 +25,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.C[13].D.E[10].F;
             Expression<Func<A, string>> abstractPath = a => a.B.C.Current().D.E.Current().F;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.C[13].D.E[10].F;
             resolved.AssertEqualsExpression(expected);
         }
@@ -35,7 +35,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.C[13].D.E[10].F;
             Expression<Func<A, string>> abstractPath = a => a.B.C.Current().D.E[13].Z;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.C[13].D.E[13].Z;
             resolved.AssertEqualsExpression(expected);
         }
@@ -45,7 +45,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.C[13].D.E[10].F;
             Expression<Func<A, string>> abstractPath = a => a.B.C[13].D.E.Current().Z;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.C[13].D.E[10].Z;
             resolved.AssertEqualsExpression(expected);
         }
@@ -55,7 +55,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.CDict["13"].D.E[10].F;
             Expression<Func<A, D>> abstractPath = a => a.B.CDict.Current().Value.D;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, D>> expected = a => a.B.CDict["13"].D;
             resolved.AssertEqualsExpression(expected);
         }
@@ -65,7 +65,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.CDict["13"].D.EDict["10"].F;
             Expression<Func<A, string>> abstractPath = a => a.B.CDict.Current().Value.D.EDict.Current().Value.F;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.CDict["13"].D.EDict["10"].F;
             resolved.AssertEqualsExpression(expected);
         }
@@ -75,7 +75,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.CDict["13"].D.EDict["10"].F;
             Expression<Func<A, string>> abstractPath = a => a.B.CDict.Current().Value.D.EDict["13"].Z;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.CDict["13"].D.EDict["13"].Z;
             resolved.AssertEqualsExpression(expected);
         }
@@ -85,7 +85,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.CDict["13"].D.EDict["10"].F;
             Expression<Func<A, string>> abstractPath = a => a.B.CDict["13"].D.EDict.Current().Value.Z;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, string>> expected = a => a.B.CDict["13"].D.EDict["10"].Z;
             resolved.AssertEqualsExpression(expected);
         }
@@ -95,7 +95,7 @@ namespace Mutators.Tests
         {
             Expression<Func<A, string>> path = a => a.B.C.TemplateIndex().D.E.TemplateIndex().F;
             Expression<Func<A, D>> abstractPath = a => a.B.C.Current().D;
-            var resolved = ExpressionExtensions.ResolveAbstractPath(path, abstractPath);
+            var resolved = path.ResolveAbstractPath(abstractPath);
             Expression<Func<A, D>> expected = a => a.B.C.TemplateIndex().D;
             resolved.AssertEqualsExpression(expected);
         }

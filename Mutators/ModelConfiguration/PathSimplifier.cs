@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace GrobExp.Mutators.ModelConfiguration
 {
-    public static class PathSimplifier
+    internal static class PathSimplifier
     {
         /// <summary>
         ///     Выкидываем вызовы Select и Where, заменяя их на на Current.

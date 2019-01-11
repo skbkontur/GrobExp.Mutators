@@ -1,7 +1,7 @@
 # Changelog
 
 ## v1.2 - 2018.29.12
-- Lazy converter expression compilation (some public methods of `ConverterCollection` don't converter to be compiled)
+- Lazy converter expression compilation (some public methods of `ConverterCollection` don't need to be compiled)
 - No more failing tests
 - Some visistors covered by tests
 - [Breaking] Introduced explicit public API, some classes made internal

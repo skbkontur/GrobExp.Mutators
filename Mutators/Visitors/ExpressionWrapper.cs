@@ -1,5 +1,7 @@
+using System;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Threading;
 
 using GrobExp.Compiler;
 
@@ -12,24 +14,28 @@ namespace GrobExp.Mutators.Visitors
         {
             this.Expression = expression;
             this.strictly = strictly;
+            hashCode = new Lazy<int>(() => ExpressionHashCalculator.CalcHashCode(expression, strictly),
+                                     LazyThreadSafetyMode.PublicationOnly);
         }
 
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(this, obj))
                 return true;
-            var other = obj as ExpressionWrapper;
-            if (other == null)
+            if (!(obj is ExpressionWrapper other))
                 return false;
             return ExpressionEquivalenceChecker.Equivalent(Expression, other.Expression, strictly, true);
         }
 
         public override int GetHashCode()
         {
-            return ExpressionHashCalculator.CalcHashCode(Expression, strictly);
+            return hashCode.Value;
         }
 
         public Expression Expression { get; }
+        
         private readonly bool strictly;
+
+        private readonly Lazy<int> hashCode;
     }
 }

@@ -146,10 +146,10 @@ namespace Mutators.Tests.Visitors
         public void TestParamTypeMustBeUnique()
         {
             Expression<Func<A, B, string>> exp = (x, y) => x.Bs.Each().S + y.S;
-            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : true).GetArrays(exp, out _);
+            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : true).GetArrays(exp);
             action.Should().Throw<InvalidOperationException>();
 
-            action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp, out _);
+            action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp);
             action.Should().NotThrow();
         }
 
@@ -157,7 +157,7 @@ namespace Mutators.Tests.Visitors
         public void TestParamTypeMustBeUniqueIncludingSubLevel()
         {
             Expression<Func<A, B, C>> exp = (x, y) => StaticMethod(x.Bs.Each().Cs.Append(StaticMethod(y.Cs).Each())).Each();
-            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp, out _);
+            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp);
             action.Should().Throw<InvalidOperationException>();
         }
 
@@ -165,7 +165,7 @@ namespace Mutators.Tests.Visitors
         public void TestParamTypeMustBeUniqueInsideEach()
         {
             Expression<Func<B, A, C>> exp = (x, y) => StaticMethod(x.Cs.Concat(y.Bs.Each().Cs)).Each();
-            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp, out _);
+            Action action = () => new ArraysExtractorVisitor(new List<Dictionary<Type, List<Expression>>>(), paramTypeMustBeUnique : false).GetArrays(exp);
             action.Should().Throw<InvalidOperationException>();
         }
 
@@ -179,7 +179,7 @@ namespace Mutators.Tests.Visitors
         private (int Level, Type Type, List<Dictionary<Type, List<Expression>>> List) Visit(Expression exp, bool paramMustBeUnique)
         {
             var list = new List<Dictionary<Type, List<Expression>>>();
-            var level = new ArraysExtractorVisitor(list, paramMustBeUnique).GetArrays(exp, out var type);
+            var (level, type) = new ArraysExtractorVisitor(list, paramMustBeUnique).GetArrays(exp);
             return (level, type, list);
         }
 

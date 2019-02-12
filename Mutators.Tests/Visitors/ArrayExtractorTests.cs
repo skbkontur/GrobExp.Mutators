@@ -169,6 +169,36 @@ namespace Mutators.Tests.Visitors
             action.Should().Throw<InvalidOperationException>();
         }
 
+        [Test]
+        public void TestEachOnArrayInit()
+        {
+            Expression<Func<A, string>> exp = a => new []{a.S, a.Bs[0].S}.Each();
+            var (level, type, list) = Visit(exp, paramMustBeUnique : false);
+            level.Should().Be(1);
+            type.Should().Be(typeof(A));
+            AssertEquivalentPaths(list,
+                                  new[]
+                                      {
+                                          (typeof(A), new List<Expression>{((Expression<Func<A, string>>)(a => new []{a.S, a.Bs[0].S}.Each())).Body}),
+                                      }
+                );
+        }
+        
+        [Test]
+        public void TestEachOnListInit()
+        {
+            Expression<Func<A, string>> exp = a => new List<string>{a.S, a.Bs[0].S}.Each();
+            var (level, type, list) = Visit(exp, paramMustBeUnique : false);
+            level.Should().Be(1);
+            type.Should().Be(typeof(A));
+            AssertEquivalentPaths(list,
+                                  new[]
+                                      {
+                                          (typeof(A), new List<Expression>{((Expression<Func<A, string>>)(a => new List<string>{a.S, a.Bs[0].S}.Each())).Body}),
+                                      }
+                );
+        }
+
         private void AssertEquivalentPaths(List<Dictionary<Type, List<Expression>>> actual, params (Type, List<Expression>)[][] expected)
         {
             actual.Should().BeEquivalentTo(expected.Select(x => x.ToDictionary(y => y.Item1, y => y.Item2)).Prepend(new Dictionary<Type, List<Expression>>()),

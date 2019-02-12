@@ -62,9 +62,7 @@ namespace GrobExp.Mutators.Visitors
             if (smithereens[0].NodeType == ExpressionType.Constant)
                 smithereens = smithereens.Skip(1).ToArray();
 
-            var firstShard = smithereens[0];
-
-            var level = ProcessFirstShard(firstShard);
+            var level = ProcessFirstShard(smithereens[0]);
 
             foreach (var shard in smithereens.Skip(1).Where(IsEachOrCurrentCall))
             {
@@ -77,20 +75,9 @@ namespace GrobExp.Mutators.Visitors
 
         private int ProcessFirstShard(Expression shard)
         {
-            switch (shard.NodeType)
-            {
-            case ExpressionType.Call:
-            case ExpressionType.Constant:
-            case ExpressionType.Invoke:
-                var (level, subType) = new ArraysExtractorVisitor(arrayLevels, paramTypeMustBeUnique : true).GetArrays(shard);
-                SaveParameterType(subType);
-                return level;
-            case ExpressionType.Parameter:
-                SaveParameterType(shard.Type);
-                return 0;
-            default:
-                throw new InvalidOperationException($"Unexpected node type: {shard.NodeType}");
-            }
+            var (level, subType) = new ArraysExtractorVisitor(arrayLevels, paramTypeMustBeUnique : true).GetArrays(shard);
+            SaveParameterType(subType);
+            return level;
         }
 
         private void AddShardToLevel(Expression shard, int level)

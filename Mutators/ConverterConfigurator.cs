@@ -1,13 +1,11 @@
 using System;
 using System.Linq.Expressions;
 
-using GrobExp.Mutators.ModelConfiguration;
-
 namespace GrobExp.Mutators
 {
     public class ConverterConfigurator<TSource, TDest>
     {
-        public ConverterConfigurator(ModelConfigurationNode root, LambdaExpression condition = null)
+        public ConverterConfigurator(IModelConfigurationNode root, LambdaExpression condition = null)
         {
             Condition = condition;
             Root = root;
@@ -48,12 +46,12 @@ namespace GrobExp.Mutators
         public ConverterConfigurator<TSource, TDest> If(Expression<Func<TSource, TDest, bool?>> condition) => If((LambdaExpression)condition);
 
         public LambdaExpression Condition { get; }
-        internal ModelConfigurationNode Root { get; }
+        internal IModelConfigurationNode Root { get; }
     }
 
     public class ConverterConfigurator<TSourceRoot, TSourceChild, TDestRoot, TDestChild, TDestValue>
     {
-        public ConverterConfigurator(ModelConfigurationNode root, Expression<Func<TSourceRoot, TSourceChild>> pathToSourceChild, Expression<Func<TDestRoot, TDestChild>> pathToChild, Expression<Func<TDestRoot, TDestValue>> pathToValue, LambdaExpression condition)
+        public ConverterConfigurator(IModelConfigurationNode root, Expression<Func<TSourceRoot, TSourceChild>> pathToSourceChild, Expression<Func<TDestRoot, TDestChild>> pathToChild, Expression<Func<TDestRoot, TDestValue>> pathToValue, LambdaExpression condition)
         {
             Root = root;
             PathToSourceChild = pathToSourceChild;
@@ -122,6 +120,6 @@ namespace GrobExp.Mutators
         public Expression<Func<TDestRoot, TDestChild>> PathToChild { get; }
         public Expression<Func<TDestRoot, TDestValue>> PathToValue { get; }
         public LambdaExpression Condition { get; }
-        internal ModelConfigurationNode Root { get; }
+        internal IModelConfigurationNode Root { get; }
     }
 }

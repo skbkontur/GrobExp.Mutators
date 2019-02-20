@@ -8,12 +8,14 @@ namespace GrobExp.Mutators.ModelConfiguration
 {
     internal static class ModelConfigurationNodeModification
     {
-        public static void AddMutatorSmart(this ModelConfigurationNode node, LambdaExpression path, MutatorConfiguration mutator)
+        public static void AddMutatorSmart(this ModelConfigurationNode node, LambdaExpression path, MutatorConfiguration mutator, ConfiguratorReporter reporter = null)
         {
             path = (LambdaExpression)path.Simplify();
             var simplifiedPath = PathSimplifier.SimplifyPath(path, out var filter);
             mutator = mutator.ResolveAliases(ExpressionAliaser.CreateAliasesResolver(simplifiedPath.Body, path.Body));
-            node.Traverse(simplifiedPath.Body, true).AddMutator(path.Body, filter == null ? mutator : mutator.If(filter));
+            var mutatorToAdd = filter == null ? mutator : mutator.If(filter);
+            reporter?.Report(simplifiedPath, path, mutatorToAdd);
+            node.Traverse(simplifiedPath.Body, true).AddMutator(path.Body, mutatorToAdd);
         }
 
         public static void AddMutator(this ModelConfigurationNode node, MutatorConfiguration mutator)

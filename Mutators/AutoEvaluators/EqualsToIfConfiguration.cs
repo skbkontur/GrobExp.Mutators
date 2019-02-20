@@ -29,6 +29,11 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return new EqualsToIfConfiguration(converterType, type, Prepare(condition), Prepare(value), validator);
         }
+        
+        internal static EqualsToIfConfiguration Create<T>(LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
+        {
+            return Create(null, typeof(T), condition, value, validator);
+        }
 
         internal override void GetArrays(ArraysExtractor arraysExtractor)
         {

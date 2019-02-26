@@ -132,7 +132,9 @@ namespace GrobExp.Mutators
                 //configurator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(EqualsToConfiguration.Create(typeof(TDestRoot), value, null));
             }
 
-            if (primaryKeyIsEmpty == null) return;
+            if (primaryKeyIsEmpty == null) 
+                return;
+            
             var condition = (Expression<Func<TDestRoot, bool?>>)pathToChild.Merge(Expression.Lambda(Expression.Convert(primaryKeyIsEmpty.ReplaceEachWithCurrent(), typeof(bool?)), batch.Parameters[0]));
             foreach (var initializer in initializers)
             {
@@ -146,7 +148,7 @@ namespace GrobExp.Mutators
                 dest = pathToChild.Merge(Expression.Lambda(dest, batch.Parameters[0])).Body;
                 configurator.ToRoot().SetMutator(dest, NullifyIfConfiguration.Create(configurator.Root.ConfiguratorType, condition));
 
-                //configurator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(NullifyIfConfiguration.Create(condition));
+                //config urator.Target(Expression.Lambda<Func<TDestValue, object>>(dest, batch.Parameters[0])).SetMutator(NullifyIfConfiguration.Create(condition));
             }
         }
 

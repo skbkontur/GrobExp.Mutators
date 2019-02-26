@@ -31,8 +31,8 @@ namespace Mutators.Tests.ConfigurationTests
             configurator.Target(d => d.RootS).Set(s => s.RootS);
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS));
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -40,8 +40,8 @@ namespace Mutators.Tests.ConfigurationTests
         {
             configurator.Target(d => d.RootS).Set((s, d) => s.RootS + d.A.S);
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, DestRoot, string>>)((s, d) => s.RootS + d.A.S));
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -50,8 +50,8 @@ namespace Mutators.Tests.ConfigurationTests
             configurator.Target(d => d.As.Each().S).Set(s => s.As.Current().S);
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As.Current().S));
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -60,8 +60,8 @@ namespace Mutators.Tests.ConfigurationTests
             configurator.Target(d => d.As.Each().S).Set(s => s.As.Each().S);
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As.Each().S), null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -72,8 +72,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.A.S == "zzz"),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -84,8 +84,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.A.S == "zzz"),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -98,8 +98,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>(firstCondition.AndAlso(secondCondition),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -112,8 +112,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>(firstCondition.AndAlso(secondCondition),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -126,8 +126,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.As.Current().S.Length == 5),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.As.Current().S),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -140,8 +140,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.As.Current().S.Length == 5),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.As.Current().S),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -154,8 +154,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.As.Current().S.Length == 5),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.As.Current().S),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -168,8 +168,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, DestRoot, bool?>>)((s, d) => s.As.Any(x => x.S == "zzz") && d.RootS == "Dest"),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.A.S),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.A.S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.A.S);
         }
 
         [Test]
@@ -182,8 +182,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToIfConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, DestRoot, bool?>>)((s, d) => s.As.Any(x => x.S == "zzz") && d.RootS == "Dest"),
                                                                                    (Expression<Func<SourceRoot, string>>)(s => s.A.S),
                                                                                    null);
-            AssertEquivalentConfigurations(equalsToIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.A.S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToIfConfiguration);
+            AssertEquivalentPaths(d => d.A.S);
         }
 
         [Test]
@@ -193,8 +193,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -204,8 +204,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -216,8 +216,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -228,8 +228,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -240,8 +240,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As.Current().S),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -253,8 +253,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.As.Current().S.Length % 2 == 0),
                                                                                  (Expression<Func<SourceRoot, string>>)(s => s.As.Current().S),
                                                                                  null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().S);
         }
 
         [Test]
@@ -266,8 +266,8 @@ namespace Mutators.Tests.ConfigurationTests
             var equalsToConfiguration = EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, DestRoot, bool?>>)((s, d) => s.As.Current().S.Length % 2 == 0 && d.As.Current().S.Length % 2 == 1),
                                                                                  (Expression<Func<SourceRoot, string>>)(s => s.As.Current().Bs.Each().S),
                                                                                  null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.As.Each().Bs.Each().S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.As.Each().Bs.Each().S);
         }
 
         [Test]
@@ -277,8 +277,8 @@ namespace Mutators.Tests.ConfigurationTests
 
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                                                null);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.Impl.S, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.Impl.S);
         }
 
         [Test]
@@ -286,36 +286,35 @@ namespace Mutators.Tests.ConfigurationTests
         {
             configurator.Target(d => d.RootS).Set(s => s.RootS, x => x, x => ValidationResult.Ok);
             var sourceValidator = StaticValidatorConfiguration.Create<SourceRoot>(MutatorsCreator.Sharp, "SetWithValidator", 0, null,
-                                                                                               (Expression<Func<SourceRoot, string>>)(x => x.RootS),
-                                                                                               (Expression<Func<SourceRoot, string>>)(x => x.RootS),
-                                                                                               (Expression<Func<string, ValidationResult>>)(x => ValidationResult.Ok));
+                                                                                  (Expression<Func<SourceRoot, string>>)(x => x.RootS),
+                                                                                  (Expression<Func<SourceRoot, string>>)(x => x.RootS),
+                                                                                  (Expression<Func<string, ValidationResult>>)(x => ValidationResult.Ok));
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS), sourceValidator);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
-        
-                
+
         [Test]
         public void TestSetWithValueAndConverter()
         {
             configurator.Target(d => d.RootS).Set(s => s.RootS, x => x + "def");
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS + "def"));
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
-        
+
         [Test]
         public void TestSetWithValueAndValidatorAndConverter()
         {
-            var validationResult = ValidationResult.Warning(new TestText{Text = "test text"});
+            var validationResult = ValidationResult.Warning(new TestText {Text = "test text"});
             configurator.Target(d => d.RootS).Set(s => s.RootS, x => x + "abc", x => x + "def", x => validationResult);
             var sourceValidator = StaticValidatorConfiguration.Create<SourceRoot>(MutatorsCreator.Sharp, "SetWithValidator", 0, null,
                                                                                   (Expression<Func<SourceRoot, string>>)(x => x.RootS),
                                                                                   (Expression<Func<SourceRoot, string>>)(x => x.RootS + "abc"),
                                                                                   (Expression<Func<string, ValidationResult>>)(x => validationResult));
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS + "abc" + "def"), sourceValidator);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -323,8 +322,8 @@ namespace Mutators.Tests.ConfigurationTests
         {
             configurator.Target(d => d.RootS).NullifyIf(d => d.A.S == "null");
             var nullifyIfConfiguration = NullifyIfConfiguration.Create<DestRoot>(null, d => d.A.S == "null");
-            AssertEquivalentConfigurations(nullifyIfConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(nullifyIfConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
@@ -332,53 +331,68 @@ namespace Mutators.Tests.ConfigurationTests
         {
             configurator.Target(d => d.RootS).Set("zzz");
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => "zzz"));
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
         [Test]
         public void TestSetWithMessage()
         {
-            configurator.Target(d => d.RootS).Set(s => s.RootS, x => x + "def", x => x.Length == 5, s => new TestText{Text = "text!"}, 0, ValidationResultType.Warning);
+            configurator.Target(d => d.RootS).Set(s => s.RootS, x => x + "def", x => x.Length == 5, s => new TestText {Text = "text!"}, 0, ValidationResultType.Warning);
             var sourceValidator = StaticValidatorConfiguration.Create<SourceRoot>(MutatorsCreator.Sharp, "SetWithValidator", 0, null,
                                                                                   (Expression<Func<SourceRoot, string>>)(x => x.RootS),
                                                                                   (Expression<Func<SourceRoot, string>>)(x => x.RootS),
-                                                                                  (Expression<Func<string, ValidationResult>>)(x => (bool?)(x.Length == 5) == true 
-                                                                                                                                        ? new ValidationResult(ValidationResultType.Warning, new TestText{Text = "text!"}) 
+                                                                                  (Expression<Func<string, ValidationResult>>)(x => (bool?)(x.Length == 5) == true
+                                                                                                                                        ? new ValidationResult(ValidationResultType.Warning, new TestText {Text = "text!"})
                                                                                                                                         : ValidationResult.Ok));
             var equalsToConfiguration = EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS + "def"), sourceValidator);
-            AssertEquivalentConfigurations(equalsToConfiguration, reporter.Mutator);
-            AssertEquivalentPaths(d => d.RootS, reporter.Path);
-        }
-        
-        [MultiLanguageTextType("TestText")]
-        private class TestText : MultiLanguageTextBase
-        {
-            protected override void Register()
-            {
-                Register("RU", () => Text);
-                Register("RU", Web, () => Text);
-            }
-
-            public string Text { get; set; }
+            AssertEquivalentConfigurations(equalsToConfiguration);
+            AssertEquivalentPaths(d => d.RootS);
         }
 
-        private void AssertEquivalentConfigurations(MutatorConfiguration expectedConfiguration, MutatorConfiguration actualConfiguration)
+        [Test]
+        public void TestBatchSet()
         {
-            EquivalencyAssertionOptions<MutatorConfiguration> AssertionOptions(EquivalencyAssertionOptions<MutatorConfiguration> options)
-            {
-                return options.Using<Expression>(x => AssertEquivalentExpressions(x.Expectation, x.Subject))
-                              .WhenTypeIs<Expression>()
-                              .IncludingAllRuntimeProperties();
-            }
+            configurator.GoTo(d => d.A).BatchSet((d, s) => new Batch
+                {
+                    {d.S.NotNull(), s.RootS},
+                    {d.Bs[0].S, s.As[0].S},
+                    {d.Bs[1].S.NotNull(), s.As[1].S},
+                    {d.Bs.Each().S, s.As.Current().S}
+                });
 
-            actualConfiguration.GetType().Should().Be(expectedConfiguration.GetType());
-            actualConfiguration.Should().BeEquivalentTo(expectedConfiguration, AssertionOptions);
+            AssertEquivalentConfigurations(
+                EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.RootS)),
+                EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As[0].S)),
+                EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As[1].S)),
+                EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As.Current().S)),
+                NullifyIfConfiguration.Create<DestRoot>(null, (d => d.A.S == null && d.A.Bs[1].S == null)),
+                NullifyIfConfiguration.Create<DestRoot>(null, (d => d.A.S == null && d.A.Bs[1].S == null))
+                );
+            AssertEquivalentPathBodies(d => d.A.S, d => d.A.Bs[0].S, d => d.A.Bs[1].S, d => d.A.Bs.Each().S, d => d.A.Bs[0].S, d => d.A.Bs.Each().S);
         }
 
-        private static void AssertEquivalentPaths<T>(Expression<Func<DestRoot, T>> expected, Expression actual)
+        private void AssertEquivalentConfigurations(params MutatorConfiguration[] expectedConfiguration)
         {
-            AssertEquivalentExpressions(expected, actual);
+            reporter.Reports.Select(x => x.Mutator).Should().BeEquivalentTo(expectedConfiguration, AssertionOptions);
+        }
+
+        private void AssertEquivalentPaths<T>(Expression<Func<DestRoot, T>> expected)
+        {
+            reporter.Reports.Should().ContainSingle().Which.Path.Should().BeEquivalentTo(expected, AssertionOptions);
+        }
+
+        private void AssertEquivalentPathBodies<T>(params Expression<Func<DestRoot, T>>[] expected)
+        {
+            reporter.Reports.Select(x => x.Path).Should().BeEquivalentTo(expected.Select(x => x.Body), AssertionOptions);
+        }
+
+        EquivalencyAssertionOptions<T> AssertionOptions<T>(EquivalencyAssertionOptions<T> options)
+        {
+            return options.WithStrictOrdering()
+                          .Using<Expression>(x => AssertEquivalentExpressions(x.Expectation, x.Subject))
+                          .WhenTypeIs<Expression>()
+                          .IncludingAllRuntimeProperties();
         }
 
         private static void AssertEquivalentExpressions(Expression expected, Expression actual)
@@ -394,6 +408,18 @@ namespace Mutators.Tests.ConfigurationTests
 
         private ConverterConfigurator<SourceRoot, DestRoot> configurator;
         private ConfiguratorReporter reporter;
+
+        [MultiLanguageTextType("TestText")]
+        private class TestText : MultiLanguageTextBase
+        {
+            protected override void Register()
+            {
+                Register("RU", () => Text);
+                Register("RU", Web, () => Text);
+            }
+
+            public string Text { get; set; }
+        }
 
         private class SourceRoot
         {

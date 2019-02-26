@@ -358,7 +358,7 @@ namespace Mutators.Tests.ConfigurationTests
                     {d.S.NotNull(), s.RootS},
                     {d.Bs[0].S, s.As[0].S},
                     {d.Bs[1].S.NotNull(), s.As[1].S},
-                    {d.Bs.Each().S, s.As.Current().S}
+                    {d.Bs.Each().S, s.As.Each().S}
                 });
 
             AssertEquivalentConfigurations(
@@ -370,6 +370,18 @@ namespace Mutators.Tests.ConfigurationTests
                 NullifyIfConfiguration.Create<DestRoot>(null, (d => d.A.S == null && d.A.Bs[1].S == null))
                 );
             AssertEquivalentPathBodies(d => d.A.S, d => d.A.Bs[0].S, d => d.A.Bs[1].S, d => d.A.Bs.Each().S, d => d.A.Bs[0].S, d => d.A.Bs.Each().S);
+        }
+        
+        [Test]
+        public void TestBatchSetWithCondition()
+        {
+            configurator.If(s => s.RootS == "zzz").GoTo(d => d.A).BatchSet((d, s) => new Batch{{d.S, s.RootS}});
+
+            AssertEquivalentConfigurations(
+                EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.RootS == "zzz"), 
+                                                         (Expression<Func<SourceRoot, string>>)(s => s.RootS), 
+                                                         null));
+            AssertEquivalentPathBodies(d => d.A.S);
         }
 
         private void AssertEquivalentConfigurations(params MutatorConfiguration[] expectedConfiguration)

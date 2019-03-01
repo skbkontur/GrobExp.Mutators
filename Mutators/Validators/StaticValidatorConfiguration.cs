@@ -20,7 +20,7 @@ namespace GrobExp.Mutators.Validators
             PathToNode = (LambdaExpression)pathToNode.ReplaceEachWithCurrent();
             PathToValue = (LambdaExpression)pathToValue.ReplaceEachWithCurrent();
             validator = Prepare(validator);
-            this.validator = validator;
+            Validator = validator;
             validatorFromRoot = pathToNode.Merge(validator);
         }
 
@@ -28,6 +28,8 @@ namespace GrobExp.Mutators.Validators
         public LambdaExpression Condition { get; }
         public LambdaExpression PathToValue { get; }
         public LambdaExpression PathToNode { get; }
+        
+        internal LambdaExpression Validator { get; }
 
         public override string ToString() => Name;
 
@@ -49,25 +51,25 @@ namespace GrobExp.Mutators.Validators
         internal override MutatorConfiguration ToRoot(LambdaExpression path)
         {
             return new StaticValidatorConfiguration(path.Parameters.Single().Type, Creator, Name, Priority,
-                                                    path.Merge(Condition), path.Merge(PathToNode), path.Merge(PathToValue), validator);
+                                                    path.Merge(Condition), path.Merge(PathToNode), path.Merge(PathToValue), Validator);
         }
 
         internal override MutatorConfiguration Mutate(Type to, Expression path, CompositionPerformer performer)
         {
             return new StaticValidatorConfiguration(to, Creator, Name, Priority,
                                                     Resolve(path, performer, Condition), Resolve(path, performer, PathToNode),
-                                                    Resolve(path, performer, PathToValue), validator);
+                                                    Resolve(path, performer, PathToValue), Validator);
         }
 
         internal override MutatorConfiguration ResolveAliases(LambdaAliasesResolver resolver)
         {
-            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, resolver.Resolve(Condition), resolver.Resolve(PathToNode), resolver.Resolve(PathToValue), validator);
+            return new StaticValidatorConfiguration(Type, Creator, Name, Priority, resolver.Resolve(Condition), resolver.Resolve(PathToNode), resolver.Resolve(PathToValue), Validator);
         }
 
         internal override MutatorConfiguration If(LambdaExpression condition)
         {
             return new StaticValidatorConfiguration(Type, Creator, Name, Priority,
-                                                    Prepare(condition).AndAlso(Condition), PathToNode, PathToValue, validator);
+                                                    Prepare(condition).AndAlso(Condition), PathToNode, PathToValue, Validator);
         }
 
         internal override void GetArrays(ArraysExtractor arraysExtractor)
@@ -100,6 +102,5 @@ namespace GrobExp.Mutators.Validators
         }
 
         private readonly LambdaExpression validatorFromRoot;
-        private readonly LambdaExpression validator;
     }
 }

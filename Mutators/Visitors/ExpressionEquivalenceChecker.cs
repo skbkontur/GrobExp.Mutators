@@ -271,7 +271,7 @@ namespace GrobExp.Mutators.Visitors
 
         private static bool EquivalentCall(MethodCallExpression first, MethodCallExpression second, Context context)
         {
-            return EquivalentMethods(first.Method, second.Method, context) && Equivalent(first.Object, second.Object, context.Strictly, context.DistinguishEachAndCurrent) && Equivalent(first.Arguments, second.Arguments, context);
+            return EquivalentMethods(first.Method, second.Method, context) && Equivalent(first.Object, second.Object, context) && Equivalent(first.Arguments, second.Arguments, context);
         }
 
         private static bool EquivalentConditional(ConditionalExpression first, ConditionalExpression second, Context context)

@@ -300,6 +300,25 @@ namespace Mutators.Tests
         }
 
         [Test]
+        public void TestMethodCallKeepsParameterMappings()
+        {
+            var firstParameter = Expression.Parameter(typeof(ClassWithDictionary));
+            var secondParameter = Expression.Parameter(typeof(ClassWithDictionary));
+
+            var dictProperty = typeof(ClassWithDictionary).GetProperty("Dict", BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(dictProperty, Is.Not.Null);
+
+            var getItemMethod = typeof(Dictionary<string, int>).GetMethod("get_Item");
+            Assert.That(getItemMethod, Is.Not.Null);
+
+            var firstLambda = Expression.Lambda(Expression.Call(Expression.MakeMemberAccess(firstParameter, dictProperty), getItemMethod, Expression.Constant("abc")), firstParameter);
+            var secondLambda = Expression.Lambda(Expression.Call(Expression.MakeMemberAccess(secondParameter, dictProperty), getItemMethod, Expression.Constant("abc")), secondParameter);
+
+            TestEquivalent(firstLambda, firstLambda);
+            TestEquivalent(firstLambda, secondLambda);
+        }
+
+        [Test]
         public void TestEachAndCurrentMethodCall()
         {
             var instance = Expression.Parameter(typeof(int[]));
@@ -937,6 +956,11 @@ namespace Mutators.Tests
         private class SubclassWithProperty : ClassWithProperties
         {
             public int Property { get; set; }
+        }
+
+        private class ClassWithDictionary
+        {
+            public Dictionary<string, int> Dict { get; set; }
         }
     }
 }

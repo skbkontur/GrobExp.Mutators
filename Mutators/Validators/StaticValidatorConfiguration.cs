@@ -96,7 +96,7 @@ namespace GrobExp.Mutators.Validators
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .GroupBy(lambda => new ExpressionWrapper(lambda, true))
                 .Select(grouping => grouping.First())
                 .ToArray();
         }

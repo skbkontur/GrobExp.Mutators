@@ -56,18 +56,18 @@ namespace GrobExp.Mutators.Visitors
                 }
 
                 primaryDependencies = primaryDependenciez.Select(replacer).Cast<LambdaExpression>()
-                                                         .GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+                                                         .GroupBy(exp => new ExpressionWrapper(exp, true)).Select(grouping => grouping.First()).ToArray();
             }
 
             additionalDependencies = dependencies.Select(dependency => Expression.Lambda(ClearConverts(dependency.Body), dependency.Parameters)).Where(dependency =>
                 {
                     var root = dependency.Body.SmashToSmithereens()[0];
                     return root.NodeType == ExpressionType.Parameter && parameters.Contains((ParameterExpression)root);
-                }).Select(replacer).Cast<LambdaExpression>().GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+                }).Select(replacer).Cast<LambdaExpression>().GroupBy(exp => new ExpressionWrapper(exp, true)).Select(grouping => grouping.First()).ToArray();
             var result = new List<LambdaExpression>(additionalDependencies);
             foreach (var primaryDependency in primaryDependencies)
                 Extract(primaryDependency.Body, result);
-            return result.GroupBy(exp => ExpressionCompiler.DebugViewGetter(exp)).Select(grouping => grouping.First()).ToArray();
+            return result.GroupBy(exp => new ExpressionWrapper(exp, true)).Select(grouping => grouping.First()).ToArray();
         }
 
         protected override Expression VisitBinary(BinaryExpression node)

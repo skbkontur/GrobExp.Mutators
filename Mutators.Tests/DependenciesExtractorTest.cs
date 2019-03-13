@@ -1,7 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+
+using FluentAssertions;
+using FluentAssertions.Equivalency;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.Visitors;
@@ -477,21 +480,30 @@ namespace Mutators.Tests
             return node;
         }
 
-        private static string ExpressionToString(LambdaExpression lambda)
+        private static LambdaExpression PrepareLambda(LambdaExpression lambda)
         {
-            return ExpressionCompiler.DebugViewGetter(Expression.Lambda(Expression.Convert(ClearConverts(lambda.Body), typeof(object)), lambda.Parameters));
+            return Expression.Lambda(ClearConverts(lambda.Body), lambda.Parameters);
         }
 
         private static void DoTest<T1, T2>(Expression<Func<T1, T2>> expression, params Expression<Func<T1, object>>[] expectedDependencies)
         {
-            var actualDependencies = expression.ExtractDependencies();
-            CollectionAssert.AreEquivalent(expectedDependencies.Select(ExpressionToString), actualDependencies.Select(ExpressionToString));
+            AssertEquivalent(expression.ExtractDependencies(), expectedDependencies);
         }
 
         private static void DoTest<T1, T2, T3>(Expression<Func<T1, T2, T3>> expression, params Expression<Func<T1, T2, object>>[] expectedDependencies)
         {
-            var actualDependencies = expression.ExtractDependencies();
-            CollectionAssert.AreEquivalent(expectedDependencies.Select(ExpressionToString), actualDependencies.Select(ExpressionToString));
+            AssertEquivalent(expression.ExtractDependencies(), expectedDependencies);
+        }
+
+        private static void AssertEquivalent(LambdaExpression[] actualExpressions, LambdaExpression[] expectedExpressions)
+        {
+            void AssertEquivalentExpressions(IAssertionContext<Expression> context)
+            {
+                ExpressionEquivalenceChecker.Equivalent(context.Subject, context.Expectation, true, true)
+                                            .Should().BeTrue($"because\nActual:\n{context.Subject}\n\nExpected:\n{context.Expectation}\n");
+            }
+
+            actualExpressions.Should().BeEquivalentTo(expectedExpressions.Select(PrepareLambda), config => config.Using<Expression>(AssertEquivalentExpressions).WhenTypeIs<Expression>());
         }
 
         private class A

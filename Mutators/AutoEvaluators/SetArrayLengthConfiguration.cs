@@ -75,7 +75,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Length == null ? new LambdaExpression[0] : Length.ExtractDependencies(Length.Parameters.Where(parameter => parameter.Type == Type)))
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .GroupBy(lambda => new ExpressionWrapper(lambda, true))
                 .Select(grouping => grouping.First())
                 .ToArray();
         }

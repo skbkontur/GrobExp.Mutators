@@ -113,7 +113,7 @@ namespace GrobExp.Mutators.Validators
             var condition = GetFullCondition();
             return (condition.ExtractDependencies(condition.Parameters.Where(parameter => parameter.Type == Type)))
                 .Concat(Message == null ? new LambdaExpression[0] : Message.ExtractDependencies())
-                .GroupBy(lambda => ExpressionCompiler.DebugViewGetter(lambda))
+                .GroupBy(lambda => new ExpressionWrapper(lambda, true))
                 .Select(grouping => grouping.First())
                 .ToArray();
         }

@@ -383,37 +383,6 @@ namespace Mutators.Tests
             to.AssertEqualsToUsingGrobuf(expected);
         }
 
-        [Test(Description = "Mutators cannot deal with different source arrays for single destination path")]
-        public void TestConvertWithDifferentArraySources()
-        {
-            var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator =>
-                {
-                    configurator.Target(data => data.Хрень.Each()).If(data => data.Q != 3).Set(data2 => data2.Чужь.Current());
-                    configurator.Target(data => data.Хрень.Each()).If(data => data.Q == 3).Set(data2 => data2.T.R.Current().S);
-                });
-            var converter = collection.GetConverter(MutatorsContext.Empty);
-            var exception = Assert.Throws<InvalidOperationException>(() => converter(new TestData2
-                {
-                    Q = 3,
-                    Чужь = new[] {"abc", "def"},
-                    T = new T
-                        {
-                            R = new[]
-                                {
-                                    new R
-                                        {
-                                            S = "first",
-                                        },
-                                    new R
-                                        {
-                                            S = "second",
-                                        }
-                                }
-                        }
-                }));
-            Assert.That(exception.Message, Does.Match(@"^Method T Current\[T\].* cannot be invoked$"));
-        }
-
         [Test]
         public void TestConvert2()
         {

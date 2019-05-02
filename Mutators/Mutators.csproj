@@ -13,9 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="GroBuf" Version="1.4.4" />
-    <PackageReference Include="GrobExp.Compiler" Version="1.2.13" />
-    <PackageReference Include="Vostok.Logging.Abstractions" Version="0.1.0" />
+    <PackageReference Include="GroBuf" Version="1.4.8" />
+    <PackageReference Include="GrobExp.Compiler" Version="1.2.14" />
+    <PackageReference Include="Vostok.Logging.Abstractions" Version="1.0.1" />
   </ItemGroup>
 
 </Project>

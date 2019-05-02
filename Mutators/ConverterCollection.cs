@@ -26,7 +26,7 @@ namespace GrobExp.Mutators
         {
             this.pathFormatterCollection = pathFormatterCollection;
             this.stringConverter = stringConverter;
-            this.logger = logger;
+            this.logger = logger.ForContext("Mutators");
         }
 
         protected ConverterCollection(IPathFormatterCollection pathFormatterCollection, IStringConverter stringConverter)

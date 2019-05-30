@@ -7,6 +7,7 @@ using System.Reflection;
 
 using GrobExp.Mutators.AutoEvaluators;
 using GrobExp.Mutators.ModelConfiguration;
+using GrobExp.Mutators.ModelConfiguration.Traverse;
 using GrobExp.Mutators.Validators;
 
 namespace GrobExp.Mutators.Visitors
@@ -323,8 +324,11 @@ namespace GrobExp.Mutators.Visitors
         private List<KeyValuePair<Expression, Expression>> GetConditionalSettersInternal(Expression node, out bool onlyLeavesAreConvertible)
         {
             onlyLeavesAreConvertible = false;
-            var convertationNode = convertationTree.Traverse(node, false, out var arrayAliases);
-            if (convertationNode == null) return null;
+            var traverseResult = ModelConfigurationTreeTraveler.Traverse(convertationTree, node, subRoot : null, create : false);
+            var convertationNode = traverseResult.Child;
+            var arrayAliases = traverseResult.ArrayAliases;
+            if (convertationNode == null)
+                return null;
             var resolver = new AliasesResolver(arrayAliases);
             var setters = convertationNode.GetMutators().OfType<EqualsToConfiguration>().ToArray();
             if (setters.Length == 0)

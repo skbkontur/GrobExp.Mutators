@@ -7,8 +7,6 @@ using FluentAssertions;
 using GrobExp.Mutators;
 using GrobExp.Mutators.ModelConfiguration;
 
-using Mutators.Tests.Helpers;
-
 using NUnit.Framework;
 
 namespace Mutators.Tests.ConfigurationTests
@@ -16,8 +14,6 @@ namespace Mutators.Tests.ConfigurationTests
     [TestFixture]
     public class TraverseSubRootTests
     {
-        private ModelConfigurationNode root;
-
         [SetUp]
         public void SetUp()
         {
@@ -44,45 +40,44 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestArrayLength()
         {
             Expression<Func<Root, int>> path = x => x.As.Length;
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
 
         [Test]
         public void TestEach()
         {
             Expression<Func<Root, A>> path = x => x.As.Each();
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
 
         [Test]
         public void TestCurrent()
         {
             Expression<Func<Root, A>> path = x => x.As.Current();
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
 
         [Test]
         public void TestConstantArrayIndex()
         {
             Expression<Func<Root, A>> path = x => x.As[2];
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
 
         [Test]
         public void TestConvert()
         {
             Expression<Func<Root, object>> path = x => (object)x;
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
-
 
         [Test]
         public void TestConstantArrayIndexNotExists()
         {
             Expression<Func<Root, string>> path1 = x => x.As.Each().S;
             Expression<Func<Root, string>> path2 = x => x.As[2].S;
-            
-            CheckSubRoot(path1, path2, result: true);
+
+            CheckSubRoot(path1, path2, result : true);
         }
 
         [Test]
@@ -91,7 +86,7 @@ namespace Mutators.Tests.ConfigurationTests
             Expression<Func<Root, A>> path1 = x => x.As.Each();
             Expression<Func<Root, object>> path2 = x => x.As.GetValue(3);
 
-            CheckSubRoot(path1, path2, result: true);
+            CheckSubRoot(path1, path2, result : true);
         }
 
         [Test]
@@ -99,7 +94,7 @@ namespace Mutators.Tests.ConfigurationTests
         {
             Expression<Func<Root, string>> path = x => x.Dict["zzz"];
 
-            CheckSubRoot(path, path, result: true);
+            CheckSubRoot(path, path, result : true);
         }
 
         [Test]
@@ -117,7 +112,7 @@ namespace Mutators.Tests.ConfigurationTests
             Expression<Func<Root, string>> path = x => x.As.Each().S;
             Expression<Func<Root, B[]>> path2 = x => x.As.Each().Bs;
 
-            CheckSubRoot(path, path2, result: false);
+            CheckSubRoot(path, path2, result : false);
         }
 
         [Test]
@@ -126,7 +121,7 @@ namespace Mutators.Tests.ConfigurationTests
             Expression<Func<Root, B[]>> path1 = x => x.As.Each().Bs;
             Expression<Func<Root, string>> path2 = x => x.As.Each().Bs.Each().S;
 
-            CheckSubRoot(path1, path2, result: true);
+            CheckSubRoot(path1, path2, result : true);
         }
 
         [Test]
@@ -135,7 +130,7 @@ namespace Mutators.Tests.ConfigurationTests
             Expression<Func<Root, string>> path1 = x => x.As.Each().Bs.Each().S;
             Expression<Func<Root, B[]>> path2 = x => x.As.Each().Bs;
 
-            CheckSubRoot(path1, path2, result: false);
+            CheckSubRoot(path1, path2, result : false);
         }
 
         [Test]
@@ -144,7 +139,7 @@ namespace Mutators.Tests.ConfigurationTests
             Expression<Func<Root, B[]>> path1 = x => x.As.Each().Bs;
             Expression<Func<Root, B[]>> path2 = x => x.As.Current().Bs;
 
-            CheckSubRoot(path1, path2, result: true);
+            CheckSubRoot(path1, path2, result : true);
         }
 
         private void CheckSubRoot(LambdaExpression pathToSubRoot, LambdaExpression pathToTraverse, bool result)
@@ -153,10 +148,10 @@ namespace Mutators.Tests.ConfigurationTests
             root.Traverse(pathToTraverse.Body, child, out _, create : false).Should().Be(result);
         }
 
+        private ModelConfigurationNode root;
+
         private class Root
         {
-            public A A { get; set; }
-
             public A[] As { get; set; }
 
             public string RootS { get; set; }

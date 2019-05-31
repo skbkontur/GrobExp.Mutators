@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection;
 
 using FluentAssertions;
-
-using GrEmit.Utils;
 
 using GrobExp.Mutators;
 using GrobExp.Mutators.ModelConfiguration;
@@ -19,8 +16,6 @@ namespace Mutators.Tests.ConfigurationTests
     [TestFixture]
     public class TraverseChildTests
     {
-        private ModelConfigurationNode root;
-
         [SetUp]
         public void SetUp()
         {
@@ -80,7 +75,7 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestNotCreatePrefix()
         {
             Expression<Func<Root, A>> path = x => x.As[2];
-            root.Traverse(path.Body, create: true);
+            root.Traverse(path.Body, create : true);
             Expression<Func<Root, A[]>> pathPrefix = x => x.As;
             TestExistsNotCreate(pathPrefix, Edge.Create((Root r) => r.As));
         }
@@ -98,7 +93,7 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestGetValueNotExists()
         {
             Expression<Func<Root, string>> path1 = x => x.As.Each().S;
-            root.Traverse(path1.Body, create: true);
+            root.Traverse(path1.Body, create : true);
             Expression<Func<Root, object>> path2 = x => x.As.GetValue(2);
             TestExistsNotCreate(path2, Edge.Create((Root r) => r.As), ModelConfigurationEdge.Each);
         }
@@ -107,8 +102,8 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestIdempotentTraverseWithCreate()
         {
             Expression<Func<Root, string>> path = x => x.As.Each().S;
-            var child1 = root.Traverse(path.Body, create: true);
-            var child2 = root.Traverse(path.Body, create: true);
+            var child1 = root.Traverse(path.Body, create : true);
+            var child2 = root.Traverse(path.Body, create : true);
             child1.Should().BeSameAs(child2);
         }
 
@@ -116,8 +111,8 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestIdempotentTraverseWithoutCreate()
         {
             Expression<Func<Root, string>> path = x => x.As.Each().S;
-            var child1 = root.Traverse(path.Body, create: true);
-            var child2 = root.Traverse(path.Body, create: false);
+            var child1 = root.Traverse(path.Body, create : true);
+            var child2 = root.Traverse(path.Body, create : false);
             child1.Should().BeSameAs(child2);
         }
 
@@ -125,7 +120,7 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestIndexer()
         {
             Expression<Func<Root, string>> path = x => x.Dict["zzz"];
-            root.Traverse(path.Body, create: true);
+            root.Traverse(path.Body, create : true);
             TestExistsCreate(path, Edge.Create((Root r) => r.Dict), Edge.Create((Dictionary<string, string> d) => d["zzz"]));
         }
 
@@ -133,13 +128,13 @@ namespace Mutators.Tests.ConfigurationTests
         public void TestIndexerConcreteIndexNotExist()
         {
             Expression<Func<Root, string>> path = x => x.Dict.Each().Value;
-            root.Traverse(path.Body, create: true);
+            root.Traverse(path.Body, create : true);
             Expression<Func<Root, string>> path2 = x => x.Dict["qxx"];
             TestExistsNotCreate(path2, Edge.Create((Root r) => r.Dict), ModelConfigurationEdge.Each, Edge.Create((KeyValuePair<string, string> p) => p.Value));
         }
 
         [Test]
-        public void TestGetOnlyIndexer()
+        public void TestGetOnlyIndexerNotSupported()
         {
             Expression<Func<Root, string>> path = x => x.IndexerGet["abc"];
 
@@ -148,26 +143,26 @@ namespace Mutators.Tests.ConfigurationTests
         }
 
         [Test]
-        public void TestSetOnlyIndexer()
+        public void TestSetOnlyIndexerNotSupported()
         {
             Expression<Func<Root, IndexerSet>> path = r => r.IndexerSet;
             var method = typeof(IndexerSet).GetProperty("Item").GetSetMethod();
 
             var path3 = Expression.Call(path.Body, method, Expression.Constant("zzz"), Expression.Constant("zzz"));
 
-            Following.Code(() => root.Traverse(path3, create: true))
+            Following.Code(() => root.Traverse(path3, create : true))
                      .Should().Throw<NotSupportedException>()
                      .Which.Message.Should().MatchRegex("^Method .* is not supported$");
         }
 
         private void TestExistsCreate(LambdaExpression path, params ModelConfigurationEdge[] edges)
         {
-            DoTestExists(path, create : true, edges: edges);
+            DoTestExists(path, create : true, edges : edges);
         }
 
         private void TestExistsNotCreate(LambdaExpression path, params ModelConfigurationEdge[] edges)
         {
-            DoTestExists(path, create: false, edges: edges);
+            DoTestExists(path, create : false, edges : edges);
         }
 
         private void DoTestExists(LambdaExpression path, bool create, params ModelConfigurationEdge[] edges)
@@ -178,6 +173,8 @@ namespace Mutators.Tests.ConfigurationTests
                 node = node.children[edge];
             node.Should().NotBeNull().And.BeSameAs(child);
         }
+
+        private ModelConfigurationNode root;
 
         private class Root
         {
@@ -201,10 +198,7 @@ namespace Mutators.Tests.ConfigurationTests
 
         private class IndexerSet
         {
-            public string this[string key]
-            {
-                set => Console.WriteLine(key, value);
-            }
+            public string this[string key] { set => Console.WriteLine(key, value); }
         }
 
         private class A

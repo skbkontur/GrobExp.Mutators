@@ -15,7 +15,6 @@ namespace Mutators.Tests.ConfigurationTests
     [TestFixture]
     public class TraverseStructuralTests
     {
-
         [Test]
         public void TestEmptyPath()
         {
@@ -55,7 +54,7 @@ namespace Mutators.Tests.ConfigurationTests
                     [Edge.Create((Root x) => x.As)] = new NodeBuilder(typeof(A[]))
                         {
                             [ModelConfigurationEdge.Each] = new NodeBuilder(typeof(A)),
-                    },
+                        },
                 };
 
             Expression<Func<Root, A>> path = d => d.As.Each();
@@ -173,7 +172,7 @@ namespace Mutators.Tests.ConfigurationTests
                                             [ModelConfigurationEdge.ArrayLength] = new NodeBuilder(typeof(int)),
                                         },
                                 },
-                    },
+                        },
                 };
 
             Expression<Func<Root, string>> path1 = d => d.As.Each().S;
@@ -212,8 +211,6 @@ namespace Mutators.Tests.ConfigurationTests
 
         private class Root
         {
-            public A A { get; set; }
-
             public A[] As { get; set; }
 
             public string RootS { get; set; }

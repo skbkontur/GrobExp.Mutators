@@ -10,16 +10,9 @@ using JetBrains.Annotations;
 
 namespace GrobExp.Mutators.ModelConfiguration.Traverse
 {
-    /// <summary>
-    ///     Traverses the <paramref name="path" /> from this node, creating missing nodes if <paramref name="create" /> is true. <br />
-    ///     At the end, <paramref name="child" /> points to the last traversed node and <paramref name="arrayAliases" /> contains some shit.
-    /// </summary>
-    /// <returns>
-    ///     True, if <paramref name="subRoot" /> node was visited while traversing from root node by <paramref name="path" />
-    /// </returns>
     internal class ModelConfigurationTreeTraveler
     {
-        private ModelConfigurationTreeTraveler(bool createPath, ModelConfigurationNode subRoot = null)
+        private ModelConfigurationTreeTraveler(bool createPath, [CanBeNull] ModelConfigurationNode subRoot)
         {
             this.createPath = createPath;
             this.subRoot = subRoot;
@@ -27,6 +20,14 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
             ArrayAliases = new List<KeyValuePair<Expression, Expression>>();
         }
 
+        /// <summary>
+        ///     Traverses the <paramref name="path" /> from <paramref name="node" />, creating missing nodes if <paramref name="create" /> is true.<br/>
+        /// <returns>
+        ///     Child - resulting node <br/>
+        ///     ArrayAliases - list of array aliases <br/>
+        ///     SubRootIsVisited - true if <paramref name="subRoot"/> was visited during traverse
+        /// </returns>
+        /// </summary>
         [NotNull]
         public static TraverseResult Traverse([NotNull] ModelConfigurationNode node, [NotNull] Expression path, [CanBeNull] ModelConfigurationNode subRoot, bool create)
         {
@@ -49,6 +50,7 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
             return child;
         }
 
+        [CanBeNull]
         private ModelConfigurationNode TraverseInternal([NotNull] ModelConfigurationNode node, [NotNull] Expression path)
         {
             switch (path)
@@ -166,7 +168,8 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
             return newChild.GotoMember(newChild.NodeType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance), create : false);
         }
 
-        private static Expression GetArrayMigrationAlias(ModelConfigurationNode node)
+        [CanBeNull]
+        private static Expression GetArrayMigrationAlias([NotNull] ModelConfigurationNode node)
         {
             var arrays = node.GetArrays();
             var childPath = new ExpressionWrapper(node.Path, strictly : false);
@@ -174,7 +177,7 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
             return arrays.Values.FirstOrDefault(arrayPath => !childPath.Equals(new ExpressionWrapper(arrayPath, strictly : false)));
         }
 
-        private static int GetIndex(Expression exp)
+        private static int GetIndex([NotNull] Expression exp)
         {
             // todo использовать ExpressionCompiler
             if (exp.NodeType == ExpressionType.Constant)

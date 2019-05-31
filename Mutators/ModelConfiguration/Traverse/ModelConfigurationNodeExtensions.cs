@@ -1,5 +1,4 @@
 using System;
-using System.Linq.Expressions;
 using System.Reflection;
 
 using JetBrains.Annotations;
@@ -8,31 +7,22 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
 {
     internal static class ModelConfigurationNodeExtensions
     {
-        public static ModelConfigurationNode GotoEachArrayElement(this ModelConfigurationNode node, bool create)
+        [CanBeNull]
+        public static ModelConfigurationNode GotoEachArrayElement([NotNull] this ModelConfigurationNode node, bool create)
         {
-            return node.GetChild(ModelConfigurationEdge.Each, node.NodeType.GetItemType(), create);
+            return node.GetChild(ModelConfigurationEdge.Each, create);
         }
 
+        [CanBeNull]
         public static ModelConfigurationNode GotoMember([NotNull] this ModelConfigurationNode node, [NotNull] MemberInfo member, bool create)
         {
-            var edge = new ModelConfigurationEdge(member);
-            switch (member)
-            {
-                case FieldInfo fieldInfo:
-                    return node.GetChild(edge, fieldInfo.FieldType, create);
-                case PropertyInfo propertyInfo:
-                    return node.GetChild(edge, propertyInfo.PropertyType, create);
-                default:
-                    throw new NotSupportedException("Member rootType " + member.MemberType + " is not supported");
-            }
+            return node.GetChild(new ModelConfigurationEdge(member), create);
         }
 
         [CanBeNull]
         public static ModelConfigurationNode GotoTypeConversion([NotNull] this ModelConfigurationNode node, [NotNull] Type type, bool create)
         {
-            var edge = new ModelConfigurationEdge(type);
-
-            return node.GetChild(edge, type, create);
+            return node.GetChild(new ModelConfigurationEdge(type), create);
         }
 
         [CanBeNull]
@@ -46,36 +36,27 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
             if (!property.CanRead || !property.CanWrite)
                 throw new InvalidOperationException("Type '" + node.NodeType + "' has indexer that doesn't contain either getter or setter");
 
-            return node.GetChild(edge, property.GetGetMethod().ReturnType, create);
+            return node.GetChild(edge, create);
         }
 
         [CanBeNull]
         public static ModelConfigurationNode GotoArrayElement([NotNull] this ModelConfigurationNode node, int index, bool create)
         {
-            return node.GetChild(new ModelConfigurationEdge(index), node.NodeType.GetItemType(), create);
+            return node.GetChild(new ModelConfigurationEdge(index), create);
         }
 
         [CanBeNull]
-        private static ModelConfigurationNode GetChild([NotNull] this ModelConfigurationNode node, [NotNull] ModelConfigurationEdge edge, [NotNull] Type childType, bool create)
+        private static ModelConfigurationNode GetChild([NotNull] this ModelConfigurationNode node, [NotNull] ModelConfigurationEdge edge, bool create)
         {
-            if (!node.children.TryGetValue(edge, out var child) && create)
-            {
-                Expression path;
-                if (edge.IsArrayIndex)
-                    path = node.Path.MakeArrayIndex((int)edge.Value);
-                else if (edge.IsMemberAccess)
-                    path = node.Path.MakeMemberAccess((MemberInfo)edge.Value);
-                else if (edge.IsEachMethod)
-                    path = node.Path.MakeEachCall(childType);
-                else if (edge.IsConvertation)
-                    path = node.Path.MakeConvertation((Type)edge.Value);
-                else if (edge.IsIndexerParams)
-                    path = node.Path.MakeIndexerCall((object[])edge.Value, node.NodeType);
-                else throw new InvalidOperationException();
+            if (node.children.TryGetValue(edge, out var child))
+                return child;
 
-                child = new ModelConfigurationNode(node.ConfiguratorType, node.RootType, childType, node.Root, node, edge, path);
-                node.children.Add(edge, child);
-            }
+            if (!create)
+                return null;
+
+            var childPath = node.Path.GetPathToChild(edge);
+            child = new ModelConfigurationNode(node.ConfiguratorType, node.RootType, childPath.Type, node.Root, node, edge, childPath);
+            node.children.Add(edge, child);
 
             return child;
         }

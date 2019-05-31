@@ -5,11 +5,14 @@ using System.Linq.Expressions;
 using GrobExp.Mutators;
 using GrobExp.Mutators.ModelConfiguration;
 
+using JetBrains.Annotations;
+
 namespace Mutators.Tests.ConfigurationTests
 {
     public static class Edge
     {
-        public static ModelConfigurationEdge Create<TSource, TDest>(Expression<Func<TSource, TDest>> edge)
+        [NotNull]
+        public static ModelConfigurationEdge Create<TSource, TDest>([NotNull] Expression<Func<TSource, TDest>> edge)
         {
             switch (edge.Body)
             {
@@ -24,7 +27,7 @@ namespace Mutators.Tests.ConfigurationTests
                 case ExpressionType.ArrayLength:
                     return new ModelConfigurationEdge(ModelConfigurationEdge.ArrayLengthProperty);
                 }
-                throw new InvalidOperationException();
+                break;
 
             case BinaryExpression binaryExpression:
                 switch (binaryExpression.NodeType)
@@ -37,18 +40,17 @@ namespace Mutators.Tests.ConfigurationTests
                         value = Expression.Lambda<Func<int>>(Expression.Convert(binaryExpression.Right, typeof(int))).Compile()();
                     return new ModelConfigurationEdge(value);
                 }
-                throw new InvalidOperationException();
+                break;
 
             case MethodCallExpression methodCallExpression:
                 if (methodCallExpression.Method.IsIndexerGetter())
                     return new ModelConfigurationEdge(methodCallExpression.Arguments.Select(exp => ((ConstantExpression)exp).Value).ToArray());
                 return new ModelConfigurationEdge(methodCallExpression.Method);
-
-            default:
-                throw new InvalidOperationException();
             }
+            throw new NotSupportedException($"Node type {edge.Body.NodeType} is not supported");
         }
 
-        public static ModelConfigurationEdge Each = ModelConfigurationEdge.Each;
+        [NotNull]
+        public static ModelConfigurationEdge Each => ModelConfigurationEdge.Each;
     }
 }

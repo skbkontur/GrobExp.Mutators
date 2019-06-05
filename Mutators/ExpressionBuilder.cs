@@ -27,7 +27,7 @@ namespace GrobExp.Mutators
             return Expression.Call(null, MutatorsHelperFunctions.CurrentIndexMethod.MakeGenericMethod(itemType), expression);
         }
 
-        public static Expression MakeConvertation(this Expression expression, Type type)
+        public static Expression MakeTypeConversion(this Expression expression, Type type)
         {
             return Expression.Convert(expression, type);
         }

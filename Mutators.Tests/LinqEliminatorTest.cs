@@ -12,6 +12,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class LinqEliminatorTest : TestBase
     {
         private Func<T1, T2> EliminateLinq<T1, T2>(Expression<Func<T1, T2>> exp)

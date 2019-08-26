@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators.Visitors;
@@ -7,6 +7,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class IsNullOrEmptyExtenderTest : TestBase
     {
         [Test]

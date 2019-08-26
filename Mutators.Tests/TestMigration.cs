@@ -12,6 +12,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class TestMigration : TestBase
     {
         [Test]

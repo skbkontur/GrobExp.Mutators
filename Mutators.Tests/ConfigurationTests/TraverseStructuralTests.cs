@@ -13,6 +13,7 @@ using NUnit.Framework;
 namespace Mutators.Tests.ConfigurationTests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class TraverseStructuralTests
     {
         [Test]

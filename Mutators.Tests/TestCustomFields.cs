@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Validators.Texts;
@@ -47,6 +46,7 @@ namespace Mutators.Tests
     }
 
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class TestCustomFields
     {
         [SetUp]

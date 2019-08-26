@@ -14,6 +14,7 @@ using NUnit.Framework;
 namespace Mutators.Tests.FunctionalTests.ConverterTests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class FirstContractToInnerContractTest
     {
         [Test]

@@ -12,6 +12,7 @@ using NUnit.Framework;
 namespace Mutators.Tests.Visitors
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class MethodReplacerTests
     {
         [Test]

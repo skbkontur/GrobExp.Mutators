@@ -8,6 +8,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class ExpressionMergerTests : TestBase
     {
         [Test]

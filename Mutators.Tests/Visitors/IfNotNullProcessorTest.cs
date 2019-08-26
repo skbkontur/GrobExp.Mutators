@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators;
@@ -11,6 +11,7 @@ using NUnit.Framework;
 namespace Mutators.Tests.Visitors
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class IfNotNullProcessorTest
     {
         [Test]

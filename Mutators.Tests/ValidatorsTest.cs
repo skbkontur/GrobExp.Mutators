@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using GrobExp.Compiler;
 using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 using GrobExp.Mutators.ModelConfiguration;
@@ -20,6 +19,7 @@ namespace Mutators.Tests
         }
     }
 
+    [Parallelizable(ParallelScope.All)]
     public class ValidatorsTest : TestBase
     {
         [Test]

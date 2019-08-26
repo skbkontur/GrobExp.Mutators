@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -9,6 +8,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.Self)]
     public class MutatorsAssignRecorderTest : TestBase
     {
         protected override void SetUp()

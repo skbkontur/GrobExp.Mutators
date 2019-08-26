@@ -11,6 +11,7 @@ using NUnit.Framework;
 namespace Mutators.Tests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class KnownBugsDocumentedInTests
     {
         [Test(Description = "Mutators cannot deal with different source arrays for single destination path")]

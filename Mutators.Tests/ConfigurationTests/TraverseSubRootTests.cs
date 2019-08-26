@@ -12,6 +12,7 @@ using NUnit.Framework;
 namespace Mutators.Tests.ConfigurationTests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.Self)]
     public class TraverseSubRootTests
     {
         [SetUp]

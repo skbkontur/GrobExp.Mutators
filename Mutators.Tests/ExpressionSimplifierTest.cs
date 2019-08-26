@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq.Expressions;
 
 using GrobExp.Mutators;
@@ -10,6 +10,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class ExpressionSimplifierTest : TestBase
     {
         protected override void SetUp()

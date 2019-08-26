@@ -11,6 +11,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class ArrayIndexResolverTest : TestBase
     {
         private void DoTest<T1, T2>(Expression<Func<T1, T2>> exp, T1 data, string expected)

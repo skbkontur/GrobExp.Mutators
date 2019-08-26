@@ -13,6 +13,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     [TestFixture]
     public class ExpressionEquivalenceCheckerTest
     {

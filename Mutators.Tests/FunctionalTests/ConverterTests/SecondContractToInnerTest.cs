@@ -17,6 +17,7 @@ using Quantity = Mutators.Tests.FunctionalTests.SecondOuterContract.Quantity;
 namespace Mutators.Tests.FunctionalTests.ConverterTests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class SecondContractToInnerTest
     {
         [Test]

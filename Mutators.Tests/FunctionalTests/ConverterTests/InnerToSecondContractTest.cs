@@ -17,6 +17,7 @@ using Package = Mutators.Tests.FunctionalTests.SecondOuterContract.Package;
 namespace Mutators.Tests.FunctionalTests.ConverterTests
 {
     [TestFixture]
+    [Parallelizable(ParallelScope.All)]
     public class InnerToSecondContractTest
     {
         [Test]

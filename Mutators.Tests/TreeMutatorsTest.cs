@@ -10,6 +10,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
+    [Parallelizable(ParallelScope.All)]
     public class TreeMutatorsTest : TestBase
     {
         [Test]
@@ -627,6 +628,7 @@ namespace Mutators.Tests
         }
 
         [Test]
+        [Parallelizable(ParallelScope.None)]
         public void TestConvertArrayWithStaticMethod()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray(data2.T.R.Each().U.V.X).Each().W.S));
@@ -709,6 +711,7 @@ namespace Mutators.Tests
         }
 
         [Test]
+        [Parallelizable(ParallelScope.None)]
         public void TestConvertArrayWithInstanceMethod()
         {
             var collection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().C.D.Each().S).Set(data2 => FilterArray2(data2.T.R.Each().U.V.X).Each().W.S));

@@ -50,6 +50,7 @@ namespace Mutators.Tests
 
             return;
 
+#pragma warning disable 162
             var expected = new BValue
                 {
                     BOuterArray = new[]
@@ -64,6 +65,7 @@ namespace Mutators.Tests
                         },
                 };
             converter(from).Should().BeEquivalentTo(expected);
+#pragma warning restore 162
         }
 
         [Test(Description = "Mutators cannot deal with different source arrays for single destination array")]
@@ -103,6 +105,7 @@ namespace Mutators.Tests
 
             return;
 
+#pragma warning disable 162
             var expected = new BValue
                 {
                     BOuterArray = new[]
@@ -122,6 +125,7 @@ namespace Mutators.Tests
                 };
 
             converter(from).Should().BeEquivalentTo(expected);
+#pragma warning restore 162
         }
 
         private class AValue

@@ -26,7 +26,7 @@ namespace Mutators.Tests
                 }));
         }
 
-        [Test, Timeout(20000)]
+        [Test /*, Timeout(20000)*/]
         public void TestCompilePerformance()
         {
             for (int i = 0; i < 100000; i++)

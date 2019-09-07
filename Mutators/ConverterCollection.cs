@@ -183,6 +183,9 @@ namespace GrobExp.Mutators
             var properties = type.GetOrderedProperties();
             foreach (var property in properties)
             {
+                if (property.GetGetMethod().GetParameters().Length != 0)
+                    continue;
+
                 var next = Expression.Property(current, property);
                 if (property.GetCustomAttributes(typeof(CustomFieldsContainerAttribute), false).Any())
                 {
@@ -451,6 +454,9 @@ namespace GrobExp.Mutators
             var parameter = Expression.Parameter(type);
             foreach (var property in properties)
             {
+                if (property.GetGetMethod().GetParameters().Length != 0)
+                    continue;
+                
                 var pathToNextDestChild = pathToDestChild.Merge(Expression.Lambda(Expression.Property(parameter, property), parameter));
                 if (!property.PropertyType.IsArray)
                     ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild, sourceCustomFieldFits, destCustomFieldFits);

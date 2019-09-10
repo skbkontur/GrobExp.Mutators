@@ -181,7 +181,7 @@ namespace GrobExp.Mutators
         private static readonly Hashtable factories = new Hashtable();
         private static readonly object factoriesLock = new object();
 
-        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
+        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.RunAndCollect);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
     }
 

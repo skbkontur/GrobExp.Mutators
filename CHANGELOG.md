@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3 - 2019.09.25
+- Set TargetFramework to netstandard2.0
+- Update dependencies
+
 ## v1.2 - 2018.29.12
 - Lazy converter expression compilation (some public methods of `ConverterCollection` don't need to be compiled)
 - No more failing tests

@@ -287,7 +287,7 @@ namespace Mutators.Tests
             var instance = Expression.Parameter(typeof(string));
             var parameter = Expression.Parameter(typeof(string));
 
-            var containsMethodInfo = typeof(string).GetMethod("Contains", BindingFlags.Public | BindingFlags.Instance);
+            var containsMethodInfo = typeof(string).GetMethod("Contains", new[] {typeof(string)});
             Assert.That(containsMethodInfo, Is.Not.Null);
 
             TestEquivalent(Expression.Call(instance, containsMethodInfo, parameter), Expression.Call(instance, containsMethodInfo, parameter));

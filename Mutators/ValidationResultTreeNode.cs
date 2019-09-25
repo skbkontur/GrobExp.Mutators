@@ -169,7 +169,7 @@ namespace GrobExp.Mutators
 
             typeBuilder.DefineMethodOverride(traverseEdgeMethodBuilder, traverseEdgeMethod);
 
-            var result = typeBuilder.CreateType();
+            var result = typeBuilder.CreateTypeInfo();
             typesBeingBuilt[type] = null;
             return result;
         }
@@ -181,7 +181,7 @@ namespace GrobExp.Mutators
         private static readonly Hashtable factories = new Hashtable();
         private static readonly object factoriesLock = new object();
 
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.RunAndSave);
+        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.RunAndCollect);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
     }
 

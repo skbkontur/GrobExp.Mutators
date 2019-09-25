@@ -135,7 +135,7 @@ namespace GrobExp.Mutators
 
             typeBuilder.DefineMethodOverride(methodBuilder, method);
             typeBuilder.AddInterfaceImplementation(interfaceType);
-            return typeBuilder.CreateType();
+            return typeBuilder.CreateTypeInfo();
         }
 
         private static readonly string getMutatorsTreeMethodName = ((MethodCallExpression)((Expression<Func<IMutatorsTreeCreator<int>, MutatorsTreeBase<int>>>)(creator => creator.GetMutatorsTree(null, null, null, null))).Body).Method.Name;
@@ -143,7 +143,7 @@ namespace GrobExp.Mutators
         private static readonly MethodInfo getConverterCollectionMethod = ((MethodCallExpression)((Expression<Func<IConverterCollectionFactory, IConverterCollection<int, int>>>)(factory => factory.Get<int, int>())).Body).Method.GetGenericMethodDefinition();
         private static readonly MethodInfo mergeMethod = ((MethodCallExpression)((Expression<Func<MutatorsTreeBase<int>, MutatorsTreeBase<int>, MutatorsTreeBase<int>>>)((first, second) => Merge(first, second))).Body).Method.GetGenericMethodDefinition();
 
-        private static readonly AssemblyBuilder assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(AssemblyName), AssemblyBuilderAccess.Run);
+        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(AssemblyName), AssemblyBuilderAccess.Run);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
 
         private static readonly object lockObject = new object();

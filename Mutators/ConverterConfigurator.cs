@@ -7,8 +7,8 @@ namespace GrobExp.Mutators
 {
     public class ConverterConfigurator<TSource, TDest>
     {
-        public ConverterConfigurator(ModelConfigurationNode root, LambdaExpression condition = null)
-            : this(null, root, condition)
+        public ConverterConfigurator(ModelConfigurationNode root)
+            : this(null, root, null)
         {
         }
 

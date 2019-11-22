@@ -14,8 +14,4 @@ dotnet build --force --no-incremental --configuration Release "./%SolutionName%.
 
 dotnet pack --no-build --configuration Release "./%SolutionName%.sln" || exit /b 1
 
-pushd "./%PackagedProjectName%/bin/Release"
-dotnet nuget push *.nupkg -s https://nuget.org || exit /b 1
-popd
-
 pause

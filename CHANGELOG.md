@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.3.x - 2019.11.22
+## v1.3.9 - 2019.11.22
 - Use [SourceLink](https://github.com/dotnet/sourcelink) to help ReSharper decompiler show actual code.
 - Update GrobExp.Compiler dependency
 

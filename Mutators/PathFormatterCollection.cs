@@ -1,14 +1,17 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
+
+using JetBrains.Annotations;
 
 namespace GrobExp.Mutators
 {
     public class PathFormatterCollection : IPathFormatterCollection
     {
-        public IPathFormatter GetPathFormatter<T>()
+        [NotNull]
+        public IPathFormatter GetPathFormatter<TType>()
         {
-            var type = typeof(T);
+            var type = typeof(TType);
             var result = (IPathFormatter)hashtable[type];
             if (result == null)
             {
@@ -28,6 +31,16 @@ namespace GrobExp.Mutators
             }
 
             return result;
+        }
+
+        public void Register<TType, TPathFormatter>([NotNull] TPathFormatter pathFormatter)
+            where TPathFormatter : IPathFormatter
+        {
+            var type = typeof(TType);
+            lock (lockObject)
+            {
+                hashtable[type] = pathFormatter;
+            }
         }
 
         private readonly IPathFormatter defaultPathFormatter = new SimplePathFormatter();

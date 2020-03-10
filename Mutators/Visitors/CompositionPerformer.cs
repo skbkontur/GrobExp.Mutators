@@ -290,7 +290,6 @@ namespace GrobExp.Mutators.Visitors
                 onlyLeavesAreConvertible = true;
                 return GetConditionalSettersByLeaves(node, convertationNode);
             }
-            var resolver = new AliasesResolver(arrayAliases);
 
             var result = new List<KeyValuePair<Expression, Expression>>();
             var wasUnconditionalSetter = false;

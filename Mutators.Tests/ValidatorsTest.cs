@@ -38,20 +38,26 @@ namespace Mutators.Tests
         [Test]
         public void TestConverterWithValidator()
         {
-            var converterCollection = new TestConverterCollection<TestData, TestData2, MyContext>(pathFormatterCollection, configurator =>
+            var converterCollection = new TestConverterCollection<TestData3, TestData2, MyContext>(pathFormatterCollection, configurator =>
                 {
-                    configurator.Target(data2 => data2.S).Set((data, data2, context) => context.StringConverter.Convert(data.S));
-                    configurator.Target(data2 => data2.T.S).Set(data => data.F, x => x, s => ValidationResult.Error(new SimplePathFormatterText()));
+                    configurator.Target(data2 => data2.S).Set((data3, data2, context) => context.StringConverter.Convert(data3.S));
+                    configurator.Target(data2 => data2.T.S).Set(data3 => data3.X.ToString(), x => x, s => ValidationResult.Error(new SimplePathFormatterText()));
+                    configurator.Target(data2 => data2.W.S).If((data3, data2, context) => context.Value).Set(x => x.Y.ToString());
                 });
 
             var converter = converterCollection.GetConverter();
-            var testData = new TestData {S = "zzz", F = "qxx"};
-            var result = converter(testData, new MyContext {StringConverter = new MyStringConverter()});
+            var testData3 = new TestData3 {S = "zzz", X = 25, Y = 92};
+            var result = converter(testData3, new MyContext
+                {
+                    StringConverter = new MyStringConverter(),
+                    Value = true,
+                });
             Assert.That(result.S, Is.EqualTo("zzzzzz"));
-            Assert.That(result.T.S, Is.EqualTo("qxx"));
+            Assert.That(result.T.S, Is.EqualTo("25"));
+            Assert.That(result.W.S, Is.EqualTo("92"));
             var validator = converterCollection.GetValidationsTree(0).GetValidator();
-            var validationResultTreeNode = validator(testData);
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>{{"F", FormattedValidationResult.Error(new SimplePathFormatterText(), "qxx", new SimplePathFormatterText{Paths = new []{"F"}})}});
+            var validationResultTreeNode = validator(testData3);
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>{{"X", FormattedValidationResult.Error(new SimplePathFormatterText(), "25", new SimplePathFormatterText{Paths = new []{"X"}})}});
         }
 
         [Test]

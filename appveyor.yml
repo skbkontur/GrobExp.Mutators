@@ -13,8 +13,6 @@ nuget:
   disable_publish_on_pr: true
 
 before_build:
-  - cmd: dotnet --info
-  - cmd: dotnet restore ./GrobExp.Mutators.sln --verbosity minimal
   - ps: |
       $ErrorActionPreference = "Stop"
       $tagName = $env:APPVEYOR_REPO_TAG_NAME
@@ -35,6 +33,9 @@ before_build:
           Write-Error "Version in tag ($version) does not match version in version.json"
         }
       }
+  - cmd: dotnet --info
+  - cmd: dotnet restore ./GrobExp.Mutators.sln --verbosity minimal
+  - cmd: dotnet tool restore
 
 build_script:
   - cmd: dotnet build --configuration Release ./GrobExp.Mutators.sln

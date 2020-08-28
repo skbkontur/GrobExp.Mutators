@@ -241,7 +241,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.T.S));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == null, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -259,7 +259,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.S).Set(data2 => data2.S));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == "zzz", data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -282,7 +282,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.Z).Set(data2 => data2.Z);
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.Z).InvalidIf(data => data.Z >= data.A.Z, data => new ValueMustBeLessThanText {Threshold = data.A.Z}));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -309,7 +309,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.Z).InvalidIf(data => data.Z >= data.A.Z, data => new ValueMustBeLessThanText {Threshold = data.A.Z});
                     configurator.Target(data => data.A.Z).InvalidIf(data => data.Z >= data.A.Z, data => new ValueMustBeGreaterThanText {Threshold = data.Z});
                 });
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -333,7 +333,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.X).Set(data2 => data2.X));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == "zzz", data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -352,8 +352,8 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection,
                                                                                        configurator => configurator.Target(data => data.X).Set(data2 => data2.S, s => int.Parse(s), s => s == null || s.Length > 9 || s.Any(c => !char.IsDigit(c)) ? new ValidationResult(ValidationResultType.Error, null) : ValidationResult.Ok));
-            var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -377,7 +377,7 @@ namespace Mutators.Tests
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
                                                                                                 configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == null, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -403,8 +403,8 @@ namespace Mutators.Tests
                 });
             var testDataConfiguratoCollection = new TestDataConfiguratorCollection<TestData>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection,
                                                                                              configurator => configurator.Target(data => data.X).InvalidIf(data => data.X > 100, data => null));
-            var testData2ConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
-            var testData3ConfiguratorCollection = new TestDataConfiguratorCollection<TestData3>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var testData2ConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
+            var testData3ConfiguratorCollection = new TestDataConfiguratorCollection<TestData3>(dataConfigurationCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfigurationCollectionFactory.Register(testDataConfiguratoCollection);
             dataConfigurationCollectionFactory.Register(testData2ConfiguratorCollection);
             dataConfigurationCollectionFactory.Register(testData3ConfiguratorCollection);
@@ -424,7 +424,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == "zzz", data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -453,7 +453,7 @@ namespace Mutators.Tests
                                                                                                                             .InvalidIf(data => data.A.B.Each().S == "zzz",
                                                                                                                                        data => new LengthNotExactlyEqualsText {Exactly = data.A.B.Current().CurrentIndex()}));
             var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection,
-                                                                                               configurator => { });
+                                                                                               configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -487,16 +487,16 @@ namespace Mutators.Tests
                     });
             path = new SimplePathFormatterText {Paths = new[] {"T.R[1].U.ArrayV[0].S"}};
             validator(new TestData2
-                {
-                    T = new T
-                        {
-                            R = new[]
-                                {
-                                    new R {U = new U {ArrayV = new[] {new V {S = "qxx"}, new V {S = "qzz"},}}},
-                                    new R {U = new U {ArrayV = new[] {new V {S = "zzz"},}}}
-                                }
-                        }
-                })
+                    {
+                        T = new T
+                            {
+                                R = new[]
+                                    {
+                                        new R {U = new U {ArrayV = new[] {new V {S = "qxx"}, new V {S = "qzz"},}}},
+                                        new R {U = new U {ArrayV = new[] {new V {S = "zzz"},}}}
+                                    }
+                            }
+                    })
                 .AssertEquivalent(new ValidationResultTreeNode<TestData2>
                     {
                         {
@@ -513,7 +513,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Arr.Each()).Set(data2 => data2.T.R.Each().U.Arr.Each()));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().Arr).InvalidIf(data => data.A.B.Each().Arr == null, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -543,8 +543,8 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S);
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator =>
-                                                                                                                                                                                        configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().Arr.Any(s => s != null && s != "zzz"), data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+                                                                                                    configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().Arr.Any(s => s != null && s != "zzz"), data => null));
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -568,7 +568,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Where(r => r.S == "qzz").Each().U.S));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == "zzz", data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -593,9 +593,9 @@ namespace Mutators.Tests
                                 }
                         }
                 }).AssertEquivalent(new ValidationResultTreeNode<TestData2>
-                    {
-                        {"T.R.2.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[2].U.S"}}, 0)},
-                    });
+                {
+                    {"T.R.2.U.S", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"T.R[2].U.S"}}, 0)},
+                });
         }
 
         [Test]
@@ -609,7 +609,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.A.B[1].S).Set(data2 => data2.S);
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == "zzz", data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -640,7 +640,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).Set(data2 => data2.T.R.Each().U.S));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => BuildCounts(data.A.B.Select(b => b.S).ToArray())[data.A.B.Each().CurrentIndex()] > 1, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -670,7 +670,7 @@ namespace Mutators.Tests
                     configurator.Target(data => data.D.E.X).Set(data2 => data2.W.Y.X);
                 });
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.D.S).InvalidIf(data => data.D != null && data.D.S == null, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -692,7 +692,7 @@ namespace Mutators.Tests
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var converterCollection = new TestConverterCollection<TestData2, TestData>(pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().A).Set(data2 => data2.T.R.Each().A));
             var sourceDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().A.B.C.S).InvalidIf(data => data.A.B.Each().A.B.C.S == null, data => null));
-            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var destDataConfiguratorCollection = new TestDataConfiguratorCollection<TestData2>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(sourceDataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(destDataConfiguratorCollection);
             converterCollectionFactory.Register(converterCollection);
@@ -724,8 +724,8 @@ namespace Mutators.Tests
             var dataConfiguratorCollectionFactory = new TestDataConfiguratorCollectionFactory();
             var converterCollectionFactory = new TestConverterCollectionFactory();
             var innerDataConfiguratorCollection = new TestDataConfiguratorCollection<InnerData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { configurator.Target(data => data.InnerItems.Each().InnerItemz.Each().InnerZ).Required(); });
-            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
-            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
+            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             converterCollectionFactory.Register(modelDataToWebDataConverterCollection);
             converterCollectionFactory.Register(webDataToInnerDataConverterCollection);
             dataConfiguratorCollectionFactory.Register(innerDataConfiguratorCollection);

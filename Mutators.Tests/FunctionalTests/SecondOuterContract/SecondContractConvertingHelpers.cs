@@ -40,7 +40,7 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
         }
 
         public static void ConfigureReference<TSecondContract, TData, T, TSg>(this ConverterConfigurator<TSecondContract, TSg[], TData, T, T> configurator,
-                                                                       string referenceCodeQualifier, Expression<Func<T, string>> pathToNumber)
+                                                                              string referenceCodeQualifier, Expression<Func<T, string>> pathToNumber)
             where TSg : IReferenceContainer
         {
             var sgConfigurator = configurator.GoTo(data => data, references => references.First(sg => sg.Reference.ReferenceGroup.ReferenceCodeQualifier == referenceCodeQualifier));
@@ -51,7 +51,7 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
         {
             configurator.Target(nameAndAddress => nameAndAddress.PartyNameType.PartyName)
                         .Set(party => party.RussianPartyInfo.RussianPartyType == RussianPartyType.IP
-                                          ? new[] { party.RussianPartyInfo.IPInfo.LastName, party.RussianPartyInfo.IPInfo.FirstName, party.RussianPartyInfo.IPInfo.MiddleName }
+                                          ? new[] {party.RussianPartyInfo.IPInfo.LastName, party.RussianPartyInfo.IPInfo.FirstName, party.RussianPartyInfo.IPInfo.MiddleName}
                                           : ArrayStringConverter.ToArrayString(party.RussianPartyInfo.ULInfo.Name, 35, 5));
 
             configurator.Target(nameAndAddress => nameAndAddress.PartyNameType.PartyNameFormatCode)
@@ -66,20 +66,20 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
                                .Target(address => address.CountryNameCode)
                                .Set(address => defaultConverter.Convert(address.AddressType == AddressType.Russian ? "643" : address.ForeignAddressInfo.CountryCode));
 
-            var useSemicolon = new[] { MutatorsContextType.None }.Contains(context.MutatorsContextType);
+            var useSemicolon = new[] {MutatorsContextType.None}.Contains(context.MutatorsContextType);
             addressConfigurator.Target(address => address.Street.StreetAndNumberOrPostBoxIdentifier)
                                .Set(address => address.AddressType == AddressType.Russian
-                                                   ? new[] { address.RussianAddressInfo.Street, address.RussianAddressInfo.House, address.RussianAddressInfo.Flat }.JoinIgnoreEmpty(useSemicolon ? "; " : ", ")
+                                                   ? new[] {address.RussianAddressInfo.Street, address.RussianAddressInfo.House, address.RussianAddressInfo.Flat}.JoinIgnoreEmpty(useSemicolon ? "; " : ", ")
                                                    : address.ForeignAddressInfo.Address,
                                     s => ArrayStringConverter.ToArrayString(s, 35, 4));
 
             addressConfigurator.Target(address => address.CityName)
                                .Set(address => address.AddressType == AddressType.Russian
-                                                   ? new[] { address.RussianAddressInfo.City, address.RussianAddressInfo.Village }.JoinIgnoreEmpty(", ") : null);
+                                                   ? new[] {address.RussianAddressInfo.City, address.RussianAddressInfo.Village}.JoinIgnoreEmpty(", ") : null);
 
             addressConfigurator.Target(address => address.CountrySubEntityDetails.CountrySubEntityName)
                                .Set(address => address.AddressType == AddressType.Russian
-                                                   ? new[] { defaultConverter.Convert(address.RussianAddressInfo.RegionCode), address.RussianAddressInfo.District }.JoinIgnoreEmpty(", ") : null);
+                                                   ? new[] {defaultConverter.Convert(address.RussianAddressInfo.RegionCode), address.RussianAddressInfo.District}.JoinIgnoreEmpty(", ") : null);
 
             addressConfigurator.Target(address => address.PostalIdentificationCode)
                                .Set(address => address.AddressType == AddressType.Russian ? address.RussianAddressInfo.PostalCode : null);
@@ -109,7 +109,7 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
                     {
                         TextSubjectCodeQualifier = "DEL",
                         FreeTextFunctionCode = "ZZZ",
-                        TextLiteral = new TextLiteral{FreeTextValue = new [] {defaultConverter.Convert(item.FlowType)}},
+                        TextLiteral = new TextLiteral {FreeTextValue = new[] {defaultConverter.Convert(item.FlowType)}},
                     };
             }
 
@@ -125,14 +125,14 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
                     yield return new FreeText
                         {
                             TextSubjectCodeQualifier = freeTextItem.subjectCodeQualifier,
-                            TextLiteral = new TextLiteral{FreeTextValue = ArrayStringConverter.ToArrayString(freeTextItem.value, 512, 5)},
+                            TextLiteral = new TextLiteral {FreeTextValue = ArrayStringConverter.ToArrayString(freeTextItem.value, 512, 5)},
                         };
             }
         }
 
         public static void ConfigureDate<TSecondContract, TData, T, TSg>(this ConverterConfigurator<TSecondContract, TSg, TData, T, T> configurator,
-                                                                  string dateTimePeriodFunctionCodeQualifier,
-                                                                  Expression<Func<T, DateTime?>> pathToDate)
+                                                                         string dateTimePeriodFunctionCodeQualifier,
+                                                                         Expression<Func<T, DateTime?>> pathToDate)
             where TSg : IDtmArrayContainer
         {
             configurator.Target(pathToDate)
@@ -141,8 +141,8 @@ namespace Mutators.Tests.FunctionalTests.SecondOuterContract
         }
 
         public static void ConfigureDateOrUtcNow<TSecondContract, TData, T, TSg>(this ConverterConfigurator<TSecondContract, TSg, TData, T, T> configurator,
-                                                                          string dateTimePeriodFunctionCodeQualifier,
-                                                                          Expression<Func<T, DateTime?>> pathToDate)
+                                                                                 string dateTimePeriodFunctionCodeQualifier,
+                                                                                 Expression<Func<T, DateTime?>> pathToDate)
             where TSg : IDtmArrayContainer
         {
             configurator.Target(pathToDate)

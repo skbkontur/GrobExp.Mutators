@@ -174,6 +174,6 @@ namespace GrobExp.Mutators
             parameters = leftParameters.Values.ToArray();
         }
 
-        private static readonly MethodReplacer eachToCurrentReplacer = new MethodReplacer(from: MutatorsHelperFunctions.EachMethod, to: MutatorsHelperFunctions.CurrentMethod);
+        private static readonly MethodReplacer eachToCurrentReplacer = new MethodReplacer(from : MutatorsHelperFunctions.EachMethod, to : MutatorsHelperFunctions.CurrentMethod);
     }
 }

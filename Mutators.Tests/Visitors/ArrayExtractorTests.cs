@@ -35,7 +35,7 @@ namespace Mutators.Tests.Visitors
             type.Should().Be(typeof(A));
             AssertEquivalentPaths(list,
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -47,7 +47,7 @@ namespace Mutators.Tests.Visitors
             type.Should().Be(typeof(A));
             AssertEquivalentPaths(list,
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Current())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace Mutators.Tests.Visitors
             AssertEquivalentPaths(list,
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, C>>)(a => a.Bs.Each().Cs.Each())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -74,7 +74,7 @@ namespace Mutators.Tests.Visitors
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => StaticGetBs(a.Bs.Each().Cs).Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, C>>)(a => StaticGetBs(a.Bs.Each().Cs).Each().Cs.Each())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -88,7 +88,7 @@ namespace Mutators.Tests.Visitors
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => InstanceGetBs(a.Bs.Each().Cs).Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, C>>)(a => InstanceGetBs(a.Bs.Each().Cs).Each().Cs.Each())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -103,7 +103,7 @@ namespace Mutators.Tests.Visitors
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => firstShard(a.Bs.Each().Cs).Each())).Body})},
                                   new[] {(typeof(A), new List<Expression> {((Expression<Func<A, C>>)(a => firstShard(a.Bs.Each().Cs).Each().Cs.Each())).Body})}
-                );
+            );
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace Mutators.Tests.Visitors
                                           (typeof(A), new List<Expression> {((Expression<Func<A, B>>)(a => a.Bs.Each())).Body}),
                                           (typeof(B), new List<Expression> {((Expression<Func<B, C>>)(b => b.Cs.Each())).Body})
                                       }
-                );
+            );
         }
 
         [Test]
@@ -135,12 +135,12 @@ namespace Mutators.Tests.Visitors
                                   new[]
                                       {
                                           (typeof(A), new List<Expression>
-                                              {
-                                                  ((Expression<Func<A, B>>)(a => a.Bs.Each())).Body,
-                                                  ((Expression<Func<A, B>>)(a => a.Bs.Each())).Body
-                                              }),
+                                                  {
+                                                      ((Expression<Func<A, B>>)(a => a.Bs.Each())).Body,
+                                                      ((Expression<Func<A, B>>)(a => a.Bs.Each())).Body
+                                                  }),
                                       }
-                );
+            );
         }
 
         [Test]
@@ -173,31 +173,31 @@ namespace Mutators.Tests.Visitors
         [Test]
         public void TestEachOnArrayInit()
         {
-            Expression<Func<A, string>> exp = a => new []{a.S, a.Bs[0].S}.Each();
+            Expression<Func<A, string>> exp = a => new[] {a.S, a.Bs[0].S}.Each();
             var (level, type, list) = Visit(exp, paramMustBeUnique : false);
             level.Should().Be(1);
             type.Should().Be(typeof(A));
             AssertEquivalentPaths(list,
                                   new[]
                                       {
-                                          (typeof(A), new List<Expression>{((Expression<Func<A, string>>)(a => new []{a.S, a.Bs[0].S}.Each())).Body}),
+                                          (typeof(A), new List<Expression> {((Expression<Func<A, string>>)(a => new[] {a.S, a.Bs[0].S}.Each())).Body}),
                                       }
-                );
+            );
         }
-        
+
         [Test]
         public void TestEachOnListInit()
         {
-            Expression<Func<A, string>> exp = a => new List<string>{a.S, a.Bs[0].S}.Each();
+            Expression<Func<A, string>> exp = a => new List<string> {a.S, a.Bs[0].S}.Each();
             var (level, type, list) = Visit(exp, paramMustBeUnique : false);
             level.Should().Be(1);
             type.Should().Be(typeof(A));
             AssertEquivalentPaths(list,
                                   new[]
                                       {
-                                          (typeof(A), new List<Expression>{((Expression<Func<A, string>>)(a => new List<string>{a.S, a.Bs[0].S}.Each())).Body}),
+                                          (typeof(A), new List<Expression> {((Expression<Func<A, string>>)(a => new List<string> {a.S, a.Bs[0].S}.Each())).Body}),
                                       }
-                );
+            );
         }
 
         private void AssertEquivalentPaths(List<Dictionary<Type, List<Expression>>> actual, params (Type, List<Expression>)[][] expected)

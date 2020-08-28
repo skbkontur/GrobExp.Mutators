@@ -17,26 +17,25 @@ namespace Mutators.Tests.FunctionalTests.FirstOuterContract
             configurator.Target(x => x.PartyAddress.AddressType).Set(x => x.ForeignAddress.IsEmpty() ? AddressType.Russian : AddressType.Foreign);
             configurator.Target(x => x.UsesSimplifiedTaxSystem).Set(x => x.TaxSystem == "Simplified");
 
-
             var russianConfigurator = configurator.If((x, y) => y.PartyAddress.AddressType == AddressType.Russian)
                                                   .GoTo(x => x.PartyAddress.RussianAddressInfo);
             russianConfigurator.Target(x => x.PostalCode).Set(x => x.RussianAddress.PostalCode);
             russianConfigurator.Target(x => x.City).Set(x => x.RussianAddress.City);
-            
+
             var foreignConfigurator = configurator.If((x, y) => y.PartyAddress.AddressType == AddressType.Foreign)
                                                   .GoTo(x => x.PartyAddress.ForeignAddressInfo);
             foreignConfigurator.Target(x => x.CountryCode).Set(x => defaultConverter.Convert(x.ForeignAddress.CountryIsoCode));
             foreignConfigurator.Target(x => x.Address).Set(x => x.ForeignAddress.Address);
 
             configurator.Target(x => x.RussianPartyInfo.RussianPartyType).Set(x => x.SelfEmployed == null ? RussianPartyType.UL : RussianPartyType.IP);
-            
+
             var ulConfigurator = configurator.If((x, y) => y.RussianPartyInfo.RussianPartyType == RussianPartyType.UL)
                                              .GoTo(x => x.RussianPartyInfo.ULInfo);
             ulConfigurator.Target(x => x.Inn).Set(x => x.Organization.Inn);
             ulConfigurator.Target(x => x.Name).Set(x => x.Organization.Name);
 
-            var ipConfigurator = configurator.If((x, y) => y.RussianPartyInfo.RussianPartyType == RussianPartyType.IP).
-                                              GoTo(x => x.RussianPartyInfo.IPInfo);
+            var ipConfigurator = configurator.If((x, y) => y.RussianPartyInfo.RussianPartyType == RussianPartyType.IP)
+                                             .GoTo(x => x.RussianPartyInfo.IPInfo);
             ipConfigurator.Target(x => x.Inn).Set(x => x.SelfEmployed.Inn);
             ipConfigurator.Target(x => x.FirstName).Set(x => x.SelfEmployed.FullName.FirstName);
             ipConfigurator.Target(x => x.LastName).Set(x => x.SelfEmployed.FullName.LastName);
@@ -78,7 +77,7 @@ namespace Mutators.Tests.FunctionalTests.FirstOuterContract
             var chiefConfigurator = configurator.GoTo(x => x.ContactInfo.Ceo, x => x.Chief);
             chiefConfigurator.Target(x => x.Name).Set(x => x.Name);
             chiefConfigurator.Target(x => x.Phone).Set(x => x.Phone);
-            
+
             var aiConfigurator = configurator.GoTo(x => x.AdditionalInfo);
             aiConfigurator.Target(x => x.Phone).Set(x => string.IsNullOrEmpty(x.OrderContact.Phone) ? x.Chief.Phone : x.OrderContact.Phone);
             aiConfigurator.Target(x => x.NameOfCeo).Set(x => string.IsNullOrEmpty(x.OrderContact.Name) ? x.Chief.Name : x.OrderContact.Name);

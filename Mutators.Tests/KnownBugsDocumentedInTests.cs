@@ -60,7 +60,7 @@ namespace Mutators.Tests
                                 {
                                     BInnerArray = new[]
                                         {
-                                            new BInnerValue{FirstValue = "123"},
+                                            new BInnerValue {FirstValue = "123"},
                                         },
                                 },
                         },

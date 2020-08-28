@@ -167,7 +167,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                                         }
                                                 }
                                         },
-                                    MessageCodes = new []{"nullify", "azb", "czf"}
+                                    MessageCodes = new[] {"nullify", "azb", "czf"}
                                 },
                         }
                 };
@@ -320,7 +320,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                 },
                         },
                     Nullify = true,
-                    MessageCodes = new []{"nullify", null, "czf"},
+                    MessageCodes = new[] {"nullify", null, "czf"},
                 };
 
             #endregion
@@ -454,7 +454,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                                         },
                                                 }
                                         },
-                                    MessageCodes = new []{"nullify", "azb", "czf"}
+                                    MessageCodes = new[] {"nullify", "azb", "czf"}
                                 },
                         }
                 };
@@ -552,7 +552,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                             MessageType = MessageType.ReceivingAdvice,
                                         },
                                     IsReturnable = true,
-                                    Marks = new[] {"123", "345", "567"}, 
+                                    Marks = new[] {"123", "345", "567"},
                                     Declarations = new[]
                                         {
                                             new CustomDeclaration {Number = "abc"},
@@ -575,20 +575,19 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                 }
                         },
                     Nullify = true,
-                    MessageCodes = new []{"nullify", null, "czf"},
+                    MessageCodes = new[] {"nullify", null, "czf"},
                 };
 
             #endregion
 
             var converter = converterCollection.GetConverter(new TestConverterContext(MutatorsContextType.A));
             converter(firstContractDocument).Should().BeEquivalentTo(innerDocument);
-
         }
 
         private readonly FirstContractToInnerContractConverterCollection converterCollection = new FirstContractToInnerContractConverterCollection(
             new PathFormatterCollection(),
             new DefaultConverter(),
             new DecimalConverter("0.000")
-            );
+        );
     }
 }

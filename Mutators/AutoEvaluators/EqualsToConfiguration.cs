@@ -31,7 +31,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return new EqualsToConfiguration(converterType, typeof(TData), Prepare(value), validator);
         }
-        
+
         internal static EqualsToConfiguration Create<TData>(LambdaExpression value, StaticValidatorConfiguration validator = null)
         {
             return Create<TData>(null, value, validator);

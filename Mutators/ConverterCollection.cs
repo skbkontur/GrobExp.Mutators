@@ -456,7 +456,7 @@ namespace GrobExp.Mutators
             {
                 if (property.GetGetMethod().GetParameters().Length != 0)
                     continue;
-                
+
                 var pathToNextDestChild = pathToDestChild.Merge(Expression.Lambda(Expression.Property(parameter, property), parameter));
                 if (!property.PropertyType.IsArray)
                     ConfigureCustomFieldsForArrays(configurator, property.PropertyType, pathToNextDestChild, sourceCustomFieldFits, destCustomFieldFits);

@@ -18,7 +18,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
         }
 
         protected override void Configure(TestConverterContext context, ConverterConfigurator<InnerDocument, SecondContractDocument<SecondContractDocumentBody>> configurator)
-        { 
+        {
             Configure(configurator.GoTo(x => x.SG0[0]), context);
         }
 
@@ -102,6 +102,5 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
 
         private readonly DefaultConverter defaultConverter = new DefaultConverter();
         private readonly DecimalConverter decimalConverter = new DecimalConverter("0.00");
-
     }
 }

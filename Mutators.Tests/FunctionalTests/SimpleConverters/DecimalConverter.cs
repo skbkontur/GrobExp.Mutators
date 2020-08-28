@@ -22,5 +22,4 @@ namespace Mutators.Tests.FunctionalTests.SimpleConverters
         private const NumberStyles numberStyles = NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign;
         private readonly string format;
     }
-
 }

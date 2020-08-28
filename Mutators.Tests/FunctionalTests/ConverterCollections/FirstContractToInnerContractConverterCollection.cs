@@ -52,7 +52,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             subConfigurator.Target(x => x.RecadvType)
                            .If(x => !string.IsNullOrEmpty(x.Status) && x.Status.Contains("canceled"))
                            .Set(x => TypeOfDocument.Canceled);
-            
+
             subConfigurator.Target(x => x.FlowType).Set(x => x.Comment == "Fresh" ? "fresh" : defaultConverter.Convert(x.LineItems.LineItem.FirstOrDefault().FlowType));
 
             subConfigurator.Target(x => x.IntervalLength).Set(x => x.IntervalLength.ParseNullableInt());
@@ -80,7 +80,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             configurator.Target(x => x.Quantity.MeasurementUnitCode)
                         .If(x => defaultConverter.Convert(x.OrderedQuantity.UnitOfMeasure) == null)
                         .Set(x => "PCE");
-            
+
             configurator.Target(x => x.IsReturnable).Set(x => x.TypeOfUnit == "RET");
 
             configurator.Target(x => x.Marks.Each()).Set(x => x.ControlMarks.Current());
@@ -96,7 +96,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             configurator.Target(x => x.QuantityValue).Set(x => decimalConverter.ToDecimal(x.Quantity));
         }
 
-        private void ReconfigureForA(ConverterConfigurator<FirstContractDocument,InnerDocument> configurator)
+        private void ReconfigureForA(ConverterConfigurator<FirstContractDocument, InnerDocument> configurator)
         {
             configurator.Target(x => x.FromGln).Set(x => x.Header.Recipient);
             configurator.Target(x => x.ToGln).Set(x => x.Header.Sender);

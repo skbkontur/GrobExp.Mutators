@@ -11,6 +11,5 @@ namespace Mutators.Tests.FunctionalTests.FirstOuterContract
         public string IsTest { get; set; }
 
         public DateTime? CreationDateTime { get; set; }
-
     }
 }

@@ -155,7 +155,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
         private static void ConfigureContact<TContract, TData, TSG5>(
             this ConverterConfigurator<TContract, TSG5[], TData, ContactInformation, ContactInformation> configurator,
             string contactFunctionCode
-            )
+        )
             where TSG5 : IContactContainer
         {
             var sg5Configurator = configurator.GoTo(data => data, sg5 => sg5.FirstOrDefault(cta => cta.ContactInformation.ContactFunctionCode == contactFunctionCode));

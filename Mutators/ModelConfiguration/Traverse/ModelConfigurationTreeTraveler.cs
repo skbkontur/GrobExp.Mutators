@@ -21,12 +21,12 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
         }
 
         /// <summary>
-        ///     Traverses the <paramref name="path" /> from <paramref name="node" />, creating missing nodes if <paramref name="create" /> is true.<br/>
-        /// <returns>
-        ///     Child - resulting node <br/>
-        ///     ArrayAliases - list of array aliases <br/>
-        ///     SubRootIsVisited - true if <paramref name="subRoot"/> was visited during traverse
-        /// </returns>
+        ///     Traverses the <paramref name="path" /> from <paramref name="node" />, creating missing nodes if <paramref name="create" /> is true.<br />
+        ///     <returns>
+        ///         Child - resulting node <br />
+        ///         ArrayAliases - list of array aliases <br />
+        ///         SubRootIsVisited - true if <paramref name="subRoot" /> was visited during traverse
+        ///     </returns>
         /// </summary>
         [NotNull]
         public static TraverseResult Traverse([NotNull] ModelConfigurationNode node, [NotNull] Expression path, [CanBeNull] ModelConfigurationNode subRoot, bool create)

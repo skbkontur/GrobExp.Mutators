@@ -740,8 +740,8 @@ namespace GrobExp.Mutators.Visitors
         private readonly List<LambdaExpression> dependencies = new List<LambdaExpression>();
         private readonly LambdaExpression lambda;
 
-        private static readonly MethodReplacer eachAndCurrentToExternalCurrentMethodReplacer = new MethodReplacer((From: MutatorsHelperFunctions.EachMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod),
-                                                                                                                  (From: MutatorsHelperFunctions.CurrentMethod, To: DependenciesExtractorHelper.ExternalCurrentMethod));
+        private static readonly MethodReplacer eachAndCurrentToExternalCurrentMethodReplacer = new MethodReplacer((From : MutatorsHelperFunctions.EachMethod, To : DependenciesExtractorHelper.ExternalCurrentMethod),
+                                                                                                                  (From : MutatorsHelperFunctions.CurrentMethod, To : DependenciesExtractorHelper.ExternalCurrentMethod));
 
         private static readonly MethodReplacer externalCurrentToCurrentMethodReplacer = new MethodReplacer(from : DependenciesExtractorHelper.ExternalCurrentMethod, to : MutatorsHelperFunctions.CurrentMethod);
 

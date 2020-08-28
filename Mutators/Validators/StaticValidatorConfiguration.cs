@@ -28,7 +28,7 @@ namespace GrobExp.Mutators.Validators
         public LambdaExpression Condition { get; }
         public LambdaExpression PathToValue { get; }
         public LambdaExpression PathToNode { get; }
-        
+
         internal LambdaExpression Validator { get; }
 
         public override string ToString() => Name;
@@ -95,10 +95,10 @@ namespace GrobExp.Mutators.Validators
         protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())
-                .GroupBy(lambda => new ExpressionWrapper(lambda, true))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(validatorFromRoot == null ? new LambdaExpression[0] : validatorFromRoot.ExtractDependencies())
+                   .GroupBy(lambda => new ExpressionWrapper(lambda, true))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
         private readonly LambdaExpression validatorFromRoot;

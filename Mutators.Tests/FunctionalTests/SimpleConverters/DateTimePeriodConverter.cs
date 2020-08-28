@@ -23,14 +23,14 @@ namespace Mutators.Tests.FunctionalTests.SimpleConverters
             if (!dateTime.HasValue)
                 return null;
             return new DateTimePeriod
-            {
-                DateTimePeriodGroup = new DateTimePeriodGroup
                 {
-                    FormatCode = formatCode,
-                    FunctionCodeQualifier = functionCodeQualifier,
-                    Value = dateTimeConvertersCollection.GetByFormatCode(formatCode).ToString(dateTime)
-                }
-            };
+                    DateTimePeriodGroup = new DateTimePeriodGroup
+                        {
+                            FormatCode = formatCode,
+                            FunctionCodeQualifier = functionCodeQualifier,
+                            Value = dateTimeConvertersCollection.GetByFormatCode(formatCode).ToString(dateTime)
+                        }
+                };
         }
 
         private readonly DateTimeConvertersCollection dateTimeConvertersCollection;

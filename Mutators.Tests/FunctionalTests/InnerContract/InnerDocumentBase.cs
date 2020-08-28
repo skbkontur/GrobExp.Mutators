@@ -27,7 +27,7 @@ namespace Mutators.Tests.FunctionalTests.InnerContract
         public string ToGln { get; set; }
 
         public bool IsTest { get; set; }
-        
+
         public CommonGoodItem[] GoodItems { get; set; }
     }
 }

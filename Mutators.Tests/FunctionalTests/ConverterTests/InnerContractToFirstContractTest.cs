@@ -285,10 +285,10 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
             var convertedDocument = converter(inner);
 
             convertedDocument.Should().BeEquivalentTo(expectedDocument, config => config
-                                                                            .Excluding(x => x.Document[0].Comment)
-                                                                            .Excluding(x => x.Header.CreationDateTime)
-                                                                            .Excluding(x => x.CreationDateTime)
-                                                                            .Excluding(x => x.Document[0].MessageCodes));
+                                                                                  .Excluding(x => x.Document[0].Comment)
+                                                                                  .Excluding(x => x.Header.CreationDateTime)
+                                                                                  .Excluding(x => x.CreationDateTime)
+                                                                                  .Excluding(x => x.Document[0].MessageCodes));
         }
 
         [Test]
@@ -313,6 +313,6 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
             new PathFormatterCollection(),
             new DefaultConverter(),
             new DecimalConverter("0.00")
-            );
+        );
     }
 }

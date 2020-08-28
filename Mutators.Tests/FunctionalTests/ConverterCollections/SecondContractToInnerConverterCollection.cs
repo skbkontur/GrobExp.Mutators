@@ -37,8 +37,8 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             subConfigurator.Target(data => data.FlowType).Set(message => message.FreeText.Any(y => y.TextSubjectCodeQualifier == "DEL")
                                                                              ? defaultConverter.Convert(message.FreeText.FirstOrDefault(y => y.TextSubjectCodeQualifier == "DEL").TextReference.FreeTextValueCode)
                                                                              : message.FreeText.Any(y => y.TextSubjectCodeQualifier == "ZZZ" && y.TextLiteral.FreeTextValue[0] == "Fresh")
-                                                                                   ? "fresh"
-                                                                                   : defaultConverter.Convert(message.SG28.FirstOrDefault().FreeText.FirstOrDefault(y => y.TextSubjectCodeQualifier == "DEL" && y.TextReference.CodeListResponsibleAgencyCode == "ZZZ").TextReference.FreeTextValueCode));
+                                                                                 ? "fresh"
+                                                                                 : defaultConverter.Convert(message.SG28.FirstOrDefault().FreeText.FirstOrDefault(y => y.TextSubjectCodeQualifier == "DEL" && y.TextReference.CodeListResponsibleAgencyCode == "ZZZ").TextReference.FreeTextValueCode));
 
             subConfigurator.Target(data => data.TransportDetails.VehicleNumber)
                            .Set(message => message.SG10.FirstOrDefault(sg10 => sg10.DetailsOfTransport.TransportStageCodeQualifier == "1").DetailsOfTransport.TransportIdentification.TransportMeansIdentificationName);
@@ -93,10 +93,10 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
                         .Set(sg34 => sg34.Package.PackageType.PackageTypeDescriptionCode,
                              s => defaultConverter.ConvertWithDefault(s, "default"),
                              s => s == null,
-                             s => new ValueMustBelongToText{ Value = s });
+                             s => new ValueMustBelongToText {Value = s});
             configurator.Target(x => x.Quantity).Set(sg34 => decimalConverter.ToDecimal(sg34.Package.PackageQuantity));
 
-            var subConfigurator = configurator.GoTo(x => x.OnePackageQuantity, 
+            var subConfigurator = configurator.GoTo(x => x.OnePackageQuantity,
                                                     sg34 => sg34.Quantity.FirstOrDefault(x => x.QuantityDetails.QuantityTypeCodeQualifier == "52").QuantityDetails);
             subConfigurator.Target(x => x.Value).Set(x => decimalConverter.ToDecimal(x.Quantity));
             subConfigurator.If(x => defaultConverter.ConvertWithDefault(x.MeasurementUnitCode, "DEFAULT") == null

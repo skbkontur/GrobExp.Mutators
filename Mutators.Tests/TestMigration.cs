@@ -62,7 +62,7 @@ namespace Mutators.Tests
             var mutatorWithPath = migratedTree.GetAllMutatorsWithPathsForWeb(x => x).Single();
 
             // Should be: Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x => (AEnum)(x.As.Each().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
-            Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x =>  (AEnum) (enumStringConverter.ConvertFromString<AEnum>((string)x.As.Where(y => y.IsRemoved != true).Each().CustomFields["EnumCustomField"].Value) ?? (object)AEnum.Unknown);
+            Expression<Func<TargetTestData, AEnum>> expectedPathToMutator = x => (AEnum)(enumStringConverter.ConvertFromString<AEnum>((string)x.As.Where(y => y.IsRemoved != true).Each().CustomFields["EnumCustomField"].Value) ?? (object)AEnum.Unknown);
             mutatorWithPath.PathToMutator.AssertEquivalentExpressions(expectedPathToMutator.Body.Simplify());
             Expression<Func<TargetTestData, object>> expectedPathToNode = x => x.As.Each().CustomFields["EnumCustomField"].Value;
             mutatorWithPath.PathToNode.AssertEquivalentExpressions(expectedPathToNode.Body);
@@ -71,7 +71,7 @@ namespace Mutators.Tests
             // Should be: Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(x.As.Current().CustomFields["EnumCustomField"].Value ?? AEnum.Unknown);
             Expression<Func<TargetTestData, AEnum>> expectedMutatorPath = x => (AEnum)(enumStringConverter.ConvertFromString<AEnum>((string)x.As.Where(y => y.IsRemoved != true).Current().CustomFields["EnumCustomField"].Value) ?? AEnum.Unknown);
             requiredIfConfiguration.Path.AssertEquivalentExpressions(expectedMutatorPath.Simplify());
-            
+
             // Should be: Expression<Func<TargetTestData, bool>> expectedMutatorCondition = x => x.As.Each().IsRemoved != true;
             Expression<Func<TargetTestData, bool>> expectedMutatorCondition = null;
             requiredIfConfiguration.Condition.AssertEquivalentExpressions(expectedMutatorCondition);

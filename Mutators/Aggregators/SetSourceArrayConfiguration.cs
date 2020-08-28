@@ -15,7 +15,7 @@ namespace GrobExp.Mutators.Aggregators
         }
 
         public LambdaExpression SourceArray { get; }
-        
+
         internal static SetSourceArrayConfiguration Create(LambdaExpression sourceArray)
         {
             return new SetSourceArrayConfiguration(sourceArray.Parameters.Single().Type, Prepare(sourceArray));

@@ -13,7 +13,7 @@ namespace Mutators.Tests.FunctionalTests.FirstOuterContract
         public string[] Declarations { get; set; }
 
         public string[] ControlMarks { get; set; }
-        
+
         public string FlowType { get; set; }
     }
 }

@@ -54,8 +54,8 @@ namespace GrobExp.Mutators.ModelConfiguration
                             var selector = (LambdaExpression)methodCallExpression.Arguments[1];
                             result =
                                 Expression.Lambda(
-                                    Expression.Call(
-                                        MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters)
+                                              Expression.Call(
+                                                  MutatorsHelperFunctions.CurrentMethod.MakeGenericMethod(result.Type.GetItemType()), result), path.Parameters)
                                           .Merge(selector)
                                           .Body;
                             ++currents;

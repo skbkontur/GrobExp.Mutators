@@ -33,7 +33,7 @@ namespace GrobExp.Mutators.Visitors
         }
 
         public Expression Expression { get; }
-        
+
         private readonly bool strictly;
 
         private readonly Lazy<int> hashCode;

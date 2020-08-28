@@ -4,16 +4,17 @@ namespace Mutators.Tests.FunctionalTests
 {
     public class TestConverterContext : MutatorsContext
     {
-        public MutatorsContextType MutatorsContextType { get; }
-
-        public TestConverterContext() : this(MutatorsContextType.None)
+        public TestConverterContext()
+            : this(MutatorsContextType.None)
         {
         }
-        
+
         public TestConverterContext(MutatorsContextType mutatorsContextType)
         {
             MutatorsContextType = mutatorsContextType;
         }
+
+        public MutatorsContextType MutatorsContextType { get; }
 
         public override string GetKey()
         {

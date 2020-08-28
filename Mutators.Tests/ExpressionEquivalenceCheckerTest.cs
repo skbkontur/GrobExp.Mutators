@@ -95,7 +95,7 @@ namespace Mutators.Tests
                                  Expression.PreDecrementAssign,
                                  Expression.PostDecrementAssign,
                                  Expression.OnesComplement
-                );
+            );
         }
 
         [Test]
@@ -105,7 +105,7 @@ namespace Mutators.Tests
                                  Expression.IsTrue,
                                  Expression.IsFalse,
                                  Expression.Not
-                );
+            );
         }
 
         [Test]
@@ -174,7 +174,7 @@ namespace Mutators.Tests
                                  Expression.SubtractChecked,
                                  Expression.SubtractAssign,
                                  Expression.SubtractAssignChecked
-                );
+            );
         }
 
         [Test]
@@ -194,7 +194,7 @@ namespace Mutators.Tests
                                  Expression.LeftShiftAssign,
                                  Expression.RightShift,
                                  Expression.RightShiftAssign
-                );
+            );
         }
 
         [Test]
@@ -210,7 +210,7 @@ namespace Mutators.Tests
                                  Expression.GreaterThanOrEqual,
                                  Expression.LessThan,
                                  Expression.LessThanOrEqual
-                );
+            );
         }
 
         [Test]
@@ -222,7 +222,7 @@ namespace Mutators.Tests
             TestBinaryOperations(firstParameter, secondParameter,
                                  Expression.AndAlso,
                                  Expression.OrElse
-                );
+            );
         }
 
         [Test]
@@ -367,27 +367,27 @@ namespace Mutators.Tests
                               Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[] {parameter}));
 
             TestNotEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
-                {
-                    Expression.Assign(firstVariable, Expression.Constant(2)),
-                    Expression.AddAssign(parameter, firstVariable),
-                }),
+                                  {
+                                      Expression.Assign(firstVariable, Expression.Constant(2)),
+                                      Expression.AddAssign(parameter, firstVariable),
+                                  }),
                               Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
                                   {
                                       parameter
                                   })
-                );
+            );
 
             TestNotEquivalent(Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
-                {
-                    Expression.Assign(firstVariable, Expression.Constant(2)),
-                    Expression.AddAssign(parameter, firstVariable),
-                }),
+                                  {
+                                      Expression.Assign(firstVariable, Expression.Constant(2)),
+                                      Expression.AddAssign(parameter, firstVariable),
+                                  }),
                               Expression.Block(typeof(void), variables : new[] {firstVariable, secondVariable}, expressions : new Expression[]
                                   {
                                       Expression.Assign(firstVariable, Expression.Constant(3)),
                                       Expression.AddAssign(parameter, firstVariable),
                                   })
-                );
+            );
         }
 
         [Test]
@@ -461,12 +461,12 @@ namespace Mutators.Tests
             var secondLabel = Expression.Label(typeof(void));
 
             TestEquivalent(Expression.Block(new Expression[]
-                {
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                }),
+                               {
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                               }),
                            Expression.Block(new Expression[]
                                {
                                    Expression.Goto(firstLabel),
@@ -476,12 +476,12 @@ namespace Mutators.Tests
                                }));
 
             TestEquivalent(Expression.Block(new Expression[]
-                {
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                }),
+                               {
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                                   Expression.Goto(firstLabel),
+                                   Expression.Goto(secondLabel),
+                               }),
                            Expression.Block(new Expression[]
                                {
                                    Expression.Goto(secondLabel),
@@ -491,12 +491,12 @@ namespace Mutators.Tests
                                }));
 
             TestNotEquivalent(Expression.Block(new Expression[]
-                {
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                    Expression.Goto(firstLabel),
-                    Expression.Goto(secondLabel),
-                }),
+                                  {
+                                      Expression.Goto(firstLabel),
+                                      Expression.Goto(secondLabel),
+                                      Expression.Goto(firstLabel),
+                                      Expression.Goto(secondLabel),
+                                  }),
                               Expression.Block(new Expression[]
                                   {
                                       Expression.Goto(firstLabel),
@@ -513,12 +513,12 @@ namespace Mutators.Tests
             var secondParameter = Expression.Parameter(typeof(int));
 
             TestEquivalent(Expression.Block(new Expression[]
-                {
-                    firstParameter,
-                    secondParameter,
-                    firstParameter,
-                    secondParameter,
-                }),
+                               {
+                                   firstParameter,
+                                   secondParameter,
+                                   firstParameter,
+                                   secondParameter,
+                               }),
                            Expression.Block(new Expression[]
                                {
                                    firstParameter,
@@ -528,12 +528,12 @@ namespace Mutators.Tests
                                }), strictly : false);
 
             TestEquivalent(Expression.Block(new Expression[]
-                {
-                    firstParameter,
-                    secondParameter,
-                    firstParameter,
-                    secondParameter,
-                }),
+                               {
+                                   firstParameter,
+                                   secondParameter,
+                                   firstParameter,
+                                   secondParameter,
+                               }),
                            Expression.Block(new Expression[]
                                {
                                    secondParameter,
@@ -543,12 +543,12 @@ namespace Mutators.Tests
                                }), strictly : false);
 
             TestNotEquivalent(Expression.Block(new Expression[]
-                {
-                    firstParameter,
-                    secondParameter,
-                    firstParameter,
-                    secondParameter,
-                }),
+                                  {
+                                      firstParameter,
+                                      secondParameter,
+                                      firstParameter,
+                                      secondParameter,
+                                  }),
                               Expression.Block(new Expression[]
                                   {
                                       firstParameter,
@@ -724,14 +724,14 @@ namespace Mutators.Tests
 
             TestEquivalent(Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5))),
                            Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5)))
-                );
+            );
 
             var otherConstructor = typeof(ClassWithProperties).GetConstructor(new[] {typeof(int)});
             Assert.That(otherConstructor, Is.Not.Null);
 
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor), Expression.Bind(intPropertyInfo, Expression.Constant(5))),
                               Expression.MemberInit(Expression.New(otherConstructor, Expression.Parameter(typeof(int))), Expression.Bind(intPropertyInfo, Expression.Constant(5)))
-                );
+            );
 
             var stringPropertyInfo = typeof(ClassWithProperties).GetProperty("StringProperty");
             Assert.That(stringPropertyInfo, Is.Not.Null);
@@ -742,14 +742,14 @@ namespace Mutators.Tests
                            Expression.MemberInit(Expression.New(constructor),
                                                  Expression.Bind(intPropertyInfo, Expression.Constant(5)),
                                                  Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
-                );
+            );
 
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.Bind(intPropertyInfo, Expression.Constant(5))),
                               Expression.MemberInit(Expression.New(constructor),
                                                     Expression.Bind(intPropertyInfo, Expression.Constant(5)),
                                                     Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
-                );
+            );
 
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")),
@@ -757,7 +757,7 @@ namespace Mutators.Tests
                               Expression.MemberInit(Expression.New(constructor),
                                                     Expression.Bind(intPropertyInfo, Expression.Constant(5)),
                                                     Expression.Bind(stringPropertyInfo, Expression.Constant("zzz")))
-                );
+            );
         }
 
         [Test]
@@ -776,13 +776,13 @@ namespace Mutators.Tests
                                                  Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5)))),
                            Expression.MemberInit(Expression.New(constructor),
                                                  Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5))))
-                );
+            );
 
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.MemberBind(subclassProperty, Expression.Bind(subclassWithPropertyProperty, Expression.Constant(5)))),
                               Expression.MemberInit(Expression.New(constructor),
                                                     Expression.Bind(subclassProperty, Expression.Constant(new SubclassWithProperty())))
-                );
+            );
         }
 
         [Test]
@@ -805,7 +805,7 @@ namespace Mutators.Tests
                                                  Expression.ListBind(intListProperty,
                                                                      Expression.ElementInit(listAddMethod, Expression.Constant(2)),
                                                                      Expression.ElementInit(listAddMethod, Expression.Constant(4))))
-                );
+            );
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(4)),
@@ -814,7 +814,7 @@ namespace Mutators.Tests
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(2)),
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(4))))
-                );
+            );
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(2)),
@@ -823,7 +823,7 @@ namespace Mutators.Tests
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(2)),
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(5))))
-                );
+            );
             TestNotEquivalent(Expression.MemberInit(Expression.New(constructor),
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(92)),
@@ -832,7 +832,7 @@ namespace Mutators.Tests
                                                     Expression.ListBind(intListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(2)),
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(4))))
-                );
+            );
 
             var otherIntListProperty = typeof(ClassWithProperties).GetProperty("OtherListProperty");
             Assert.That(otherIntListProperty, Is.Not.Null);
@@ -845,7 +845,7 @@ namespace Mutators.Tests
                                                     Expression.ListBind(otherIntListProperty,
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(2)),
                                                                         Expression.ElementInit(listAddMethod, Expression.Constant(4))))
-                );
+            );
         }
 
         private void TestThrows<TException>(Func<Expression> expressionCreationFunc) where TException : Exception

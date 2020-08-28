@@ -26,7 +26,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
             TestSmash(a => a.C,
                       Path(a => a),
                       Path(a => a.C)
-                );
+            );
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a),
                       Path(a => a.Bs),
                       Path(a => a.Bs[2])
-                );
+            );
         }
 
         [Test]
@@ -46,7 +46,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a),
                       Path(a => a.Bs),
                       Path(a => a.Bs.Length)
-                );
+            );
         }
 
         [Test]
@@ -57,7 +57,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.C),
                       Path(a => a.C.Int),
                       Path(a => (long)a.C.Int)
-                );
+            );
         }
 
         [Test]
@@ -69,7 +69,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Bs[0]),
                       Path(a => a.Bs[0].String),
                       Path(a => a.Bs[0].String ?? "Grobas")
-                );
+            );
         }
 
         [Test]
@@ -78,7 +78,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
             TestSmash(a => StaticMethod(a.C).Int,
                       Path(a => StaticMethod(a.C)),
                       Path(a => StaticMethod(a.C).Int)
-                );
+            );
         }
 
         [Test]
@@ -88,7 +88,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a),
                       Path(a => a.C),
                       Path(a => a.C.Add(3))
-                );
+            );
         }
 
         [Test]
@@ -99,7 +99,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.C),
                       Path(a => a.C.Int),
                       Path(a => a.C.Int.Multiply(5))
-                );
+            );
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Bs),
                       Path(a => a.Bs.Each()),
                       Path(a => a.Bs.Each().String)
-                );
+            );
         }
 
         [Test]
@@ -121,7 +121,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Bs),
                       Path(a => a.Bs.Current()),
                       Path(a => a.Bs.Current().String)
-                );
+            );
         }
 
         [Test]
@@ -132,7 +132,7 @@ namespace Mutators.Tests.ExpressionExtensionsTests
                       Path(a => a.Dictionary),
                       Path(a => a.Dictionary["zzz"]),
                       Path(a => a.Dictionary["zzz"].Length)
-                );
+            );
         }
 
         [Test]

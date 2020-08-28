@@ -28,7 +28,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
         private void Configure(ConverterConfigurator<InnerDocument, FirstContractDocument> configurator)
         {
             configurator.Target(x => x.CreationDateTime).Set(x => UtcNow());
-            
+
             var headerConfigurator = configurator.GoTo(x => x.Header, x => x);
             headerConfigurator.Target(x => x.Sender).Set(x => x.FromGln);
             headerConfigurator.Target(x => x.Recipient).Set(x => x.ToGln);
@@ -60,7 +60,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             ConfigureGoodItems(subConfigurator.GoTo(x => x.LineItems.LineItem.Each(), x => x.GoodItems.Current()));
         }
 
-        private void ConfigureGoodItems(ConverterConfigurator<InnerDocument,CommonGoodItem,FirstContractDocument,LineItem,LineItem> configurator)
+        private void ConfigureGoodItems(ConverterConfigurator<InnerDocument, CommonGoodItem, FirstContractDocument, LineItem, LineItem> configurator)
         {
             configurator.Target(x => x.Gtin).Set(x => x.GTIN);
 

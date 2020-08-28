@@ -456,11 +456,11 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                                             new GoodsIdentityNumber
                                                                 {
                                                                     ObjectIdentificationCodeQualifier = "BN",
-                                                                    IdentityNumberRange = new []
+                                                                    IdentityNumberRange = new[]
                                                                         {
                                                                             new IdentityNumberRange
                                                                                 {
-                                                                                    ObjectIdentifier = new []{"SN1"},
+                                                                                    ObjectIdentifier = new[] {"SN1"},
                                                                                 }
                                                                         }
                                                                 }
@@ -521,12 +521,12 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                                                         }
                                                                 }
                                                         },
-                                                    FreeText = new []
+                                                    FreeText = new[]
                                                         {
                                                             new FreeText
                                                                 {
                                                                     TextSubjectCodeQualifier = "DEL",
-                                                                    TextLiteral = new TextLiteral{FreeTextValue = new []{"Flow type"}},
+                                                                    TextLiteral = new TextLiteral {FreeTextValue = new[] {"Flow type"}},
                                                                     TextReference = new TextReference
                                                                         {
                                                                             FreeTextValueCode = "ZZZ",
@@ -535,13 +535,13 @@ namespace Mutators.Tests.FunctionalTests.ConverterTests
                                                             new FreeText
                                                                 {
                                                                     TextSubjectCodeQualifier = "ACB",
-                                                                    TextLiteral = new TextLiteral{FreeTextValue = new []{"Comment"}},
+                                                                    TextLiteral = new TextLiteral {FreeTextValue = new[] {"Comment"}},
                                                                     TextReference = new TextReference(),
                                                                 },
                                                         },
                                                 },
                                         },
-                                    ControlTotal = new []
+                                    ControlTotal = new[]
                                         {
                                             new ControlTotal
                                                 {

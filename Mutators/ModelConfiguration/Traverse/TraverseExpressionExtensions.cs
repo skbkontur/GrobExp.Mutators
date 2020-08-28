@@ -28,6 +28,5 @@ namespace GrobExp.Mutators.ModelConfiguration.Traverse
 
             throw new InvalidOperationException($"Unknown edge value: {edge.Value}");
         }
-
     }
 }

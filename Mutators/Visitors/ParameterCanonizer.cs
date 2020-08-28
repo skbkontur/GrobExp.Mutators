@@ -7,8 +7,8 @@ using JetBrains.Annotations;
 namespace GrobExp.Mutators.Visitors
 {
     /// <summary>
-    /// Replaces outer scope parameters of same type by first occurence of parameter of this type.
-    /// Ignores occurrences of parameters of inner lambdas and variables declared inside.
+    ///     Replaces outer scope parameters of same type by first occurence of parameter of this type.
+    ///     Ignores occurrences of parameters of inner lambdas and variables declared inside.
     /// </summary>
     internal class ParameterCanonizer : ExpressionVisitor
     {

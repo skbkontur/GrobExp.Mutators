@@ -130,7 +130,7 @@ namespace Mutators.Tests.Visitors
         [Test]
         public void ReplaceMultipleMethods()
         {
-            var replacer = new MethodReplacer((From: firstMethodInfo, To: secondMethodInfo), (From: firstGenericMethodInfo, To: secondGenericMethodInfo));
+            var replacer = new MethodReplacer((From : firstMethodInfo, To : secondMethodInfo), (From : firstGenericMethodInfo, To : secondGenericMethodInfo));
             Expression<Func<A, string>> source = a => FirstMethod(a.S) + FirstMethod<string>(a.B.S) + SecondMethod(a.B.S) + SecondMethod<string>(a.S);
             Expression<Func<A, string>> replaced = a => SecondMethod(a.S) + SecondMethod<string>(a.B.S) + SecondMethod(a.B.S) + SecondMethod<string>(a.S);
 

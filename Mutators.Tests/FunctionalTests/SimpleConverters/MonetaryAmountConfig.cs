@@ -7,7 +7,7 @@ namespace Mutators.Tests.FunctionalTests.SimpleConverters
     {
         public MonetaryAmountConfig(string monetaryAmountsFunctionalCode, Expression<Func<T, decimal?>> pathsToMoa, string statusDescriptionCode = null)
         {
-            MonetaryAmountsFunctionalCodes = new[] { monetaryAmountsFunctionalCode };
+            MonetaryAmountsFunctionalCodes = new[] {monetaryAmountsFunctionalCode};
             StatusDescriptionCode = statusDescriptionCode;
             PathsToMOA = pathsToMoa;
         }

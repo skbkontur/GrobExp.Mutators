@@ -19,16 +19,16 @@ namespace Mutators.Tests.FunctionalTests.InnerContract
 
         public decimal? SumTotal { get; set; }
         public decimal? TotalWithVAT { get; set; }
-        
+
         [CustomField]
         public string FlowType { get; set; }
 
         public TypeOfDocument? RecadvType { get; set; }
-        
+
         public int? IntervalLength { get; set; }
-        
+
         public string[] MessageCodes { get; set; }
-        
+
         public bool? Nullify { get; set; }
         public DateTime? ReceivingDate { get; set; }
         public string BlanketOrdersNumber { get; set; }

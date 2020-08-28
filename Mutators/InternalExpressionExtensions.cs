@@ -236,11 +236,11 @@ namespace GrobExp.Mutators
         public static Expression RemoveLinqFirstAndSingle(this Expression expression)
         {
             return new MethodReplacer(
-                (From: firstWithoutParametersMethod, To: firstOrDefaultWithoutParametersMethod),
-                (From: firstWithParametersMethod, To: firstOrDefaultWithParametersMethod),
-                (From: singleWithoutParametersMethod, To: singleOrDefaultWithoutParametersMethod),
-                (From: singleWithParametersMethod, To: singleOrDefaultWithParametersMethod)
-                ).Visit(expression);
+                (From : firstWithoutParametersMethod, To : firstOrDefaultWithoutParametersMethod),
+                (From : firstWithParametersMethod, To : firstOrDefaultWithParametersMethod),
+                (From : singleWithoutParametersMethod, To : singleOrDefaultWithoutParametersMethod),
+                (From : singleWithParametersMethod, To : singleOrDefaultWithParametersMethod)
+            ).Visit(expression);
         }
 
         public static LambdaExpression ResolveInterfaceMembers(this LambdaExpression lambda)

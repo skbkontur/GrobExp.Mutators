@@ -70,7 +70,7 @@ namespace GrobExp.Mutators
             if (node != null)
                 validator = (Expression<Action<TChild, ValidationResultTreeNode, int>>)node.BuildTreeValidator(pathFormatter);
             if (validator == null)
-                return (child, validationResultTree) => { };
+                return (child, validationResultTree) => {};
             var compiledValidator = LambdaCompiler.Compile(validator, CompilerOptions.All);
             return (child, validationResultTree) => compiledValidator(child, validationResultTree, priority);
         }
@@ -94,7 +94,7 @@ namespace GrobExp.Mutators
             if (node != null)
                 mutator = (Expression<Action<TChild>>)node.BuildTreeMutator();
             if (mutator == null)
-                return child => { };
+                return child => {};
             return LambdaCompiler.Compile(mutator, CompilerOptions.All);
         }
 

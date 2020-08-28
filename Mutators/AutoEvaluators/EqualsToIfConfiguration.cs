@@ -29,7 +29,7 @@ namespace GrobExp.Mutators.AutoEvaluators
         {
             return new EqualsToIfConfiguration(converterType, type, Prepare(condition), Prepare(value), validator);
         }
-        
+
         internal static EqualsToIfConfiguration Create<T>(LambdaExpression condition, LambdaExpression value, StaticValidatorConfiguration validator)
         {
             return Create(null, typeof(T), condition, value, validator);
@@ -82,10 +82,10 @@ namespace GrobExp.Mutators.AutoEvaluators
         protected internal override LambdaExpression[] GetDependencies()
         {
             return (Condition == null ? new LambdaExpression[0] : Condition.ExtractDependencies(Condition.Parameters.Where(parameter => parameter.Type == Type)))
-                .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
-                .GroupBy(lambda => new ExpressionWrapper(lambda, true))
-                .Select(grouping => grouping.First())
-                .ToArray();
+                   .Concat(Value == null ? new LambdaExpression[0] : Value.ExtractDependencies(Value.Parameters.Where(parameter => parameter.Type == Type)))
+                   .GroupBy(lambda => new ExpressionWrapper(lambda, true))
+                   .Select(grouping => grouping.First())
+                   .ToArray();
         }
 
 //        protected override Expression[] GetChains()

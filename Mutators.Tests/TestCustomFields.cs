@@ -203,8 +203,8 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                                                                                               configurator.Target(data => data.Items.Each().S).Required();
                                                                                           }
-                );
-            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            );
+            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
             var webValidator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetValidator();
@@ -223,13 +223,13 @@ namespace Mutators.Tests
                                 },
                         }
                 }).AssertEquivalent(
-                    new ValidationResultTreeNode<WebData>
-                        {
-                            {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.S.Value"}}, 0)},
-                            {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.StrArr.Value[1]"}}, 0)},
-                            {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
-                        }
-                );
+                new ValidationResultTreeNode<WebData>
+                    {
+                        {"CustomFields.Value.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.S.Value"}}, 0)},
+                        {"CustomFields.Value.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.Value.StrArr.Value[1]"}}, 0)},
+                        {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
+                    }
+            );
         }
 
         [Test]
@@ -243,10 +243,10 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.StrArr.Each()).InvalidIf(data => data.StrArr.Current() == "zzz", data => null);
                                                                                               configurator.Target(data => data.Items.Each().S).Required();
                                                                                           }
-                );
-            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            );
+            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
-            dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
+            dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {}));
             dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
             var modelValidator = modelDataConfiguratorCollection.GetMutatorsTree(new[] {typeof(Data), typeof(WebData)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty,}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetValidator();
             var validationResultTreeNode = modelValidator(new ModelData
@@ -271,7 +271,7 @@ namespace Mutators.Tests
                         {"CustomFields.StrArr.Value.1", FormattedValidationResult.Error(null, "zzz", new SimplePathFormatterText {Paths = new[] {"CustomFields.StrArr.Value[1]"}}, 0)},
                         {"Items.0.CustomFields.S.Value", FormattedValidationResult.Error(new ValueRequiredText(), null, new SimplePathFormatterText {Paths = new[] {"Items[0].CustomFields.S.Value"}}, 0)},
                     }
-                );
+            );
         }
 
         [Test]
@@ -286,8 +286,8 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.Sum).Set(data => data.DecimalArr.Sum());
                                                                                               configurator.Target(data => data.ComplexArrSum).Set(data => data.ComplexArr.Sum(x => x.Y));
                                                                                           }
-                );
-            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            );
+            var webDataConfiguratorCollection = new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
             dataConfiguratorCollectionFactory.Register(webDataConfiguratorCollection);
             var webMutator = webDataConfiguratorCollection.GetMutatorsTree<Data, WebData>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetTreeMutator();
@@ -341,10 +341,10 @@ namespace Mutators.Tests
                                                                                               configurator.Target(data => data.X).Set(data => data.Y + data.Z);
                                                                                               configurator.Target(data => data.Items.Each().X).Set(data => data.Items.Current().Y + data.Items.Current().Z);
                                                                                           }
-                );
-            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { });
+            );
+            var modelDataConfiguratorCollection = new TestDataConfiguratorCollection<ModelData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {});
             dataConfiguratorCollectionFactory.Register(dataConfiguratorCollection);
-            dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => { }));
+            dataConfiguratorCollectionFactory.Register(new TestDataConfiguratorCollection<WebData>(dataConfiguratorCollectionFactory, converterCollectionFactory, pathFormatterCollection, configurator => {}));
             dataConfiguratorCollectionFactory.Register(modelDataConfiguratorCollection);
             var modelMutator = modelDataConfiguratorCollection.GetMutatorsTree(new[] {typeof(Data), typeof(WebData)}, new[] {MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty,}, new[] {MutatorsContext.Empty, MutatorsContext.Empty,}).GetTreeMutator();
             var modelData = new ModelData

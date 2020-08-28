@@ -369,18 +369,18 @@ namespace Mutators.Tests.ConfigurationTests
                 EqualsToConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, string>>)(s => s.As.Current().S)),
                 NullifyIfConfiguration.Create<DestRoot>(null, (d => d.A.S == null && d.A.Bs[1].S == null)),
                 NullifyIfConfiguration.Create<DestRoot>(null, (d => d.A.S == null && d.A.Bs[1].S == null))
-                );
+            );
             AssertEquivalentPathBodies(d => d.A.S, d => d.A.Bs[0].S, d => d.A.Bs[1].S, d => d.A.Bs.Each().S, d => d.A.Bs[0].S, d => d.A.Bs.Each().S);
         }
-        
+
         [Test]
         public void TestBatchSetWithCondition()
         {
-            configurator.If(s => s.RootS == "zzz").GoTo(d => d.A).BatchSet((d, s) => new Batch{{d.S, s.RootS}});
+            configurator.If(s => s.RootS == "zzz").GoTo(d => d.A).BatchSet((d, s) => new Batch {{d.S, s.RootS}});
 
             AssertEquivalentConfigurations(
-                EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.RootS == "zzz"), 
-                                                         (Expression<Func<SourceRoot, string>>)(s => s.RootS), 
+                EqualsToIfConfiguration.Create<DestRoot>((Expression<Func<SourceRoot, bool?>>)(s => s.RootS == "zzz"),
+                                                         (Expression<Func<SourceRoot, string>>)(s => s.RootS),
                                                          null));
             AssertEquivalentPathBodies(d => d.A.S);
         }

@@ -8,7 +8,7 @@ using NUnit.Framework;
 
 namespace Mutators.Tests
 {
-    [Parallelizable(ParallelScope.Self)]
+    [Parallelizable(ParallelScope.None)]
     public class MutatorsAssignRecorderTest : TestBase
     {
         protected override void SetUp()

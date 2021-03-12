@@ -1,2 +1,2 @@
-dotnet test --verbosity normal --configuration Release ./Mutators.Tests/Mutators.Tests.csproj
+dotnet test --configuration Release ./Mutators.Tests/Mutators.Tests.csproj
 pause

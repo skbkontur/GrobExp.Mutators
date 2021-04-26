@@ -276,7 +276,7 @@ namespace GrobExp.Mutators.Visitors
                 itemGetter = Expression.Call(array, itemProperty.GetGetMethod(), index);
                 break;
             case CollectionKind.Enumerable:
-                init = Expression.Call(array, typeof(IEnumerator).GetMethod("Reset", BindingFlags.Public | BindingFlags.Instance));
+                init = null;
                 var moveNextMethod = typeof(IEnumerator).GetMethod("MoveNext", BindingFlags.Public | BindingFlags.Instance);
                 condition = Expression.Not(Expression.Call(array, moveNextMethod));
                 var currentProperty = collection.Type.GetProperty("Current", BindingFlags.Public | BindingFlags.Instance);
@@ -710,7 +710,7 @@ namespace GrobExp.Mutators.Visitors
                 return true;
             if (method.IsGenericMethod)
                 method = method.GetGenericMethodDefinition();
-            return method.DeclaringType == typeof(Enumerable) && method.Name != "ToArray" && method.Name != "ToList" && method.Name != "ToDictionary";
+            return method.DeclaringType == typeof(Enumerable) && method.Name != "ToArray" && method.Name != "ToList" && method.Name != "ToDictionary" && method.Name != "Distinct";
         }
 
         private static CollectionKind GetCollectionKind(Type type)

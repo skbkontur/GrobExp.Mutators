@@ -474,6 +474,27 @@ namespace Mutators.Tests
             DoTest(expression, a => a.S);
         }
 
+        [Test]
+        public void TestDistinct()
+        {
+            Expression<Func<A, string[]>> expression = a => a.B.C.Select(x => x.S).Distinct().ToArray();
+            DoTest(expression, a => a.B.C.Each().S);
+        }
+
+        [Test]
+        public void TestDistinctCount()
+        {
+            Expression<Func<A, int>> expression = a => a.B.C.Select(x => x.S).Distinct().Count();
+            DoTest(expression, a => a.B.C.Each().S);
+        }
+
+        [Test]
+        public void TestWhereCount()
+        {
+            Expression<Func<A, int>> expression = a => a.B.C.Where(x => x.D.S == "zzz").Count();
+            DoTest(expression, a => a.B.C.Each().D.S, a => a.B.C);
+        }
+
         private static Expression ClearConverts(Expression node)
         {
             while (node.NodeType == ExpressionType.Convert || node.NodeType == ExpressionType.ConvertChecked)

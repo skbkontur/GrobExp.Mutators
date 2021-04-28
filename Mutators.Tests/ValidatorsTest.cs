@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,6 +20,18 @@ namespace Mutators.Tests
         }
     }
 
+    [MultiLanguageTextType("KeyValuePairsNotUnique")]
+    public class KeyValuePairsNotUnique : MultiLanguageTextBase
+    {
+        public string[] Keys { get; set; }
+
+        protected override void Register()
+        {
+            Register("RU", () => string.Format("Ключи key-value полей должны быть уникальны. Повторяющиеся ключи: {0}",
+                                               string.Join(", ", Keys.Where(key => Keys.Where(x => key == x).Count() > 1).Distinct())));
+        }
+    }
+
     [Parallelizable(ParallelScope.All)]
     public class ValidatorsTest : TestBase
     {
@@ -28,6 +41,85 @@ namespace Mutators.Tests
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.A.S != null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
             validator(new TestData {A = new A {S = "zzz"}}).AssertEquivalent(new ValidationResultTreeNode<TestData> {{"S", FormattedValidationResult.Error(null, null, new SimplePathFormatterText {Paths = new[] {"S"}})}});
+        }
+
+        [Test]
+        public void TestKeyValuePairs()
+        {
+            var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection,
+                                                                          configurator => configurator.GoTo(data => data.KeyValuePairs).Target(keyValuePairs => keyValuePairs)
+                                                                                                      .InvalidIf(keyValuePairs => keyValuePairs.Select(x => x.Key).Distinct().Count() != keyValuePairs.Length,
+                                                                                                                 keyValuePairs => new KeyValuePairsNotUnique {Keys = keyValuePairs.Select(x => x.Key).ToArray()}));
+            var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
+            var testData = new TestData
+                {
+                    KeyValuePairs = new[]
+                        {
+                            new KeyValuePair
+                                {
+                                    Key = "a",
+                                    Value = "b"
+                                },
+                            new KeyValuePair
+                                {
+                                    Key = "b",
+                                    Value = "c"
+                                }
+                        },
+                };
+            validator(testData).AssertEquivalent(new ValidationResultTreeNode<TestData>());
+
+            testData = new TestData
+                {
+                    KeyValuePairs = new[]
+                        {
+                            new KeyValuePair
+                                {
+                                    Key = "b",
+                                    Value = "b"
+                                },
+                            new KeyValuePair
+                                {
+                                    Key = "b",
+                                    Value = "c"
+                                },
+                            new KeyValuePair
+                                {
+                                    Key = "a",
+                                    Value = "c",
+                                }
+                        },
+                };
+            var validationResultTreeNode = validator(testData);
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>
+                {
+                    {
+                        "KeyValuePairs", FormattedValidationResult.Error(
+                            new KeyValuePairsNotUnique
+                                {
+                                    Keys = new[] {"b", "b", "a"}
+                                },
+                            new[]
+                                {
+                                    new KeyValuePair
+                                        {
+                                            Key = "b",
+                                            Value = "b"
+                                        },
+                                    new KeyValuePair
+                                        {
+                                            Key = "b",
+                                            Value = "c"
+                                        },
+                                    new KeyValuePair
+                                        {
+                                            Key = "a",
+                                            Value = "c",
+                                        }
+                                },
+                            new SimplePathFormatterText {Paths = new[] {"KeyValuePairs"}})
+                    }
+                });
         }
 
         [Test]
@@ -927,6 +1019,8 @@ namespace Mutators.Tests
             public string S { get; set; }
             public string F { get; set; }
 
+            public KeyValuePair[] KeyValuePairs { get; set; }
+
             public A A { get; set; }
 
             public D D { get; set; }
@@ -937,6 +1031,12 @@ namespace Mutators.Tests
             public int Q { get; set; }
 
             public Dictionary<string, string> Dict { get; set; }
+        }
+
+        public class KeyValuePair
+        {
+            public string Key { get; set; }
+            public string Value { get; set; }
         }
 
         public class A

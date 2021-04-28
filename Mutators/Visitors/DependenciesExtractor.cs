@@ -486,6 +486,8 @@ namespace GrobExp.Mutators.Visitors
                 case "Max":
                 case "Min":
                     return ProcessLinqSum;
+                case "Count":
+                    return ProcessLinqCount;
                 case "Single":
                 case "SingleOrDefault":
                 case "First":
@@ -506,6 +508,8 @@ namespace GrobExp.Mutators.Visitors
                     return ProcessLinqAggregate;
                 case "Cast":
                     return DefaultMethodProcessor;
+                case "Distinct":
+                    return DistinctMethodProcessor;
                 default:
                     return null;
                 }
@@ -514,6 +518,14 @@ namespace GrobExp.Mutators.Visitors
             if (method.IsIndexerGetter())
                 return ProcessIndexer;
             return DefaultMethodProcessor;
+        }
+
+        private void DistinctMethodProcessor(MethodInfo method, CurrentDependencies current, Expression[] arguments)
+        {
+            if (arguments.Any())
+                throw new NotSupportedException("Distinct method with arguments is not supported");
+            current.AddDependency(MakeLambda(current.Prefix));
+            current.ReplaceCurrentWithEach();
         }
 
         private void ProcessIndexer(MethodInfo method, CurrentDependencies current, Expression[] arguments)
@@ -582,6 +594,16 @@ namespace GrobExp.Mutators.Visitors
                 current.Prefix = GotoEach(current.Prefix);
                 current.AddDependency(MakeLambda(current.Prefix));
             }
+
+            current.ReplaceCurrentWithEach();
+        }
+
+        private void ProcessLinqCount(MethodInfo method, CurrentDependencies current, Expression[] arguments)
+        {
+            var selector = (LambdaExpression)arguments.SingleOrDefault();
+            if (selector != null)
+                throw new NotSupportedException("Count method with predicate is not supported");
+            current.AddDependency(MakeLambda(current.Prefix));
 
             current.ReplaceCurrentWithEach();
         }

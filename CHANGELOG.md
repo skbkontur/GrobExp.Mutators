@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.4.xx - 2021.04.28
+- Support LINQ `Distinct` and `Count` methods
+
 ## v1.3.16 - 2021.03.12
 - Update dependencies.
 - Run tests against net5.0 tfm.

@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.4.xx - 2021.04.28
+## v1.4.2 - 2021.04.28
 - Support LINQ `Distinct` and `Count` methods
 
 ## v1.3.16 - 2021.03.12

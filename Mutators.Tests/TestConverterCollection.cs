@@ -48,7 +48,6 @@ namespace Mutators.Tests
         private static readonly Dictionary<TestCustomFields.TestEnum, string> enumToBeautifulName;
     }
 
-
     public class TestConverterCollection<TSource, TDest, TContext> : NewConverterCollection<TSource, TDest, TContext> where TDest : new()
     {
         public TestConverterCollection(IPathFormatterCollection pathFormatterCollection, Action<ConverterConfigurator<TSource, TDest, TContext>> action)

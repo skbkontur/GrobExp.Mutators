@@ -351,11 +351,11 @@ namespace GrobExp.Mutators.Visitors
                         if (setter != null)
                         {
                             var convertedArray = ConvertArray(array, setter.Value.Body);
-                            return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(convertedArray, null) };
+                            return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(convertedArray, null)};
                         }
                     }
 
-                    return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(array, null) };
+                    return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(array, null)};
                 }
             }
 
@@ -374,7 +374,7 @@ namespace GrobExp.Mutators.Visitors
 
                 var constructedByLeaves = ConstructByLeaves(node, leaves);
                 if (constructedByLeaves == null) return null;
-                return new List<KeyValuePair<Expression, Expression>> { new KeyValuePair<Expression, Expression>(constructedByLeaves, null) };
+                return new List<KeyValuePair<Expression, Expression>> {new KeyValuePair<Expression, Expression>(constructedByLeaves, null)};
             }
 
             return null;

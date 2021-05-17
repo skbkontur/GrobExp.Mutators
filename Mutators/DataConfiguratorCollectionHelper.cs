@@ -129,7 +129,6 @@ namespace GrobExp.Mutators
                     // todo ich: избавиться от константы
                     il.Call(TypeBuilder.GetMethod(collectionType, typeof(IConverterCollection<,>).GetMethod("GetValidationsTree", BindingFlags.Public | BindingFlags.Instance)), collectionType); // stack: [converterCollection.GetValidationsTree(converterContexts[i], n + i) = validationsTree]
 
-
                     il.MarkLabel(endLabel);
 
                     il.Ldloc(next); // stack: [validationsTree, next]

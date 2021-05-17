@@ -57,7 +57,7 @@ namespace Mutators.Tests
             Assert.That(result.W.S, Is.EqualTo("92"));
             var validator = converterCollection.GetValidationsTree(0).GetValidator();
             var validationResultTreeNode = validator(testData3);
-            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData>{{"X", FormattedValidationResult.Error(new SimplePathFormatterText(), "25", new SimplePathFormatterText{Paths = new []{"X"}})}});
+            validationResultTreeNode.AssertEquivalent(new ValidationResultTreeNode<TestData> {{"X", FormattedValidationResult.Error(new SimplePathFormatterText(), "25", new SimplePathFormatterText {Paths = new[] {"X"}})}});
         }
 
         [Test]

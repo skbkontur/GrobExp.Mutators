@@ -16,6 +16,41 @@ namespace Mutators.Tests
     public class TestMigration : TestBase
     {
         [Test]
+        public void TestMigratePathsWithContext()
+        {
+            var configuratorCollection = new TestDataConfiguratorCollection<SourceTestData>(null, null, pathFormatterCollection, configurator =>
+                {
+                    var subConfigurator = configurator.GoTo(x => x.As.Each());
+                    subConfigurator.Target(x => x.SomethingNormal).Required(x => new TestText
+                        {
+                            Text = x.Info
+                        });
+                });
+            var converterCollection = new TestConverterCollection<TargetTestData, SourceTestData, MyContext>(pathFormatterCollection, configurator =>
+                {
+                    var subConfigurator = configurator.GoTo(x => x.As.Each(), x => x.As.Current());
+                    subConfigurator.Target(x => x.SomethingNormal).If((_, __, c) => c.Value).Set(x => x.SomethingNormal);
+                    subConfigurator.Target(x => x.Info).Set(x => x.Info);
+                });
+            var mutatorsTree = configuratorCollection.GetMutatorsTree(MutatorsContext.Empty);
+            var migratedTree = converterCollection.MigratePaths(mutatorsTree);
+
+            // validator should take ConverterContext as parameter
+            var validator = migratedTree.GetValidator();
+            var validationResult = validator(new SourceTestData
+                {
+                    As = new[]
+                        {
+                            new SourceA
+                                {
+                                    SomethingNormal = "zzzz",
+                                    Info = "info",
+                                }
+                        }
+                });
+        }
+
+        [Test]
         public void TestProperty()
         {
             var configuratorCollection = new TestDataConfiguratorCollection<SourceTestData>(null, null, pathFormatterCollection, configurator =>

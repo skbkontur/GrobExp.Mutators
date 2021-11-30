@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.5 - 2021.11.30
+- Add net6.0 support.
+- Update dependencies.
+
 ## v1.4.2 - 2021.04.28
 - Support LINQ `Distinct` and `Count` methods
 

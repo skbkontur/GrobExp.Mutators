@@ -334,9 +334,6 @@ namespace GrobExp.Mutators
         {
             var listType = typeof(List<ValidationResultTreeNode>);
             var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new[] {listType, typeof(int)}, typeof(string), true);
-            var ensureCapacityMethod = listType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (ensureCapacityMethod == null)
-                throw new InvalidOperationException("Method 'List<>.EnsureCapacity' is missing");
             var _sizeField = listType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic);
             if (_sizeField == null)
                 throw new InvalidOperationException("The field 'List<>._size' is not found");
@@ -344,7 +341,15 @@ namespace GrobExp.Mutators
             {
                 il.Ldarg(0); // stack: [list]
                 il.Ldarg(1); // stack: [list, size]
-                il.Call(ensureCapacityMethod); // list.EnsureCapacity(size); stack: []
+                if (PlatformHelpers.IsDotNet60OrGreater)
+                {
+                    il.Call(listType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.Public)); // list.EnsureCapacity(size); stack: [newCapacity]
+                    il.Pop();
+                }
+                else
+                {
+                    il.Call(listType.GetMethod("EnsureCapacity", BindingFlags.Instance | BindingFlags.NonPublic)); // list.EnsureCapacity(size); stack: []
+                }
                 il.Ldarg(0); // stack: [list]
                 il.Ldarg(1); // stack: [list, size]
                 il.Stfld(_sizeField); // list._size = size; stack: []

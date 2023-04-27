@@ -1,7 +1,7 @@
 # GrobExp.Mutators
 
 [![NuGet Status](https://img.shields.io/nuget/v/GrobExp.Mutators.svg)](https://www.nuget.org/packages/GrobExp.Mutators/)
-[![Build status](https://ci.appveyor.com/api/projects/status/rqyf5ndta4770afq?svg=true)](https://ci.appveyor.com/project/skbkontur/grobexp-mutators)
+[![Build status](https://github.com/skbkontur/GrobExp.Mutators/actions/workflows/actions.yml/badge.svg)](https://github.com/skbkontur/GrobExp.Mutators/actions)
 
 ## Description
 

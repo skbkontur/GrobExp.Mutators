@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.11 - 2023.05.02
+- Update dependencies.
+- Test against net7.0.
+
 ## v1.4.5 - 2021.11.30
 - Add net6.0 support.
 - Update dependencies.

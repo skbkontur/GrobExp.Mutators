@@ -19,7 +19,6 @@ jobs:
           global-json-file: global.json
           dotnet-version: | 
             3.1.x
-            4.8.x
             6.0.x
 
       - name: Install dependencies

@@ -13,6 +13,7 @@ using GroBuf;
 using GroBuf.DataMembersExtracters;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -33,12 +34,12 @@ namespace Mutators.Tests
             }
 
             if (!ok)
-                Assert.Fail("Expected:\r\n{0}\r\n\r\nActual:\r\n{1}", DebugViewBuilder.DebugView(expectedBytes), DebugViewBuilder.DebugView(actualBytes));
+                Assert.Fail($"Expected:\r\n{DebugViewBuilder.DebugView(expectedBytes)}\r\n\r\nActual:\r\n{DebugViewBuilder.DebugView(actualBytes)}");
         }
 
         public static void AssertEqualsExpression(this Expression actual, Expression expected)
         {
-            Assert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
+            ClassicAssert.AreEqual(ExpressionCompiler.DebugViewGetter(expected.Simplify()), ExpressionCompiler.DebugViewGetter(actual.Simplify()));
         }
 
         public static void AssertEquivalentExpressions(this Expression actual, Expression expected)
@@ -46,14 +47,14 @@ namespace Mutators.Tests
             var equivalent = ExpressionEquivalenceChecker.Equivalent(actual, expected, strictly : false, distinguishEachAndCurrent : true);
             var expectedDebugView = ExpressionCompiler.DebugViewGetter(expected.Simplify());
             var actualDebugView = ExpressionCompiler.DebugViewGetter(actual.Simplify());
-            Assert.IsTrue(equivalent, $"Expressions are not equivalent.\nExpected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
+            ClassicAssert.IsTrue(equivalent, $"Expressions are not equivalent.\nExpected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
         }
 
         public static void AssertEqualsExpression<T>(this Expression<T> actual, Expression<T> expected)
         {
             var expectedDebugView = ExpressionCompiler.DebugViewGetter(expected.Simplify());
             var actualDebugView = ExpressionCompiler.DebugViewGetter(actual.Simplify());
-            Assert.AreEqual(expectedDebugView, actualDebugView, $"Expected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
+            ClassicAssert.AreEqual(expectedDebugView, actualDebugView, $"Expected:\n{expectedDebugView}\nActual:\n{actualDebugView}");
         }
 
         private static readonly ISerializer serializer = new Serializer(new AllFieldsExtractor(), new TestGroBufCustomSerializerCollection());

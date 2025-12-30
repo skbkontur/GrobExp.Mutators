@@ -9,6 +9,7 @@ using GrobExp.Mutators.MultiLanguages;
 using GrobExp.Mutators.Validators.Texts;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -137,7 +138,7 @@ namespace Mutators.Tests
             o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "qzz", Z = 1}, new B {S = "qxx", Z = 2}, new B()}}};
             validator(o).AssertEquivalent(new ValidationResultTreeNode<TestData>());
             var node = validationResultTreeNode.Traverse<TestData, int?>(x => x.A.B[0].Z);
-            Assert.IsNotNull(node);
+            ClassicAssert.IsNotNull(node);
         }
 
         [Test]
@@ -274,9 +275,9 @@ namespace Mutators.Tests
         {
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.S).InvalidIf(data => data.S == null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetStaticValidator(data => data.S);
-            Assert.IsFalse(validator(null));
-            Assert.IsFalse(validator(""));
-            Assert.IsTrue(validator("zzz"));
+            ClassicAssert.IsFalse(validator(null));
+            ClassicAssert.IsFalse(validator(""));
+            ClassicAssert.IsTrue(validator("zzz"));
         }
 
         [Test]
@@ -285,7 +286,7 @@ namespace Mutators.Tests
             var collection = new TestDataConfiguratorCollection<TestData>(null, null, pathFormatterCollection, configurator => configurator.Target(data => data.A.B.Each().S).InvalidIf(data => data.A.B.Each().S == null, data => null));
             var validator = collection.GetMutatorsTree(MutatorsContext.Empty).GetValidator();
             var o = new TestData {A = new A {B = new B[ValidationResultTreeNode.MaxValidationResults * 2]}};
-            Assert.AreEqual(ValidationResultTreeNode.MaxValidationResults, validator(o).Count());
+            ClassicAssert.AreEqual(ValidationResultTreeNode.MaxValidationResults, validator(o).Count());
         }
 
         [Test]
@@ -339,9 +340,9 @@ namespace Mutators.Tests
             converterCollectionFactory.Register(converterCollection);
 
             var validator = destDataConfiguratorCollection.GetMutatorsTree<TestData, TestData2>(MutatorsContext.Empty, MutatorsContext.Empty, MutatorsContext.Empty).GetStaticValidator(data => data.T.S);
-            Assert.IsFalse(validator(null));
-            Assert.IsFalse(validator(""));
-            Assert.IsTrue(validator("zzz"));
+            ClassicAssert.IsFalse(validator(null));
+            ClassicAssert.IsFalse(validator(""));
+            ClassicAssert.IsTrue(validator("zzz"));
         }
 
         [Test]

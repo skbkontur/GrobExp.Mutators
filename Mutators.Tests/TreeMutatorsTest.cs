@@ -7,6 +7,7 @@ using GrobExp.Mutators;
 using GrobExp.Mutators.Exceptions;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -25,7 +26,7 @@ namespace Mutators.Tests
             Assert.That(o.S, Is.Null.Or.Empty);
             o = new TestData {S = "qxx"};
             mutator(o);
-            Assert.AreEqual("qxx", o.S);
+            ClassicAssert.AreEqual("qxx", o.S);
         }
 
         [Test]
@@ -43,9 +44,9 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {S = "zzz", B = new[] {new B {S = "zzz", Z = 1}, new B {S = "qxx", Z = 2}, new B {S = "zzz", Z = 3}}}};
             mutator(o);
-            Assert.IsNull(o.A.B[0].Z);
-            Assert.AreEqual(2, o.A.B[1].Z);
-            Assert.IsNull(o.A.B[2].Z);
+            ClassicAssert.IsNull(o.A.B[0].Z);
+            ClassicAssert.AreEqual(2, o.A.B[1].Z);
+            ClassicAssert.IsNull(o.A.B[2].Z);
         }
 
         [Test]
@@ -105,11 +106,11 @@ namespace Mutators.Tests
                 };
             mutator(o);
             Assert.That(o.A.B[0].C.D[0].S, Is.Null.Or.Empty);
-            Assert.AreEqual("zzz01", o.A.B[0].C.D[1].S);
-            Assert.AreEqual("zzz10", o.A.B[1].C.D[0].S);
+            ClassicAssert.AreEqual("zzz01", o.A.B[0].C.D[1].S);
+            ClassicAssert.AreEqual("zzz10", o.A.B[1].C.D[0].S);
             Assert.That(o.A.B[1].C.D[1].S, Is.Null.Or.Empty);
-            Assert.AreEqual("zzz20", o.A.B[2].C.D[0].S);
-            Assert.AreEqual("zzz21", o.A.B[2].C.D[1].S);
+            ClassicAssert.AreEqual("zzz20", o.A.B[2].C.D[0].S);
+            ClassicAssert.AreEqual("zzz21", o.A.B[2].C.D[1].S);
             Action<A> subMutator = mutatorsTree.GetTreeMutator(data => data.A);
             var a = new A
                 {
@@ -155,11 +156,11 @@ namespace Mutators.Tests
                 };
             subMutator(a);
             Assert.That(a.B[0].C.D[0].S, Is.Null.Or.Empty);
-            Assert.AreEqual("zzz01", a.B[0].C.D[1].S);
-            Assert.AreEqual("zzz10", a.B[1].C.D[0].S);
+            ClassicAssert.AreEqual("zzz01", a.B[0].C.D[1].S);
+            ClassicAssert.AreEqual("zzz10", a.B[1].C.D[0].S);
             Assert.That(a.B[1].C.D[1].S, Is.Null.Or.Empty);
-            Assert.AreEqual("zzz20", a.B[2].C.D[0].S);
-            Assert.AreEqual("zzz21", a.B[2].C.D[1].S);
+            ClassicAssert.AreEqual("zzz20", a.B[2].C.D[0].S);
+            ClassicAssert.AreEqual("zzz21", a.B[2].C.D[1].S);
         }
 
         [Test]
@@ -169,9 +170,9 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {A = new A {Z = 1, B = new[] {new B {Z = 1}, new B {Z = 2}, new B {Z = 3}}}};
             mutator(o);
-            Assert.IsNull(o.A.B[0].Z);
-            Assert.AreEqual(2, o.A.B[1].Z);
-            Assert.AreEqual(3, o.A.B[2].Z);
+            ClassicAssert.IsNull(o.A.B[0].Z);
+            ClassicAssert.AreEqual(2, o.A.B[1].Z);
+            ClassicAssert.AreEqual(3, o.A.B[2].Z);
         }
 
         [Test]
@@ -204,10 +205,10 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData {X = 1, Y = 2, Z = 1, Q = 2};
             mutator(o);
-            Assert.AreEqual(1, o.X);
-            Assert.AreEqual(2, o.Y);
-            Assert.AreEqual(3, o.Z);
-            Assert.AreEqual(1, o.Q);
+            ClassicAssert.AreEqual(1, o.X);
+            ClassicAssert.AreEqual(2, o.Y);
+            ClassicAssert.AreEqual(3, o.Z);
+            ClassicAssert.AreEqual(1, o.Q);
         }
 
         [Test]
@@ -221,7 +222,7 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
-            Assert.AreEqual("GRobas".Length, o.Qxx.A0);
+            ClassicAssert.AreEqual("GRobas".Length, o.Qxx.A0);
         }
 
         [Test]
@@ -264,8 +265,8 @@ namespace Mutators.Tests
                         }
                 };
             mutator(o);
-            Assert.AreEqual(5, o.A.B[0].Z);
-            Assert.AreEqual(12, o.A.B[1].Z);
+            ClassicAssert.AreEqual(5, o.A.B[0].Z);
+            ClassicAssert.AreEqual(12, o.A.B[1].Z);
             Action<B> subMutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator(data => data.A.B.Each());
             var b = new B
                 {
@@ -280,7 +281,7 @@ namespace Mutators.Tests
                         }
                 };
             subMutator(b);
-            Assert.AreEqual(5, b.Z);
+            ClassicAssert.AreEqual(5, b.Z);
         }
 
         [Test]
@@ -290,7 +291,7 @@ namespace Mutators.Tests
             Action<TestData> mutator = collection.GetMutatorsTree(MutatorsContext.Empty).GetTreeMutator();
             var o = new TestData();
             mutator(o);
-            Assert.AreEqual(1, o.A.B.Length);
+            ClassicAssert.AreEqual(1, o.A.B.Length);
         }
 
         [Test]
@@ -333,7 +334,7 @@ namespace Mutators.Tests
             string id = o.S;
             Assert.That(id, Is.Not.Null.And.Not.Empty);
             mutator(o);
-            Assert.AreNotEqual(id, o.S);
+            ClassicAssert.AreNotEqual(id, o.S);
         }
 
         [Test]
@@ -347,7 +348,7 @@ namespace Mutators.Tests
             mutator(o);
             Assert.That(o.A.B[0].S, Is.Not.Null.And.Not.Empty);
             Assert.That(o.A.B[1].S, Is.Not.Null.And.Not.Empty);
-            Assert.AreNotEqual(o.A.B[0].S, o.A.B[1].S);
+            ClassicAssert.AreNotEqual(o.A.B[0].S, o.A.B[1].S);
         }
 
         [Test]
@@ -675,7 +676,7 @@ namespace Mutators.Tests
                 };
             filterArrayCalls = 0;
             converter(from, to);
-            Assert.AreEqual(2, filterArrayCalls);
+            ClassicAssert.AreEqual(2, filterArrayCalls);
             var expected = new TestData
                 {
                     A = new A
@@ -758,7 +759,7 @@ namespace Mutators.Tests
                 };
             filterArrayCalls = 0;
             converter(from, to);
-            Assert.AreEqual(2, filterArrayCalls);
+            ClassicAssert.AreEqual(2, filterArrayCalls);
             var expected = new TestData
                 {
                     A = new A
@@ -940,7 +941,7 @@ namespace Mutators.Tests
             var converter = collection.GetConverter(MutatorsContext.Empty);
 
             converter(new TestData2 {T = new T {R = new[] {new R(), new R(), new R(),}}});
-            Assert.AreEqual(1, numberOfCalls);
+            ClassicAssert.AreEqual(1, numberOfCalls);
         }
 
         [Test]
@@ -1066,10 +1067,10 @@ namespace Mutators.Tests
                 Expression<Func<TestData, int?>> b = item[1];
                 Expression<Func<TestData, int?>> c = item[2];
                 Expression<Func<TestData, int?>> d = item[3];
-                Assert.AreEqual(3, a.Compile()(o));
-                Assert.AreEqual(null, b.Compile()(o));
-                Assert.AreEqual(1, c.Compile()(o));
-                Assert.AreEqual(2, d.Compile()(o));
+                ClassicAssert.AreEqual(3, a.Compile()(o));
+                ClassicAssert.AreEqual(null, b.Compile()(o));
+                ClassicAssert.AreEqual(1, c.Compile()(o));
+                ClassicAssert.AreEqual(2, d.Compile()(o));
             }
         }
 

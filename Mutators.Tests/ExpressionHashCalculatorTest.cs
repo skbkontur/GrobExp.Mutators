@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using GrobExp.Compiler;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -18,10 +19,10 @@ namespace Mutators.Tests
             Expression<Func<TestClassA, string>> exp2 = aa => aa.S;
             var hash1 = ExpressionHashCalculator.CalcHashCode(exp1, true);
             var hash2 = ExpressionHashCalculator.CalcHashCode(exp2, true);
-            Assert.AreNotEqual(hash1, hash2);
+            ClassicAssert.AreNotEqual(hash1, hash2);
             hash1 = ExpressionHashCalculator.CalcHashCode(exp1, false);
             hash2 = ExpressionHashCalculator.CalcHashCode(exp2, false);
-            Assert.AreEqual(hash1, hash2);
+            ClassicAssert.AreEqual(hash1, hash2);
         }
 
         [Test]
@@ -31,10 +32,10 @@ namespace Mutators.Tests
             Expression<Func<TestClassB, string>> exp2 = a => a.S;
             var hash1 = ExpressionHashCalculator.CalcHashCode(exp1, true);
             var hash2 = ExpressionHashCalculator.CalcHashCode(exp2, true);
-            Assert.AreNotEqual(hash1, hash2);
+            ClassicAssert.AreNotEqual(hash1, hash2);
             hash1 = ExpressionHashCalculator.CalcHashCode(exp1, false);
             hash2 = ExpressionHashCalculator.CalcHashCode(exp2, false);
-            Assert.AreNotEqual(hash1, hash2);
+            ClassicAssert.AreNotEqual(hash1, hash2);
         }
 
         [Test]
@@ -44,10 +45,10 @@ namespace Mutators.Tests
             Expression<Func<TestClassA, string>> exp2 = aa => aa.ArrayB.First(bb => bb.S.Length > 0).S;
             var hash1 = ExpressionHashCalculator.CalcHashCode(exp1, true);
             var hash2 = ExpressionHashCalculator.CalcHashCode(exp2, true);
-            Assert.AreNotEqual(hash1, hash2);
+            ClassicAssert.AreNotEqual(hash1, hash2);
             hash1 = ExpressionHashCalculator.CalcHashCode(exp1, false);
             hash2 = ExpressionHashCalculator.CalcHashCode(exp2, false);
-            Assert.AreEqual(hash1, hash2);
+            ClassicAssert.AreEqual(hash1, hash2);
         }
 
         private class TestClassA

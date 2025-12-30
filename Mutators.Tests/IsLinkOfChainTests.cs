@@ -158,8 +158,7 @@ namespace Mutators.Tests
         private static void DoTest<T>(Expression<Func<IQxx, T>> expression, bool recursive, bool restrictConstants, bool result)
         {
             Assert.That(expression.Body.IsLinkOfChain(restrictConstants, recursive), Is.EqualTo(result),
-                        "Expected that {0} is {1}link of chain with recursive:{2} and restrictConstants:{3}",
-                        expression.Body, result ? "" : "not ", recursive, restrictConstants);
+                        $"Expected that {expression.Body} is {(result ? "" : "not ")}link of chain with recursive:{recursive} and restrictConstants:{restrictConstants}");
         }
 
         private T Identity<T>(T x)

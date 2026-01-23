@@ -65,7 +65,8 @@ namespace GrobExp.Mutators
             var method = new DynamicMethod(name : $"BuildFactoryInternal_{Guid.NewGuid()}",
                                            returnType : typeof(ValidationResultTreeNode),
                                            parameterTypes : parameterTypes,
-                                           restrictedSkipVisibility : true);
+                                           owner : typeof(string),
+                                           skipVisibility : true);
             using (var il = new GroboIL(method))
             {
                 var constructor = type.GetConstructor(parameterTypes);
@@ -339,7 +340,8 @@ namespace GrobExp.Mutators
             var method = new DynamicMethod(name : $"EmitForceCount_{Guid.NewGuid()}",
                                            returnType : typeof(void),
                                            parameterTypes : new[] {listType, typeof(int)},
-                                           restrictedSkipVisibility : true);
+                                           owner : typeof(string),
+                                           skipVisibility : true);
             var _sizeField = listType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic);
             if (_sizeField == null)
                 throw new InvalidOperationException("The field 'List<>._size' is not found");

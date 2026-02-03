@@ -400,7 +400,7 @@ namespace Mutators.Tests.ConfigurationTests
             reporter.Reports.Select(x => x.Path).Should().BeEquivalentTo(expected.Select(x => x.Body), AssertionOptions);
         }
 
-        EquivalencyAssertionOptions<T> AssertionOptions<T>(EquivalencyAssertionOptions<T> options)
+        EquivalencyOptions<T> AssertionOptions<T>(EquivalencyOptions<T> options)
         {
             return options.WithStrictOrdering()
                           .Using<Expression>(x => AssertEquivalentExpressions(x.Expectation, x.Subject))

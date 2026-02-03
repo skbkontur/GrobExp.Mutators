@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using GrobExp.Mutators;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -14,7 +15,7 @@ namespace Mutators.Tests
         public void TestCompileSimple()
         {
             var f = ExpressionCompiler.Compile<Z, int>(zz => zz.Q[0].Zzz);
-            Assert.AreEqual(23, f(new Z
+            ClassicAssert.AreEqual(23, f(new Z
                 {
                     Q = new[]
                         {

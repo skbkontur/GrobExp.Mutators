@@ -7,6 +7,7 @@ using GrobExp.Mutators.Visitors;
 using JetBrains.Annotations;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests.Visitors
 {
@@ -79,8 +80,8 @@ namespace Mutators.Tests.Visitors
             [NotNull] Expression<Func<TArg1, TArg2, TResult>> expectedExpression)
         {
             var actualExpression = new IfNotNullProcessor().Visit(rawExpression);
-            Assert.True(ExpressionEquivalenceChecker.Equivalent(actualExpression, expectedExpression, strictly : false, distinguishEachAndCurrent : true),
-                        "Failed to eliminate IfNotNull:\nExpected to get '{0}',\n        but got '{1}'", expectedExpression, actualExpression);
+            ClassicAssert.True(ExpressionEquivalenceChecker.Equivalent(actualExpression, expectedExpression, strictly : false, distinguishEachAndCurrent : true),
+                               "Failed to eliminate IfNotNull:\nExpected to get '{0}',\n        but got '{1}'", expectedExpression, actualExpression);
         }
     }
 }

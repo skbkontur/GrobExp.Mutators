@@ -7,7 +7,7 @@ env:
   SOLUTION_FILE: GrobExp.Mutators.sln
 jobs:
   test:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
         with:
@@ -34,7 +34,7 @@ jobs:
       - name: Run tests
         run: dotnet test --no-build --configuration Release ${{ env.SOLUTION_FILE }}
   publish:
-    runs-on: windows-2019
+    runs-on: windows-2022
     needs: test
     if: startsWith(github.event.ref, 'refs/tags/v')
     steps:

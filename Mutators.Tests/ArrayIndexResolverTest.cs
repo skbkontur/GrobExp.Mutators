@@ -8,6 +8,7 @@ using GrobExp.Mutators;
 using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -26,7 +27,7 @@ namespace Mutators.Tests
                 });
             ParameterExpression[] parameters = resolved.ExtractParameters();
             Expression<Func<T1, string[][]>> lambda = Expression.Lambda<Func<T1, string[][]>>(resolved, parameters);
-            Assert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All) /*.Compile()*/(data)[0]));
+            ClassicAssert.AreEqual(expected, string.Join(".", LambdaCompiler.Compile(lambda, CompilerOptions.All) /*.Compile()*/(data)[0]));
         }
 
         public class IndexedValue<T>

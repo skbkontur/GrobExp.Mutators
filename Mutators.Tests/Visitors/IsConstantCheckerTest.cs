@@ -8,6 +8,7 @@ using GrobExp.Mutators;
 using JetBrains.Annotations;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests.Visitors
 {
@@ -109,12 +110,12 @@ namespace Mutators.Tests.Visitors
 
         private void IsConstantExpression([NotNull] Expression expression)
         {
-            Assert.True(expression.IsConstant(), "Expression '{0}' should be constant", expression);
+            ClassicAssert.True(expression.IsConstant(), "Expression '{0}' should be constant", expression);
         }
 
         private void IsNotConstantExpression([NotNull] Expression expression)
         {
-            Assert.False(expression.IsConstant(), "Expression '{0}' should not be constant", expression);
+            ClassicAssert.False(expression.IsConstant(), "Expression '{0}' should not be constant", expression);
         }
     }
 }

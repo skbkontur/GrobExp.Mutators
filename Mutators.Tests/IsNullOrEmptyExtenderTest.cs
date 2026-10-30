@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using GrobExp.Mutators.Visitors;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -15,9 +16,9 @@ namespace Mutators.Tests
         {
             Expression<Func<string, bool>> exp = s => s == null;
             var extended = Extend(exp).Compile();
-            Assert.IsTrue(extended(null));
-            Assert.IsTrue(extended(""));
-            Assert.IsFalse(extended("zzz"));
+            ClassicAssert.IsTrue(extended(null));
+            ClassicAssert.IsTrue(extended(""));
+            ClassicAssert.IsFalse(extended("zzz"));
         }
 
         [Test]
@@ -25,9 +26,9 @@ namespace Mutators.Tests
         {
             Expression<Func<string, bool>> exp = s => s != null;
             var extended = Extend(exp).Compile();
-            Assert.IsFalse(extended(null));
-            Assert.IsFalse(extended(""));
-            Assert.IsTrue(extended("zzz"));
+            ClassicAssert.IsFalse(extended(null));
+            ClassicAssert.IsFalse(extended(""));
+            ClassicAssert.IsTrue(extended("zzz"));
         }
 
         [Test]
@@ -35,9 +36,9 @@ namespace Mutators.Tests
         {
             Expression<Func<int[], bool>> exp = ints => ints == null;
             var extended = Extend(exp).Compile();
-            Assert.IsTrue(extended(null));
-            Assert.IsTrue(extended(new int[0]));
-            Assert.IsFalse(extended(new[] {0}));
+            ClassicAssert.IsTrue(extended(null));
+            ClassicAssert.IsTrue(extended(new int[0]));
+            ClassicAssert.IsFalse(extended(new[] {0}));
         }
 
         [Test]
@@ -45,9 +46,9 @@ namespace Mutators.Tests
         {
             Expression<Func<int[], bool>> exp = ints => ints != null;
             var extended = Extend(exp).Compile();
-            Assert.IsFalse(extended(null));
-            Assert.IsFalse(extended(new int[0]));
-            Assert.IsTrue(extended(new[] {0}));
+            ClassicAssert.IsFalse(extended(null));
+            ClassicAssert.IsFalse(extended(new int[0]));
+            ClassicAssert.IsTrue(extended(new[] {0}));
         }
 
         [Test]
@@ -55,13 +56,13 @@ namespace Mutators.Tests
         {
             Expression<Func<string[], bool>> exp = strings => strings == null;
             var extended = Extend(exp).Compile();
-            Assert.IsTrue(extended(null));
-            Assert.IsTrue(extended(new string[0]));
-            Assert.IsTrue(extended(new string[] {null}));
-            Assert.IsTrue(extended(new[] {""}));
-            Assert.IsTrue(extended(new[] {null, ""}));
-            Assert.IsFalse(extended(new[] {null, "zzz"}));
-            Assert.IsFalse(extended(new[] {"zzz", null}));
+            ClassicAssert.IsTrue(extended(null));
+            ClassicAssert.IsTrue(extended(new string[0]));
+            ClassicAssert.IsTrue(extended(new string[] {null}));
+            ClassicAssert.IsTrue(extended(new[] {""}));
+            ClassicAssert.IsTrue(extended(new[] {null, ""}));
+            ClassicAssert.IsFalse(extended(new[] {null, "zzz"}));
+            ClassicAssert.IsFalse(extended(new[] {"zzz", null}));
         }
 
         [Test]
@@ -69,13 +70,13 @@ namespace Mutators.Tests
         {
             Expression<Func<string[], bool>> exp = strings => strings != null;
             var extended = Extend(exp).Compile();
-            Assert.IsFalse(extended(null));
-            Assert.IsFalse(extended(new string[0]));
-            Assert.IsFalse(extended(new string[] {null}));
-            Assert.IsFalse(extended(new[] {""}));
-            Assert.IsFalse(extended(new[] {null, ""}));
-            Assert.IsTrue(extended(new[] {null, "zzz"}));
-            Assert.IsTrue(extended(new[] {"zzz", null}));
+            ClassicAssert.IsFalse(extended(null));
+            ClassicAssert.IsFalse(extended(new string[0]));
+            ClassicAssert.IsFalse(extended(new string[] {null}));
+            ClassicAssert.IsFalse(extended(new[] {""}));
+            ClassicAssert.IsFalse(extended(new[] {null, ""}));
+            ClassicAssert.IsTrue(extended(new[] {null, "zzz"}));
+            ClassicAssert.IsTrue(extended(new[] {"zzz", null}));
         }
 
         private static Expression<TDelegate> Extend<TDelegate>(Expression<TDelegate> exp)

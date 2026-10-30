@@ -63,7 +63,11 @@ namespace GrobExp.Mutators
 
         private static Func<Expression, string> BuildDebugViewGetter()
         {
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(string), new[] {typeof(Expression)}, typeof(ExpressionCompiler), true);
+            var method = new DynamicMethod(name : $"BuildDebugViewGetter_{Guid.NewGuid()}",
+                                           returnType : typeof(string),
+                                           parameterTypes : new[] {typeof(Expression)},
+                                           owner : typeof(ExpressionCompiler),
+                                           skipVisibility : true);
             var il = method.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0); // stack: [exp]
             var debugViewProperty = typeof(Expression).GetProperty("DebugView", BindingFlags.Instance | BindingFlags.NonPublic);

@@ -8,6 +8,7 @@ using GrobExp.Mutators.CustomFields;
 using GrobExp.Mutators.Validators.Texts;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -93,32 +94,32 @@ namespace Mutators.Tests
                             }
                         })
                 });
-            Assert.AreEqual("zzz", data.S);
-            Assert.AreEqual("qxx", data.F);
-            Assert.AreEqual(2.0m, data.Q);
-            Assert.AreEqual(10.0, data.Qq);
-            Assert.AreEqual(TestEnum.Zzz, data.E);
-            Assert.IsNotNull(data.ComplexField);
-            Assert.AreEqual(123, data.ComplexField.X);
-            Assert.IsNotNull(data.ComplexField.Z);
-            Assert.AreEqual("qzz", data.ComplexField.Z.S);
-            Assert.AreEqual(TestEnum.Zzz, data.ComplexField.Z.E);
-            Assert.IsNotNull(data.StrArr);
-            Assert.AreEqual(2, data.StrArr.Length);
-            Assert.AreEqual("zzz", data.StrArr[0]);
-            Assert.AreEqual("qxx", data.StrArr[1]);
-            Assert.IsNotNull(data.ComplexArr);
-            Assert.AreEqual(2, data.ComplexArr.Length);
-            Assert.IsNotNull(data.ComplexArr[0]);
-            Assert.AreEqual(314, data.ComplexArr[0].X);
-            Assert.IsNotNull(data.ComplexArr[0].Z);
-            Assert.AreEqual("qzz", data.ComplexArr[0].Z.S);
-            Assert.AreEqual(TestEnum.Zzz, data.ComplexArr[0].Z.E);
-            Assert.IsNotNull(data.ComplexArr[1]);
-            Assert.AreEqual(271, data.ComplexArr[1].X);
-            Assert.IsNotNull(data.ComplexArr[1].Z);
-            Assert.AreEqual("xxx", data.ComplexArr[1].Z.S);
-            Assert.AreEqual(TestEnum.Qxx, data.ComplexArr[1].Z.E);
+            ClassicAssert.AreEqual("zzz", data.S);
+            ClassicAssert.AreEqual("qxx", data.F);
+            ClassicAssert.AreEqual(2.0m, data.Q);
+            ClassicAssert.AreEqual(10.0, data.Qq);
+            ClassicAssert.AreEqual(TestEnum.Zzz, data.E);
+            ClassicAssert.IsNotNull(data.ComplexField);
+            ClassicAssert.AreEqual(123, data.ComplexField.X);
+            ClassicAssert.IsNotNull(data.ComplexField.Z);
+            ClassicAssert.AreEqual("qzz", data.ComplexField.Z.S);
+            ClassicAssert.AreEqual(TestEnum.Zzz, data.ComplexField.Z.E);
+            ClassicAssert.IsNotNull(data.StrArr);
+            ClassicAssert.AreEqual(2, data.StrArr.Length);
+            ClassicAssert.AreEqual("zzz", data.StrArr[0]);
+            ClassicAssert.AreEqual("qxx", data.StrArr[1]);
+            ClassicAssert.IsNotNull(data.ComplexArr);
+            ClassicAssert.AreEqual(2, data.ComplexArr.Length);
+            ClassicAssert.IsNotNull(data.ComplexArr[0]);
+            ClassicAssert.AreEqual(314, data.ComplexArr[0].X);
+            ClassicAssert.IsNotNull(data.ComplexArr[0].Z);
+            ClassicAssert.AreEqual("qzz", data.ComplexArr[0].Z.S);
+            ClassicAssert.AreEqual(TestEnum.Zzz, data.ComplexArr[0].Z.E);
+            ClassicAssert.IsNotNull(data.ComplexArr[1]);
+            ClassicAssert.AreEqual(271, data.ComplexArr[1].X);
+            ClassicAssert.IsNotNull(data.ComplexArr[1].Z);
+            ClassicAssert.AreEqual("xxx", data.ComplexArr[1].Z.S);
+            ClassicAssert.AreEqual(TestEnum.Qxx, data.ComplexArr[1].Z.E);
         }
 
         [Test]
@@ -139,57 +140,57 @@ namespace Mutators.Tests
                     ComplexField = new ComplexCustomField {X = 123},
                     ComplexArr = new[] {new ComplexCustomField {X = 314, Z = new ComplexCustomFieldSubClass {S = "qzz", E = TestEnum.Qxx}}, new ComplexCustomField {X = 271, Z = new ComplexCustomFieldSubClass {S = "xxx"}}}
                 });
-            Assert.IsNotNull(data.CustomFields);
-            Assert.IsFalse(data.CustomFields.Value.ContainsKey("F"));
-            Assert.AreEqual("qxx", data.F);
+            ClassicAssert.IsNotNull(data.CustomFields);
+            ClassicAssert.IsFalse(data.CustomFields.Value.ContainsKey("F"));
+            ClassicAssert.AreEqual("qxx", data.F);
             Assert.That(data.CustomFields.Value.ContainsKey("S"));
-            Assert.IsNotNull(data.CustomFields.Value["S"]);
-            Assert.AreEqual("zzz", data.CustomFields.Value["S"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["S"].TypeCode);
+            ClassicAssert.IsNotNull(data.CustomFields.Value["S"]);
+            ClassicAssert.AreEqual("zzz", data.CustomFields.Value["S"].Value);
+            ClassicAssert.AreEqual(TypeCode.String, data.CustomFields.Value["S"].TypeCode);
             Assert.That(data.CustomFields.Value.ContainsKey("E"));
-            Assert.IsNotNull(data.CustomFields.Value["E"]);
-            Assert.AreEqual("QXX", data.CustomFields.Value["E"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["E"].TypeCode);
+            ClassicAssert.IsNotNull(data.CustomFields.Value["E"]);
+            ClassicAssert.AreEqual("QXX", data.CustomFields.Value["E"].Value);
+            ClassicAssert.AreEqual(TypeCode.String, data.CustomFields.Value["E"].TypeCode);
             Assert.That(data.CustomFields.Value.ContainsKey("ComplexFieldёX"));
-            Assert.IsNotNull(data.CustomFields.Value["ComplexFieldёX"]);
-            Assert.AreEqual(123, data.CustomFields.Value["ComplexFieldёX"].Value);
-            Assert.AreEqual(TypeCode.Int32, data.CustomFields.Value["ComplexFieldёX"].TypeCode);
+            ClassicAssert.IsNotNull(data.CustomFields.Value["ComplexFieldёX"]);
+            ClassicAssert.AreEqual(123, data.CustomFields.Value["ComplexFieldёX"].Value);
+            ClassicAssert.AreEqual(TypeCode.Int32, data.CustomFields.Value["ComplexFieldёX"].TypeCode);
             Assert.That(data.CustomFields.Value.ContainsKey("ComplexFieldёZёE"));
-            Assert.IsNotNull(data.CustomFields.Value["ComplexFieldёZёE"]);
-            Assert.AreEqual("ZZZ", data.CustomFields.Value["ComplexFieldёZёE"].Value);
-            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["ComplexFieldёZёE"].TypeCode);
+            ClassicAssert.IsNotNull(data.CustomFields.Value["ComplexFieldёZёE"]);
+            ClassicAssert.AreEqual("ZZZ", data.CustomFields.Value["ComplexFieldёZёE"].Value);
+            ClassicAssert.AreEqual(TypeCode.String, data.CustomFields.Value["ComplexFieldёZёE"].TypeCode);
             Assert.That(data.CustomFields.Value.ContainsKey("StrArr"));
-            Assert.AreEqual(TypeCode.String, data.CustomFields.Value["StrArr"].TypeCode);
-            Assert.IsTrue(data.CustomFields.Value["StrArr"].IsArray);
+            ClassicAssert.AreEqual(TypeCode.String, data.CustomFields.Value["StrArr"].TypeCode);
+            ClassicAssert.IsTrue(data.CustomFields.Value["StrArr"].IsArray);
             var strArr = data.CustomFields.Value["StrArr"].Value as string[];
-            Assert.IsNotNull(strArr);
-            Assert.AreEqual(2, strArr.Length);
-            Assert.AreEqual("zzz", strArr[0]);
-            Assert.AreEqual("qxx", strArr[1]);
+            ClassicAssert.IsNotNull(strArr);
+            ClassicAssert.AreEqual(2, strArr.Length);
+            ClassicAssert.AreEqual("zzz", strArr[0]);
+            ClassicAssert.AreEqual("qxx", strArr[1]);
             Assert.That(data.CustomFields.Value.ContainsKey("ComplexArr"));
-            Assert.AreEqual(TypeCode.Object, data.CustomFields.Value["ComplexArr"].TypeCode);
-            Assert.IsTrue(data.CustomFields.Value["ComplexArr"].IsArray);
+            ClassicAssert.AreEqual(TypeCode.Object, data.CustomFields.Value["ComplexArr"].TypeCode);
+            ClassicAssert.IsTrue(data.CustomFields.Value["ComplexArr"].IsArray);
             var typeCodes = data.CustomFields.Value["ComplexArr"].TypeCodes;
-            Assert.IsNotNull(typeCodes);
+            ClassicAssert.IsNotNull(typeCodes);
             Assert.That(typeCodes.ContainsKey("X"));
-            Assert.AreEqual(TypeCode.Int32, typeCodes["X"]);
+            ClassicAssert.AreEqual(TypeCode.Int32, typeCodes["X"]);
             Assert.That(typeCodes.ContainsKey("ZёS"));
-            Assert.AreEqual(TypeCode.String, typeCodes["ZёS"]);
+            ClassicAssert.AreEqual(TypeCode.String, typeCodes["ZёS"]);
             Assert.That(typeCodes.ContainsKey("ZёE"));
-            Assert.AreEqual(TypeCode.String, typeCodes["ZёE"]);
+            ClassicAssert.AreEqual(TypeCode.String, typeCodes["ZёE"]);
             var complexArr = data.CustomFields.Value["ComplexArr"].Value as object[];
-            Assert.IsNotNull(complexArr);
-            Assert.AreEqual(2, complexArr.Length);
+            ClassicAssert.IsNotNull(complexArr);
+            ClassicAssert.AreEqual(2, complexArr.Length);
             var hashtable = complexArr[0] as Hashtable;
-            Assert.IsNotNull(hashtable);
-            Assert.AreEqual(hashtable["X"], 314);
-            Assert.AreEqual(hashtable["ZёS"], "qzz");
-            Assert.AreEqual(hashtable["ZёE"], "QXX");
+            ClassicAssert.IsNotNull(hashtable);
+            ClassicAssert.AreEqual(hashtable["X"], 314);
+            ClassicAssert.AreEqual(hashtable["ZёS"], "qzz");
+            ClassicAssert.AreEqual(hashtable["ZёE"], "QXX");
             hashtable = complexArr[1] as Hashtable;
-            Assert.IsNotNull(hashtable);
-            Assert.AreEqual(hashtable["X"], 271);
-            Assert.AreEqual(hashtable["ZёS"], "xxx");
-            Assert.AreEqual(hashtable["ZёE"], "ZZZ");
+            ClassicAssert.IsNotNull(hashtable);
+            ClassicAssert.AreEqual(hashtable["X"], 271);
+            ClassicAssert.AreEqual(hashtable["ZёS"], "xxx");
+            ClassicAssert.AreEqual(hashtable["ZёE"], "ZZZ");
         }
 
         [Test]
@@ -325,10 +326,10 @@ namespace Mutators.Tests
                         }
                 };
             webMutator(webData);
-            Assert.AreEqual(3, webData.CustomFields.Value["X"].Value);
-            Assert.AreEqual(3, webData.Items[0].CustomFields["X"].Value);
-            Assert.AreEqual(6m, webData.CustomFields.Value["Sum"].Value);
-            Assert.AreEqual(3m, webData.CustomFields.Value["ComplexArrSum"].Value);
+            ClassicAssert.AreEqual(3, webData.CustomFields.Value["X"].Value);
+            ClassicAssert.AreEqual(3, webData.Items[0].CustomFields["X"].Value);
+            ClassicAssert.AreEqual(6m, webData.CustomFields.Value["Sum"].Value);
+            ClassicAssert.AreEqual(3m, webData.CustomFields.Value["ComplexArrSum"].Value);
         }
 
         [Test]
@@ -369,8 +370,8 @@ namespace Mutators.Tests
                         }
                 };
             modelMutator(modelData);
-            Assert.AreEqual(3, modelData.CustomFields["X"].Value);
-            Assert.AreEqual(3, modelData.Items[0].CustomFields["X"].Value);
+            ClassicAssert.AreEqual(3, modelData.CustomFields["X"].Value);
+            ClassicAssert.AreEqual(3, modelData.Items[0].CustomFields["X"].Value);
         }
 
         [Test]
@@ -396,9 +397,9 @@ namespace Mutators.Tests
                         }),
                 };
             mutator(data);
-            Assert.AreEqual(0, data.CustomFieldsCopy.Value["X"].Value);
-            Assert.AreEqual(1, data.CustomFieldsCopy.Value["Y"].Value);
-            Assert.AreEqual(2, data.CustomFieldsCopy.Value["Z"].Value);
+            ClassicAssert.AreEqual(0, data.CustomFieldsCopy.Value["X"].Value);
+            ClassicAssert.AreEqual(1, data.CustomFieldsCopy.Value["Y"].Value);
+            ClassicAssert.AreEqual(2, data.CustomFieldsCopy.Value["Z"].Value);
         }
 
         public enum TestEnum

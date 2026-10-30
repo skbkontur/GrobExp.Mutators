@@ -57,8 +57,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             configurator.Target(sg26 => sg26.LineItem.LineItemIdentifier).Set(item => (item.CurrentIndex() + 1).ToString());
             configurator.Target(sg26 => sg26.LineItem.ItemNumberIdentification.ItemIdentifier).Set(item => item.GTIN);
 
-            configurator.GoTo(sg26 => sg26.AdditionalProductId[0]).BatchSet(
-                (additionalProductId, item) => new Batch
+            configurator.GoTo(sg26 => sg26.AdditionalProductId[0]).BatchSet((additionalProductId, item) => new Batch
                     {
                         {additionalProductId.ProductIdentifierCodeQualifier, "z"},
                         {additionalProductId.ItemNumberIdentification[0].ItemTypeIdentificationCode, "IN"},
@@ -66,8 +65,7 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
                     }
             );
 
-            configurator.GoTo(sg26 => sg26.AdditionalProductId[1]).BatchSet(
-                (additionalProductId, item) => new Batch
+            configurator.GoTo(sg26 => sg26.AdditionalProductId[1]).BatchSet((additionalProductId, item) => new Batch
                     {
                         {additionalProductId.ProductIdentifierCodeQualifier, "q"},
                         {additionalProductId.ItemNumberIdentification[0].ItemTypeIdentificationCode, "SA"},
@@ -84,20 +82,18 @@ namespace Mutators.Tests.FunctionalTests.ConverterCollections
             configurator.Target(message => message.DateTimePeriod[0])
                         .Set(data => data.ExpireDate, dateTime => StaticDateTimePeriodConverter.ToDateTimePeriod(dateTime, "36", "102"));
 
-            configurator.If(data => !string.IsNullOrEmpty(data.SerialNumber)).GoTo(gin => gin.GoodsIdentityNumber[0]).BatchSet(
-                (gin, item) => new Batch
-                    {
-                        {gin.ObjectIdentificationCodeQualifier, "BN"},
-                        {gin.IdentityNumberRange[0].ObjectIdentifier, ArrayStringConverter.ToArrayString(item.SerialNumber, 35, 2)}
-                    });
+            configurator.If(data => !string.IsNullOrEmpty(data.SerialNumber)).GoTo(gin => gin.GoodsIdentityNumber[0]).BatchSet((gin, item) => new Batch
+                {
+                    {gin.ObjectIdentificationCodeQualifier, "BN"},
+                    {gin.IdentityNumberRange[0].ObjectIdentifier, ArrayStringConverter.ToArrayString(item.SerialNumber, 35, 2)}
+                });
 
-            configurator.GoTo(sg26 => sg26.FreeText.Each(), item => item.FreeTexts(defaultConverter).ToArray().Current()).BatchSet(
-                (ft, data) => new Batch
-                    {
-                        {ft.TextSubjectCodeQualifier, data.TextSubjectCodeQualifier},
-                        {ft.TextReference.FreeTextValueCode, data.FreeTextFunctionCode},
-                        {ft.TextLiteral.FreeTextValue, data.TextLiteral.FreeTextValue}
-                    });
+            configurator.GoTo(sg26 => sg26.FreeText.Each(), item => item.FreeTexts(defaultConverter).ToArray().Current()).BatchSet((ft, data) => new Batch
+                {
+                    {ft.TextSubjectCodeQualifier, data.TextSubjectCodeQualifier},
+                    {ft.TextReference.FreeTextValueCode, data.FreeTextFunctionCode},
+                    {ft.TextLiteral.FreeTextValue, data.TextLiteral.FreeTextValue}
+                });
         }
 
         private readonly DefaultConverter defaultConverter = new DefaultConverter();

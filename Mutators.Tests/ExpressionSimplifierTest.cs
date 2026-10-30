@@ -7,6 +7,7 @@ using GrobExp.Mutators.Visitors;
 using JetBrains.Annotations;
 
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace Mutators.Tests
 {
@@ -150,14 +151,14 @@ namespace Mutators.Tests
         private void Check<TArg, TResult>([NotNull] Expression<Func<TArg, TResult>> expression, [NotNull] string expectedSimplified)
         {
             var simplifiedExpression = simplifier.Simplify(expression);
-            Assert.AreEqual(expectedSimplified, simplifiedExpression.ToString());
+            ClassicAssert.AreEqual(expectedSimplified, simplifiedExpression.ToString());
         }
 
         private void Check<TArg, TResult>([NotNull] Expression<Func<TArg, TResult>> expression, [NotNull] Expression<Func<TArg, TResult>> expectedSimplified)
         {
             var simplifiedExpression = simplifier.Simplify(expression);
-            Assert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly : false, distinguishEachAndCurrent : true),
-                        "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
+            ClassicAssert.True(ExpressionEquivalenceChecker.Equivalent(simplifiedExpression, expectedSimplified, strictly : false, distinguishEachAndCurrent : true),
+                               "Failed to simplify expression:\nExpected to get '{0}',\n        but got '{1}'", expectedSimplified, simplifiedExpression);
         }
 
         private ExpressionSimplifier simplifier;

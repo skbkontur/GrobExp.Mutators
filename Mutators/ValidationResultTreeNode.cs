@@ -62,7 +62,11 @@ namespace GrobExp.Mutators
         private static Func<ValidationResultTreeNode, ValidationResultTreeNode> BuildFactoryInternal(Type type)
         {
             var parameterTypes = new[] {typeof(ValidationResultTreeNode)};
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(ValidationResultTreeNode), parameterTypes, typeof(string), true);
+            var method = new DynamicMethod(name : $"BuildFactoryInternal_{Guid.NewGuid()}",
+                                           returnType : typeof(ValidationResultTreeNode),
+                                           parameterTypes : parameterTypes,
+                                           owner : typeof(string),
+                                           skipVisibility : true);
             using (var il = new GroboIL(method))
             {
                 var constructor = type.GetConstructor(parameterTypes);
@@ -174,14 +178,14 @@ namespace GrobExp.Mutators
             return result;
         }
 
-        private static volatile int id;
+        private static int id;
         private static readonly Hashtable types = new Hashtable();
         private static readonly Hashtable typesBeingBuilt = new Hashtable();
         private static readonly object typesLock = new object();
         private static readonly Hashtable factories = new Hashtable();
         private static readonly object factoriesLock = new object();
 
-        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.RunAndCollect);
+        private static readonly AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(Guid.NewGuid().ToString()), AssemblyBuilderAccess.Run);
         private static readonly ModuleBuilder module = assembly.DefineDynamicModule(Guid.NewGuid().ToString());
     }
 
@@ -333,7 +337,11 @@ namespace GrobExp.Mutators
         private static Action<List<ValidationResultTreeNode>, int> EmitForceCount()
         {
             var listType = typeof(List<ValidationResultTreeNode>);
-            var method = new DynamicMethod(Guid.NewGuid().ToString(), typeof(void), new[] {listType, typeof(int)}, typeof(string), true);
+            var method = new DynamicMethod(name : $"EmitForceCount_{Guid.NewGuid()}",
+                                           returnType : typeof(void),
+                                           parameterTypes : new[] {listType, typeof(int)},
+                                           owner : typeof(string),
+                                           skipVisibility : true);
             var _sizeField = listType.GetField("_size", BindingFlags.Instance | BindingFlags.NonPublic);
             if (_sizeField == null)
                 throw new InvalidOperationException("The field 'List<>._size' is not found");

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.22 - 2026.10.30
+- Update GrobExp.Compiler dependency to v1.4.10.
+- Test against net7.0, net9.0 and net10.0.
+
 ## v1.4.11 - 2023.05.02
 - Update dependencies.
 - Test against net7.0.
